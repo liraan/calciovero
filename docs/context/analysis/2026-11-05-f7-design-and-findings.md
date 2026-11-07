@@ -6,7 +6,7 @@ last_updated: "2026-11-05"
 conforms_to: "SESSION-STATE.md; specs/L0-match/11-player-characteristics.md; ADR-028; ADR-029; NEW-SESSION-PROMPT.md (D1, D3, D6, D7)"
 ---
 
-**Nota (2026-11-06):** prima metà della sessione 2026-11-05; per lo stato aggiornato vedi `2026-11-05-f7-part-b-handoff.md`. Il file resta valido come design e trappole; lo stato è nel handoff.
+**Nota (2026-11-06):** prima metà della sessione 2026-11-05; per lo stato aggiornato vedi `docs/context/analysis/archive/2026-11-05-f7-part-b-handoff.md`. Il file resta valido come design e trappole; lo stato è nel handoff.
 
 # F.7 design and findings — the 2026-11-05 second session
 

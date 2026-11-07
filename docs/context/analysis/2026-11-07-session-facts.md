@@ -69,7 +69,7 @@ declared in chat".
 
 ## 4. Method lessons not in B1-bis (as of 2026-11-07)
 
-The first two are in `2026-11-07-session-handoff-v3.md` §8 and in
+The first two are in `docs/context/analysis/archive/2026-11-07-session-handoff-v3.md` §8 and in
 `2026-11-07-session-notes-log.md`; a reader who does not open those does
 not see them. The rest are in no file.
 

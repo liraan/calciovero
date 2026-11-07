@@ -10,7 +10,7 @@ supersedes: "2026-11-07-session-handoff-v3.md (after REC)"
 # Session handoff -- 2026-11-07, after E steps 1-3
 
 **For an agent who has never seen this repository.** Read
-`2026-11-07-session-handoff-v3.md` first: what the project is, the
+`docs/context/analysis/archive/2026-11-07-session-handoff-v3.md` first: what the project is, the
 doctrine in five lines, the map of the repo, the reading order. This
 file records only what changed since v3 and the state to resume from.
 Then run the startup ritual in `NEW-SESSION-PROMPT.md` (E1): it is
