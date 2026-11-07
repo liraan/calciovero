@@ -54,3 +54,7 @@ Operational rules:
 - MD-43 (the actor decides from his point of view; reformulated)
 - OI-50 (migration of the `resolve_*`), OI-53 (keyed derivation), OI-44 (keyed noise)
 - `L0-POSITIONAL-SLICE` §0 (phenomenological, not physical)
+
+## Note (2026-11-07, why the order matters)
+
+`00-foundations` §5 lists three rules — coverage, discussion, never a die — and the order is not decoration. "Cover with what you have" is a **positive duty**: you can see whether a phenomenon is explained or not. "No die" is a **prohibition**: it can be circumvented by giving it another name (a global deterministic formula is not a die, and §5 does not name it; a reader of §5 alone can re-derive it). Coverage is the positive face, the prohibition is its negative, and the second holds only because the first is checked. If a future reader inverts the order — start from "no die", then ask "what covers it?" — the prohibition has no content to be tested against. The full reasoning is in the maintainer's pause report of 2026-11-07 (§2), now in `docs/context/analysis/2026-11-07-session-facts.md` §3.
