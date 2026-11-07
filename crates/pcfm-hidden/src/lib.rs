@@ -55,7 +55,6 @@ use pcfm_core::rng::next_unit;
 /// transient decision: reordering resolves must not change the latents.
 struct Streams {
     duel: ChaCha20Rng,
-    shot: ChaCha20Rng,
     save: ChaCha20Rng,
     injury: ChaCha20Rng,
     set_piece: ChaCha20Rng,
@@ -92,7 +91,6 @@ impl GroundTruth {
         };
         let streams = Streams {
             duel: registry.stream(&name("duel")).clone(),
-            shot: registry.stream(&name("shot")).clone(),
             save: registry.stream(&name("save")).clone(),
             injury: registry.stream(&name("injury")).clone(),
             set_piece: registry.stream(&name("set_piece")).clone(),
@@ -195,12 +193,12 @@ impl GroundTruth {
             i16::try_from(dz * scale).unwrap_or(0),
         )
     }
-    /// (MD-19: power is the die's outcome, not a field of intent).
-    const fn speed_from_success(success: bool) -> i16 {
-        if success { 300 } else { 150 }
+    /// Flight speed from whether the shot was on target (MD-19: power is
+    /// a function of the outcome, not a die).
+    const fn speed_from_on_target(on_target: bool) -> i16 {
+        if on_target { 300 } else { 150 }
     }
     /// Flight speed from the passer's passing and the reception params
-    /// (MD-19: power is a function of the passer, not a die).
     fn speed_from_passing(passing: f32, params: &ReceptionParams) -> i16 {
         #[allow(clippy::cast_possible_truncation)]
         let bonus = (f64::from(passing) * f64::from(params.speed_passing_bonus_cm_per_tick)) as i32;
@@ -210,39 +208,60 @@ impl GroundTruth {
 
     /// Resolves a shot.
     ///
-    /// The die answers "how well the shot went" through its **deviation**
-    /// of the arrival point (report `match-stats-and-traits` §3):
+    /// The deviation of the arrival point is geometric (ADR-035, no die):
     /// `spread = (1 - finishing) * SPREAD_BASE + difficulty * SPREAD_DIFF`.
     /// A strong finisher deviates less; a pressured shooter deviates more.
-    /// The goal is geometric: the deviation decides whether the ball stays
+    /// Laterally the deviation goes toward the shooter's side of the goal
+    /// (a real miss sign, from the geometry of `from` and `to`); vertically
+    /// it goes up under pressure (`difficulty > 50`) and low otherwise. The
+    /// goal is geometric: the deviation decides whether the ball stays
     /// inside the goal mouth. Without deviation every shot is central:
-    /// that is the bug this fixes.
+    /// that is the bug this fixes. The formulas are declared in
+    /// `CHANGELOG-SIM` entry 27.
     pub fn resolve_shot(&mut self, ctx: &ShotContext) -> ShotOutcome {
         let shooter = self.latents_for(ctx.shooter);
 
-        // Bidirectional deviation: two independent axes, signed by two
-        // different noise draws. All f64, deterministic (cast = truncation).
+        // Magnitude: the miss radius is a function of the finisher's
+        // `finishing` (skill) and of the pressure. The skill half is the
+        // same as before; the pressure half keeps the previous scale
+        // (`difficulty * 2`). ADR-035: no die.
         let spread_base = (1.0 - f64::from(shooter.technical.finishing)) * 400.0;
         let spread_diff = f64::from(ctx.difficulty) * 2.0;
         let spread = spread_base + spread_diff;
-        let y_rand = f64::from(next_unit(&mut self.streams.shot));
-        let z_rand = f64::from(next_unit(&mut self.streams.shot));
+
+        // Lateral side: a real shooter misses towards the side he is on.
+        // A shot from the left of the goal centre tends to miss left, a
+        // shot from the right to miss right. `dy_sign` is `+1` if the
+        // shooter is below the goal centre (y < to.y) and `-1` above.
+        // Derived from the positions, no die (D6: how a real shot is
+        // recognised, from geometry).
+        let lateral_sign: i32 = if ctx.from.1 < ctx.to.1 { 1 } else { -1 };
+
+        // Vertical: under pressure the shot tends up (over the bar), with
+        // time it stays low. The threshold is arbitrary, declared: 50 of
+        // `difficulty` (the same scale the rest of the shot uses). A shot
+        // under no pressure dips slightly (below the crossbar).
+        let vertical_sign: i32 = if ctx.difficulty > 50 { 1 } else { -1 };
+
+        // Amplitude per axis: a quarter of the total spread, the average
+        // magnitude of the old uniform draw `(rand - 0.5) * spread`. Same
+        // scale as before, geometric (no draw).
         #[allow(clippy::cast_possible_truncation)]
-        let dy = ((y_rand - 0.5) * spread) as i32;
+        let lateral_abs = (spread / 4.0) as i32;
         #[allow(clippy::cast_possible_truncation)]
-        let dz = (((z_rand - 0.5) * spread * 0.5) as i32).max(-200);
+        let vertical_abs = ((spread / 4.0) * 0.5) as i32;
+        let dy = lateral_sign * lateral_abs;
+        let dz = vertical_sign * vertical_abs;
         let to = (ctx.to.0, ctx.to.1 + dy, ctx.to.2 + dz);
 
-        // on_target is geometric: the arrival point is inside the goal
-        // mouth (7.32 m wide, 2.44 m tall). Derived, not a field of the die.
+        // on_target: geometric, arrival inside the goal mouth. Derived,
+        // not a field of the die (unchanged).
         let goal_half_width_cm: i32 = 366;
         let goal_height_cm: i32 = 244;
         let on_target =
             (to.1 - ctx.to.1).abs() < goal_half_width_cm && to.2 < goal_height_cm && to.2 >= 0;
 
-        // shot_type: geometric, declared model choice (report §3: choice,
-        // not outcome). Distance > 20 m -> Power; wide deviation -> Placed;
-        // otherwise Normal.
+        // shot_type: geometric, derived from the shot position. Unchanged.
         let dist_cm = (ctx.to.0 - ctx.from.0).abs();
         let shot_type = if dist_cm > 2000 {
             ShotType::Power
@@ -253,7 +272,7 @@ impl GroundTruth {
         };
 
         let dir = Self::direction_3d(ctx.from, to);
-        let speed = Self::speed_from_success(on_target);
+        let speed = Self::speed_from_on_target(on_target);
         let initial_velocity = (
             dir.0.saturating_mul(speed) / 1000,
             dir.1.saturating_mul(speed) / 1000,

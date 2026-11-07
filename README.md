@@ -8,7 +8,7 @@
 *Transparent by design. Deterministic by construction. Yours by default.*
 
 [![Status](https://img.shields.io/badge/status-L0_ratified-yellow)](https://github.com/liraan/calciovero)
-[![Tests](https://img.shields.io/badge/tests-209_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-211_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
 
@@ -112,7 +112,7 @@ The rules that make this possible are non-negotiable:
 
 | Level | Specification | Code |
 |:-----:|:-------------:|:----:|
-| **L0** — Match   | 🟢 11 cells, ratified | 🟢 10 crates, 209 tests, 6 test scenarios |
+| **L0** — Match   | 🟢 11 cells, ratified | 🟢 10 crates, 211 tests, 6 test scenarios |
 | **L1** — Season  | ⚪ 12 cells planned   | ⚪ not started |
 | **L2** — Career  | ⚪ 9 cells planned    | ⚪ not started |
 | **L3** — Meta    | ⚪ 8 cells planned    | ⚪ not started |
@@ -129,7 +129,7 @@ The rules that make this possible are non-negotiable:
 | **L0 specification** | 🟢 Ratified | 11 cells, ratified. The contract is stable; the implementation evolves under it. |
 | **L0 implementation** | 🟡 Prototype | It compiles, it is deterministic, it is tested — but it is a *prototype model*: positions exist (slice A, used by slice B2), movement does not; 5 event types out of 31; formulas marked as placeholders. |
 | **ADRs** | 🟡 Evolving | 32 ADRs: 30 accepted, 2 superseded (002 → 027, 023 → 024). The set changes as the project learns. |
-| **Tests** | 🟢 Green | 209 tests, 6 test scenarios, `cargo fmt`/`clippy`/`test` clean. Green means "the contract holds", not "the game is finished". |
+| **Tests** | 🟢 Green | 211 tests, 6 test scenarios, `cargo fmt`/`clippy`/`test` clean. Green means "the contract holds", not "the game is finished". |
 | **L1–L3** | ⚪ Not started | Specifications only. No code. |
 
 **What "L0 complete" does not mean:** it does not mean the match engine is realistic. It means the L0 *contract* is ratified and implemented. Realism (movement, ball dynamics, all event types) is the positional slice (`docs/context/L0-POSITIONAL-SLICE.md`): tracked, not started (D3: L2 does not exist yet).
