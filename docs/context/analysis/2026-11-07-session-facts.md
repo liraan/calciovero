@@ -46,3 +46,66 @@ OIs (see Task 2 / OI-78 — they are folded into the reconciliation, not
 duplicated as three separate OIs) before the next closing, and the
 green-path criterion (e) must be read as "traced in a file, not only
 declared in chat".
+
+## 3. Design rationales that exist only in chat
+
+- **`resolve_reception` uses "params passed in + formula in Rust"** (the
+  `resolve_influence` pattern), not the calculator (`resolve_movement`
+  pattern). Reason, declared only in chat: the formula is small; the
+  calculator is worth its weight when the formula grows (L3, calibration).
+  A reader who sees both patterns in the crate has no rule to choose.
+- **`speed_from_success` stays, for the shot.** Reason: REC does not own
+  the shot; renaming it `speed_from_shot` is E's work. Stated in the body
+  of commit `2fb1280`, **not** in `CHANGELOG-SIM` entry 26 and not in a
+  code comment. A reader of the code sees two speed functions and no
+  stated difference.
+- **Pass emitted at landing, not at launch (choice A).** `CHANGELOG-SIM`
+  says *what* changed, not *why* B was worse: "Pass is a fact that
+  happens, not an intention." The justifying sentence is in no file.
+- **Pass speed from `passing` (A2), not uniform (A1).** `CHANGELOG-SIM`
+  gives the formula; it does not say that A1 was a declared gap and A2 is
+  coverage — i.e. that the choice is not "nicer this way", it is the
+  application of `00-foundations` §5.
+
+## 4. Method lessons not in B1-bis (as of 2026-11-07)
+
+The first two are in `2026-11-07-session-handoff-v3.md` §8 and in
+`2026-11-07-session-notes-log.md`; a reader who does not open those does
+not see them. The rest are in no file.
+
+- **`sed -i` with shell control flow in the replacement writes it
+  literally into the file** (`if false; then :; fi` ended up inside a
+  Rust doc comment). Never put control flow in a replacement.
+- **`awk` with a state flag that does not close on the right `}`** (the
+  body has nested braces) eats the rest of the file. Use `NR==N` ranges
+  or `head`/`tail` with verified line numbers, and always `wc -l` before
+  and after with the expected delta.
+- **Command construction: no `||` with two branches, no nested heredocs,
+  no "if this fails do that instead".** B4 says "no two mutations in one
+  block"; it does not say "no control flow in the command". The fix,
+  every time, was "one block, one thing".
+- **B2 verification of a line edit: `grep -c` with a loose pattern gives
+  false positives** (reported 2 when it was 1, because a different OI
+  contained the same substring). The truth is `git diff`. And `grep -c`
+  counts lines, not occurrences.
+- **To find every function that still uses the die: `grep -n 'next_unit'`
+  on `pcfm-hidden`.** This is how `resolve_influence` was verified to be
+  already geometric. It seems obvious; it is not written anywhere.
+- **A pattern written against a line you also wrote in the same session
+  is the highest-risk case**: you remember what you meant to write, not
+  what you wrote.
+
+## 5. Minor divergences, no OI opened
+
+- **`gates.sh startup` and `gates.sh resume` run the same gate set**;
+  `resume` adds the pointers. The difference between the two commands is
+  output only. Not an error, but no file records it as intended state.
+- **`ObservationEvent::Pass` is written and never drained.** The comment
+  in `observation.rs` says so. After REC, `resolve_pass` no longer pushes
+  an `ObservationEvent::Pass`, so the channel is emptier. No one owns it;
+  no OI. **To verify before opening one (D1, P2):** `grep -rn
+  'ObservationEvent::Pass\|drain_observations' crates/pcfm-*`.
+- **"One session, one focus" vs the maintainer's directive (§1 of the
+  pause report).** The 2026-11-07 session had at least three foci
+  (tracking, REC, handoff). The two positions coexist only if "focus"
+  means *the work*, not *the decisions*. Not written anywhere.
