@@ -152,7 +152,7 @@ before the engine is.
 Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
 
     git clone https://github.com/liraan/calciovero.git
-    cd calcio-vero
+    cd calciovero
     cargo run --release --bin pcfm-test-runner -- --check --seed 42
 
 If `--check` prints `6/6 checks passed`, the framework is healthy.
