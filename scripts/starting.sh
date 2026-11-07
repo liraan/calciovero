@@ -15,7 +15,6 @@ echo "=== startup: git alignment ==="
 git status --short
 git pull --ff-only
 git log --oneline -5
-git rev-parse HEAD
 echo ""
 
 echo "=== startup: gates (resume = fast subset + pointers) ==="
