@@ -268,6 +268,10 @@ impl MatchState {
             coverage: BTreeSet::new(),
             coverage_possession: Possession::Home,
             actions_stream: StreamName::new(format!("match:{}:actions", match_.id.slot()))
+                // Construction: the stream name is formatted from a slot (u32),
+                // so it is non-empty by construction. Not a simulation path, D2
+                // does not apply; documented so a reader does not read this as
+                // an unresolved D2 violation (OI-34 closed 2026-11-07).
                 .expect("stream name is non-empty"),
         }
     }
@@ -388,7 +392,9 @@ impl MatchState {
             return;
         }
 
-        let (attacker, defender) = self.pick_from_space(ctx);
+        let Some((attacker, defender)) = self.pick_from_space(ctx) else {
+            return;
+        };
 
         let (teammates, opponents): (Vec<PlayerId>, Vec<PlayerId>) = {
             let (own, other) = self.squads(ctx);
@@ -618,13 +624,13 @@ impl MatchState {
     /// Special case of influence (`03-entities-minimal` §2.9): the general
     /// case reads the latents inside `pcfm-hidden`; here only the space term
     /// is used. The per-agent slice replaces this with the full formula.
-    fn pick_from_space(&self, ctx: &MatchContext<'_>) -> (PlayerId, PlayerId) {
+    fn pick_from_space(&self, ctx: &MatchContext<'_>) -> Option<(PlayerId, PlayerId)> {
         let (attacker_squad, defender_squad) = self.squads(ctx);
         let ball = self.spatial.ball();
-        let attacker = nearest_in_squad(&self.spatial, attacker_squad, ball);
+        let attacker = nearest_in_squad(&self.spatial, attacker_squad, ball)?;
         let attacker_pos = self.spatial.agent(attacker).map_or(ball, |a| a.position);
-        let defender = nearest_in_squad(&self.spatial, defender_squad, attacker_pos);
-        (attacker, defender)
+        let defender = nearest_in_squad(&self.spatial, defender_squad, attacker_pos)?;
+        Some((attacker, defender))
     }
 
     const fn squads<'a>(&self, ctx: &'a MatchContext<'_>) -> (&'a Squad, &'a Squad) {
@@ -656,7 +662,9 @@ impl MatchState {
                     }
                 }
             }
-            let carrier = nearest_in_squad(&self.spatial, own, ball);
+            let Some(carrier) = nearest_in_squad(&self.spatial, own, ball) else {
+                return;
+            };
             (carrier, set)
         };
 
@@ -824,11 +832,13 @@ impl MatchState {
 
 /// The player of `squad` nearest to `point`, tie-broken by `PlayerId`.
 ///
-/// # Panics
-///
-/// Panics if the squad has no agent in `spatial`. `Squad` has 11 players
-/// and `SpatialState` places all of them, so this is unreachable.
-fn nearest_in_squad(spatial: &SpatialState, squad: &Squad, point: (i32, i32)) -> PlayerId {
+/// Returns `None` if the squad has no agent placed in `spatial`. This is
+/// a declared invariant, not a fallback: `SpatialState::from_squads`
+/// places every starter of every squad. The invariant is enforced at
+/// construction, and the caller decides how to degrade. A regression
+/// would make the caller skip the action, and `golden_l0` would see it.
+/// D2: no panic in a simulation path.
+fn nearest_in_squad(spatial: &SpatialState, squad: &Squad, point: (i32, i32)) -> Option<PlayerId> {
     squad
         .players
         .iter()
@@ -839,7 +849,6 @@ fn nearest_in_squad(spatial: &SpatialState, squad: &Squad, point: (i32, i32)) ->
         })
         .min_by(|x, y| x.0.cmp(&y.0).then(x.1.slot().cmp(&y.1.slot())))
         .map(|(_, id)| id)
-        .expect("spatial state contains every starter")
 }
 
 /// Clamps a `u64` to a `u8`, with a hard upper bound of `max`.
