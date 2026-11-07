@@ -224,6 +224,33 @@ if [ "$b8_missing" -eq 0 ]; then
   say_ok "B8 simplifications declare Removed-by:"
 else
   say_fail "B8 $b8_missing simplification(s) without a non-empty Removed-by: (MD-32)"
+  fi
+
+# B9 (ADR-038, 2026-11-07): the simulation path is platform-free. The
+# six simulation crates must not import platform modules (`std::fs`,
+# `std::net`, `std::thread`, `std::process`, `std::env`, `std::os`,
+# `std::path`) or platform crates (`tokio`, `rayon`, `async-std`,
+# `smol`). The banned list lives here, not in the ADR, so changing it
+# is one place. The gate greps `src/`, not `tests/`: a test may use
+# the platform; the engine may not.
+b9_banned='use std::(fs|net|thread|process|env|os|path)'
+b9_banned_crates='use (tokio|rayon|async_std|smol)'
+b9_sim_crates="crates/pcfm-core/src crates/pcfm-model/src crates/pcfm-hidden/src crates/pcfm-calculator/src crates/pcfm-match/src crates/pcfm-stats/src"
+b9_hits=0
+for d in $b9_sim_crates; do
+  if [ -d "$d" ]; then
+    n=$(grep -rEn "$b9_banned|$b9_banned_crates" "$d" 2>/dev/null | wc -l | tr -d ' ')
+    b9_hits=$((b9_hits + n))
+    if [ "$n" -gt 0 ]; then
+      echo "  B9 hit in $d:"
+      grep -rEn "$b9_banned|$b9_banned_crates" "$d" 2>/dev/null | sed 's/^/    /'
+    fi
+  fi
+done
+if [ "$b9_hits" -eq 0 ]; then
+  say_ok "B9 simulation path is platform-free (ADR-038)"
+else
+  say_fail "B9 $b9_hits platform import(s) in the simulation path (ADR-038)"
 fi
 
 # ---------- Resume mode: mechanical pointers for a fresh session ----------
