@@ -1,8 +1,8 @@
 ---
 title: "Module 00 — Foundations"
-version: "2.0"
+version: "3.0"
 status: "ratified"
-last_updated: "2026-10-27"
+last_updated: "2026-11-07"
 supersedes: "Prompt Master v7 (archived)"
 depends_on: []
 referenced_by: ["all modules"]
@@ -13,6 +13,9 @@ conforms_to: "self"
   v2.0 (2026-10-26): ADR-013 accepted. Pillar 1 revised from global
   determinism to local determinism. §4 updated accordingly. §5 and §8
   references updated. This is a major bump: an invariant changed.
+  v3.0 (2026-11-07): ADR-036 accepted. §2 gains pillar 11 (gestures are
+  relational: a lens, not a constraint). IDEA-DESIGN-001 absorbed. No
+  existing pillar changed; this is a doctrine addition, not a revision.
 -->
 
 # Module 00 — Foundations
@@ -47,6 +50,7 @@ Ten non-negotiable principles. Every design decision is tested against them.
 8. **Living modules.** Expand, contract, version, replace — without breaking the others. Contracts are stable; implementations are not.
 9. **No CA/PA.** Eliminated as scalars. Replaced by windowed observed indexes + projection profiles with confidence bands. See §3 and §5.
 10. **Plane B ≠ Plane A.** Statistics are observations, not truth. The game teaches the player to tell them apart. See §3.
+11. **Gestures are relational (a lens, not a constraint).** A gesture tends to be made *for* or *against* someone. When a gesture is designed, ask which relations it reads — the answer may be "few" or "none", and is declared, not prescribed. Characteristics stay the actor's; the relation is added to them, not substituted (coverage-first, §5). Read from the actor's point of view (MD-43). States stay individual. The lens guides the discussion; it does not close it. See ADR-036.
 
 ## 3. The Three Planes (Core Doctrine)
 

@@ -878,7 +878,7 @@
 ---
 
 ### IDEA-DESIGN-001 — Condizioni come relazioni, non stati individuali
-- **Status:** sketch
+- **Status:** absorbed-by ADR-036 (2026-11-07). The thesis is generalized: ADR-036 covers every gesture, not only conditions. The open questions (a)(b)(c) are answered there: (a) `pcfm-hidden` keeps its role; (b) the pillar applies to every gesture when it is touched; (c) the D2 debt stays a debt, the pillar does not pay it. The original sketch remains below as history.
 - **Origine:** pausa 2026-11-02. Domanda del maintainer: "in una partita vera, qual è la natura della pressione, come si riconosce?"
 - **Tesi:** la pressione non è uno stato interno del giocatore (InPressione), è una relazione tra spazio, tempo e agenti. Si riconosce dal comportamento che produce (passaggio affrettato, protezione della palla, perdita), non da un'etichetta interna. La dimensione mancante nel motore non è "stato individuale" ma "configurazione relazionale osservabile".
 - **Conseguenza su ADR-019 D2:** D2 ratifica uno stato funzionale individuale. È una fotografia del 2026-10-27. La big picture dice che la condizione è relazionale. D2 non è la risposta finale: è un punto di partenza da rivedere quando il contenuto lo richiederà.
