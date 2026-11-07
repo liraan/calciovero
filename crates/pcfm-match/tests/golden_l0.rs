@@ -16,7 +16,7 @@ const N: u64 = 10;
 /// First seed of the range.
 const SEED_START: u64 = 42;
 
-/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 27.
+/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 28.
 /// Regenerate when `SIM_VERSION` changes.
 const EXPECTED: &str = "89337707947d9418fc3eb3c1eb3778a4674746b7748987b62de84faa0b8fa2787ca32c4d41e3fcf3c8f2a5e66183e4f8ad969beda2aaa6c56574d0ebd6c877680977d847e381484ccce96ae5169723d657458736a86992a4dab7a94714cd09a42aa2d4a7814f7465bba445df626978a2c4cecc0325dd698942386515b04870d6979acdebd2013269c1f06377d9fa056408d9c83b7f35aed821b481236171a1fbc8122a792427471b069d90863f0baf0818d22072a22a73049ad85a76eb441b96b8a851849897d8ef4cb694d726afcf236689e5a3667026ecaa2eb8712ca311663af4b19733048128ff6c0d7c247c9932ab8d60b74c74fdb683d1cd9c5c3cccca1bd840d72ad6a8b2de259fc5f4abf0c1630356de3281762ead20fd4a8e2d9f30f338d5bcddee2b9377d938766d2967a948328f44d0665205beba9149bacce4aa";
 

@@ -759,6 +759,8 @@ impl MatchState {
                 let save_ctx = pcfm_hidden::SaveContext {
                     goalkeeper: gk,
                     point: (plane_x, y_at, z_at),
+                    offset_cm: dy,
+                    reach_cm,
                 };
                 ctx.hidden.resolve_save(&save_ctx).saved
             } else {

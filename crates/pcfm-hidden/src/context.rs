@@ -90,11 +90,16 @@ pub struct SaveContext {
     /// The goalkeeper.
     pub goalkeeper: PlayerId,
     /// The point where the ball crossed the goal plane, in centimetres, 3D.
-    /// The engine computes it from the trajectory; it is the geometric
-    /// input the goalkeeper's reaction depends on.
+    /// The engine computes it from the trajectory; used by the caller for
+    /// the `Save` event payload, not by the formula.
     pub point: (i32, i32, i32),
+    /// Lateral distance from the goalkeeper's position to the crossing
+    /// point, in centimetres. The geometry the reaction depends on.
+    pub offset_cm: f64,
+    /// The goalkeeper's standing reach (arm span, ~height), in cm. The
+    /// ceiling the `goalkeeping` latent modulates; not a die.
+    pub reach_cm: f64,
 }
-
 /// The context of a set piece resolution.
 #[derive(Debug, Clone, Copy)]
 pub struct SetPieceContext {

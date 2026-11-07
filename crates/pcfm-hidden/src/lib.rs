@@ -55,7 +55,6 @@ use pcfm_core::rng::next_unit;
 /// transient decision: reordering resolves must not change the latents.
 struct Streams {
     duel: ChaCha20Rng,
-    save: ChaCha20Rng,
     injury: ChaCha20Rng,
     set_piece: ChaCha20Rng,
     pressure: ChaCha20Rng,
@@ -91,7 +90,6 @@ impl GroundTruth {
         };
         let streams = Streams {
             duel: registry.stream(&name("duel")).clone(),
-            save: registry.stream(&name("save")).clone(),
             injury: registry.stream(&name("injury")).clone(),
             set_piece: registry.stream(&name("set_piece")).clone(),
             pressure: registry.stream(&name("pressure")).clone(),
@@ -391,22 +389,25 @@ impl GroundTruth {
     /// `ctx.point` carries the crossing point so the engine can build the
     /// `Save` event with the right position, and so a future model can use
     /// it (F.5, L2) without changing the signature.
+    /// Resolves a save.
+    ///
+    /// The "saved" is geometric (ADR-035, no die): the goalkeeper reaches
+    /// `goalkeeping * reach_cm`; if the crossing point is within that
+    /// effective reach, the ball is held. A goalkeeper with `goalkeeping`
+    /// near 0 reaches almost nothing; a strong one covers the whole arm
+    /// span. `offset_cm` and `reach_cm` are computed by the caller (state.rs)
+    /// from the geometry: not a die, not a latent (reach is a dimension).
     pub fn resolve_save(&mut self, ctx: &SaveContext) -> SaveOutcome {
         let keeper = self.latents_for(ctx.goalkeeper);
-        let noise = next_unit(&mut self.streams.save);
-        let saved = noise.mul_add(0.3, keeper.technical.goalkeeping) > 0.5;
-
+        let saved = ctx.offset_cm < f64::from(keeper.technical.goalkeeping) * ctx.reach_cm;
         let outcome = SaveOutcome { saved };
-
         self.observations.push(ObservationEvent::Save {
             goalkeeper: ctx.goalkeeper,
             saved,
         });
-
-        let _ = ctx.point; // read by the engine for the Save event; not by the die.
+        let _ = ctx.point;
         outcome
     }
-
     /// Resolves a set piece.
     pub fn resolve_set_piece(&mut self, ctx: &SetPieceContext) -> SetPieceOutcome {
         let taker = self.latents_for(ctx.taker);
