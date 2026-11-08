@@ -67,9 +67,14 @@ three times, each time with the maintainer's correction.
   approved, 10 blocks), with amendments moved to a separate block.
 - **Plan E**: `resolve_duel`, `resolve_pressure`, `resolve_injury_risk`,
   `resolve_set_piece` still draw. Each waits for its phenomenon.
+- **Not verified in code (2026-11-08, D1).** The sentence above is declared by the documents, not verified in the code: `resolve_pass`, `save.rs`, `movement.rs` were **not read** in that session. Do not assume the body matches the description; the F.6-cog session is the first that reads them.
 - **OI-64** (pass geometry): waits for F.6 (the orientation as a decision).
 
 ## 4. Traps paid (do not pay them again)
+- **A `ADR-037(MISSING)` row in the capture log is history, not a finding.** The
+  row dated 2026-11-08 10:15 records the `capture.sh` bug (`0*NUM*` did not
+  match `037-...`), fixed the same day. A `grep MISSING` over the captures will
+  find it; do not reopen it.
 
 - **A heredoc that contains, together, `#` at line start, `**` and
   backticks can lose characters** even with a quoted `<< 'EOF'`. Observed
