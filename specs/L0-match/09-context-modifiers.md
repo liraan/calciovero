@@ -83,6 +83,8 @@ The engine applies modifiers to its internal calculations:
 - `manager_tactical_clarity` → reduces variance of micro-decisions
 - `squad_chemistry` → reduces probability of relational random events
 - `referee_strictness` → increases card probability
+
+> **Note (2026-11-08) — `referee_strictness` and `referee_consistency` contradict T1.3.** OI-55 (open) records it: the new referee applies the rules, it has no variable severity or consistency. Both fields are to be removed when the rules module exists (OI-48); the card probability above is prototype. The struct stays in this ratified cell as history.
 - `weather_severity` → increases error rates, reduces pass completion
 - `derby_intensity` → increases random event probability (brawls, cards)
 - `pitch_wear` → increases injury risk modifier, reduces pass completion

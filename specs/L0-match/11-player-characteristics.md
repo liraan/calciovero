@@ -528,6 +528,8 @@ real is declared here so a future session does not restart from zero.
 | Explosive force, acceleration, max speed | F.7 (`balance/movement.json`, `resolve_movement`) |
 | Height, reactivity, goalkeeping, explosive force | F.7 (save reach and timing) |
 | Passing, shooting, tackling, heading | F.3, F.4 (already read by `resolve_pass`/`resolve_shot`/`resolve_duel`) |
+
+> **Note (2026-11-08) — "already read" is the prototype form.** ADR-028 §5 (rewritten 2026-11-05) supersedes the single `resolve_*`: a custodian holds the values, a calculator applies a formula from `balance/*.json`, an orchestrator decides when. The three terms named in the row (passing, shooting, tackling) become calculator terms, not `resolve_*` calls. The row stays as history.
 | Vision, game reading, decision making | F.6 (off-ball perception) and after |
 | Concentration, confidence, composure, emotional control | After F.6 (needs the degraded image) |
 | Resilience | L2 (events between matches) |
