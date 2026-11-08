@@ -96,7 +96,7 @@ For each player, each tick:
 2. **Decision**: what does the player want to do? A function of perception, role, tactics (L2), and minimal psychological state. At L0, tactics are a fixed default; the `manager_tactical_clarity` modifier adjusts variance.
 3. **Execution**: what actually happens? The engine **calls `hidden.resolve_*`** with the appropriate context and receives an outcome (`DuelOutcome`, `ShotOutcome`, `PassOutcome`, ...). The engine does **not** compute the outcome from latents. It only interprets the outcome.
 
-Each step has an error term. Errors are drawn from the match stream `match:{id}:micro-decisions`.
+Each step has an error term, derived from the characteristics the step reads (ADR-035: no die in simulation paths; the error is a band around the intended outcome, the point inside the band is a deterministic function of the context). The match stream `match:{id}:micro-decisions` named below is **not** consumed in simulation paths: derivation from a key is not a die, but a stream draw is.
 
 The context and outcome types (`DuelContext`, `DuelOutcome`, etc.) are defined in `L0.10` §2.2. The engine constructs a context, passes it to `GroundTruth`, receives an outcome, and emits a `MatchEvent` (see `L0.05`). It never sees the latent values that produced the outcome.
 
@@ -138,6 +138,8 @@ The target names are **not** binding on the prototype, and the prototype names a
 **not** a commitment for the positional engine. This section is rewritten once, on
 the final per-agent model, not twice. Recorded so a reader comparing spec and code
 knows which of the two is authoritative *today* (the code, for the prototype).
+
+**Note (2026-11-08) — the streams are not consumed in simulation paths.** ADR-035 (2026-11-07) forbids a die in simulation paths: outcomes emerge from the local transitions of the actors. The three streams named in §2.6 above are **target** names, and they are **not** consumed today, nor will be consumed by the positional engine for an outcome. The prototype's `hidden:{match_id}:duel/shot/pass/save/injury/set_piece/pressure` are the residual of the old die-based `resolve_*`; they are being removed one by one as each `resolve_*` becomes geometric (Plan E, OI-50). Derivation from a key (`hash(world_seed, ...)`) is not a die; a stream draw is. When a `resolve_*` still draws (today `resolve_duel`, `resolve_pressure`, `resolve_injury_risk`, `resolve_set_piece`), that is the debt, not the target.
 
 ### 2.7 What the engine does NOT do
 

@@ -651,6 +651,8 @@ criterion.
 choice of action is geometric: it reads positions and picks. With this
 family, the choice is no longer pure geometry. The leaf is F.6.
 
+**Note (2026-11-08) — the family materialises with F.6, not before.** The four latents (`peripheral_vision`, `game_reading`, `decision_making`, `risk_management`) are materialised in `pcfm-hidden::CognitiveLatents` **in the same commit that rewrites `choose_action` to read them**, not before: a latent with no consumer is D3, and the consumer is F.6. The decision is the leaf; the latents are its input. `move_agents` reading `game_reading` for positioning (§7.7) is part 2, after the decision reads them. No `concentration_level`: it is not in this family (it is a scanning behaviour, §7.7).
+
 **Vision is not a composite.** It is one datum: the width of the visual
 field, a physical property of the eye, measurable with eye-tracking. It
 is **not** scanning (turning the head before receiving, which is a
