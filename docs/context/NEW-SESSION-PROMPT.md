@@ -275,7 +275,7 @@ Read the ID, title, and status of every idea. Do not implement from `IDEAS.md`. 
 
 Read in full the newest handoff (the second command: names start with the date, so the last one is the newest). For every other report the filename and the line the bookmark gives it are enough at startup. **Before proposing a step, `grep -l` the step's main term across `docs/context/analysis/*.md` and read the hits**, so a decision already taken is not reopened; the proposal carries one line, `reports checked: <term> -> <files | none>`. List the reports not read in the step 5 report. If a report says "Pass" but has unverified findings, do not trust the verdict: verify each finding with `grep`/`sed` before acting.
 
-**The current handoff is `docs/context/analysis/2026-11-08-session-handoff-v5.md`** (138 lines, 7 sections: state, what this session decided, what is open and why, traps paid, context notes, how to start, what it supersedes). Read it in full, not only the first command's output: it is written for an agent who was not there, and sections 3-5 are the ones the bookmark cannot carry. If a newer handoff exists, read that one and treat v5 as history.
+**The current handoff is `docs/context/analysis/2026-11-08-session-handoff-v6.md`** (178 lines, 7 sections: state, what this session decided, what is open and why, traps paid, context notes, how to start, what it supersedes). Read it in full, not only the first command's output: it is written for an agent who was not there, and sections 3-5 are the ones the bookmark cannot carry. If a newer handoff exists, read that one and treat v3, v4 and v5 as history.
 
 **Only when the task needs them:**
 
