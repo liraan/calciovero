@@ -46,6 +46,12 @@ pub enum Characteristic {
     Acceleration,
     /// Max speed (Plane A, physical).
     MaxSpeed,
+    /// Reading the game: what the player understands (Plane A, cognitive).
+    GameReading,
+    /// Decision making: how fast and how well he chooses (Plane A, cognitive).
+    DecisionMaking,
+    /// Risk management: the risk he accepts (Plane A, cognitive).
+    RiskManagement,
 }
 
 impl Characteristic {
@@ -57,6 +63,9 @@ impl Characteristic {
             Self::MaximalForce => "maximal_force",
             Self::Acceleration => "acceleration",
             Self::MaxSpeed => "max_speed",
+            Self::GameReading => "game_reading",
+            Self::DecisionMaking => "decision_making",
+            Self::RiskManagement => "risk_management",
         }
     }
 
@@ -68,6 +77,9 @@ impl Characteristic {
             "maximal_force" => Some(Self::MaximalForce),
             "acceleration" => Some(Self::Acceleration),
             "max_speed" => Some(Self::MaxSpeed),
+            "game_reading" => Some(Self::GameReading),
+            "decision_making" => Some(Self::DecisionMaking),
+            "risk_management" => Some(Self::RiskManagement),
             _ => None,
         }
     }
@@ -390,6 +402,9 @@ mod tests {
             Characteristic::MaximalForce,
             Characteristic::Acceleration,
             Characteristic::MaxSpeed,
+            Characteristic::GameReading,
+            Characteristic::DecisionMaking,
+            Characteristic::RiskManagement,
         ] {
             assert_eq!(Characteristic::from_name(c.name()), Some(c));
         }

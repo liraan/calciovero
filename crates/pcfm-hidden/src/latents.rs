@@ -46,7 +46,6 @@ pub struct PlayerLatents {
     #[allow(dead_code)] // no consumer yet: the family is empty (D3)
     pub psychological: PsychologicalLatents,
     /// Cognitive traits (L0.11 §7.4).
-    #[allow(dead_code)] // no consumer yet: the family is empty (D3)
     pub cognitive: CognitiveLatents,
 }
 
@@ -101,11 +100,19 @@ pub struct PsychologicalLatents {}
 
 /// Cognitive traits (L0.11 §7.4).
 ///
-/// Empty: the first trait (game reading) arrives with the situated
-/// decision (F.6), which does not exist yet (D3).
+/// Materialised in the same commit as the choice (F.6-cog), as the
+/// L0.11 §7.4 note requires: a latent with no consumer is D3, and the
+/// consumer is `resolve_choice`. `vision` is not here: it belongs to
+/// the scanning rule (ADR-034, F.6 part 2 / OI-71).
 #[derive(Debug, Clone, Copy)]
-#[allow(dead_code)] // no consumer yet: the trait arrives with F.6 (D3)
-pub struct CognitiveLatents {}
+pub struct CognitiveLatents {
+    /// Reading the game: what the player understands (consumed by the choice, F.6-cog).
+    pub game_reading: f32,
+    /// Decision making: how fast and how well he chooses (consumed by the choice, F.6-cog).
+    pub decision_making: f32,
+    /// Risk management: the risk he accepts (consumed by the choice, F.6-cog).
+    pub risk_management: f32,
+}
 
 impl PlayerLatents {
     /// Derives a player's latents from the world seed and the player id.
@@ -132,7 +139,11 @@ impl PlayerLatents {
                 right_foot: unit_from_key(world_seed, player, "right_foot"),
             },
             psychological: PsychologicalLatents {},
-            cognitive: CognitiveLatents {},
+            cognitive: CognitiveLatents {
+                game_reading: unit_from_key(world_seed, player, "game_reading"),
+                decision_making: unit_from_key(world_seed, player, "decision_making"),
+                risk_management: unit_from_key(world_seed, player, "risk_management"),
+            },
         }
     }
 }

@@ -36,13 +36,16 @@ impl Custodian for CustodianView {
     fn value(&mut self, characteristic: Characteristic) -> f64 {
         match characteristic {
             Characteristic::ExplosiveForce => f64::from(self.latents.physical.explosive_force),
+            Characteristic::GameReading => f64::from(self.latents.cognitive.game_reading),
+            Characteristic::DecisionMaking => f64::from(self.latents.cognitive.decision_making),
+            Characteristic::RiskManagement => f64::from(self.latents.cognitive.risk_management),
             // The catalogue declares three more physical characteristics
-            // (`MaximalForce`, `Acceleration`, `MaxSpeed`) that the
-            // movement formula does not read. The calculator asks only
-            // for declared terms (ADR-028 section 5): this branch is
-            // reached only if a future formula declares one of them
-            // before the corresponding performance is in `PlayerLatents`.
-            // It is `0.0` until Plan H materialises them.
+            // (`MaximalForce`, `Acceleration`, `MaxSpeed`) that no
+            // formula reads yet. The calculator asks only for declared
+            // terms (ADR-028 section 5): this branch is reached only if
+            // a future formula declares one of them before the
+            // corresponding performance is in `PlayerLatents`. It is
+            // `0.0` until Plan H materialises them.
             Characteristic::MaximalForce
             | Characteristic::Acceleration
             | Characteristic::MaxSpeed => 0.0,
