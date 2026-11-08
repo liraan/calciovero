@@ -74,6 +74,8 @@ The most important distinction in this document. **Everything that influences th
 
 The two are **separate**. The renderer reads the gameplay weather and renders it; it cannot invent weather that the simulation does not have.
 
+> **Note (2026-11-08) — the gameplay half is out of the new engine.** T5 (2026-11-03) excludes weather and pitch wear from the new engine, so the first bullet above describes the prototype. The second (visual weather, L3) remains a projection question, defined when a renderer exists. The 2026-11-05 note in §5 covers the horizon table; this note covers the two concepts themselves.
+
 ### Two "crowd" concepts
 
 - **Crowd content** (L2, `L2-crowd` per ADR-018): attendance, atmosphere value, impact on players (when implemented). It **changes the simulation** (or at least the context).

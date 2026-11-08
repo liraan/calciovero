@@ -161,6 +161,8 @@ the sequence that a future UI will follow.
 10. MatchSave::to_bytes() / from_bytes()                      [JSON, for now]
 ```
 
+> **Note (2026-11-08) — step 6c no longer exists, even in the prototype.** `action_kind_roll` was removed (MD-01, 2026-11-03; `direction-decisions.md` §3: "the choice is geometric"). The line stays in the block as history of the prototype flow. Steps 6d and the Plane A invariant are covered by the dated note at the top of this file.
+
 **Two-phase events (ADR-019 D11, target — not yet implemented).** The target design emits temporal events in two synchronous phases: an *attempt* event carrying a `PositionSnapshot`, followed by the *outcome* event linked back via `attempt_event_id`. Both phases occur in the same tick. The prototype does **not** do this yet: `PositionSnapshot` and `attempt_event_id` do not exist in code. See [`specs/L0-match/05-match-events.md`](../specs/L0-match/05-match-events.md) §2.6.
 
 **Key invariant:** step 6d is the only interaction with Plane A. The

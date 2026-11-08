@@ -146,6 +146,8 @@ The opaque type exposed by `pcfm-hidden`. Contains Plane A. Has no public fields
 
 The public API of `pcfm-hidden`: `resolve_duel`, `resolve_shot`, `resolve_pass`, `resolve_pressure`, `resolve_injury_risk`, `resolve_save`, `resolve_set_piece`, `drain_observations`. The match engine calls these; it never reads a latent value. See [`specs/L0-match/03-entities-minimal.md`](../specs/L0-match/03-entities-minimal.md) §3.2.
 
+> **Note (2026-11-08) — the seven `resolve_*` are the prototype's API.** ADR-028 §5 (rewritten 2026-11-05) supersedes the single `resolve_*`: a **custodian** (`pcfm-hidden`) that holds the performances and answers one characteristic at a time, a **calculator** (`pcfm-calculator`) that applies a formula from `balance/*.json`, an **orchestrator** (`resolve_*`) that decides when. `resolve_influence` was removed (286100e); `resolve_choice` is decided in the Plan (F.6-cog) and its body is OI-83 (formula or policy). The entries above stay as history. See ADR-028 §5 and ADR-039.
+
 ### `IndexSnapshot`
 
 A windowed observed measurement over time. Replaces the banned CA/PA scalar. Lives in Plane C. See [`specs/00-foundations.md`](../specs/00-foundations.md) §3.

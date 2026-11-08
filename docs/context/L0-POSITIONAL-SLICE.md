@@ -218,6 +218,8 @@ is the success criterion of §0 applied to the first slice.
 can decide from space and record a conquest. Slice C adds the first
 **modelled conditions**:
 - a `Slip` event, driven by `pitch_wear` and `weather` (the parameters
+
+> **Note (2026-11-08) — the Slice C inputs are prototype.** T5 (2026-11-03) excludes weather and pitch wear from the new engine (`WORLD-MODEL` §5 note 2026-11-05), so `Slip` and `ControlError` cannot be driven by them. The event types stay in the vocabulary; the causes are re-derived when Slice C opens. This is the same correction recorded in OI-56.
   live in `balance/`, declared arbitrary until calibration);
 - a `ControlError` event, driven by the same conditions plus pressure;
 - a `Pressure` event, already in the vocabulary, now emitted.
@@ -394,6 +396,8 @@ The board keeps working: `MatchResult` does not change.
    selects **which agent** acts (the one nearest the ball), not **whether**
    an action happens. Hypothesis: keep the probability for now; the space
    decides *who*, the probability decides *when*.
+
+> **Note (2026-11-08) — `action_probability` is prototype.** ADR-035 (2026-11-07) forbids a die in simulation paths: "when" an action happens is not drawn. `action_roll` is tracked as Plan J (OI-78 point 4), default removal. The sentence above stays as history of the design at the time.
 3. **How is possession represented?** Today `Possession::Home | Away`. After
    the slice, the ball position plus the nearest agent gives the carrier.
    Hypothesis: keep `Possession` for the event stream (compatibility), add
@@ -591,6 +595,8 @@ slots; determinism (same seed → same hash).
 
 **The session after (slice C — first phenomenological events).** `Slip`
 and `ControlError`, driven by `pitch_wear` and `weather` from
+
+> **Note (2026-11-08) — see the note at §6-bis.** `pitch_wear` and `weather` are out of the new engine (T5); the Slice C inputs as written are prototype. Slice C stays in the plan; its inputs are re-derived when it opens.
 `balance/` (parameters arbitrary, declared). `Pressure` emitted. See
 §6-ter for the map.
 
