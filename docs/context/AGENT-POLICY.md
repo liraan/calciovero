@@ -65,3 +65,18 @@ the ruleset protects a released artefact; (c) a write token is granted to
 an agent. Until then, Phase 1 rules apply, and the pre-commit hook remains
 active. `Evaluate` (log without blocking) is not available: it requires an
 organisation or Enterprise, and this is a personal repository.
+
+### Two remotes (2026-11-08)
+
+The project has **two remotes**, and both are first-class:
+
+| Remote | URL | Role |
+|---|---|---|
+| `origin` | `github.com:liraan/calciovero` | **Primary.** CI (Actions) runs here on every push; the pre-push gates run locally, before the remote. |
+| `codeberg` | `codeberg.org:liraan/calciovero` | **Backup.** Codeberg is not a second home; it is the copy that survives if the primary does not. No hosted CI on this side. |
+
+**Rule.** Every push goes to **both**. The command is `git push && git push codeberg main`, one block, so the backup cannot drift. The upstream is `origin` (`git status -sb` shows `## main...origin/main`); Codeberg is a tracking *branch*, not the upstream, and must not replace it.
+
+**Verifiable artefact.** `git remote -v` lists both; `git status -sb` after a push shows `## main...origin/main`, without `[ahead]` or `[behind]`; `git log --oneline -1 codeberg/main` matches `origin/main` for the same HEAD. If one of the two diverges, the push was incomplete: fix it before continuing.
+
+**Migration (future).** The migration to Codeberg as primary is `git remote set-url origin <codeberg-url>` + `git remote rename github backup-github` + `git push -u origin main`, and is decided by the maintainer. It is not on the plan; ADR-032 (crate rename) is a candidate moment because it already changes the repository layout, but the two decisions are independent.
