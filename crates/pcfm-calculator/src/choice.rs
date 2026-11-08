@@ -11,7 +11,6 @@
 //!
 //!   score = geometric
 //!         * (`floor` + (1-`floor`) * `reading_weight`  * `game_reading`)
-//!         * (`floor` + (1-`floor`) * `decision_weight` * `decision_making`)
 //!         * (1 - `risk_weight` * `risk_management` * `risk`)
 //!
 //! where `geometric` is a `Const` computed by the engine from the scene
@@ -38,8 +37,11 @@ const CHOICE_JSON: &str = include_str!("../../../balance/choice.json");
 pub struct ChoiceBalance {
     /// Weight of `game_reading` in the score (0..=1).
     pub reading_weight: f64,
-    /// Weight of `decision_making` in the score (0..=1).
-    pub decision_weight: f64,
+    /// Bias of a weak decider on the choice: a poorly deciding actor
+    /// accepts the second-best candidate if it is within this fraction
+    /// of the best. `decision_making` enters `resolve_choice`, not the
+    /// formula (F.6-shape, OI-85; ADR-039 read/choose split).
+    pub decision_bias: f64,
     /// Weight of `risk_management` in the risk discount (0..=1).
     pub risk_weight: f64,
     /// Floor of the latent modifiers: they cannot make the score zero.
@@ -70,20 +72,17 @@ impl ChoiceBalance {
         let one_minus_floor = 1.0 - self.floor;
         Formula::Product(vec![
             Formula::Const(geometric),
-            // reading modifier
+            // reading modifier: game_reading modulates how the scene is
+            // read, and it is per-candidate only when it interacts with
+            // the candidate's geometry. Here it is a multiplier of the
+            // product, so the *interaction* is with `geometric` (see
+            // OI-85 for the model discussion). The final shape is a
+            // product: geo * reading_mod * risk_mod.
             Formula::Sum(vec![
                 Formula::Const(self.floor),
                 Formula::Product(vec![
                     Formula::Const(one_minus_floor * self.reading_weight),
                     Formula::Term(Characteristic::GameReading),
-                ]),
-            ]),
-            // decision modifier
-            Formula::Sum(vec![
-                Formula::Const(self.floor),
-                Formula::Product(vec![
-                    Formula::Const(one_minus_floor * self.decision_weight),
-                    Formula::Term(Characteristic::DecisionMaking),
                 ]),
             ]),
             // risk discount
@@ -106,23 +105,21 @@ mod tests {
     fn embedded_choice_balance_is_valid() {
         let b = ChoiceBalance::load();
         assert!((0.0..=1.0).contains(&b.reading_weight));
-        assert!((0.0..=1.0).contains(&b.decision_weight));
+        assert!((0.0..=1.0).contains(&b.decision_bias));
         assert!((0.0..=1.0).contains(&b.risk_weight));
         assert!((0.0..=1.0).contains(&b.floor));
     }
 
     #[test]
-    fn choice_formula_declares_the_three_cognitive_terms() {
+    fn choice_formula_declares_reading_and_risk() {
         let f = ChoiceBalance::load().formula(1.0, 0.5);
         let chars = f.declared_characteristics();
         assert_eq!(
             chars,
-            vec![
-                Characteristic::GameReading,
-                Characteristic::DecisionMaking,
-                Characteristic::RiskManagement,
-            ]
+            vec![Characteristic::GameReading, Characteristic::RiskManagement,]
         );
+        // decision_making is not a formula term: it is a threshold on
+        // the choice (F.6-shape, OI-85; ADR-039 read/choose split).
     }
 
     #[test]

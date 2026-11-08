@@ -17,7 +17,7 @@
 //! calculator will read once OI-84 lands.
 
 use pcfm_calculator::choice::ChoiceBalance;
-use pcfm_calculator::{Calculator, Datum, Situation};
+use pcfm_calculator::{Calculator, Characteristic, Custodian, Datum, Situation};
 use pcfm_core::ids::PlayerId;
 
 use crate::GroundTruth;
@@ -95,12 +95,12 @@ impl GroundTruth {
     pub fn resolve_choice(&mut self, ctx: &ChoiceContext) -> ChoiceOutcome {
         let balance = ChoiceBalance::load();
         let situation = ChoiceSituation;
-        let mut scores = Vec::with_capacity(ctx.candidates.len());
-        let mut best_index = 0_usize;
-        let mut best_score = f64::NEG_INFINITY;
-        let mut best_tiebreak = u32::MAX;
+        let n = ctx.candidates.len();
+        let mut scores = Vec::with_capacity(n);
+        let mut order: Vec<usize> = (0..n).collect();
+        let mut tiebreaks: Vec<u32> = Vec::with_capacity(n);
 
-        for (i, candidate) in ctx.candidates.iter().enumerate() {
+        for candidate in &ctx.candidates {
             let formula = balance.formula(candidate.geometric, candidate.risk);
             let mut custodian = self.custodian(ctx.actor);
             let score = Calculator::apply(&formula, &mut custodian, &situation);
@@ -109,12 +109,35 @@ impl GroundTruth {
                 ChoiceKind::Pass(p) => p.slot(),
                 ChoiceKind::Shoot | ChoiceKind::Duel => ctx.actor.slot(),
             };
-            if score.total_cmp(&best_score).is_gt()
-                || (score.total_cmp(&best_score).is_eq() && tiebreak < best_tiebreak)
-            {
-                best_score = score;
-                best_tiebreak = tiebreak;
-                best_index = i;
+            tiebreaks.push(tiebreak);
+        }
+
+        // Sort by score descending, ties by PlayerId slot (deterministic).
+        order.sort_by(|&a, &b| {
+            scores[b]
+                .total_cmp(&scores[a])
+                .then(tiebreaks[a].cmp(&tiebreaks[b]))
+        });
+
+        // Read the actor's decision_making once (second custodian read;
+        // `decision_making` is not a formula term, it is a threshold on
+        // the choice -- F.6-shape, OI-85; ADR-039 read/choose split).
+        let mut custodian = self.custodian(ctx.actor);
+        let decision_making = custodian.value(Characteristic::DecisionMaking);
+
+        // The top candidate wins by default. A weak decider accepts the
+        // next one if it is within `(1 - decision_making) * decision_bias`
+        // of the top: with `decision_making = 1` the factor is 1 and only
+        // a strictly better next could win (impossible after sorting), so
+        // the result is pure argmax; with `decision_making = 0` the factor
+        // is `1 + decision_bias` and a 20%-worse option is still accepted.
+        let mut chosen_index = order[0];
+        if n > 1 {
+            let accept_factor = (1.0 - decision_making).mul_add(balance.decision_bias, 1.0);
+            let top_score = scores[chosen_index];
+            let second_score = scores[order[1]];
+            if second_score * accept_factor > top_score {
+                chosen_index = order[1];
             }
         }
 
@@ -123,7 +146,7 @@ impl GroundTruth {
             "resolve_choice requires at least one candidate"
         );
         ChoiceOutcome {
-            chosen: ctx.candidates[best_index].kind,
+            chosen: ctx.candidates[chosen_index].kind,
             scores,
         }
     }

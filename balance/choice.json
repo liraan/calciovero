@@ -1,8 +1,8 @@
 {
   "reading_weight": 0.5,
-  "decision_weight": 0.5,
   "risk_weight": 0.5,
+  "decision_bias": 0.2,
   "floor": 0.5,
-  "_note": "Choice score coefficients (F.6-cog). Arbitrary and declared until calibration (D6). The structure is in code (`pcfm-hidden/src/choice.rs`): score = geometric * (floor + (1-floor)*reading_weight*game_reading) * (floor + (1-floor)*decision_weight*decision_making) * (1 - risk_weight*risk_management*risk). The geometric score and the risk are computed by the engine from the scene (positions, distances) and passed in `ChoiceContext` as Plane B data.",
-  "_source": "Prototype. No cited figure for the weights; the form (latents modulate a geometric score in a product with floor) follows L0.11 section 4.5 (product, ratio, clamp) and ADR-028 section 3 (arbitrary declared). Situation terms from L0.11 section 4.6 (`receiver_freedom`, `distance`, `pressure`, `angle`) are not yet in `Situation`; they arrive with the calculator extension tracked as OI-84."
+  "_note": "Choice score coefficients (F.6-shape, OI-85). Arbitrary and declared until calibration (D6). game_reading and risk_management enter the formula (`pcfm-calculator/src/choice.rs`); decision_making does not (it is a threshold on the *choice*, ADR-039 read/choose split): in `resolve_choice` a poorly deciding actor accepts the second-best candidate if `second.score * (1 + (1 - decision_making) * decision_bias) > best.score`. A strong decider (decision_making = 1) falls to pure argmax; a weak one (0) accepts up to `decision_bias` of loss.",
+  "_source": "Prototype. Weights and bias: no cited figure; the form follows L0.11 section 4.5 (product, sum, clamp) and ADR-028 section 3 (arbitrary declared). decision_bias default 0.2 = 'a weak decider accepts a candidate 20% worse'; to be calibrated against real decision-error rates (L3). `decision_weight` removed in F.6-shape: it made decision inert on the argmax (OI-85)."
 }
