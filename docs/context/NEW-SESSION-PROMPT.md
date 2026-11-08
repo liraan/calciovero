@@ -174,6 +174,8 @@ ordered next steps, the current priority, and the files touched.
 
 - **E5 — Ideas from pause.** On "riprendi" after a pause (A2), if ideas emerged during the pause, the **first command** writes them to the right place before any agreed work resumes: design ideas to `IDEAS.md` (status `sketch`, with prerequisites and open questions); operational rules to this file; project decisions or open items to `SESSION-STATE.md` Open items. E5 is the operational trigger of D1; D1 remains the principle.
 
+**Form (2026-11-08): the first command is `scripts/capture.sh pause "<testo -> promozioni>"`.** The capture runs the promotion (it verifies that every OI, IDEA or ADR after `->` exists) and writes the entry to `docs/context/captures/`. The text is the agent's; the `->` filter is mechanical. `capture.sh` does not replace E5: it is E5's operational form. If the pause produced no idea, `capture.sh pause ""` writes a `filtered:none` row (the artefact of the filter) and no body.
+
 **F. Bookmark contract**
 
 `SESSION-STATE.md` has a fixed structure. Sections, in this order:
@@ -234,6 +236,8 @@ These are the working patterns that have saved hours and the failures that have 
 ## Startup ritual (mandatory — see E1)
 
 At the start of every new chat, **before proposing anything**, ask the maintainer to run these commands in order and paste the output. Do not assume the state described in this prompt is still true: verify it.
+
+**First command: `scripts/starting.sh`.** It runs `git status --short`, `git pull --ff-only`, `git log --oneline -5`, `scripts/gates.sh resume`, and prints the `NEXT: read` list extracted from this file. It does not read the doctrine for the agent: the list is the artefact, the step 5 report is the proof (D5). If `git pull` fails (no network), report it and continue with the rest.
 
 ### 1. Repo alignment
 
@@ -340,6 +344,8 @@ Say explicitly:
 ## Closing ritual (mandatory — see E2)
 
 After the maintainer approves the closing (E2), run these checks in order. If any is red, stop and fix before closing. Three steps, not six.
+
+**First command: `scripts/closing.sh`.** It runs `git status --short`, `git log --oneline -5`, `git rev-parse HEAD`, then C2 (build --release, clippy --workspace --all-targets -- -D warnings, test --workspace, fmt --check, test-runner --check --seed 42), then `scripts/gates.sh closing`, then `scripts/capture.sh pause "<testo -> promozioni>"` for the closing event. It prints `NEXT: write bookmark, commit, push`. It does NOT write the bookmark, does NOT commit, does NOT push: the bookmark is synthesis, the commit is the maintainer's decision. Tested end-to-end on 2026-11-08 (exit 0, C2 green, gates green).
 
 ### 1. Verify
 
