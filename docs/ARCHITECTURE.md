@@ -194,11 +194,8 @@ pcfm_calculator::Custodian` and keeps `Custodian` off the public API, so
 a caller in `pcfm-match` cannot reach it. The move to a separate
 `CustodianView` type is tracked as the first step of F.6-cog (see Plan).
 
-**`vision` and `peripheral_vision`.** L0.11 §7.4 table (`:645`) names the
-datum `peripheral_vision` (cone width); the prose at `:668` calls it
-"vision"; ADR-034 uses "vision" as the re-scan interval. Three words,
-one datum: **`peripheral_vision` is the canonical name**; ADR-034's use is
-colloquial and gets a dated note when the ADR is touched.
+**`vision` is the canonical name.** L0.11 §4.6 catalogue lists it as `vision`; ADR-034 uses `vision`; the prose at L0.11 `:668` defines it as the width of the visual field. The table at `:645` labels the same datum "Peripheral vision": descriptive, not canonical. `vision` belongs to the scanning rule (ADR-034, re-scan interval), not to the choice: the choice reads `game_reading`, `decision_making`, `risk_management` (L0.11 §7.4 table, ADR-034).
+
 
 Sources: ADR-028 §5; L0.11 §4.2–§4.3; code (`pcfm-calculator/src/lib.rs`,
 `pcfm-hidden/src/lib.rs`).
