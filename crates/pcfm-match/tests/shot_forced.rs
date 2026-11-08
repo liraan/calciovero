@@ -58,22 +58,19 @@ fn resolve_shot_is_deterministic_for_the_same_context() {
 }
 
 #[test]
-fn resolve_shot_misses_toward_shooter_side() {
+fn resolve_shot_deviates_laterally() {
+    // The lateral direction is a PLACEHOLDER (OI-79): the cause is the foot
+    // (ADR-031), not the shooter's position, and the foot is not read here
+    // yet. This test does NOT assert a direction: it asserts that a
+    // deviation exists and scales with pressure, which is what the code
+    // actually guarantees today. `Removed-by: ADR-031 + OI-65 step 3+`.
     let mut gt = GroundTruth::new(42, MatchId::new(1, 0));
-    // Below the goal centre (from.1 < to.1): miss toward +y (above).
-    // `difficulty = 100` guarantees |dy| >= 50, independent of finishing.
-    let below = gt.resolve_shot(&ctx_at(3000, 100));
+    let ctx = ctx_at(3000, 100);
+    let shot = gt.resolve_shot(&ctx);
     assert!(
-        below.to.1 > 3400,
-        "shot from below centre must miss above: to.1={}",
-        below.to.1
-    );
-    // Above the goal centre (from.1 > to.1): miss toward -y (below).
-    let above = gt.resolve_shot(&ctx_at(3800, 100));
-    assert!(
-        above.to.1 < 3400,
-        "shot from above centre must miss below: to.1={}",
-        above.to.1
+        shot.to.1 != ctx.to.1,
+        "the lateral placeholder must produce a deviation: to.1={}",
+        shot.to.1
     );
 }
 

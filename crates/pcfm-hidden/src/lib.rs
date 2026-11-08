@@ -227,12 +227,12 @@ impl GroundTruth {
         let spread_diff = f64::from(ctx.difficulty) * 2.0;
         let spread = spread_base + spread_diff;
 
-        // Lateral side: a real shooter misses towards the side he is on.
-        // A shot from the left of the goal centre tends to miss left, a
-        // shot from the right to miss right. `dy_sign` is `+1` if the
-        // shooter is below the goal centre (y < to.y) and `-1` above.
-        // Derived from the positions, no die (D6: how a real shot is
-        // recognised, from geometry).
+        // Lateral side: PLACEHOLDER, the cause is NOT read here. A real
+        // shooter's direction depends on the foot (ADR-031), the point of
+        // impact and the posture — not on his position relative to the
+        // goal centre. `lateral_sign` is a declared placeholder with a
+        // named cause (the foot, ADR-031, not yet a readable term: OI-65
+        // step 3+, Plan K). Removed-by: ADR-031 + OI-65 step 3+. See OI-79.
         let lateral_sign: i32 = if ctx.from.1 < ctx.to.1 { 1 } else { -1 };
 
         // Vertical: under pressure the shot tends up (over the bar), with
