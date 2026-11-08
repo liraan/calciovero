@@ -90,3 +90,7 @@ The current code is already compliant: `pcfm-hidden` does not import `RoleId`, a
 - `specs/00-foundations.md` §3 (Three Planes), §5 (banned things), §9 (concentric structure)
 - `specs/_index.md` — `L1-roster`, `L2-tactics`
 - Code: `crates/pcfm-model/src/player.rs` (`RoleId`), `crates/pcfm-hidden/src/*.rs` (no occurrence of `RoleId`)
+
+## Dated notes
+
+- **2026-11-08.** The maintainer: "I would remove familiarity as far as positions on the pitch are concerned." This ADR already implies it, and the note records the consequence explicitly: **familiarity with a position is not a modifier**. A player out of position is not worse because of the position; the role stays a label, and the geometry of the position is the geometry. This narrows `IDEA-PM-004` ("familiarity with a function changes the player's effective attributes"): the position part is rejected, the consumable-concentration part stays deferred. The other reading (familiarity with teammates, L0.11 §7.8) is a separate datum and is untouched.

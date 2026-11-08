@@ -98,6 +98,7 @@
   measurement, which today does not exist (`PROJECT-STATUS.md`:
   "Not yet measured"). Do not implement before the prerequisites above.
 
+- **Dated note (2026-11-08).** The maintainer: "I would remove familiarity as far as positions on the pitch are concerned." Accepted, and it narrows the idea. The prerequisite 2 (ADR-017) is no longer a prerequisite: ADR-017 is accepted, and it says roles are **labels, not modifiers**. A player out of position is not worse because of the position: his attributes are his, and the geometry of the position is the geometry. "Familiarity with a function" as a *modifier of effective attributes* is therefore **rejected at L0** and at L1/L2 as far as positions go. What survives of this idea is the **consumable concentration** resource (a cognitive cost of actions that are not instinctive), which is a separate question and stays deferred on prerequisites 1, 3, 4. The other reading of "familiarity" (with teammates, L0.11 §7.8) is a different datum and is untouched.
 ### IDEA-PM-005 — Player footedness (strong foot / weak foot)
 - **Status:** sketch
 - **Category:** Player model (attributes) / Match engine (L0 action modifier)

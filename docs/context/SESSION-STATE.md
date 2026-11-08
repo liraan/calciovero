@@ -2,7 +2,7 @@
 
 **Purpose:** a short bookmark for resuming work across sessions. It records where we are, not what the project is. History is in `git log`; this file does not duplicate it.
 
-**Last commit verified:** `3945676` - "docs(context): bookmark -- LCV to 3a4d436, ADR-039, F.6-cog first landing"
+**Last commit verified:** `60ef489` - "docs(context): OI-81 -- the goalkeeper is a gesture, not pure geometry"
 
 **Note on the field above:** it points to the last commit *before* this bookmark update (S1). It will look "stale" compared to HEAD; expected. Do not "fix" it without updating the rest of the bookmark in the same commit.
 

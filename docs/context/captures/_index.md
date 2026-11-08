@@ -17,3 +17,4 @@ format: YYYY-MM-DD HH:MM | pause|task <id> | status | HEAD | commits LCV..HEAD |
 2026-11-08 10:17 | pause - | written | 9eadee6 | 3 | OI-79(exists); ADR-037(exists);  | docs/context/captures/2026-11.md
 2026-11-08 10:23 | pause - | written | d561279 | 1 | ADR-037(exists);  | docs/context/captures/2026-11.md
 2026-11-08 10:28 | pause - | written | 3945676 | 1 | OI-62(exists); ADR-039(exists);  | docs/context/captures/2026-11.md
+2026-11-08 10:31 | pause - | written | 60ef489 | 1 | IDEA-PM-004(exists); ADR-017(exists);  | docs/context/captures/2026-11.md
