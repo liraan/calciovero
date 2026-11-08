@@ -13,3 +13,5 @@ format: YYYY-MM-DD HH:MM | pause|task <id> | status | HEAD | commits LCV..HEAD |
 2026-11-08 09:54 | pause - | written | 655cddc | 2 | - | docs/context/captures/2026-11.md
 2026-11-08 09:58 | pause - | written | 655cddc | 2 | - | docs/context/captures/2026-11.md
 2026-11-08 10:01 | pause - | written | 655cddc | 2 | - | docs/context/captures/2026-11.md
+2026-11-08 10:15 | pause - | written | 9eadee6 | 3 | ADR-037(MISSING);  | docs/context/captures/2026-11.md
+2026-11-08 10:17 | pause - | written | 9eadee6 | 3 | OI-79(exists); ADR-037(exists);  | docs/context/captures/2026-11.md

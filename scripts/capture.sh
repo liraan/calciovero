@@ -97,7 +97,7 @@ else
     done
     for AD in $(printf '%s\n' "$PROMO_TEXT" | grep -oE 'ADR-[0-9]+' | sort -u); do
       NUM=$(printf '%s\n' "$AD" | grep -oE '[0-9]+')
-      if ls docs/adr/0*"$NUM"*.md >/dev/null 2>&1; then
+      if ls docs/adr/*"$NUM"-*.md >/dev/null 2>&1; then
         PROMOS="${PROMOS}${AD}(exists); "
       else
         PROMOS="${PROMOS}${AD}(MISSING); "
