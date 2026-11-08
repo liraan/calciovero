@@ -29,6 +29,7 @@
 //! weight 1. A formula cannot invent an operator: a new operator is an
 //! amendment to the model, not a formula (L0.11 §4.10).
 
+pub mod choice;
 pub mod movement;
 
 use std::collections::BTreeSet;

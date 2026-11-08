@@ -1,0 +1,8 @@
+{
+  "reading_weight": 0.5,
+  "decision_weight": 0.5,
+  "risk_weight": 0.5,
+  "floor": 0.5,
+  "_note": "Choice score coefficients (F.6-cog). Arbitrary and declared until calibration (D6). The structure is in code (`pcfm-hidden/src/choice.rs`): score = geometric * (floor + (1-floor)*reading_weight*game_reading) * (floor + (1-floor)*decision_weight*decision_making) * (1 - risk_weight*risk_management*risk). The geometric score and the risk are computed by the engine from the scene (positions, distances) and passed in `ChoiceContext` as Plane B data.",
+  "_source": "Prototype. No cited figure for the weights; the form (latents modulate a geometric score in a product with floor) follows L0.11 section 4.5 (product, ratio, clamp) and ADR-028 section 3 (arbitrary declared). Situation terms from L0.11 section 4.6 (`receiver_freedom`, `distance`, `pressure`, `angle`) are not yet in `Situation`; they arrive with the calculator extension tracked as OI-84."
+}

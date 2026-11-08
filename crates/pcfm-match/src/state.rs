@@ -184,22 +184,73 @@ fn heading_from_to(from: (i32, i32), to: (i32, i32)) -> u16 {
     }
     best
 }
-/// the choice: the variation is in `resolve_*` and in the degraded image.
+/// Builds the choice context for `attacker` from the scene, and the
+/// freedom of each pass receiver (carried to `resolve_pass`).
+///
+/// The geometric score and the risk of each option are derived here,
+/// geometrically, from positions and distances (ADR-028 §3: derived
+/// values are admitted in code). The cognitive latents do not enter
+/// here: `resolve_choice` reads them through the custodian. See
+/// `pcfm_hidden::choice` for the selection.
+///
+/// Options, in the order they are built:
+/// - one `Pass { receiver }` for each teammate with enough freedom
+///   (>= `PASS_FREEDOM_CM`); geometric = `freedom_cm / 1000`, risk
+///   grows as `freedom_cm` shrinks towards `PASS_FREEDOM_CM`.
+/// - one `Shoot` if the attacker is within `SHOOT_RANGE_CM` of the
+///   goal; geometric falls with distance, risk rises with it.
+/// - one `Duel` always (the fallback: contest the nearest opponent);
+///   geometric = 1.0, risk = 0.5 (declared defaults).
+///
+/// `freedom_cm` is returned alongside, keyed by receiver, so the
+/// caller can pass it to `resolve_pass` after the choice.
 #[must_use]
-fn choose_action(
+#[allow(clippy::cast_precision_loss)] // distances in cm: well inside f64's exact range (2^52)
+fn build_choice(
     spatial: &SpatialState,
     attacker: PlayerId,
     goal: (i32, i32),
     teammates: &[PlayerId],
     opponents: &[PlayerId],
-) -> ChosenAction {
+) -> (
+    pcfm_hidden::ChoiceContext,
+    std::collections::BTreeMap<PlayerId, i64>,
+) {
+    use pcfm_hidden::{ChoiceCandidate, ChoiceContext, ChoiceKind};
+
+    let mut candidates = Vec::new();
+    let mut freedoms = std::collections::BTreeMap::new();
+    let mut shot_distance: Option<i64> = None;
+
     let Some(pos) = spatial.agent(attacker).map(|a| a.position) else {
-        return ChosenAction::Duel;
+        return (
+            ChoiceContext {
+                actor: attacker,
+                candidates: vec![ChoiceCandidate {
+                    kind: ChoiceKind::Duel,
+                    geometric: 1.0,
+                    risk: 0.5,
+                }],
+            },
+            freedoms,
+        );
     };
-    if distance_squared(pos, goal).isqrt() < SHOOT_RANGE_CM {
-        return ChosenAction::Shoot;
+
+    let goal_dist = distance_squared(pos, goal).isqrt();
+    if goal_dist < SHOOT_RANGE_CM {
+        shot_distance = Some(goal_dist);
+        // geometric: 1.0 at the goal line, 0.0 at the shoot range edge.
+        let geom = ((SHOOT_RANGE_CM - goal_dist) as f64) / (SHOOT_RANGE_CM as f64);
+        // risk: 0.0 at the goal line, 1.0 at the shoot range edge.
+        let risk = (goal_dist as f64) / (SHOOT_RANGE_CM as f64);
+        candidates.push(ChoiceCandidate {
+            kind: ChoiceKind::Shoot,
+            geometric: geom,
+            risk,
+        });
     }
-    let mut best: Option<(i64, PlayerId, i64)> = None;
+    let _ = shot_distance;
+
     for id in teammates {
         if *id == attacker {
             continue;
@@ -216,18 +267,31 @@ fn choose_action(
         if freedom < PASS_FREEDOM_CM {
             continue;
         }
-        let score = distance_squared(pos, tpos).isqrt();
-        if best.is_none_or(|(b, _, _)| score < b) {
-            best = Some((score, *id, freedom));
-        }
+        // geometric: 1.0 for a very free receiver, 0.0 at PASS_FREEDOM_CM.
+        let geom = ((freedom - PASS_FREEDOM_CM) as f64) / 1000.0;
+        // risk: 1.0 at PASS_FREEDOM_CM, falling with freedom.
+        let risk = (PASS_FREEDOM_CM as f64) / (freedom as f64);
+        candidates.push(ChoiceCandidate {
+            kind: ChoiceKind::Pass(*id),
+            geometric: geom,
+            risk,
+        });
+        freedoms.insert(*id, freedom);
     }
-    if let Some((_, id, freedom_cm)) = best {
-        return ChosenAction::Pass {
-            receiver: id,
-            freedom_cm,
-        };
-    }
-    ChosenAction::Duel
+
+    candidates.push(ChoiceCandidate {
+        kind: ChoiceKind::Duel,
+        geometric: 1.0,
+        risk: 0.5,
+    });
+
+    (
+        ChoiceContext {
+            actor: attacker,
+            candidates,
+        },
+        freedoms,
+    )
 }
 impl MatchState {
     /// Creates the initial state: kickoff, home possession.
@@ -413,7 +477,19 @@ impl MatchState {
                 am.heading = h;
             }
         }
-        let chosen = choose_action(&self.spatial, attacker, goal, &teammates, &opponents);
+        let (choice_ctx, freedoms) =
+            build_choice(&self.spatial, attacker, goal, &teammates, &opponents);
+        let chosen = match ctx.hidden.resolve_choice(&choice_ctx).chosen {
+            pcfm_hidden::ChoiceKind::Pass(receiver) => {
+                let freedom_cm = freedoms.get(&receiver).copied().unwrap_or(PASS_FREEDOM_CM);
+                ChosenAction::Pass {
+                    receiver,
+                    freedom_cm,
+                }
+            }
+            pcfm_hidden::ChoiceKind::Shoot => ChosenAction::Shoot,
+            pcfm_hidden::ChoiceKind::Duel => ChosenAction::Duel,
+        };
 
         // The action belongs to the nearest agent; the ball follows.
         self.spatial.set_carrier(Some(attacker));
@@ -915,15 +991,24 @@ mod tests {
         // candidate. The goal is far (no shoot).
         s.set_position(mate, (5000, 2400));
         // Candidates: only the attacker and the mate. No opponent: freedom
-        // is maximal, so the mate qualifies. If the cone filters the target,
-        // the choice falls to Duel and this test fails (A, 2026-11-04:
-        // "filtro partita vera", the target is a choice, not perception).
+        // is maximal, so the mate qualifies. The audit is on perception,
+        // not on the selection: `build_choice` is what the engine sees,
+        // `resolve_choice` is downstream (it reads the cognitive latents,
+        // which are not the subject of this test). If the cone filtered
+        // the pass target, the mate would not appear among the Pass
+        // candidates (A, 2026-11-04: "filtro partita vera", the target is
+        // a choice, not perception).
         let teammates = [attacker, mate];
         let opponents: [PlayerId; 0] = [];
-        let chosen = choose_action(&s, attacker, (10500, 3400), &teammates, &opponents);
+        let (ctx, _freedoms) = build_choice(&s, attacker, (10500, 3400), &teammates, &opponents);
+        let pass_target_seen = ctx
+            .candidates
+            .iter()
+            .any(|c| matches!(c.kind, pcfm_hidden::ChoiceKind::Pass(p) if p == mate));
         assert!(
-            matches!(chosen, ChosenAction::Pass { receiver: p, .. } if p == mate),
-            "the cone filtered the pass target: {chosen:?}"
+            pass_target_seen,
+            "the cone filtered the pass target: candidates = {:?}",
+            ctx.candidates
         );
     }
 }

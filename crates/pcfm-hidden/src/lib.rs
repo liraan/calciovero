@@ -22,9 +22,11 @@ pub mod context;
 pub mod observation;
 pub mod outcome;
 
+mod choice;
 mod custodian;
 mod latents;
 
+pub use choice::{ChoiceCandidate, ChoiceContext, ChoiceKind, ChoiceOutcome};
 pub use context::{
     DuelContext, DuelType, InfluenceWeights, InjuryContext, MovementContext, PassContext,
     PressureContext, ReceptionContext, ReceptionParams, SaveContext, SetPieceContext, ShotContext,
