@@ -22,6 +22,7 @@ pub mod context;
 pub mod observation;
 pub mod outcome;
 
+mod custodian;
 mod latents;
 
 pub use context::{
@@ -114,6 +115,19 @@ impl GroundTruth {
     #[must_use]
     pub const fn match_id(&self) -> MatchId {
         self.match_id
+    }
+
+    /// Returns a view over `player`'s latents, for the calculator.
+    ///
+    /// The view is the custodian door (ADR-028 section 5): the calculator
+    /// reads through it, the orchestrator (a `resolve_*` on
+    /// `GroundTruth`) builds it. The boundary is the module, not the
+    /// signature: `custodian` is a private module, so the item is `pub`
+    /// inside `pcfm-hidden` only and `pcfm-match` cannot name it. The
+    /// engine never sees a `CustodianView`: the compile-time boundary of
+    /// ADR-028 section 5 is this visibility.
+    pub(crate) fn custodian(&mut self, player: PlayerId) -> crate::custodian::CustodianView {
+        crate::custodian::CustodianView::new(self.latents_for(player))
     }
 
     /// Resolves a duel.
@@ -427,29 +441,21 @@ impl GroundTruth {
     /// Resolves a movement: the acceleration of `ctx.player` this tick
     /// (F.7).
     ///
-    /// The orchestrator: it reads the player's explosive force from the
-    /// custodian (Plane A), builds a situation from the context (Plane B:
-    /// height, weight, fatigue), loads the movement formula from
+    /// The orchestrator (ADR-028 section 5): it builds the custodian view
+    /// for `ctx.player` (Plane A), builds a situation from the context
+    /// (Plane B: height, weight, fatigue), loads the movement formula from
     /// `balance/movement.json`, and calls the calculator. It does not
     /// calculate: it decides when, with which situation, for which
     /// formula.
     ///
-    /// The adapter is local: `GroundTruth` is the custodian for this one
-    /// player, and the situation is the context. The calculator does not
-    /// know either of them.
+    /// The two adapters are still local to this method (`CustodianView`
+    /// and the situation struct): the calculator does not know either of
+    /// them, and `CustodianView` lives in a private module (`mod
+    /// custodian;`), so `pcfm-match` cannot name it (ADR-028 section 5
+    /// boundary).
     #[must_use]
     pub fn resolve_movement(&mut self, ctx: &MovementContext) -> MovementOutcome {
-        use pcfm_calculator::{Calculator, Characteristic, Custodian, Datum, Situation};
-
-        struct OneCharacteristic(f32);
-        impl Custodian for OneCharacteristic {
-            fn value(&mut self, characteristic: Characteristic) -> f64 {
-                match characteristic {
-                    Characteristic::ExplosiveForce => f64::from(self.0),
-                    _ => 0.0,
-                }
-            }
-        }
+        use pcfm_calculator::{Calculator, Datum, Situation};
 
         struct TheSituation {
             height: f64,
@@ -466,9 +472,13 @@ impl GroundTruth {
             }
         }
 
-        let latents = self.latents_for(ctx.player);
-        let force = latents.physical.explosive_force;
-        let max_speed = latents.physical.max_speed;
+        // Take the custodian view before borrowing `movement_balance`:
+        // `custodian()` mutates `self`, `movement_balance` is an immutable
+        // borrow of `self`, and `CustodianView` holds the latents by value
+        // (`PlayerLatents: Copy`), so the borrow ends at the end of this
+        // line.
+        let mut custodian = self.custodian(ctx.player);
+        let max_speed = self.latents_for(ctx.player).physical.max_speed;
         let balance = &self.movement_balance;
         // v_max and stride are not terms of the acceleration formula: they
         // are the clamp and the ground-per-step, computed from the balance
@@ -476,7 +486,6 @@ impl GroundTruth {
         // `v = min(v + a, v_max_ref * max_speed)`, `x += v * (height / height_ref)`.
         let v_max = balance.v_max_ref_cm_per_tick * f64::from(max_speed);
         let stride = ctx.height_cm / balance.height_ref_cm;
-        let mut custodian = OneCharacteristic(force);
         let situation = TheSituation {
             height: ctx.height_cm,
             weight: ctx.weight_kg,
