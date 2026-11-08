@@ -26,6 +26,8 @@ conforms_to: "00-foundations (v2.0)"
   a latent field.
 -->
 
+> **Note (2026-11-08) — the paradigm has changed; this cell documents the prototype.** ADR-035 (2026-11-07) replaces the doctrine this cell was written for: outcomes emerge from the local transitions of the actors, not from a stream draw. Every "probability function" and every `rng.stream(...)` in this file is prototype residual, not the target. Weather and pitch wear (`pitch.condition`, `weather`) are out of the new engine (T5, 2026-11-03; `WORLD-MODEL` §5 note 2026-11-05). The catalogue, the stream isolation, and the "unpredictable to the player" framing stay as prototype records; the target form is written in `04-match-engine.md` and in ADR-035.
+
 # L0.08 — Random Events (in-match)
 
 ## 0. Purpose
@@ -60,6 +62,9 @@ The catalogue of **discrete, in-match events** that are not part of the normal t
 **Rule:** every "triggered by" that references a latent does so through a `resolve_*` outcome, never through a direct field access. The `injury_risk_modifier` is an `InjuryOutcome` field (see `L0.10` §2.2); the `temperament_modifier` is a `DuelOutcome` field. Neither is a raw latent.
 
 ### 2.2 Event definition
+
+> **Note (2026-11-08) — the TOML probability function is prototype.** ADR-035 replaces it with local transitions; do not extend this schema.
+
 
 Each event is a `RandomEventDef` in `balance/random_events.toml` *(planned — the `balance/` directory does not exist yet)*:
 
@@ -103,6 +108,9 @@ explanation_template = "explanation.injury.mild"
 
 ### 2.3 Sampling
 
+> **Note (2026-11-08) — the `rng.stream(...)` draw is the prototype form.** Under ADR-035 no stream is consumed to decide an outcome (a key derivation is not a die; a stream draw is). `00-foundations` §4.
+
+
 At each tick, for each player, for each eligible event:
 
 ```
@@ -124,6 +132,9 @@ The `resolve_*` calls are made once per player per tick, not once per event, to 
 **No `CauseTrace` at L0 (ADR-024, 2026-10-31).** A random event carries its cause in `event_type` + `fields`: the event type says what happened, `fields` says the observed result. A `CauseTrace` that could only ever be empty would be ceremony, not transparency. See `L0.05` §2.3 for the rule.
 
 ### 2.5 Distribution target
+
+> **Note (2026-11-08) — the distribution targets are prototype targets.** They measure the prototype calibration; the new engine calibration belongs to L3.
+
 
 The catalogue is calibrated so that:
 

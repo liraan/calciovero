@@ -157,6 +157,8 @@ The following rules are enforced by the type system (no public fields, no `Seria
 ### 2.5 Why this API, and not a field access
 
 This is the whole point of ADR-003, option B. If `pcfm-hidden` exposed `player.latent.finishing`, the engine would read the latent and decide the outcome itself. That is the **circularity trap**: the outcome would be a deterministic function of the latent, and the gap between "how good the player is" and "what the player did" would collapse.
+> **Note (2026-11-08) — "the answer has noise" is prototype language.** ADR-035 (2026-11-07) removes the die from simulation paths: the outcome is not "the correct answer plus noise", it emerges from the local transitions of the actors, composed geometrically (`00-foundations` §4). The gap between "how good the player is" and "what the player did" remains, but it is produced by the composition read → choose → contact → band (ADR-039), not by a random noise added to the correct answer. The rest of §2.5 stays: the engine sees an outcome, never a latent.
+
 
 By exposing only `resolve_shot`, the crate keeps the gap: the engine asks "does this shot go in?", receives "yes/no" plus the observed result (`goal`, `on_target`), and cannot reverse-engineer the latent from the answer (the answer has noise). The engine is an orchestrator, not a calculator. The latent lives only in `pcfm-hidden`, and the engine cannot see it.
 

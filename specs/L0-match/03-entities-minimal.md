@@ -131,6 +131,8 @@ pub struct Pitch {
 
 **`Pitch.condition` — reserved (2026-11-02).** The field exists but has no consumer at v1.0: `WORLD-MODEL` §5 lists "pitch condition" as excluded from v1.0 and included in the 2D horizon. It is kept (not removed) because it documents the 2D intention and the spec is ratified. It will be read when the ball's movement model uses it (wet/dry affecting the roll). Until then, it is inactive and must not be read by the engine.
 
+> **Note (2026-11-08) — `Pitch.condition` is not "reserved"; it is out.** `WORLD-MODEL` §5 note 2026-11-05 supersedes the sentence above: T5 excludes pitch wear from the new engine, and in the new engine the pitch is **only geometry** (`length_m`, `width_m`). The field stays in this ratified prototype cell as history; the new engine does not inherit it.
+
 ### 2.6 Referee
 
 ```rust
@@ -140,6 +142,8 @@ pub struct Referee {
     pub consistency: f32,        // 0.0–1.0, affects decision variance
 }
 ```
+
+> **Note (2026-11-08) — `strictness` and `consistency` contradict T1.3.** OI-55 (open) records the divergence: the new referee applies the rules, it has no variable severity. The two fields are not "to be moved" to the rules module; they are to be **removed** when the module exists (OI-48). The struct stays as prototype.
 
 ### 2.7 Match
 
@@ -193,6 +197,8 @@ pub struct Match {
 6. Where it applies (verified against L0-POSITIONAL-SLICE §6-ter): selection (who contests a duel, who is the marker, who shoots, who reaches a loose ball) and receiver freedom. Not execution (resolve_*), not assigned roles, not fouls/cards.
 
 **Note (2026-11-03) — distance appears in two places, by design (not double-counting).** Distance is in `space_term` (the influence formula, §2.9 above) and in the die's difficulty (T5, 2026-11-03). They answer two different questions: "who can intervene here?" (selection: the closest agent is more influential) and "how hard is it to reach the target?" (execution: a far target is harder). The same agent is not penalised twice, because the two terms enter two different mechanisms. The cone of vision and the obstacles do NOT enter the die: the cone is selection (what the agent sees, only players — T1.3), the obstacles are selection (what is reachable) and facts (`line crossing` during the flight, T5).
+
+> **Note (2026-11-08) — "the die's difficulty" is prototype language.** ADR-035 (2026-11-07) forbids a die in simulation paths: the execution outcome emerges from the local transitions of the actors, composed geometrically (`00-foundations` §4). The selection/execution split in the note above stays; only the word "die" names the prototype's mechanism, not the target.
 ## 3. Data model
 
 `Player`, `PhysicalStateMinimal`, `PsychologicalStateMinimal`, `Squad`, `Pitch`, `Referee`, `Match`, `MatchRules`, `Foot`, `Weather`.
