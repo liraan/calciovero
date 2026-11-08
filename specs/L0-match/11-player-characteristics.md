@@ -670,6 +670,8 @@ instrumentally, not qualitatively. The datum is still hidden (the engine
 reads it through the custodian); the estimate is just better than for
 reading or decision making.
 
+**Note (2026-11-08) — one datum, one name: `peripheral_vision`.** The table above names the datum `peripheral_vision`; this prose calls it "vision"; ADR-034 uses "vision" as the re-scan interval. Three words, one datum. The canonical name is **`peripheral_vision`** (L0.11 §7.4 table, `:645`). A future touch of ADR-034 gets a dated note; the ADR is accepted and is not rewritten. The calculator's catalogue (`pcfm-calculator::Characteristic`) is where the name becomes code, and it does not carry the datum yet; F.6-cog adds it with this spelling.
+
 ### 7.5 Registry data (Plane B, in `Player`)
 
 This section lists the data that identify the player (name, date of

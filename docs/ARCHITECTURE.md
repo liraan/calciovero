@@ -175,6 +175,34 @@ load, `GroundTruth::new(world_seed, match_id)` reconstructs it, and
 `replay()` re-runs `simulate_match`. The chain hash verifies that the
 replayed events match the saved ones.
 
+### 2.1 Components and responsibilities
+
+The table comes from ADR-028 §5 and L0.11 §4. The boundary is
+**who sees the true value**, not what each component computes.
+
+| Component | Holds | Does | Exposes | Who may call it | Sees true values | Lives in |
+|---|---|---|---|---|---|---|
+| **Custodian** | the hidden performances | answers one characteristic at a time | `Custodian::value()` | the calculator only | **yes** | `pcfm-hidden` (`pub(crate)`) |
+| **Calculator** | the formulas from `balance/*.json` | applies a formula to a situation and a player | `Calculator::apply()` | the orchestrator only | **yes** (input) | `pcfm-calculator` |
+| **Orchestrator** | which formula, which situation, when | calls the calculator, returns the outcome | `resolve_*()` | the engine only | **no** | `pcfm-hidden` (methods on `GroundTruth`) |
+| **Engine** | perception, decision, movement | reads the outcomes | — | — | **no** | `pcfm-match` |
+
+**Compile-time constraint.** The custodian and the orchestrator are the
+same type today (`GroundTruth`): three responsibilities, two types.
+`pcfm-hidden` exposes `pub(crate) fn custodian(&mut self) -> impl
+pcfm_calculator::Custodian` and keeps `Custodian` off the public API, so
+a caller in `pcfm-match` cannot reach it. The move to a separate
+`CustodianView` type is tracked as the first step of F.6-cog (see Plan).
+
+**`vision` and `peripheral_vision`.** L0.11 §7.4 table (`:645`) names the
+datum `peripheral_vision` (cone width); the prose at `:668` calls it
+"vision"; ADR-034 uses "vision" as the re-scan interval. Three words,
+one datum: **`peripheral_vision` is the canonical name**; ADR-034's use is
+colloquial and gets a dated note when the ADR is touched.
+
+Sources: ADR-028 §5; L0.11 §4.2–§4.3; code (`pcfm-calculator/src/lib.rs`,
+`pcfm-hidden/src/lib.rs`).
+
 ---
 
 ## 4. The simulation/rendering split
