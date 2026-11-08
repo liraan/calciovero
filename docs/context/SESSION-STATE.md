@@ -2,7 +2,7 @@
 
 **Purpose:** a short bookmark for resuming work across sessions. It records where we are, not what the project is. History is in `git log`; this file does not duplicate it.
 
-**Last commit verified:** `256ca19` - "docs(context): compact the bookmark, move [done] and closed OIs to an archive"
+**Last commit verified:** `b3e53a1` - "docs(rules): E1/E2/E5 call the scripts; correct the closing.sh finding"
 
 **Note on the field above:** it points to the last commit *before* this bookmark update (S1). It will look "stale" compared to HEAD; expected. Do not "fix" it without updating the rest of the bookmark in the same commit.
 
