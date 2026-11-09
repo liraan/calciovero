@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
+description = "The calculator of PCFM (ADR-028 section 5): applies a formula from balance/*.json to a situation and a player"
 
 [dependencies]
 thiserror.workspace = true
