@@ -1,7 +1,7 @@
 # Nota per una nuova AI — Calcio Vero
 
 **Status:** briefing (not normative, not an ADR, not a handoff).
-**Ultima revisione:** 2026-11-09 (rev. 4). **LCV:** `f4c8098`.
+**Ultima revisione:** 2026-11-09 (rev. 5). **LCV:** `3ab20b2`.
 **Supersedes:** `docs/context/analysis/2026-11-08-nota-per-nuova-ai.md` (storia).
 
 **Cos'è.** La memoria delle cose emerse in chat che un agente nuovo non
@@ -155,6 +155,7 @@ chi ha il permesso di fermarlo"*. IDEA-011 è la sua forma operativa.
   non è "fermati": è "discutiamo". Al "riprendi", il primo comando è E5
   (catturare), non riprendere il codice.
 - **I filtri giudicano il modello, non l'architettura.** Un ADR che divide crate o sposta responsabilità non passa per partita vera/luna (un tifoso non vede il layout): dichiara quali asserzioni sono filtrate e quali sono giustificate da D5/D7/ADR-032. Un ADR di modello (il duello, la scelta) passa per i filtri, e i filtri lo correggono (ADR-042: `ball_contested` geometrico, `maximal_force`, il fallo come esito del contatto). `why-new:` senza, un agente applica i filtri a un ADR di architettura e si blocca, o non li applica a un ADR di modello e accetta una contraddizione (ADR-042 vs ADR-040).
+- **"Siamo sicuri?" è una domanda, non un'assoluzione.** Il maintainer la fa quando il documento è troppo piccolo per la domanda (es. "siamo sicuri che i 7 campi coprano tutti gli eventi?" rivelò che OI-92 era scritta male: misurare la copertura, non aggiungere termini). `why-new:` senza, un agente risponde "sì, il gate è verde" e chiude il finding invece di riaprirlo.
 
 ## 10. Il no-op silenzioso (non è in B1-bis)
 
@@ -195,3 +196,4 @@ Artefatti nel report di chiusura: `dup-check: <termine> -> prompt:<regola>|none`
   orali, no-op -> none (restano).
 - **2026-11-09 — rev. 3** (LCV `8798623`). Filtro reso meccanico in E2 step 2d (`dup-check` solo contro `NEW-SESSION-PROMPT.md`, `why-new:`, una riga fisica, tetto 200 righe con `replaced:`/`overflow:`). La nota è a 195 righe. `Rules-Audit: 1 change, 0 contradictions, 0 leaks`.
 - **2026-11-09 — rev. 4** (LCV `f4c8098`). Una voce in §9: i filtri giudicano il modello, non l'architettura (ADR-041 non filtrabile, ADR-042 sì e corretto dai filtri). `dup-check`: A3/D6 -> prompt (puntatori); "filtri modello vs architettura" -> none (nuovo). Nota a 196 righe, sotto il tetto 200.
+- **2026-11-09 — rev. 5** (LCV `3ab20b2`). Una voce in §9: "siamo sicuri?" è una domanda, non un'assoluzione. `dup-check`: "siamo sicuri" -> prompt:none; "frasi brevi" -> prompt:none. `replaced: none`; **`overflow:` §4.3 ("le frasi brevi sono decisioni") non entra**, già coperta in spirito da §9 "domande-provocazione" e "le pause possono durare"; la nota è a 199 righe, sotto il tetto 200. `Rules-Audit` non richiesto (nessuna regola toccata).
