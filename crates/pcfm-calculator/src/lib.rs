@@ -30,6 +30,7 @@
 //! amendment to the model, not a formula (L0.11 §4.10).
 
 pub mod choice;
+pub mod latency;
 pub mod movement;
 
 use std::collections::BTreeSet;

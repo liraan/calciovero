@@ -95,3 +95,15 @@ pub struct ReceptionOutcome {
     /// Whether the receiver controlled the ball.
     pub controlled: bool,
 }
+
+/// The outcome of a latency resolution (IDEA-DESIGN-011, R.1-latency).
+///
+/// The latency is a duration in ticks: how long the actor waits before
+/// deciding again. It is deterministic (no die, ADR-035); the value is a
+/// function of the actor's `decision_making`, as declared in
+/// `balance/latency.json`.
+#[derive(Debug, Clone, Copy)]
+pub struct LatencyOutcome {
+    /// The latency, in ticks (>= 1).
+    pub ticks: u64,
+}

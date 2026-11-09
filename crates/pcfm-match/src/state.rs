@@ -4,7 +4,6 @@
 //! produces a `MatchResult` via `finish`.
 
 use pcfm_core::ids::{ActorId, EventId, PlayerId};
-use pcfm_core::rng::StreamName;
 use pcfm_core::time::GameInstant;
 use pcfm_model::Squad;
 use pcfm_stats::{EventChain, EventType, Half, MatchEvent};
@@ -136,10 +135,11 @@ pub struct MatchState {
     /// Scanning parameters (ADR-034), loaded once at construction.
     scan_balance: crate::balance::ScanningBalance,
     pending: Option<Pending>,
-    // Stream names are built once and reused. They are deterministic by
-    // construction (literal non-empty strings) and do not change during a
-    // match.
-    actions_stream: StreamName,
+    /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
+    /// can decide again. Absent = 0 = due. The map is cleared on possession
+    /// change? No: the actor's pace is his own, persistent across possessions.
+    /// A weak decider who wins the ball back carries his own delay with him.
+    latencies: BTreeMap<PlayerId, u64>,
 }
 
 /// The action an agent chooses from its point of view (MD-01, MD-43).
@@ -455,12 +455,7 @@ impl MatchState {
             },
             coverage: BTreeSet::new(),
             coverage_possession: Possession::Home,
-            actions_stream: StreamName::new(format!("match:{}:actions", match_.id.slot()))
-                // Construction: the stream name is formatted from a slot (u32),
-                // so it is non-empty by construction. Not a simulation path, D2
-                // does not apply; documented so a reader does not read this as
-                // an unresolved D2 violation (OI-34 closed 2026-11-07).
-                .expect("stream name is non-empty"),
+            latencies: BTreeMap::new(),
         }
     }
 
@@ -474,36 +469,23 @@ impl MatchState {
         self.half = half;
         self.half_start_tick = start_tick;
     }
-    /// Advances the state by one tick.
+    /// Advances the time by one tick: the substrate of the match.
     ///
-    /// # The prototype model
+    /// Resolves the due pending (MD-37), advances the ball, checks the
+    /// shot crossing, moves the agents, updates the coverage, counts the
+    /// possession. It does **not** decide: no election of an actor, no
+    /// latency, no `resolve_choice`. The decision is in `decide`, called
+    /// by the orchestrator right after this method (IDEA-DESIGN-011,
+    /// capture 2026-11-09 fourth pause: "togliere al tick il potere di
+    /// decidere chi agisce").
     ///
-    /// Every tick, with probability `action_probability` (default `0.0005`),
-    /// one of four actions happens. The split is a **placeholder**, not a
-    /// design decision:
+    /// The prototype description of the old tick (2026-11-02: a roll on
+    /// `action_probability`, four outcomes) is in `git log`; the roll is
+    /// gone (ADR-035), the pace comes from the actor's latency.
     ///
-    /// | Roll range | Action | Why this split |
-    /// |------------|--------|----------------|
-    /// | `[0.00, 0.60)` | Pass | The most common action in football |
-    /// | `[0.60, 0.85)` | Shot | Less common, higher impact |
-    /// | `[0.85, 0.97)` | Duel | Medium frequency |
-    /// | `[0.97, 1.00)` | Foul | Rare |
-    ///
-    /// All players are "midfielder" in the demo, and the formation is
-    /// always `4-4-2`. A realistic engine would model role, formation,
-    /// position on the pitch, and per-player action probabilities.
-    ///
-    /// **Who acts vs what they do (2026-11-02).** With the influence model,
-    /// *who* acts is deterministic (max influence on the ball, §2.9). *What*
-    /// they do is still this roll: an open design question (does each agent
-    /// have an intent?). The per-agent slice must not assume the roll is the
-    /// design; it is the current placeholder for intention.
-    ///
-    /// The `noise` term in `resolve_*` (`pcfm-hidden`) is also a
-    /// placeholder: it adds variance to the outcome, but it is not
-    /// calibrated to real football data. See `docs/CODE_TOUR.md` "A note
-    /// on the current simulation".
-    #[allow(clippy::too_many_lines)]
+    /// Declared distance from the ideal: the substrate is still inside
+    /// `tick()`. Making the tick a pure counter is a separate refactor,
+    /// tracked in IDEA-DESIGN-011's implementation note (2026-11-09).
     pub fn tick(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
         // Resolve a due pending first (MD-37): the possession is applied
         // here, not at launch. F.4-d: an unseen opponent on the line
@@ -574,15 +556,41 @@ impl MatchState {
             Possession::Home => self.home_possession_ticks += 1,
             Possession::Away => self.away_possession_ticks += 1,
         }
+    }
 
-        let action_roll = pcfm_core::rng::next_unit(ctx.rng.stream(&self.actions_stream));
-        if action_roll >= ctx.config.action_probability {
-            return;
-        }
-
+    /// The decision layer of the tick: elect the actor, resolve his
+    /// latency, choose his action, execute the branch. This method is not
+    /// the tick: the tick is the time and the substrate (ball, movement,
+    /// coverage), this method is the decision that happens *at* the tick.
+    /// The orchestrator calls `tick` then `decide` for every absolute tick;
+    /// the tick does not know the latency, the decision does (IDEA-DESIGN-011,
+    /// capture 2026-11-09 fourth pause: "togliere al tick il potere di
+    /// decidere chi agisce").
+    ///
+    /// Declared distance from the ideal: the substrate (movement, coverage)
+    /// is still inside `tick`. The tick is decision-free, which is the
+    /// part that mattered; making the tick a pure counter is a separate
+    /// refactor, tracked as a note on IDEA-011.
+    #[allow(clippy::too_many_lines)]
+    pub fn decide(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
         let Some((attacker, defender)) = self.pick_from_space(ctx) else {
             return;
         };
+
+        // IDEA-DESIGN-011 (R.1-latency): the actor decides when he is due,
+        // not when a die says so. The latency is the actor's own pace,
+        // resolved from his `decision_making` (ADR-035: no die). If the
+        // actor is not due, the tick advances the body and the scene (above)
+        // and returns; nothing needs deciding yet.
+        let due_at = self.latencies.get(&attacker).copied().unwrap_or(0);
+        if tick < due_at {
+            return;
+        }
+        let latency = ctx
+            .hidden
+            .resolve_latency(&pcfm_hidden::LatencyContext { player: attacker });
+        self.latencies
+            .insert(attacker, tick.saturating_add(latency.ticks));
 
         let (teammates, opponents): (Vec<PlayerId>, Vec<PlayerId>) = {
             let (own, other) = self.squads(ctx);

@@ -185,3 +185,16 @@ pub struct ReceptionParams {
     /// Control threshold, milli.
     pub control_threshold_milli: i64,
 }
+
+/// The context of a latency resolution (IDEA-DESIGN-011, R.1-latency).
+///
+/// Only the actor: the latency formula reads `decision_making` (Plane A)
+/// and nothing else. Fatigue and pressure are declared terms
+/// (`Removed-by: OI-70` for fatigue, no producer for pressure today): they
+/// enter the formula when their producer exists, not as an unused field
+/// here (D3: no structure without content).
+#[derive(Debug, Clone, Copy)]
+pub struct LatencyContext {
+    /// The actor whose pace is resolved.
+    pub player: PlayerId,
+}

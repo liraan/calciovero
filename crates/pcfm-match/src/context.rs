@@ -18,19 +18,6 @@ pub struct MatchConfig {
     pub duration_minutes: u16,
     /// Ticks per simulated second (default 10).
     pub ticks_per_second: u8,
-    /// Probability per tick that a significant action happens.
-    ///
-    /// This is a simplification: in a full engine, every player acts every
-    /// tick. Here, we model only the "significant" actions.
-    ///
-    /// The default is `0.0005`: with 90 minutes × 60 seconds × 10 ticks
-    /// per second = 54,000 ticks, and about 27 significant actions per
-    /// match, the expected count is `54,000 × 0.0005 ≈ 27`. This is a
-    /// **prototype** value, not a calibrated one. A realistic engine would
-    /// derive it from the number of actions in a real match, and would
-    /// model every player every tick (which is orders of magnitude more
-    /// expensive). See `docs/CODE_TOUR.md` "A note on the current simulation".
-    pub action_probability: f32,
 }
 
 impl Default for MatchConfig {
@@ -38,7 +25,6 @@ impl Default for MatchConfig {
         Self {
             duration_minutes: 90,
             ticks_per_second: 10,
-            action_probability: 0.0005,
         }
     }
 }

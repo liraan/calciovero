@@ -28,12 +28,13 @@ mod latents;
 
 pub use choice::{ChoiceCandidate, ChoiceContext, ChoiceKind, ChoiceOutcome};
 pub use context::{
-    DuelContext, DuelType, InfluenceWeights, MovementContext, PassContext, ReceptionContext,
-    ReceptionParams, SaveContext, ShotContext, SkillKind,
+    DuelContext, DuelType, InfluenceWeights, LatencyContext, MovementContext, PassContext,
+    ReceptionContext, ReceptionParams, SaveContext, ShotContext, SkillKind,
 };
 pub use observation::ObservationEvent;
 pub use outcome::{
-    DuelOutcome, MovementOutcome, PassOutcome, ReceptionOutcome, SaveOutcome, ShotOutcome, ShotType,
+    DuelOutcome, LatencyOutcome, MovementOutcome, PassOutcome, ReceptionOutcome, SaveOutcome,
+    ShotOutcome, ShotType,
 };
 
 use std::collections::BTreeMap;
@@ -69,6 +70,7 @@ pub struct GroundTruth {
     /// for every agent every tick: parsing the JSON 1.2 million times is
     /// waste, and the file does not change during a match.
     movement_balance: pcfm_calculator::movement::MovementBalance,
+    latency_balance: pcfm_calculator::latency::LatencyBalance,
 }
 
 impl GroundTruth {
@@ -96,6 +98,7 @@ impl GroundTruth {
             latents: BTreeMap::new(),
             observations: Vec::new(),
             movement_balance: pcfm_calculator::movement::MovementBalance::load(),
+            latency_balance: pcfm_calculator::latency::LatencyBalance::load(),
         }
     }
 
@@ -443,6 +446,42 @@ impl GroundTruth {
         }
     }
 
+    /// Resolves the latency of `ctx.player`: how many ticks he waits before
+    /// deciding again (IDEA-DESIGN-011, R.1-latency).
+    ///
+    /// The orchestrator (ADR-028 section 5): it builds the custodian view
+    /// for `ctx.player` (Plane A), loads the latency formula from
+    /// `balance/latency.json`, and calls the calculator. The latency
+    /// formula reads only `decision_making` today; fatigue (OI-70) and
+    /// pressure (no producer) enter when their producer exists.
+    ///
+    /// The result is rounded to the nearest tick and clamped to `>= 1`: a
+    /// latency of 0 would let the actor decide every tick, which is the
+    /// same defect as `action_roll` in the other direction.
+    #[must_use]
+    pub fn resolve_latency(&mut self, ctx: &LatencyContext) -> LatencyOutcome {
+        use pcfm_calculator::{Calculator, Datum, Situation};
+
+        struct NoData;
+        impl Situation for NoData {
+            fn datum(&self, _datum: Datum) -> f64 {
+                // The latency formula declares no Plane B datum. A formula
+                // that declared one would be rejected at load time by the
+                // calculator's catalogue; this branch is unreachable today.
+                0.0
+            }
+        }
+
+        let mut custodian = self.custodian(ctx.player);
+        let balance = &self.latency_balance;
+        let formula = balance.formula();
+        let situation = NoData;
+        let latency = Calculator::apply(&formula, &mut custodian, &situation);
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let ticks = latency.round().max(1.0) as u64;
+        LatencyOutcome { ticks }
+    }
+
     /// Drains the accumulated observations.
     ///
     /// The method is idempotent: the second call returns an empty `Vec`.
@@ -655,5 +694,64 @@ mod reception_tests {
             }
         }
         assert!(diff, "two players never differ: first_touch not read");
+    }
+}
+
+#[cfg(test)]
+mod latency_tests {
+    use super::*;
+    use pcfm_core::ids::{MatchId, PlayerId};
+
+    fn gt() -> GroundTruth {
+        GroundTruth::new(42, MatchId::new(1, 0))
+    }
+
+    fn ctx(slot: u32) -> LatencyContext {
+        LatencyContext {
+            player: PlayerId::new(slot, 0),
+        }
+    }
+
+    #[test]
+    fn latency_is_at_least_one_tick() {
+        let mut g = gt();
+        let out = g.resolve_latency(&ctx(1));
+        assert!(out.ticks >= 1, "a latency of 0 would decide every tick");
+    }
+
+    #[test]
+    fn latency_is_deterministic() {
+        let mut a = gt();
+        let mut b = gt();
+        assert_eq!(
+            a.resolve_latency(&ctx(1)).ticks,
+            b.resolve_latency(&ctx(1)).ticks
+        );
+    }
+
+    #[test]
+    fn strong_decider_decides_sooner_than_weak_decider() {
+        // Find two players whose decision_making differ enough that the
+        // latency ordering is structural (not a tie). The derivation reads
+        // only decision_making today, so the ordering is deterministic.
+        let mut g = gt();
+        let mut fastest = (0, u64::MAX);
+        let mut slowest = (0, 0u64);
+        for slot in 1..=20u32 {
+            let p = PlayerId::new(slot, 0);
+            let t = g.resolve_latency(&LatencyContext { player: p }).ticks;
+            if t < fastest.1 {
+                fastest = (slot, t);
+            }
+            if t > slowest.1 {
+                slowest = (slot, t);
+            }
+        }
+        assert!(
+            fastest.1 < slowest.1,
+            "the fastest decider ({}) must be strictly faster than the slowest ({})",
+            fastest.1,
+            slowest.1
+        );
     }
 }

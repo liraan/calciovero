@@ -77,6 +77,7 @@ fn run_half(
     let mut t = start_tick;
     while t < regulation_end {
         state.tick(t, ctx);
+        state.decide(t, ctx);
         t += 1;
     }
 
@@ -85,6 +86,7 @@ fn run_half(
         let extra_end = regulation_end + rec_secs * tps;
         while t < extra_end {
             state.tick(t, ctx);
+            state.decide(t, ctx);
             t += 1;
         }
         let new_rec = stoppage_seconds(ctx, half, table);
@@ -98,6 +100,7 @@ fn run_half(
             let clamped_end = regulation_end + rec_secs * tps;
             while t < clamped_end {
                 state.tick(t, ctx);
+                state.decide(t, ctx);
                 t += 1;
             }
             break;
