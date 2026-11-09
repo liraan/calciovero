@@ -240,7 +240,7 @@ mod tests {
         let forbidden = [
             concat!("pcfm", "_hidden"),
             concat!("Match", "State"),
-            concat!("pcfm_model", "::pitch"),
+            concat!("ds_model", "::pitch"),
         ];
         for needle in forbidden {
             assert!(

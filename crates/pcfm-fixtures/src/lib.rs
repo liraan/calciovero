@@ -9,7 +9,7 @@
 //! the test runner (ADR-020).
 
 use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
-use pcfm_model::{
+use ds_model::{
     FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
     PsychologicalStateMinimal, Referee, RoleId, Squad,
 };

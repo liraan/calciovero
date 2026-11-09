@@ -5,8 +5,8 @@
 //! in a future step; for now, defaults are enough).
 
 use ds_core::rng::RngRegistry;
+use ds_model::Match;
 use pcfm_hidden::GroundTruth;
-use pcfm_model::Match;
 use pcfm_stats::EventChain;
 
 /// Configuration of the match engine.

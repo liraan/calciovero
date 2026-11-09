@@ -1,4 +1,4 @@
-//! `pcfm-model` — minimal entities for PCFM.
+//! `ds-model` — minimal entities for PCFM.
 //!
 //! See `specs/L0-match/03-entities-minimal.md` for the full specification.
 //!
@@ -32,7 +32,7 @@ pub use player::{PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId
 pub use referee::Referee;
 pub use squad::{FormationId, Squad};
 
-/// Returns the version of `pcfm-model`, as declared in `Cargo.toml`.
+/// Returns the version of `ds-model`, as declared in `Cargo.toml`.
 #[must_use]
 pub const fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")

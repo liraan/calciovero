@@ -22,7 +22,7 @@ The actual state of the world: the hidden performances (strength, passing, visio
 
 ### Plane B — Observation
 
-Everything observable: dimensions of the body (height, weight, preferred foot, in `Player`, `pcfm-model`), states (fatigue, confidence, concentration, in `PhysicalStateMinimal` / `PsychologicalStateMinimal`, `pcfm-model`), and events and statistics (in `pcfm-stats`). Append-only where it is a log. The **engine** reads a dimension or a state directly; the **manager** does not read them either, he estimates them in Plane C (ADR-028). See [`specs/L0-match/05-match-events.md`](../specs/L0-match/05-match-events.md).
+Everything observable: dimensions of the body (height, weight, preferred foot, in `Player`, `ds-model`), states (fatigue, confidence, concentration, in `PhysicalStateMinimal` / `PsychologicalStateMinimal`, `ds-model`), and events and statistics (in `pcfm-stats`). Append-only where it is a log. The **engine** reads a dimension or a state directly; the **manager** does not read them either, he estimates them in Plane C (ADR-028). See [`specs/L0-match/05-match-events.md`](../specs/L0-match/05-match-events.md).
 
 ### Plane C — Estimation
 
@@ -40,8 +40,8 @@ a performance is something the player does.
 
 | Kind | Examples | Plane | Lives in | Who sees it |
 |---|---|---|---|---|
-| **Dimension** | height, weight, preferred foot | **B** (measured) | `pcfm-model` (`Player`) | measured, then estimated |
-| **State** | fatigue, confidence, concentration, composure | **B** (computed or held) | `pcfm-model` (`PhysicalStateMinimal`, `PsychologicalStateMinimal`) | estimated from effects |
+| **Dimension** | height, weight, preferred foot | **B** (measured) | `ds-model` (`Player`) | measured, then estimated |
+| **State** | fatigue, confidence, concentration, composure | **B** (computed or held) | `ds-model` (`PhysicalStateMinimal`, `PsychologicalStateMinimal`) | estimated from effects |
 | **Performance** | strength, passing, tackling, vision, game reading | **A** (hidden) | `pcfm-hidden` | **nobody directly**: an estimate in Plane C |
 | **Estimate** | "his passing is good, with low confidence" | **C** | the scouting crate (does not exist yet) | the manager |
 
@@ -72,7 +72,7 @@ a performance is something the player does.
 - **The engine reads truth, the manager reads estimates.** The engine reads a performance through the custodian (inside `pcfm-hidden`) and a dimension or a state directly (`Player`, `MatchState`), and returns an outcome. The manager reads an estimate in Plane C for every datum: a measurement for a dimension, a test for a physical performance, many matches for a technical skill. No true value reaches him.
 ### Dimension
 
-A property of the body that exists whether the player moves or not: height, weight, preferred foot. Measured with a simple instrument, it does not change during a match, and it is not something the player *does*. Plane B, in `Player` (`pcfm-model`). It enters the formulas as an input. See ADR-028, L0.11 §2 and §7.5.
+A property of the body that exists whether the player moves or not: height, weight, preferred foot. Measured with a simple instrument, it does not change during a match, and it is not something the player *does*. Plane B, in `Player` (`ds-model`). It enters the formulas as an input. See ADR-028, L0.11 §2 and §7.5.
 
 ### Performance
 
@@ -226,7 +226,7 @@ The Rust crates of the project. Each has a single responsibility. The mapping:
 - `pcfm-hidden` — Plane A (latents, `resolve_*`)
 - `pcfm-match` — the match engine (orchestrator, L0.04)
 - `pcfm-stats` — Plane B storage (append-only)
-- `pcfm-model` — pure entities
+- `ds-model` — pure entities
 - `pcfm-gen` — world generator
 - Others — see [`specs/00-foundations.md`](../specs/00-foundations.md) §8 and [`STRUCTURE.md`](../STRUCTURE.md) §2.
 

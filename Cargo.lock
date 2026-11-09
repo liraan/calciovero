@@ -65,6 +65,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-model"
+version = "0.1.0"
+dependencies = [
+ "ds-core",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -114,9 +124,9 @@ name = "pcfm-demo"
 version = "0.1.0"
 dependencies = [
  "ds-core",
+ "ds-model",
  "pcfm-fixtures",
  "pcfm-match",
- "pcfm-model",
  "pcfm-stats",
  "serde",
  "serde_json",
@@ -128,7 +138,7 @@ name = "pcfm-fixtures"
 version = "0.1.0"
 dependencies = [
  "ds-core",
- "pcfm-model",
+ "ds-model",
 ]
 
 [[package]]
@@ -137,8 +147,8 @@ version = "0.1.0"
 dependencies = [
  "blake3",
  "ds-core",
+ "ds-model",
  "pcfm-calculator",
- "pcfm-model",
  "rand_chacha",
  "rand_core",
  "serde_json",
@@ -150,20 +160,10 @@ name = "pcfm-match"
 version = "0.1.0"
 dependencies = [
  "ds-core",
+ "ds-model",
  "pcfm-fixtures",
  "pcfm-hidden",
- "pcfm-model",
  "pcfm-stats",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "pcfm-model"
-version = "0.1.0"
-dependencies = [
- "ds-core",
  "serde",
  "serde_json",
  "thiserror",
@@ -175,7 +175,7 @@ version = "0.1.0"
 dependencies = [
  "blake3",
  "ds-core",
- "pcfm-model",
+ "ds-model",
  "serde",
  "serde_json",
  "thiserror",
@@ -186,10 +186,10 @@ name = "pcfm-test-runner"
 version = "0.1.0"
 dependencies = [
  "ds-core",
+ "ds-model",
  "pcfm-fixtures",
  "pcfm-hidden",
  "pcfm-match",
- "pcfm-model",
  "pcfm-stats",
  "pcfm-testkit",
  "serde_json",

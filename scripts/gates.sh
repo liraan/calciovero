@@ -235,7 +235,7 @@ else
 # the platform; the engine may not.
 b9_banned='use std::(fs|net|thread|process|env|os|path)'
 b9_banned_crates='use (tokio|rayon|async_std|smol)'
-b9_sim_crates="crates/ds-core/src crates/pcfm-model/src crates/pcfm-hidden/src crates/pcfm-calculator/src crates/pcfm-match/src crates/pcfm-stats/src"
+b9_sim_crates="crates/ds-core/src crates/ds-model/src crates/pcfm-hidden/src crates/pcfm-calculator/src crates/pcfm-match/src crates/pcfm-stats/src"
 b9_hits=0
 for d in $b9_sim_crates; do
   if [ -d "$d" ]; then

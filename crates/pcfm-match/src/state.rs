@@ -5,7 +5,7 @@
 
 use ds_core::ids::{ActorId, EventId, PlayerId};
 use ds_core::time::GameInstant;
-use pcfm_model::Squad;
+use ds_model::Squad;
 use pcfm_stats::{EventChain, EventType, Half, MatchEvent};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -427,7 +427,7 @@ impl MatchState {
     /// are compile-time constants (`"match:actions"`, `"match:action_kind"`,
     /// `"match:player_pick"`), so this panic is unreachable in practice.
     #[must_use]
-    pub fn new(match_: &pcfm_model::Match) -> Self {
+    pub fn new(match_: &ds_model::Match) -> Self {
         Self {
             score: Score { home: 0, away: 0 },
             possession: Possession::Home,
@@ -1086,7 +1086,7 @@ fn clamp_u16(value: u64) -> u16 {
 mod tests {
     use super::*;
     use ds_core::ids::SquadId;
-    use pcfm_model::{
+    use ds_model::{
         FormationId, PhysicalStateMinimal, Pitch, Player, PsychologicalStateMinimal, RoleId,
     };
 

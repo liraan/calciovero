@@ -40,7 +40,7 @@ describes the *rules of the repository*.
 > What is superseded: the sentence "the only crate that talks to both planes
 > is `pcfm-match`", and "it calls `resolve_*` on Plane A" — in the new
 > engine the orchestrator is the door, the custodian is behind it, and a
-> calculator sits in between. The crate list (`pcfm-model`, `pcfm-hidden`,
+> calculator sits in between. The crate list (`ds-model`, `pcfm-hidden`,
 > `pcfm-match`, ...) stays; a tenth crate (the calculator) will be added
 > when the three components exist in code.
 >
@@ -61,14 +61,14 @@ fit together.
 | Crate | Role | Plane | Depends on |
 |-------|------|-------|------------|
 | `ds-core` | Infrastructure: RNG, event bus, IDs, hash, time | — | (none) |
-| `pcfm-model` | Minimal entities: Player (no latents), Squad, Pitch, Referee, Match | B/C | `ds-core` |
-| `pcfm-hidden` | Plane A: GroundTruth, `resolve_*`, `drain_observations` | **A** | `ds-core`, `pcfm-model` |
-| `pcfm-stats` | Plane B: MatchEvent, EventChain (append-only, hash chain) | B | `ds-core`, `pcfm-model` |
-| `pcfm-match` | Match engine: orchestrator `simulate_match`, `TextMatchEngine`, save/load, narrative | — | `ds-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats` |
+| `ds-model` | Minimal entities: Player (no latents), Squad, Pitch, Referee, Match | B/C | `ds-core` |
+| `pcfm-hidden` | Plane A: GroundTruth, `resolve_*`, `drain_observations` | **A** | `ds-core`, `ds-model` |
+| `pcfm-stats` | Plane B: MatchEvent, EventChain (append-only, hash chain) | B | `ds-core`, `ds-model` |
+| `pcfm-match` | Match engine: orchestrator `simulate_match`, `TextMatchEngine`, save/load, narrative | — | `ds-core`, `ds-model`, `pcfm-hidden`, `pcfm-stats` |
 | `pcfm-testkit` | Contract: `Scenario`, `Feature`, `TestRegistry` | — | (none) |
-| `pcfm-test-runner` | CLI: `--check`, `--list`, `--coverage` | — | `ds-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `pcfm-fixtures` |
-| `pcfm-demo` | CLI: simulate a match, render text/JSON/HTML | — | `ds-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-fixtures` |
-| `pcfm-fixtures` | Hardcoded squads and match fixture | — | `ds-core`, `pcfm-model` |
+| `pcfm-test-runner` | CLI: `--check`, `--list`, `--coverage` | — | `ds-core`, `ds-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `pcfm-fixtures` |
+| `pcfm-demo` | CLI: simulate a match, render text/JSON/HTML | — | `ds-core`, `ds-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-fixtures` |
+| `pcfm-fixtures` | Hardcoded squads and match fixture | — | `ds-core`, `ds-model` |
 
 **Dependency rule:** every crate depends only on crates at a level **lower
 or equal** in the list above. No cycles. `pcfm-testkit` is intentionally
@@ -80,7 +80,7 @@ The crate-level dependency graph:
 ```
 pcfm-test-runner        pcfm-demo
 ├── ds-core           ├── ds-core
-├── pcfm-model          ├── pcfm-model
+├── ds-model          ├── ds-model
 ├── pcfm-hidden         ├── pcfm-hidden
 ├── pcfm-stats          ├── pcfm-stats
 ├── pcfm-match          ├── pcfm-match
@@ -89,19 +89,19 @@ pcfm-test-runner        pcfm-demo
 
 pcfm-fixtures
 ├── ds-core
-└── pcfm-model
+└── ds-model
 
 pcfm-match
 ├── ds-core
-├── pcfm-model
+├── ds-model
 ├── pcfm-hidden
 └── pcfm-stats
 
 pcfm-hidden        pcfm-stats
 ├── ds-core      ├── ds-core
-└── pcfm-model     └── pcfm-model
+└── ds-model     └── ds-model
 
-pcfm-model
+ds-model
 └── ds-core
 
 ds-core          pcfm-testkit

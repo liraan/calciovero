@@ -501,7 +501,7 @@
 - **Why this matters:** at L0 a cause trace built by the engine is tautological ("the shot is a shot"). The real value ("the player shot from outside because the defender was out of position") requires the full match context, which the engine at L0 does not have and cannot have. A plugin at L3 can. Moving the explanation to the plugin keeps `MatchEvent` minimal and durable, and eliminates the temptation to put presentational strings (like `explanation_template`) on the event.
 - **Relationship with ADR-023:** ADR-023 (option 2) has the engine build an observed cause trace. IDEA-INFRA-008 is the longer-term alternative: no cause trace in the engine at all, the plugin does it. If adopted, ADR-023 becomes a stepping stone (engine produces the minimal observed factors; the plugin enriches the explanation) or is superseded (the engine produces no cause; the plugin reads `MatchEvent` and builds its own).
 - **Open questions:**
-  1. Does the plugin import `pcfm-model::CauseTrace` (shared type) or define its own explanation type?
+  1. Does the plugin import `ds-model::CauseTrace` (shared type) or define its own explanation type?
   2. How does the plugin access the match state? Today: event stream (`MatchEvent`). Tomorrow: 2D positional state (ADR-019) — is that exposed to plugins, and how?
   3. Localisation: the plugin ships localised templates. How does that interact with ADR-007 (English canonical) and the future `locales/it/`?
   4. Determinism: the plugin's output must not affect the simulation (Plane C → Plane A forbidden). Is the explanation purely presentational, or can it feed back into decisions (e.g. the assistant manager reading the narrative)? If it feeds back, it becomes Plane B and must be deterministic.
@@ -628,11 +628,11 @@
 
 - **Status:** dormant (2026-11-04, superseded-by: `BallState` in `crates/pcfm-match/src/spatial.rs`, F.3-b1; the uncompiled drafts are gone)
 - **Category:** Infra
-- **Source:** session 2026-11-01 (extracted from `draft/layered-match-2026-11-01`, files `crates/pcfm-model/src/spatial.rs` and `crates/pcfm-match/src/spatial.rs`, draft never compiled: 15 errors).
+- **Source:** session 2026-11-01 (extracted from `draft/layered-match-2026-11-01`, files `crates/ds-model/src/spatial.rs` and `crates/pcfm-match/src/spatial.rs`, draft never compiled: 15 errors).
 - **Idea:** the two `spatial.rs` drafts contain a usable vocabulary for the positional slice (L0 positional with coordinates):
-    - **`pcfm-model`**: `Position2D` (with `try_new` validation, `distance_to`), `Velocity2D`, `Heading`, `FieldSide`, `FieldZone`, `PlayerPose`, `BallState`, `PitchBounds` — geometric primitives, validated.
+    - **`ds-model`**: `Position2D` (with `try_new` validation, `distance_to`), `Velocity2D`, `Heading`, `FieldSide`, `FieldZone`, `PlayerPose`, `BallState`, `PitchBounds` — geometric primitives, validated.
     - **`pcfm-match`**: `Vec2`, `BallState`, `PlayerSpatialState`, `TeamShapeState`, `PressurePoint`, `PressureMap`, `SpatialState` — per-tick match state.
-- **Duplicate to resolve:** there are **two `BallState`** (one in each crate, different fields). Step 18 must pick one. Recommendation: `pcfm-model::BallState` (validated) is the data type; `pcfm-match` owns the per-tick `SpatialState` that *uses* it, plus the match-context fields (`owner`, `last_touch`). Also `Vec2` vs `Position2D` — one must win.
+- **Duplicate to resolve:** there are **two `BallState`** (one in each crate, different fields). Step 18 must pick one. Recommendation: `ds-model::BallState` (validated) is the data type; `pcfm-match` owns the per-tick `SpatialState` that *uses* it, plus the match-context fields (`owner`, `last_touch`). Also `Vec2` vs `Position2D` — one must win.
 - **What is not imported:** the code as written (never compiled, 15 errors, deprecated by `00-foundations` §9 numbering). It is a **vocabulary**, not a ready module. Step 18 designs the module; these names are a starting point.
 - **When:** the positional slice. Not now (D3: L2 does not exist as a concrete consumer).
 - **Reference:** `draft/layered-match-2026-11-01` at `4613797`. Kept as reference, not merged.

@@ -87,7 +87,7 @@ a parameter of the distribution or of the weight.
 | Kind | What it is | Changes | Example | Lives in |
 |---|---|---|---|---|
 | **Characteristic** | Hidden, stable, produces an effect | Over months or years | passing, strength, vision | `pcfm-hidden`, read through the custodian |
-| **Dimension** | Visible, measured, a property of the body | Over years (growth), not with effort | height, weight, preferred foot | `Player` (`pcfm-model`), read directly |
+| **Dimension** | Visible, measured, a property of the body | Over years (growth), not with effort | height, weight, preferred foot | `Player` (`ds-model`), read directly |
 | **State** | A condition of the moment | Within a match, or between matches | fatigue, confidence, morale | `PhysicalStateMinimal`, `PsychologicalStateMinimal` |
 | **Behaviour** | Something the player *does* | Every action or tick | scanning, positioning, pressing | The decision code, never a saved datum |
 | **Composite** | A name that hides several things | — | set pieces (free kicks, penalties, corners) | Not a datum: it is split or declared a label |
@@ -733,7 +733,7 @@ of this cell derived it from height and maximal force; that was wrong: a
 player can be heavy and weak, or light and strong.
 
 The code at SIM_VERSION 20. The `Player` struct
-(crates/pcfm-model/src/player.rs) has `id`, `name`, `role`,
+(crates/ds-model/src/player.rs) has `id`, `name`, `role`,
 `preferred_foot` (an enum, right or left), `height_cm`, and two state
 structs. It has `weight_kg` (added by F.7, commit `5ba4e5e`). It does not have `date_of_birth`, `place_of_birth`,
 or the two foot numbers. `weight_kg` was added by F.7 because the
@@ -910,7 +910,7 @@ why the estimate, not the datum, is what the manager sees.
 
 ## 9. Where each characteristic lives
 
-- **`Player` (`pcfm-model`)** — the visible data: dimensions and anatomical
+- **`Player` (`ds-model`)** — the visible data: dimensions and anatomical
   facts. `height_cm`, `weight_kg`, `preferred_foot`. They are measured with
   a simple instrument, they do not change during a match, and they are not
   performances: they are properties of the body. The engine reads them

@@ -50,8 +50,8 @@
 use ds_core::ids::MatchId;
 use ds_core::rng::RngRegistry;
 use ds_core::time::GameInstant;
+use ds_model::Match;
 use pcfm_hidden::GroundTruth;
-use pcfm_model::Match;
 use pcfm_stats::EventChain;
 use serde::{Deserialize, Serialize};
 
@@ -228,7 +228,7 @@ pub enum SaveError {
 mod tests {
     use super::*;
     use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
-    use pcfm_model::{
+    use ds_model::{
         FormationId, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
         PsychologicalStateMinimal, Referee, RoleId, Squad,
     };

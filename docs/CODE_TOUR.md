@@ -63,14 +63,14 @@ dispatch? Why are IDs `(slot, generation)` and not `u32`?
 
 | # | File | Why |
 |---|------|-----|
-| 1 | `crates/pcfm-model/src/lib.rs` | The module map and the `pub use` of every type. |
-| 2 | `crates/pcfm-model/src/player.rs` | `Player` has **no latent field**. Read the module doc carefully. |
-| 3 | `crates/pcfm-model/src/squad.rs` | 11 starters, 0–7 bench, formation. |
-| 4 | `crates/pcfm-model/src/pitch.rs` | Dimensions, condition, weather. |
-| 5 | `crates/pcfm-model/src/referee.rs` | Strictness, consistency. |
-| 6 | `crates/pcfm-model/src/match_.rs` | The `Match` entity, and why a friendly is allowed. |
-| 7 | `crates/pcfm-model/src/cause.rs` | `CauseTrace` and `Factor`. Shared between Plane A and Plane B. |
-| 8 | `crates/pcfm-model/src/error.rs` | `ModelError`. What gets validated, and why. |
+| 1 | `crates/ds-model/src/lib.rs` | The module map and the `pub use` of every type. |
+| 2 | `crates/ds-model/src/player.rs` | `Player` has **no latent field**. Read the module doc carefully. |
+| 3 | `crates/ds-model/src/squad.rs` | 11 starters, 0–7 bench, formation. |
+| 4 | `crates/ds-model/src/pitch.rs` | Dimensions, condition, weather. |
+| 5 | `crates/ds-model/src/referee.rs` | Strictness, consistency. |
+| 6 | `crates/ds-model/src/match_.rs` | The `Match` entity, and why a friendly is allowed. |
+| 7 | `crates/ds-model/src/cause.rs` | `CauseTrace` and `Factor`. Shared between Plane A and Plane B. |
+| 8 | `crates/ds-model/src/error.rs` | `ModelError`. What gets validated, and why. |
 
 **After this stage you can answer:** why does `Player` not contain
 `finishing`? Where does a "player rating" come from, if not from a latent?

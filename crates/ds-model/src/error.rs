@@ -1,4 +1,4 @@
-//! Errors for `pcfm-model`.
+//! Errors for `ds-model`.
 
 use thiserror::Error;
 

@@ -7,7 +7,7 @@
 //! See `docs/context/L0-POSITIONAL-SLICE.md` §3.3.
 
 use ds_core::ids::PlayerId;
-use pcfm_model::Squad;
+use ds_model::Squad;
 
 use crate::spatial::{AgentState, SpatialState};
 
@@ -311,12 +311,10 @@ pub const fn team_of(id: PlayerId) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pcfm_model::Pitch;
+    use ds_model::Pitch;
 
     use ds_core::ids::SquadId;
-    use pcfm_model::{
-        FormationId, PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId,
-    };
+    use ds_model::{FormationId, PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId};
 
     #[test]
     fn scan_returns_none_when_ball_is_out_of_reach() {

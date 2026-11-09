@@ -38,7 +38,7 @@ Current crates (as of 2026-10-26):
 | Crate | Responsibility | Plane | Tests |
 |---|---|---|---|
 | `ds-core` | RNG, event bus, IDs, hash, time | — | 22 |
-| `pcfm-model` | Minimal entities (`Player`, `Squad`, `Match`, …) + `CauseTrace` | B/C | 21 |
+| `ds-model` | Minimal entities (`Player`, `Squad`, `Match`, …) + `CauseTrace` | B/C | 21 |
 | `pcfm-hidden` | `GroundTruth`, `resolve_*`, `drain_observations` | **A** | 4 |
 | `pcfm-stats` | `MatchEvent`, `EventType`, `EventChain` | B | 11 |
 | `pcfm-match` | The match engine (orchestrator + shared simulation) | — | 30 |
@@ -149,7 +149,7 @@ The pattern is tested by `pcfm-match`'s test `simulation_is_shared_and_renderer_
 
 - The event is a **primitive observable action** that the engine needs to record for the statistics pipeline.
 - It is **Plane B** data: it describes what happened, not how good a player is.
-- It has a **`CauseTrace`** that explains why it happened (see `pcfm-model::CauseTrace`).
+- It has a **`CauseTrace`** that explains why it happened (see `ds-model::CauseTrace`).
 
 ### When it is not allowed
 
@@ -325,7 +325,7 @@ See §5. Short version: write an ADR, add the context/outcome types, add the met
 (E.g. a `pcfm-cli` crate that wraps `pcfm-match` and prints results to the terminal.)
 
 1. Create `crates/pcfm-cli/`.
-2. Depend on `pcfm-match` and `pcfm-model`.
+2. Depend on `pcfm-match` and `ds-model`.
 3. Implement `main()` to build a `Match`, call `simulate_match`, and print the `MatchResult`.
 4. No ADR needed (no plane touched, no new dependency, no new event type).
 5. Open a PR.

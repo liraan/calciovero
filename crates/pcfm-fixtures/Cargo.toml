@@ -10,7 +10,7 @@ description = "Test fixtures for PCFM: hardcoded squads and match for scenarios 
 
 [dependencies]
 ds-core.workspace = true
-pcfm-model.workspace = true
+ds-model.workspace = true
 
 [lints]
 workspace = true

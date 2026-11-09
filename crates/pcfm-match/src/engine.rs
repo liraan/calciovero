@@ -51,11 +51,11 @@ mod tests {
     use crate::context::MatchConfig;
     use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
     use ds_core::rng::RngRegistry;
-    use pcfm_hidden::GroundTruth;
-    use pcfm_model::{
+    use ds_model::{
         FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
         PsychologicalStateMinimal, Referee, RoleId, Squad,
     };
+    use pcfm_hidden::GroundTruth;
     use pcfm_stats::EventChain;
 
     fn make_squad(id: u32, slot_base: u32) -> Squad {

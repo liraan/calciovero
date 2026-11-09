@@ -13,10 +13,10 @@
 
 use std::time::Instant;
 
+use ds_model::Pitch;
 use pcfm_fixtures::{away_squad, home_squad};
 use pcfm_match::perception::{nearest_opponents, nearest_teammates};
 use pcfm_match::spatial::SpatialState;
-use pcfm_model::Pitch;
 
 const TICKS: u32 = 54_000;
 const N: usize = 3;

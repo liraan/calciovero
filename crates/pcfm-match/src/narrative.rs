@@ -23,7 +23,7 @@
 use std::collections::BTreeMap;
 
 use ds_core::ids::{EventId, PlayerId};
-use pcfm_model::Match;
+use ds_model::Match;
 use pcfm_stats::{EventChain, EventType, MatchEvent};
 use serde::{Deserialize, Serialize};
 
@@ -229,7 +229,7 @@ mod tests {
     use super::*;
     use ds_core::ids::{EventId, MatchId, PlayerId, RefereeId, SquadId};
     use ds_core::time::GameInstant;
-    use pcfm_model::{
+    use ds_model::{
         FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
         PsychologicalStateMinimal, Referee, RoleId, Squad,
     };

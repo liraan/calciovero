@@ -1,7 +1,7 @@
 //! Spatial state for the positional engine (ADR-019, slice A).
 //!
 //! The position is **match state**, not player identity: it lives in
-//! `pcfm-match`, not in `pcfm-model`. See
+//! `pcfm-match`, not in `ds-model`. See
 //! `docs/context/L0-POSITIONAL-SLICE.md` §3.1.
 //!
 //! Coordinates are integer centimetres (ADR-019 D1: determinism). The pitch
@@ -32,7 +32,7 @@
 use std::collections::BTreeMap;
 
 use ds_core::ids::PlayerId;
-use pcfm_model::{Pitch, Squad};
+use ds_model::{Pitch, Squad};
 
 /// A player's position, velocity, heading and gaze on the pitch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -551,7 +551,7 @@ impl SpatialState {
 mod tests {
     use super::*;
     use ds_core::ids::SquadId;
-    use pcfm_model::{PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId};
+    use ds_model::{PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId};
 
     fn make_bodies() -> BTreeMap<PlayerId, PlayerBody> {
         let mut m = BTreeMap::new();
@@ -589,7 +589,7 @@ mod tests {
             SquadId::new(slot_base, 0),
             players,
             vec![],
-            pcfm_model::FormationId::new("4-4-2").unwrap(),
+            ds_model::FormationId::new("4-4-2").unwrap(),
         )
         .unwrap()
     }

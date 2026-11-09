@@ -33,7 +33,7 @@ I am resuming work on **Calcio Vero (Deep Simulator)**. The previous chat ended 
 
 **For current numbers (crates, tests, ADR count), read `SESSION-STATE.md` and `STRUCTURE.md` §5. This section only gives the stable structure: it does not duplicate counts that change every session.**
 
-- **Crates:** the prefix is in transition `pcfm-*` -> `ds-*` (ADR-032): `ds-core` renamed, then `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `pcfm-test-runner`, `pcfm-demo`, `pcfm-fixtures`, `pcfm-calculator`. The count lives in `STRUCTURE.md` §5.
+- **Crates:** the prefix is in transition `pcfm-*` -> `ds-*` (ADR-032): `ds-core` renamed, then `ds-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `pcfm-test-runner`, `pcfm-demo`, `pcfm-fixtures`, `pcfm-calculator`. The count lives in `STRUCTURE.md` §5.
 - **`docs/context/`** holds briefing material (not normative): `NEW-SESSION-PROMPT.md`, `SESSION-STATE.md`, `AGENT-POLICY.md`, `GITHUB-SESSION-PROMPT.md`.
 
 ## Why these files matter (the commands are in the Startup ritual)

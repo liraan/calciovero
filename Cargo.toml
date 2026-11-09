@@ -4,7 +4,7 @@
 resolver = "3"
 members = [
     "crates/ds-core",
-    "crates/pcfm-model",
+    "crates/ds-model",
     "crates/pcfm-hidden",
     "crates/pcfm-match",
     "crates/pcfm-stats",
@@ -28,7 +28,7 @@ documentation = "https://github.com/liraan/calciovero/tree/main/modules"
 [workspace.dependencies]
 # Internal
 ds-core = { path = "crates/ds-core", version = "0.1.0" }
-pcfm-model = { path = "crates/pcfm-model", version = "0.1.0" }
+ds-model = { path = "crates/ds-model", version = "0.1.0" }
 pcfm-hidden = { path = "crates/pcfm-hidden", version = "0.1.0" }
 pcfm-stats = { path = "crates/pcfm-stats", version = "0.1.0" }
 pcfm-match = { path = "crates/pcfm-match", version = "0.1.0" }

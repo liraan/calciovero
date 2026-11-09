@@ -1,5 +1,5 @@
 [package]
-name = "pcfm-model"
+name = "ds-model"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

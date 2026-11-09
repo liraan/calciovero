@@ -239,10 +239,10 @@ the calibration is a later step with data.
 ## 3. Decisions
 
 
-### 3.1 `SpatialState` lives in `pcfm-match`, not `pcfm-model`
+### 3.1 `SpatialState` lives in `pcfm-match`, not `ds-model`
 
 The position is **match state**, not player identity. `Player` (in
-`pcfm-model`) is shared with L1, where a player has a contract and a squad,
+`ds-model`) is shared with L1, where a player has a contract and a squad,
 not a position on the pitch. If `position` goes into `Player`, every level
 inherits it and overwrites it.
 
@@ -369,7 +369,7 @@ Recorded here so it is not lost; fixed when a config file
     crates/pcfm-match/tests/golden_l0.rs   hash regenerated (SIM_VERSION 8)
     CHANGELOG-SIM.md                       SIM_VERSION 7 -> 8
 
-Not touched: `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-demo`.
+Not touched: `ds-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-demo`.
 The board keeps working: `MatchResult` does not change.
 
 ## 5. What is out, and when it comes back

@@ -5,12 +5,12 @@
 use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
 use ds_core::rng::RngRegistry;
 use ds_core::time::GameInstant;
-use pcfm_hidden::GroundTruth;
-use pcfm_match::{MatchConfig, MatchContext, MatchEngine, MatchSave, TextMatchEngine};
-use pcfm_model::{
+use ds_model::{
     FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
     PsychologicalStateMinimal, Referee, RoleId, Squad,
 };
+use pcfm_hidden::GroundTruth;
+use pcfm_match::{MatchConfig, MatchContext, MatchEngine, MatchSave, TextMatchEngine};
 use pcfm_stats::EventChain;
 
 const LATENT_NAMES: &[&str] = &[

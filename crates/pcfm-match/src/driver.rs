@@ -8,8 +8,8 @@
 //! passes a `Match` and a seed, and receives a `MatchResult`.
 
 use ds_core::rng::RngRegistry;
+use ds_model::Match;
 use pcfm_hidden::GroundTruth;
-use pcfm_model::Match;
 use pcfm_stats::EventChain;
 
 use crate::context::{MatchConfig, MatchContext};
