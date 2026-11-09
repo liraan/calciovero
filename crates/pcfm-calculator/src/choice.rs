@@ -46,6 +46,12 @@ pub struct ChoiceBalance {
     pub risk_weight: f64,
     /// Floor of the latent modifiers: they cannot make the score zero.
     pub floor: f64,
+    /// Threshold of clarity on the best candidate's score: if the best
+    /// candidate's score does not exceed this, the actor carries the ball
+    /// (the `Advance` choice, IDEA-DESIGN-010). Arbitrary and declared
+    /// until calibration (L3). First value 0.25: a typical pass sits
+    /// between 0.1 and 0.4, so below 0.25 it is "not clear enough".
+    pub clarity_threshold: f64,
 }
 
 impl ChoiceBalance {
@@ -108,6 +114,7 @@ mod tests {
         assert!((0.0..=1.0).contains(&b.decision_bias));
         assert!((0.0..=1.0).contains(&b.risk_weight));
         assert!((0.0..=1.0).contains(&b.floor));
+        assert!((0.0..=1.0).contains(&b.clarity_threshold));
     }
 
     #[test]

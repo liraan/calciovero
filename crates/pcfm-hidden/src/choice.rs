@@ -31,6 +31,9 @@ pub enum ChoiceKind {
     Shoot,
     /// Contest the nearest opponent.
     Duel,
+    /// Carry the ball forward: the carrier's gesture when the scene
+    /// shows nothing clearer (ADR-040 note 2026-11-09, IDEA-DESIGN-010).
+    Advance,
 }
 
 /// One candidate option, with the Plane B values the engine derived.
@@ -107,7 +110,7 @@ impl GroundTruth {
             scores.push(score);
             let tiebreak = match candidate.kind {
                 ChoiceKind::Pass(p) => p.slot(),
-                ChoiceKind::Shoot | ChoiceKind::Duel => ctx.actor.slot(),
+                ChoiceKind::Shoot | ChoiceKind::Duel | ChoiceKind::Advance => ctx.actor.slot(),
             };
             tiebreaks.push(tiebreak);
         }
@@ -141,12 +144,22 @@ impl GroundTruth {
             }
         }
 
+        // Clarity threshold (ADR-040 note 2026-11-09, IDEA-DESIGN-010):
+        // if the chosen candidate's score does not exceed the threshold,
+        // no option is clear enough, and the actor carries the ball
+        // (`Advance`). The threshold is in balance/choice.json; arbitrary
+        // and declared until calibration (L3).
+        let chosen_kind = if scores[chosen_index] < balance.clarity_threshold {
+            ChoiceKind::Advance
+        } else {
+            ctx.candidates[chosen_index].kind
+        };
         debug_assert!(
             !scores.is_empty(),
             "resolve_choice requires at least one candidate"
         );
         ChoiceOutcome {
-            chosen: ctx.candidates[chosen_index].kind,
+            chosen: chosen_kind,
             scores,
         }
     }

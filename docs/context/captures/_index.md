@@ -26,3 +26,7 @@ format: YYYY-MM-DD HH:MM | pause|task <id> | status | HEAD | commits LCV..HEAD |
 2026-11-09 08:11 | pause - | written | 401a4c6 | 1 | - | docs/context/captures/2026-11.md
 2026-11-09 08:37 | pause - | written | 0a36fff | 1 | IDEA-DESIGN-009(MISSING);  | docs/context/captures/2026-11.md
 2026-11-09 08:38 | pause - | written | 0a36fff | 1 | IDEA-DESIGN-009(exists);  | docs/context/captures/2026-11.md
+2026-11-09 09:29 | pause - | written | 68d2647 | 1 | IDEA-DESIGN-009(exists); IDEA-DESIGN-010(exists);  | docs/context/captures/2026-11.md
+2026-11-09 10:02 | pause - | written | 68d2647 | 0 | IDEA-DESIGN-011(exists);  | docs/context/captures/2026-11.md
+2026-11-09 10:41 | pause - | written | 68d2647 | 0 | IDEA-DESIGN-012(exists);  | docs/context/captures/2026-11.md
+2026-11-09 11:17 | pause - | written | 68d2647 | 0 | - | docs/context/captures/2026-11.md
