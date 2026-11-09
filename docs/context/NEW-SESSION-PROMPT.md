@@ -277,6 +277,8 @@ Read in full the newest handoff (the second command: names start with the date, 
 
 **The current handoff is `docs/context/analysis/2026-11-09-session-handoff-v7.md`** (314 lines, 8 sections: what the project is in five lines, state verified, what this session decided and in what order, what is open with the dependency order the maintainer approved, traps paid, context notes, how to start, what it supersedes). Read it in full, not only the first command's output: it is written for an agent who was not there, and sections 2-3 and 5 are the ones the bookmark cannot carry. If a newer handoff exists, read that one and treat v3, v4, v5 and v6 as history.
 
+**The briefing note is mandatory (E1, emended 2026-11-09).** After the handoff, read `docs/context/NOTA-PER-NUOVA-AI.md` in full (224 lines, 11 sections: the collaboration pact, the two filters, the OI-88 lesson, the four-word vocabulary, the salience-formula rules, the four tick alternatives, the maintainer's oral decisions, things without an OI, the observed meta-instructions, a silent no-op, the changelog of the note). It is **not** auto-loaded and it is **not** a handoff: it is the "how to work" that the repo alone does not carry. Every agent, new or not, reads it. The step 5 report declares whether it was read (D1).
+
 **Only when the task needs them:**
 
 - **Agent policy (phase rules, push, rollback):** `grep -nE 'Phase 1|Phase 2|ruleset|push|rollback' docs/context/AGENT-POLICY.md | head -15`. Read the matched lines. If the file structure changes, update this grep in the same commit.
@@ -368,6 +370,7 @@ Then C2 (build, clippy, test, fmt, test-runner) and `scripts/gates.sh closing`. 
 **2b — Rules self-audit.** Only if this session modified `NEW-SESSION-PROMPT.md`, `DECISION-PATTERNS.md`, a hard-stop, the startup or the closing. For each rule change: which rule does it touch (`file:line`)? does it contradict one? does it open a leak (who controls the condition)? does it assume a mechanism that does not exist? If any answer is bad, pause and ask. Output: `Rules-Audit: N changes, 0 contradictions, 0 leaks` or `findings=[...]`. If no rule was touched, the trailer is omitted.
 
 **2c — Bookmark.** Update §1–§3 of §F: LCV (S1: the commit before this update), Open items (ID, title, first action), Plan (step, dependency, first action). No `Files touched`, no `Done`: `git log` is the log.
+**2d — The briefing note is mandatory (E2, emended 2026-11-09).** Update `docs/context/NOTA-PER-NUOVA-AI.md` before the closing commit: add the new entries (new meta-instructions, design principles that emerged in chat and have no other home, rules for formulas, traps not in B1-bis), correct the stale ones, update the date and the LCV. If nothing new emerged, append `**YYYY-MM-DD — no change** (session N, LCV \`xxxxxxx\`)` to its §11 changelog: the "nothing to say" is a visible artefact, not a silence. The note is never the bookmark: if a voice answers "where are we", it goes in `SESSION-STATE.md`; if it answers "how to work", it goes here. `Rules-Audit` is not required for this update unless a rule file is also touched.
 
 ### 3. Commit, push, report
 
