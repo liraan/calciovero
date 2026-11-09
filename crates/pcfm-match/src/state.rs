@@ -134,6 +134,7 @@ pub struct MatchState {
     bodies: BTreeMap<PlayerId, PlayerBody>,
     /// Scanning parameters (ADR-034), loaded once at construction.
     scan_balance: crate::balance::ScanningBalance,
+    reception_balance: crate::balance::ReceptionBalance,
     pending: Option<Pending>,
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
@@ -439,6 +440,7 @@ impl MatchState {
             spatial: SpatialState::from_squads(&match_.pitch, &match_.home, &match_.away),
             pending: None,
             scan_balance: crate::balance::ScanningBalance::load(),
+            reception_balance: crate::balance::ReceptionBalance::load(),
             bodies: {
                 let mut m = BTreeMap::new();
                 for p in match_.home.players.iter().chain(match_.away.players.iter()) {
@@ -517,7 +519,7 @@ impl MatchState {
                 {
                     // REC: no interceptor at launch, the receiver tries to
                     // control. The pass succeeds if the receiver controls.
-                    let params = crate::balance::ReceptionBalance::load().to_params();
+                    let params = self.reception_balance.to_params();
                     let rctx = pcfm_hidden::ReceptionContext {
                         receiver: rcv,
                         distance_cm: di,
@@ -642,7 +644,7 @@ impl MatchState {
                 .map_or((from.0 + 2000, from.1, from.2), |a| {
                     (a.position.0, a.position.1, 0)
                 });
-            let params = crate::balance::ReceptionBalance::load().to_params();
+            let params = self.reception_balance.to_params();
             let ctx_pass = pcfm_hidden::PassContext {
                 passer: attacker,
                 from,

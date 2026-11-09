@@ -11,6 +11,13 @@
 //! The constants come from `balance/movement.json`, which is embedded at
 //! compile time: the engine performs no I/O. A balance change is a
 //! `SIM_VERSION` bump (CHANGELOG-SIM).
+//!
+//! **The formula is built once, in `load()`** (2026-11-09, F.2-bis
+//! bench). `formula()` returns a reference. Building it per call
+//! allocated a `Vec` and two `Box` on every `resolve_movement`; the
+//! bench measured 170 ns of the 245 ns per call in that allocation. The
+//! formula is a rule, not a per-scene value: it is built with the
+//! balance, once.
 
 use serde::Deserialize;
 
@@ -19,8 +26,8 @@ use crate::{Characteristic, Datum, Formula};
 /// The embedded balance file.
 const MOVEMENT_JSON: &str = include_str!("../../../balance/movement.json");
 
-/// The constants of the movement formula.
-#[derive(Debug, Clone, Deserialize)]
+/// The constants of the movement formula, and the formula itself.
+#[derive(Debug, Clone)]
 pub struct MovementBalance {
     /// Reference acceleration, in cm/tick².
     pub accel_ref_cm_per_tick2: f64,
@@ -34,10 +41,23 @@ pub struct MovementBalance {
     pub fatigue_coefficient: f64,
     /// Floor of the fatigue modifier: 1 - c*fatigue is clamped here.
     pub fatigue_floor: f64,
+    /// The formula, built once from the constants above.
+    formula: Formula,
+}
+
+/// The JSON shape, parsed before the formula is built.
+#[derive(Debug, Clone, Deserialize)]
+struct MovementBalanceRaw {
+    accel_ref_cm_per_tick2: f64,
+    v_max_ref_cm_per_tick: f64,
+    weight_ref_kg: f64,
+    height_ref_cm: f64,
+    fatigue_coefficient: f64,
+    fatigue_floor: f64,
 }
 
 impl MovementBalance {
-    /// Loads the embedded balance file.
+    /// Loads the embedded balance file and builds the formula once.
     ///
     /// # Panics
     ///
@@ -45,10 +65,21 @@ impl MovementBalance {
     /// `embedded_movement_balance_is_valid` catches this at test time.
     #[must_use]
     pub fn load() -> Self {
-        serde_json::from_str(MOVEMENT_JSON).expect("embedded movement balance is valid JSON")
+        let raw: MovementBalanceRaw =
+            serde_json::from_str(MOVEMENT_JSON).expect("embedded movement balance is valid JSON");
+        let formula = Self::build_formula(&raw);
+        Self {
+            accel_ref_cm_per_tick2: raw.accel_ref_cm_per_tick2,
+            v_max_ref_cm_per_tick: raw.v_max_ref_cm_per_tick,
+            weight_ref_kg: raw.weight_ref_kg,
+            height_ref_cm: raw.height_ref_cm,
+            fatigue_coefficient: raw.fatigue_coefficient,
+            fatigue_floor: raw.fatigue_floor,
+            formula,
+        }
     }
 
-    /// The movement formula, built from the balance values.
+    /// The movement formula, built once in `load()`.
     ///
     /// `a = accel_ref * explosive_force * (weight_ref / weight) * max(floor, 1 - c*fatigue)`
     ///
@@ -56,23 +87,27 @@ impl MovementBalance {
     /// floor). It is identity at fatigue = 0, so the golden is unchanged
     /// when the match never accumulates fatigue (F.7, no producer yet).
     #[must_use]
-    pub fn formula(&self) -> Formula {
+    pub const fn formula(&self) -> &Formula {
+        &self.formula
+    }
+
+    fn build_formula(b: &MovementBalanceRaw) -> Formula {
         Formula::Product(vec![
-            Formula::Const(self.accel_ref_cm_per_tick2),
+            Formula::Const(b.accel_ref_cm_per_tick2),
             Formula::Term(Characteristic::ExplosiveForce),
             Formula::Ratio(
-                Box::new(Formula::Const(self.weight_ref_kg)),
+                Box::new(Formula::Const(b.weight_ref_kg)),
                 Box::new(Formula::Datum(Datum::Weight)),
             ),
             Formula::Clamp(
                 Box::new(Formula::Sum(vec![
                     Formula::Const(1.0),
                     Formula::Product(vec![
-                        Formula::Const(-self.fatigue_coefficient),
+                        Formula::Const(-b.fatigue_coefficient),
                         Formula::Datum(Datum::Fatigue),
                     ]),
                 ])),
-                self.fatigue_floor,
+                b.fatigue_floor,
                 1.0,
             ),
         ])
@@ -94,7 +129,8 @@ mod tests {
 
     #[test]
     fn movement_formula_declares_force_and_weight() {
-        let f = MovementBalance::load().formula();
+        let b = MovementBalance::load();
+        let f = b.formula();
         let chars = f.declared_characteristics();
         let data = f.declared_data();
         assert_eq!(chars, vec![Characteristic::ExplosiveForce]);
@@ -103,7 +139,7 @@ mod tests {
 
     #[test]
     fn movement_formula_validates() {
-        let f = MovementBalance::load().formula();
-        assert!(f.validate().is_ok());
+        let b = MovementBalance::load();
+        assert!(b.formula().validate().is_ok());
     }
 }

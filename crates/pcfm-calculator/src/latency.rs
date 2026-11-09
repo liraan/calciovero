@@ -16,6 +16,12 @@
 //! pressure today). The form is a model choice (one multiplicative bias,
 //! no die, ADR-035); the values are declared arbitrary, to be calibrated
 //! at L3.
+//!
+//! **The formula is built once, in `load()`** (2026-11-09, F.2-bis bench,
+//! same fix as movement). `formula()` returns a reference. The gain today
+//! is negligible (`resolve_latency` runs once per actor turn, not per
+//! tick); the fix is for consistency (D7) and for the future, when the
+//! check could become per-tick per-actor.
 
 use serde::Deserialize;
 
@@ -24,17 +30,26 @@ use crate::{Characteristic, Formula};
 /// The embedded balance file.
 const LATENCY_JSON: &str = include_str!("../../../balance/latency.json");
 
-/// The constants of the latency formula.
-#[derive(Debug, Clone, Deserialize)]
+/// The constants of the latency formula, and the formula itself.
+#[derive(Debug, Clone)]
 pub struct LatencyBalance {
     /// Base latency, in ticks (derived from `action_probability` 0.0005).
     pub base_ticks: f64,
     /// Bias: how much `decision_making` modulates the base.
     pub decision_bias: f64,
+    /// The formula, built once from the constants above.
+    formula: Formula,
+}
+
+/// The JSON shape, parsed before the formula is built.
+#[derive(Debug, Clone, Deserialize)]
+struct LatencyBalanceRaw {
+    base_ticks: f64,
+    decision_bias: f64,
 }
 
 impl LatencyBalance {
-    /// Loads the embedded balance file.
+    /// Loads the embedded balance file and builds the formula once.
     ///
     /// # Panics
     ///
@@ -42,10 +57,17 @@ impl LatencyBalance {
     /// `embedded_latency_balance_is_valid` catches this at test time.
     #[must_use]
     pub fn load() -> Self {
-        serde_json::from_str(LATENCY_JSON).expect("embedded latency balance is valid JSON")
+        let raw: LatencyBalanceRaw =
+            serde_json::from_str(LATENCY_JSON).expect("embedded latency balance is valid JSON");
+        let formula = Self::build_formula(&raw);
+        Self {
+            base_ticks: raw.base_ticks,
+            decision_bias: raw.decision_bias,
+            formula,
+        }
     }
 
-    /// The latency formula, built from the balance values.
+    /// The latency formula, built once in `load()`.
     ///
     /// `latency = base * (1 + (1 - decision_making) * bias)`
     ///
@@ -54,13 +76,17 @@ impl LatencyBalance {
     /// not round: rounding is the orchestrator's job, so the formula stays
     /// a pure f64 expression.
     #[must_use]
-    pub fn formula(&self) -> Formula {
+    pub const fn formula(&self) -> &Formula {
+        &self.formula
+    }
+
+    fn build_formula(b: &LatencyBalanceRaw) -> Formula {
         Formula::Product(vec![
-            Formula::Const(self.base_ticks),
+            Formula::Const(b.base_ticks),
             Formula::Sum(vec![
                 Formula::Const(1.0),
                 Formula::Product(vec![
-                    Formula::Const(self.decision_bias),
+                    Formula::Const(b.decision_bias),
                     Formula::Sum(vec![
                         Formula::Const(1.0),
                         Formula::Product(vec![
@@ -87,7 +113,8 @@ mod tests {
 
     #[test]
     fn latency_formula_declares_decision_making() {
-        let f = LatencyBalance::load().formula();
+        let b = LatencyBalance::load();
+        let f = b.formula();
         assert_eq!(
             f.declared_characteristics(),
             vec![Characteristic::DecisionMaking]
@@ -100,7 +127,7 @@ mod tests {
 
     #[test]
     fn latency_formula_validates() {
-        let f = LatencyBalance::load().formula();
-        assert!(f.validate().is_ok());
+        let b = LatencyBalance::load();
+        assert!(b.formula().validate().is_ok());
     }
 }

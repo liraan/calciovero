@@ -60,7 +60,8 @@ fn main() {
     // The movement formula, from balance/movement.json (same code the
     // orchestrator loads). No hardcoded coefficients: if the file
     // changes, the bench follows.
-    let movement = pcfm_calculator::movement::MovementBalance::load().formula();
+    let movement_balance = pcfm_calculator::movement::MovementBalance::load();
+    let movement = movement_balance.formula();
 
     // The same formula, reduced by hand: the Term (ExplosiveForce) is
     // replaced by the value the FixedCustodian would return, so the
@@ -110,7 +111,7 @@ fn main() {
     let start = Instant::now();
     let mut acc2 = 0.0f64;
     for _ in 0..N_FORMULA {
-        acc2 += pcfm_calculator::Calculator::apply(&movement, &mut custodian, &situation);
+        acc2 += pcfm_calculator::Calculator::apply(movement, &mut custodian, &situation);
     }
     let t_full = start.elapsed();
 
@@ -152,10 +153,27 @@ fn main() {
     }
     let t_ch10 = start.elapsed();
 
+    // --- 5. resolve_movement with 22 players in rotation (cold cache) ---
+    let players: Vec<PlayerId> = (0..22u32).map(|s| PlayerId::new(s, 0)).collect();
+    let mut acc5 = 0.0f64;
+    let start = Instant::now();
+    for i in 0..N_RESOLVE {
+        let p = players[i as usize % players.len()];
+        let out = hidden.resolve_movement(&pcfm_hidden::MovementContext {
+            player: p,
+            height_cm: 180.0,
+            weight_kg: 78.0,
+            fatigue: 0.3,
+        });
+        acc5 += out.acceleration;
+    }
+    let t_cold = start.elapsed();
+
     // black_box the accumulators so the compiler cannot elide the loops.
     std::hint::black_box(acc);
     std::hint::black_box(acc2);
     std::hint::black_box(acc3);
+    std::hint::black_box(acc5);
 
     println!("== bench_resolve (pcfm-hidden) ==");
     println!("calls:            {N_RESOLVE} / {N_FORMULA} / {N_CHOICE}");
@@ -179,5 +197,12 @@ fn main() {
         t_ch10.saturating_sub(t_ch1) / 9
     );
     println!();
+    println!();
+    println!("5. resolve_movement, 22 players:    {t_cold:?}");
+    println!("   vs 1 player (hot, section 1):    {t_resolve:?}");
+    println!(
+        "   delta (cold - hot):              {:?}",
+        t_cold.saturating_sub(t_resolve)
+    );
     println!("=== end ===");
 }

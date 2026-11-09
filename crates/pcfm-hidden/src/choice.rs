@@ -16,7 +16,6 @@
 //! Plane A values it cannot. See L0.11 §4.6 for the situation terms the
 //! calculator will read once OI-84 lands.
 
-use pcfm_calculator::choice::ChoiceBalance;
 use pcfm_calculator::{Calculator, Characteristic, Custodian, Datum, Situation};
 use pcfm_core::ids::PlayerId;
 
@@ -96,7 +95,7 @@ impl GroundTruth {
     /// the caller, not a state the model can produce (the engine always
     /// has at least `Duel`).
     pub fn resolve_choice(&mut self, ctx: &ChoiceContext) -> ChoiceOutcome {
-        let balance = ChoiceBalance::load();
+        let balance = self.choice_balance.clone();
         let situation = ChoiceSituation;
         let n = ctx.candidates.len();
         let mut scores = Vec::with_capacity(n);

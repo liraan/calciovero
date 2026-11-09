@@ -71,6 +71,7 @@ pub struct GroundTruth {
     /// waste, and the file does not change during a match.
     movement_balance: pcfm_calculator::movement::MovementBalance,
     latency_balance: pcfm_calculator::latency::LatencyBalance,
+    choice_balance: pcfm_calculator::choice::ChoiceBalance,
 }
 
 impl GroundTruth {
@@ -99,6 +100,7 @@ impl GroundTruth {
             observations: Vec::new(),
             movement_balance: pcfm_calculator::movement::MovementBalance::load(),
             latency_balance: pcfm_calculator::latency::LatencyBalance::load(),
+            choice_balance: pcfm_calculator::choice::ChoiceBalance::load(),
         }
     }
 
@@ -438,7 +440,7 @@ impl GroundTruth {
             fatigue: ctx.fatigue,
         };
         let formula = balance.formula();
-        let acceleration = Calculator::apply(&formula, &mut custodian, &situation);
+        let acceleration = Calculator::apply(formula, &mut custodian, &situation);
         MovementOutcome {
             acceleration,
             v_max,
@@ -476,7 +478,7 @@ impl GroundTruth {
         let balance = &self.latency_balance;
         let formula = balance.formula();
         let situation = NoData;
-        let latency = Calculator::apply(&formula, &mut custodian, &situation);
+        let latency = Calculator::apply(formula, &mut custodian, &situation);
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let ticks = latency.round().max(1.0) as u64;
         LatencyOutcome { ticks }
