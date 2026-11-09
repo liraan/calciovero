@@ -192,3 +192,4 @@ Artefatti nel report di chiusura: `dup-check: <termine> -> prompt:<regola>|none`
   prompt (puntatori); pletora, tattica a due meccanismi, avanzata,
   `freedom_norm` 0.5, canarino, quattro alternative al tick, decisioni
   orali, no-op -> none (restano).
+- **2026-11-09 — rev. 3** (LCV `8798623`). Filtro reso meccanico in E2 step 2d (`dup-check` solo contro `NEW-SESSION-PROMPT.md`, `why-new:`, una riga fisica, tetto 200 righe con `replaced:`/`overflow:`). La nota è a 195 righe. `Rules-Audit: 1 change, 0 contradictions, 0 leaks`.
