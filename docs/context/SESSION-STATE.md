@@ -2,7 +2,7 @@
 
 **Purpose:** a short bookmark for resuming work across sessions. It records where we are, not what the project is. History is in `git log`; this file does not duplicate it.
 
-**Last commit verified:** `4737ae0` - "docs(context): chat-only decisions, B1-bis lessons, NOTA rev. 5"
+**Last commit verified:** `48c8134` - "docs(adr): ADR-043 proposed -- the actor decides, not the engine"
 
 **Note on the field above:** it points to the last commit *before* this bookmark update (S1). It will look "stale" compared to HEAD; expected. Do not "fix" it without updating the rest of the bookmark in the same commit.
 

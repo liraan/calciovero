@@ -1,7 +1,7 @@
 # Nota per una nuova AI — Calcio Vero
 
 **Status:** briefing (not normative, not an ADR, not a handoff).
-**Ultima revisione:** 2026-11-09 (rev. 5). **LCV:** `3ab20b2`.
+**Ultima revisione:** 2026-11-09 (rev. 5). **LCV:** `48c8134`.
 **Supersedes:** `docs/context/analysis/2026-11-08-nota-per-nuova-ai.md` (storia).
 
 **Cos'è.** La memoria delle cose emerse in chat che un agente nuovo non
@@ -197,3 +197,4 @@ Artefatti nel report di chiusura: `dup-check: <termine> -> prompt:<regola>|none`
 - **2026-11-09 — rev. 3** (LCV `8798623`). Filtro reso meccanico in E2 step 2d (`dup-check` solo contro `NEW-SESSION-PROMPT.md`, `why-new:`, una riga fisica, tetto 200 righe con `replaced:`/`overflow:`). La nota è a 195 righe. `Rules-Audit: 1 change, 0 contradictions, 0 leaks`.
 - **2026-11-09 — rev. 4** (LCV `f4c8098`). Una voce in §9: i filtri giudicano il modello, non l'architettura (ADR-041 non filtrabile, ADR-042 sì e corretto dai filtri). `dup-check`: A3/D6 -> prompt (puntatori); "filtri modello vs architettura" -> none (nuovo). Nota a 196 righe, sotto il tetto 200.
 - **2026-11-09 — rev. 5** (LCV `3ab20b2`). Una voce in §9: "siamo sicuri?" è una domanda, non un'assoluzione. `dup-check`: "siamo sicuri" -> prompt:none; "frasi brevi" -> prompt:none. `replaced: none`; **`overflow:` §4.3 ("le frasi brevi sono decisioni") non entra**, già coperta in spirito da §9 "domande-provocazione" e "le pause possono durare"; la nota è a 199 righe, sotto il tetto 200. `Rules-Audit` non richiesto (nessuna regola toccata).
+- **2026-11-09 — no change** (session 11, LCV `48c8134`). Nessuna voce nuova dopo la rev. 5: ADR-043 (proposed) è un artefatto ADR, non una regola di lavoro; il filtro non ha prodotto nulla di non scritto altrove.
