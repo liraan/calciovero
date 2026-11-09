@@ -169,6 +169,19 @@ fn main() {
     }
     let t_cold = start.elapsed();
 
+    // --- 7. ChoiceBalance::load() per call (the parse, isolated) ---
+    // `resolve_choice` used to load the balance with a serde_json parse
+    // on every decision; it is now cached in `GroundTruth`. This section
+    // isolates the cost that was removed: the parse alone, N times.
+    let mut acc7 = 0.0f64;
+    let start = Instant::now();
+    for _ in 0..N_CHOICE {
+        let b = pcfm_calculator::choice::ChoiceBalance::load();
+        acc7 += b.clarity_threshold;
+    }
+    let t_load = start.elapsed();
+    std::hint::black_box(acc7);
+
     // black_box the accumulators so the compiler cannot elide the loops.
     std::hint::black_box(acc);
     std::hint::black_box(acc2);
@@ -203,6 +216,12 @@ fn main() {
     println!(
         "   delta (cold - hot):              {:?}",
         t_cold.saturating_sub(t_resolve)
+    );
+    println!();
+    println!("7. ChoiceBalance::load() per call:  {t_load:?}");
+    println!(
+        "   per call:                        {:?}",
+        t_load / N_CHOICE
     );
     println!("=== end ===");
 }
