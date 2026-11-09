@@ -58,3 +58,16 @@ Operational rules:
 ## Note (2026-11-07, why the order matters)
 
 `00-foundations` §5 lists three rules — coverage, discussion, never a die — and the order is not decoration. "Cover with what you have" is a **positive duty**: you can see whether a phenomenon is explained or not. "No die" is a **prohibition**: it can be circumvented by giving it another name (a global deterministic formula is not a die, and §5 does not name it; a reader of §5 alone can re-derive it). Coverage is the positive face, the prohibition is its negative, and the second holds only because the first is checked. If a future reader inverts the order — start from "no die", then ask "what covers it?" — the prohibition has no content to be tested against. The full reasoning is in the maintainer's pause report of 2026-11-07 (§2), now in `docs/context/analysis/2026-11-07-session-facts.md` §3.
+
+## Note (2026-11-09, generation vs simulation)
+
+The ban is about **simulation**: no die decides an outcome of the match (who acts, who wins the duel, who scores). It is not about **generation**: the RNG stays in `pcfm-core` for the generator, as this ADR's Decision already says ("the `Rng` type stays in `pcfm-core` for the generator, not for the engine").
+
+The maintainer, 2026-11-09: a young player's characteristics are the one case where the die is acceptable, because nobody can know them ("le caratteristiche di un giocatore giovane non sappiamo quali possono essere"). This is generation, not simulation: the pool of young players is an **input** of the world, generated once, before any match exists. The die does not cover a hole in the model there; it **is** the model: the world does not know who that boy will become, and declares it.
+
+The line, sharp:
+
+- **Generation (allowed):** the pool of young players (L2, `pcfm-gen` which does not exist), with a declared factor structure (academy, nation, age, role, development) plus one declared random component. "Random" here means **varied, not uniform**: the factor structure explains what is explainable, the random component is the part nobody can know.
+- **Simulation (forbidden):** every outcome inside a match. There the model *can* know (characteristics, scene, contact), and a die would be a blanket over a hole.
+
+The selection of a youngster by an observer is **not** generation and **not** simulation: it is a decision on what the observer sees, with the error of his level (L2-scouting, OI-8). It is not a die.

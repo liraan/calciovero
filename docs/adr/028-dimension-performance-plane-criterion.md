@@ -134,6 +134,8 @@ datum, dimension or performance. The plane is about who reads the true
 value; the estimate is about what the manager sees. Two questions, two
 answers, no double home.
 
+**Note (2026-11-09) — the method of estimation is also the selection criterion.** The sentence above ("a measurement for a dimension, a test for a physical performance, many matches for a technical skill, expert judgement for what has no instrument") is not only how the manager reads a value: it is how a scout **selects** a young player. An observer filters on what his level lets him estimate: he measures speed and strength (a test), he judges the reading of the game only from matches he has seen, with the error of his level (L2-scouting, OI-7, OI-8). The cantera of a provincial club is full of physical players and poor in technical ones, and it is the model, not a bug: the method of estimation determines what the scout can see, and what he can see determines who he picks. The pool generation is L2 (`pcfm-gen`, not written) and the selection is L2-scouting; the cantera is L1 and receives. See IDEA-YOUTH-001.
+
 ### 5. The engine has three components, not one
 
 The same boundary that separates the planes separates three
