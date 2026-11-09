@@ -66,20 +66,6 @@ pub struct PassOutcome {
     pub initial_velocity: (i16, i16, i16),
 }
 
-/// The outcome of a pressure event.
-#[derive(Debug, Clone)]
-pub struct PressureOutcome {
-    /// Whether the pressure succeeded.
-    pub success: bool,
-}
-
-/// The outcome of an injury risk resolution.
-#[derive(Debug, Clone)]
-pub struct InjuryOutcome {
-    /// Whether the player was injured.
-    pub injured: bool,
-}
-
 /// The outcome of a save.
 #[derive(Debug, Clone)]
 pub struct SaveOutcome {
@@ -101,13 +87,6 @@ pub struct MovementOutcome {
     /// The stride ratio: how much ground one unit of leg speed covers,
     /// relative to the reference height.
     pub stride: f64,
-}
-
-/// The outcome of a set piece.
-#[derive(Debug, Clone)]
-pub struct SetPieceOutcome {
-    /// Whether the set piece succeeded.
-    pub success: bool,
 }
 
 /// The outcome of a reception resolution (REC).

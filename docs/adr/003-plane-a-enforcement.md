@@ -237,3 +237,8 @@ If a future crate needs `pcfm-hidden` for a reason other than match engine input
 - [`crates/pcfm-debug/Cargo.toml`](../../crates/pcfm-debug/Cargo.toml) — the dependency declaration
 - [`specs/00-foundations.md`](../../specs/00-foundations.md) §3 — the Three Planes doctrine
 - [`crates/pcfm-debug/src/check.rs`](../../crates/pcfm-debug/src/check.rs) — the health check that uses the exception
+
+## Dated notes
+
+- **2026-11-09 — three of the functions listed above are removed.** `resolve_pressure`, `resolve_injury_risk`, `resolve_set_piece` were dormant (no caller outside `pcfm-hidden`) and drew from `ChaCha20Rng` streams; ADR-035 forbids a die in simulation paths and D3 forbids structure without a consumer. They are removed with their streams, their `*Context`/`*Outcome` types and their `ObservationEvent` variants. The principle of this ADR (one door, `resolve_*` only, no public fields, no `Serialize`) is unchanged; the door has three fewer functions today. They return with the phenomenon that needs them and an ADR. The two remaining live dice are `action_roll` (`state.rs`, R.1-latency) and `resolve_duel` (Plan E). The text above stays as history (D7).
+

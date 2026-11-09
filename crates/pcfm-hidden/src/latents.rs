@@ -59,6 +59,8 @@ pub struct PhysicalLatents {
     pub max_speed: f32,
     /// Susceptibility to injury (prototype field, L0.11 §10 item 1:
     /// physical susceptibility, not a technical skill).
+    #[allow(dead_code)]
+    // no consumer today: the die that read it is removed (ADR-035); arrives with the injury model (OI-60)
     pub injury_proneness: f32,
 }
 
@@ -81,6 +83,8 @@ pub struct TechnicalLatents {
     pub goalkeeping: f32,
     /// Prototype composite (free kicks, penalties, corners, throw-ins):
     /// to be split (OI-48, OI-50).
+    #[allow(dead_code)]
+    // no consumer today: the die that read it is removed (ADR-035); arrives with the set-piece formula (OI-48)
     pub set_pieces: f32,
     /// Left foot, one of the two performances per foot (ADR-031, L0.11 7.2).
     #[allow(dead_code)] // no consumer yet: ADR-031, arrives with the pass formula (OI-64)

@@ -28,14 +28,12 @@ mod latents;
 
 pub use choice::{ChoiceCandidate, ChoiceContext, ChoiceKind, ChoiceOutcome};
 pub use context::{
-    DuelContext, DuelType, InfluenceWeights, InjuryContext, MovementContext, PassContext,
-    PressureContext, ReceptionContext, ReceptionParams, SaveContext, SetPieceContext, ShotContext,
-    SkillKind,
+    DuelContext, DuelType, InfluenceWeights, MovementContext, PassContext, ReceptionContext,
+    ReceptionParams, SaveContext, ShotContext, SkillKind,
 };
 pub use observation::ObservationEvent;
 pub use outcome::{
-    DuelOutcome, InjuryOutcome, MovementOutcome, PassOutcome, PressureOutcome, ReceptionOutcome,
-    SaveOutcome, SetPieceOutcome, ShotOutcome, ShotType,
+    DuelOutcome, MovementOutcome, PassOutcome, ReceptionOutcome, SaveOutcome, ShotOutcome, ShotType,
 };
 
 use std::collections::BTreeMap;
@@ -58,9 +56,6 @@ use pcfm_core::rng::next_unit;
 /// transient decision: reordering resolves must not change the latents.
 struct Streams {
     duel: ChaCha20Rng,
-    injury: ChaCha20Rng,
-    set_piece: ChaCha20Rng,
-    pressure: ChaCha20Rng,
 }
 
 /// Plane A. The actual state of the world, never exposed.
@@ -93,9 +88,6 @@ impl GroundTruth {
         };
         let streams = Streams {
             duel: registry.stream(&name("duel")).clone(),
-            injury: registry.stream(&name("injury")).clone(),
-            set_piece: registry.stream(&name("set_piece")).clone(),
-            pressure: registry.stream(&name("pressure")).clone(),
         };
         Self {
             world_seed,
@@ -362,41 +354,6 @@ impl GroundTruth {
         ReceptionOutcome { controlled }
     }
 
-    /// Resolves a pressure event.
-    pub fn resolve_pressure(&mut self, ctx: &PressureContext) -> PressureOutcome {
-        // Will be replaced by resolve_influence (03-entities-minimal §2.9):
-        // pressure is a contest of influence on the carrier, not a die.
-        // This is not a simplification of the new model, it is a different model.
-        let _ = self.latents_for(ctx.player);
-        let noise = next_unit(&mut self.streams.pressure);
-        let success = noise > 0.5;
-
-        let outcome = PressureOutcome { success };
-
-        self.observations.push(ObservationEvent::Pressure {
-            player: ctx.player,
-            success,
-        });
-
-        outcome
-    }
-
-    /// Resolves an injury risk.
-    pub fn resolve_injury_risk(&mut self, ctx: &InjuryContext) -> InjuryOutcome {
-        let player = self.latents_for(ctx.player);
-        let noise = next_unit(&mut self.streams.injury);
-        let injured = noise.mul_add(0.3, player.physical.injury_proneness) > 0.8;
-
-        let outcome = InjuryOutcome { injured };
-
-        self.observations.push(ObservationEvent::Injury {
-            player: ctx.player,
-            injured,
-        });
-
-        outcome
-    }
-
     /// Resolves a save.
     ///
     /// The reach check (is the goalkeeper close enough to the crossing
@@ -424,22 +381,6 @@ impl GroundTruth {
         let _ = ctx.point;
         outcome
     }
-    /// Resolves a set piece.
-    pub fn resolve_set_piece(&mut self, ctx: &SetPieceContext) -> SetPieceOutcome {
-        let taker = self.latents_for(ctx.taker);
-        let noise = next_unit(&mut self.streams.set_piece);
-        let success = noise.mul_add(0.3, taker.technical.set_pieces) > 0.5;
-
-        let outcome = SetPieceOutcome { success };
-
-        self.observations.push(ObservationEvent::SetPiece {
-            taker: ctx.taker,
-            success,
-        });
-
-        outcome
-    }
-
     /// Resolves a movement: the acceleration of `ctx.player` this tick
     /// (F.7).
     ///

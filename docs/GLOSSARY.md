@@ -148,6 +148,9 @@ The public API of `pcfm-hidden`: `resolve_duel`, `resolve_shot`, `resolve_pass`,
 
 > **Note (2026-11-08) — the seven `resolve_*` are the prototype's API.** ADR-028 §5 (rewritten 2026-11-05) supersedes the single `resolve_*`: a **custodian** (`pcfm-hidden`) that holds the performances and answers one characteristic at a time, a **calculator** (`pcfm-calculator`) that applies a formula from `balance/*.json`, an **orchestrator** (`resolve_*`) that decides when. `resolve_influence` was removed (286100e); `resolve_choice` is decided in the Plan (F.6-cog) and its body is OI-83 (formula or policy). The entries above stay as history. See ADR-028 §5 and ADR-039.
 
+
+> **Note (2026-11-09) — the API is smaller today.** `resolve_pressure`, `resolve_injury_risk`, `resolve_set_piece` were dormant (no caller outside `pcfm-hidden`) and drew from `ChaCha20Rng` streams. ADR-035 forbids a die in simulation paths and D3 forbids structure without a consumer. The three functions, their streams (`pressure`, `injury`, `set_piece`), their `*Context`/`*Outcome` types and their `ObservationEvent` variants are removed; they return with the phenomenon that needs them and an ADR. The API is now `resolve_duel`, `resolve_shot`, `resolve_pass`, `resolve_save`, `resolve_choice`, `resolve_movement`, `drain_observations`. The two remaining live dice are `action_roll` (`state.rs`, R.1-latency) and `resolve_duel` (Plan E). The entries above stay as history.
+
 ### `IndexSnapshot`
 
 A windowed observed measurement over time. Replaces the banned CA/PA scalar. Lives in Plane C. See [`specs/00-foundations.md`](../specs/00-foundations.md) §3.

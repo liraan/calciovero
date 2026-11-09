@@ -46,32 +46,11 @@ pub enum ObservationEvent {
         /// Whether the receiver controlled the ball.
         controlled: bool,
     },
-    /// A pressure event was resolved.
-    Pressure {
-        /// The player under pressure.
-        player: PlayerId,
-        /// Whether the pressure succeeded.
-        success: bool,
-    },
-    /// An injury was resolved.
-    Injury {
-        /// The player at risk.
-        player: PlayerId,
-        /// Whether the player was injured.
-        injured: bool,
-    },
     /// A save was resolved.
     Save {
         /// The goalkeeper.
         goalkeeper: PlayerId,
         /// Whether the save succeeded.
         saved: bool,
-    },
-    /// A set piece was resolved.
-    SetPiece {
-        /// The taker.
-        taker: PlayerId,
-        /// Whether the set piece succeeded.
-        success: bool,
     },
 }

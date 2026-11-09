@@ -141,6 +141,9 @@ knows which of the two is authoritative *today* (the code, for the prototype).
 
 **Note (2026-11-08) — the streams are not consumed in simulation paths.** ADR-035 (2026-11-07) forbids a die in simulation paths: outcomes emerge from the local transitions of the actors. The three streams named in §2.6 above are **target** names, and they are **not** consumed today, nor will be consumed by the positional engine for an outcome. The prototype's `hidden:{match_id}:duel/shot/pass/save/injury/set_piece/pressure` are the residual of the old die-based `resolve_*`; they are being removed one by one as each `resolve_*` becomes geometric (Plan E, OI-50). Derivation from a key (`hash(world_seed, ...)`) is not a die; a stream draw is. When a `resolve_*` still draws (today `resolve_duel`, `resolve_pressure`, `resolve_injury_risk`, `resolve_set_piece`), that is the debt, not the target.
 
+**Note (2026-11-09) — three of the rows above are now empty.** `resolve_pressure`, `resolve_injury_risk`, `resolve_set_piece` were dormant and drew from `ChaCha20Rng` streams; they are removed with their streams, their `*Context`/`*Outcome` types and their `ObservationEvent` variants. The mapping for today is: duels → `resolve_duel`, shots → `resolve_shot`, passes → `resolve_pass`, saves → `resolve_save`, choice → `resolve_choice`, movement → `resolve_movement`. The two remaining live dice are `action_roll` (R.1-latency) and `resolve_duel` (Plan E). The 2026-11-08 note above said "today `resolve_duel`, `resolve_pressure`, `resolve_injury_risk`, `resolve_set_piece`"; that list is now two, not four. The table above stays as history.
+
+
 ### 2.7 What the engine does NOT do
 
 - It does not know about clubs, seasons, money, contracts

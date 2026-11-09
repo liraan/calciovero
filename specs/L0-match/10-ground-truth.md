@@ -111,6 +111,9 @@ impl GroundTruth {
 
 That is the entire public surface. No fields, no `latent_attributes()` getter, no `Debug` that prints internals, no `Serialize`.
 
+> **Note (2026-11-09) — three of the functions above no longer exist.** `resolve_pressure`, `resolve_injury_risk`, `resolve_set_piece` were dormant (no caller outside `pcfm-hidden`) and drew from `ChaCha20Rng` streams; ADR-035 forbids a die in simulation paths and D3 forbids structure without a consumer. They are removed together with their streams, their `*Context`/`*Outcome` types and their `ObservationEvent` variants, and return with the phenomenon that needs them and an ADR. The "entire public surface" of §2.1 is today `new`, `resolve_duel`, `resolve_shot`, `resolve_pass`, `resolve_save`, `resolve_choice`, `resolve_movement`, `drain_observations` — plus `world_seed` and `match_id` (OI-24 open). The two remaining live dice are `action_roll` (`state.rs`, R.1-latency) and `resolve_duel` (Plan E). The text above stays as history.
+
+
 ### 2.2 The context types
 
 Each `resolve_*` takes a context struct and returns an outcome struct. The contexts are **observed** data (Plane B/C) plus the `PlayerId`s involved. The outcomes are **observed** data (Plane B). The engine passes context, receives outcome, and never sees the latent values that produced the outcome.

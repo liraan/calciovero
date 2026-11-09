@@ -70,20 +70,6 @@ pub struct ReceptionContext {
     pub freedom_cm: i64,
 }
 
-/// The context of a pressure resolution.
-#[derive(Debug, Clone, Copy)]
-pub struct PressureContext {
-    /// The player under pressure.
-    pub player: PlayerId,
-}
-
-/// The context of an injury risk resolution.
-#[derive(Debug, Clone, Copy)]
-pub struct InjuryContext {
-    /// The player at risk.
-    pub player: PlayerId,
-}
-
 /// The context of a save resolution.
 #[derive(Debug, Clone, Copy)]
 pub struct SaveContext {
@@ -100,13 +86,6 @@ pub struct SaveContext {
     /// ceiling the `goalkeeping` latent modulates; not a die.
     pub reach_cm: f64,
 }
-/// The context of a set piece resolution.
-#[derive(Debug, Clone, Copy)]
-pub struct SetPieceContext {
-    /// The taker.
-    pub taker: PlayerId,
-}
-
 /// The context of a movement resolution (F.7).
 ///
 /// The player, and the Plane B data the movement formula reads: height
