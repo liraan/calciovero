@@ -1,6 +1,6 @@
 # ADR-041 — One crate, one responsibility: the vault, the orchestrator, the engine
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-09
 - **Supersedes:** —
 - **Superseded by:** —
@@ -56,6 +56,15 @@ ADR-019 deferred 3 (resolved): `possession: Option<PlayerId>` is state. The carr
 
 ADR-040 (OI-90): the pass formula reads `freedom_cm` from the receiver's context (the value the reception uses), not from the orphan `PassContext.receiver_freedom_cm`. The action that the orchestrator returns carries the `freedom_cm` of the chosen receiver, so the engine does not keep a side `BTreeMap` (`freedoms`). One source of truth (D5).
 
+## The filters
+
+This ADR is architecture, and the filters (partita vera, luna) do not judge the division in crates: a fan does not see "one crate, one responsibility". What the filters judge is the model inside the ADR, and they separate what is filtered from what is justified by other sources. Declared, not hidden:
+
+- **§3-4 (contact = actor, effect = world).** Filtered. A fan sees who kicks the ball, not "the world"; the contact is the actor's, the effect is the world's. This is the one part of the ADR that the filters decided.
+- **§5 (the carrier is state).** Not a filter decision: it is ADR-019 deferred 3, resolved. The carrier is an observable fact (who has the ball), and the actor reads it; it is not produced by the decision. The filters agree, but the source is the ADR, not the filters.
+- **§6 (`freedom_cm` travels in the action).** The filters find a gap. In a real match "how free the receiver is" is a **relation** (the receiver, the marker, the direction of the pass), not a single number. `freedom_cm` is the distance to the nearest opponent: a prototype simplification that ADR-040 uses as a signal without declaring it as a simplification. This ADR does not fix the model; it declares the simplification and tracks it as OI-95 (the relation, not the value). Moving the value from a side map to the action does not make it a relation.
+- **The principle and the map (§1-2).** Not filterable: the fan does not see the crate layout. Justified by D7 (refine, do not fragment), D5 (one declared responsibility per crate, a visible artefact) and ADR-032 (the `ds-*` prefix). A model ADR would be needed only if the split changed what the engine simulates; it does not.
+
 ## Consequences
 
 ### A new crate, and a crate that disappears
@@ -104,3 +113,4 @@ The principle (one door, no public fields, no `Serialize`) stays. The door chang
 
 - **2026-11-09 — Status: proposed.** Written after the maintainer's decisions: the orchestrator is a new crate, not a module; one crate, one responsibility; the execution splits in contact (the actor's) and effect (the world's). The ADR is **proposed**, not accepted: the implementation shape is not yet validated against the code (ADR-026's lesson, 2026-11-01: an ADR that prescribes an implementation without reading the code is a draft). The first commit after acceptance is a dated note on ADR-003 (the door changes) and the `pcfm-orchestrator` skeleton.
 - **2026-11-09 — what this ADR corrects.** An earlier draft (in `/tmp`, discarded) said `Status: accepted` and prescribed a single `pcfm-orchestrator` with the execution inside. It was wrong on both: the status (no decision from the maintainer yet) and the place of the execution (the filters say contact = actor, effect = world).
+- **2026-11-09 — accepted, with "The filters" section.** The maintainer accepts. The filters (partita vera, luna) were asked before acceptance and did not judge the architecture: they judged the model inside it, and the answer is the "The filters" section. One gap found and declared: `freedom_cm` is a value where the match shows a relation, tracked as OI-95. The first implementation commit is the split of `pcfm-hidden` into `ds-db`, `ds-selector`, `ds-orchestrator` (directly the target names, not a `ds-hidden` intermediate that would live one commit: D7).
