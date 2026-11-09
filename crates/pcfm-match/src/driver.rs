@@ -7,7 +7,7 @@
 //! (ADR-003). This function keeps Plane A inside `pcfm-match`: the caller
 //! passes a `Match` and a seed, and receives a `MatchResult`.
 
-use pcfm_core::rng::RngRegistry;
+use ds_core::rng::RngRegistry;
 use pcfm_hidden::GroundTruth;
 use pcfm_model::Match;
 use pcfm_stats::EventChain;

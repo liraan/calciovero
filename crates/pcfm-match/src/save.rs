@@ -47,9 +47,9 @@
 //!   `replay` would produce a different result.
 //! - If the chain hash does not verify, the save is rejected (tampering).
 
-use pcfm_core::ids::MatchId;
-use pcfm_core::rng::RngRegistry;
-use pcfm_core::time::GameInstant;
+use ds_core::ids::MatchId;
+use ds_core::rng::RngRegistry;
+use ds_core::time::GameInstant;
 use pcfm_hidden::GroundTruth;
 use pcfm_model::Match;
 use pcfm_stats::EventChain;
@@ -227,7 +227,7 @@ pub enum SaveError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pcfm_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
+    use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
     use pcfm_model::{
         FormationId, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
         PsychologicalStateMinimal, Referee, RoleId, Squad,
@@ -311,7 +311,7 @@ mod tests {
         let (match_, result) = simulate(42);
         let mut save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
         // Corrupt the state hash so the chain no longer verifies.
-        save.result.state_hash = pcfm_core::hash::Hash::ZERO;
+        save.result.state_hash = ds_core::hash::Hash::ZERO;
         let bytes = serde_json::to_vec(&save).unwrap();
         let err = MatchSave::from_bytes(&bytes).unwrap_err();
         assert!(matches!(err, SaveError::ChainHashMismatch));

@@ -33,7 +33,7 @@
 //! `explosive_force` is the first new-model field: it is read by the
 //! movement formula (F.7).
 
-use pcfm_core::ids::PlayerId;
+use ds_core::ids::PlayerId;
 
 /// A latent attribute of a player, grouped by family (L0.11 §7, §12.2).
 #[derive(Debug, Clone, Copy)]
@@ -155,7 +155,7 @@ impl PlayerLatents {
 /// Derives a value in `[0, 1)` from `(world_seed, player_id, purpose)`.
 ///
 /// The hash is BLAKE3, the same function used for the stream derivation in
-/// `pcfm-core::rng` and for the event chain. The key material is the world
+/// `ds-core::rng` and for the event chain. The key material is the world
 /// seed, the player's slot and generation (so two different players never
 /// collide), and the purpose (the characteristic name).
 #[must_use]

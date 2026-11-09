@@ -6,8 +6,8 @@
 //! tests assert both: the rendered text uses the fields, and the event
 //! (the substrate) is still there, unmodified.
 
-use pcfm_core::ids::{ActorId, EventId, MatchId, PlayerId};
-use pcfm_core::time::GameInstant;
+use ds_core::ids::{ActorId, EventId, MatchId, PlayerId};
+use ds_core::time::GameInstant;
 use pcfm_fixtures::match_fixture;
 use pcfm_match::narrate;
 use pcfm_stats::{EventChain, EventType, Half, MatchEvent};

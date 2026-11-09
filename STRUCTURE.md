@@ -131,7 +131,7 @@ archive/
 
 ```
 crates/
-├── pcfm-core/        (RNG, event bus, IDs, hash, time)
+├── ds-core/        (RNG, event bus, IDs, hash, time)
 ├── pcfm-model/       (minimal entities, CauseTrace)
 ├── pcfm-hidden/      (Plane A: GroundTruth, resolve_*)
 ├── pcfm-stats/       (Plane B: MatchEvent, EventChain)
@@ -199,7 +199,7 @@ pc-football-manager/
 
 **File naming:** `NN-kebab-case-name.md`, two-digit prefix, no Italian, no version in the filename. `04-match-engine.md`, not `Match Engine 04 (rev 1.1).md`. The filename is stable; the revision lives in the frontmatter.
 
-**Crate naming:** the crates in `crates/` use the `pcfm-` prefix. Current: `pcfm-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-calculator`, `pcfm-match`, `pcfm-stats`, `pcfm-testkit`, `pcfm-test-runner`, `pcfm-demo`, `pcfm-fixtures`. Planned (post-v1.0): `pcfm-packs`, `pcfm-assets`, `pcfm-pack`. `pcfm-testkit` is the public test harness contract: it has **no dependency on any other `pcfm-*` crate**, so core modules, plugins, and tools can all implement `pcfm_testkit::Scenario` without coupling. The historical prefix `fmr-` (from the original "FMR project" name) is deprecated and must not be used in new files. Rust module paths follow the same convention with an underscore: `pcfm_core::rng`, `pcfm_match::simulate`, `pcfm_testkit::Scenario`, etc.
+**Crate naming:** the crates in `crates/` use the `pcfm-` prefix. Current: `ds-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-calculator`, `pcfm-match`, `pcfm-stats`, `pcfm-testkit`, `pcfm-test-runner`, `pcfm-demo`, `pcfm-fixtures`. Planned (post-v1.0): `pcfm-packs`, `pcfm-assets`, `pcfm-pack`. `pcfm-testkit` is the public test harness contract: it has **no dependency on any other `pcfm-*` crate**, so core modules, plugins, and tools can all implement `pcfm_testkit::Scenario` without coupling. The historical prefix `fmr-` (from the original "FMR project" name) is deprecated and must not be used in new files. Rust module paths follow the same convention with an underscore: `ds_core::rng`, `pcfm_match::simulate`, `pcfm_testkit::Scenario`, etc.
 
 **Modules vs sub-modules:** A **module** is a directory (`L0-match`, `L2-psyche`). A **sub-module** is a file inside a module (`04-match-engine.md`). A sub-sub-module is a section (`##`) inside a file. There is no third level of directories. If a sub-module needs its own children, it becomes a new module at the same level, not a deeper directory.
 

@@ -13,7 +13,7 @@ name = "pcfm-demo"
 path = "src/main.rs"
 
 [dependencies]
-pcfm-core.workspace = true
+ds-core.workspace = true
 pcfm-model.workspace = true
 pcfm-stats.workspace = true
 pcfm-match.workspace = true

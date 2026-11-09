@@ -7,7 +7,7 @@
 //! A new fact species is a `SIM_VERSION` bump if it changes which events
 //! are emitted (CHANGELOG-SIM.md, "When to bump", point 2).
 
-use pcfm_core::ids::{ActorId, PlayerId};
+use ds_core::ids::{ActorId, PlayerId};
 use pcfm_hidden::ShotType;
 use pcfm_stats::EventType;
 
@@ -158,7 +158,7 @@ pub fn classify(fact: &Fact) -> Vec<Classified> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pcfm_core::ids::PlayerId;
+    use ds_core::ids::PlayerId;
 
     fn p(slot: u32) -> PlayerId {
         PlayerId::new(slot, 0)

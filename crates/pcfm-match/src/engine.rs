@@ -49,8 +49,8 @@ impl MatchEngine for TextMatchEngine {
 mod tests {
     use super::*;
     use crate::context::MatchConfig;
-    use pcfm_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
-    use pcfm_core::rng::RngRegistry;
+    use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
+    use ds_core::rng::RngRegistry;
     use pcfm_hidden::GroundTruth;
     use pcfm_model::{
         FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,

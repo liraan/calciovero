@@ -2,7 +2,7 @@
 //!
 //! See `specs/L0-match/03-entities-minimal.md` §2.7.
 
-use pcfm_core::ids::MatchId;
+use ds_core::ids::MatchId;
 use serde::{Deserialize, Serialize};
 
 use crate::pitch::Pitch;
@@ -126,7 +126,7 @@ mod tests {
     use super::*;
     use crate::player::{PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId};
     use crate::squad::{FormationId, Squad};
-    use pcfm_core::ids::{PlayerId, RefereeId, SquadId};
+    use ds_core::ids::{PlayerId, RefereeId, SquadId};
 
     fn make_squad(id: u32, slot_base: u32) -> Squad {
         let players: Vec<Player> = (0..11)

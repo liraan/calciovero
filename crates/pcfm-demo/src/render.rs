@@ -241,7 +241,7 @@ mod tests {
     fn format_narrative_pads_minute() {
         let entry = NarrativeEntry {
             minute: 7,
-            event_id: pcfm_core::ids::EventId::new(1, 0),
+            event_id: ds_core::ids::EventId::new(1, 0),
             text: "GOAL!".to_string(),
             importance: pcfm_match::Importance::Critical,
         };

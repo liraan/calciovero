@@ -12,13 +12,13 @@ use std::borrow::Cow;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Feature {
     // ── Core primitives ─────────────────────────────────────────────
-    /// The RNG registry (`pcfm-core::rng`).
+    /// The RNG registry (`ds-core::rng`).
     CoreRng,
-    /// The event bus (`pcfm-core::event_bus`).
+    /// The event bus (`ds-core::event_bus`).
     CoreEventBus,
-    /// Entity identifiers (`pcfm-core::ids`).
+    /// Entity identifiers (`ds-core::ids`).
     CoreIds,
-    /// Hashing primitives (`pcfm-core::hash`).
+    /// Hashing primitives (`ds-core::hash`).
     CoreHash,
 
     // ── L0 — Match ──────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 //! The result of a match simulation.
 
-use pcfm_core::hash::Hash;
+use ds_core::hash::Hash;
 use pcfm_stats::EventChain;
 use serde::{Deserialize, Serialize};
 

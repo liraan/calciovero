@@ -11,7 +11,7 @@
 //!
 //! See `specs/L0-match/03-entities-minimal.md` §2.6.
 
-use pcfm_core::ids::RefereeId;
+use ds_core::ids::RefereeId;
 use serde::{Deserialize, Serialize};
 
 use crate::error::ModelError;

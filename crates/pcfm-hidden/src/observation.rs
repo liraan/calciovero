@@ -3,7 +3,7 @@
 //! These are the only values that can leave `pcfm-hidden`. They are stripped
 //! of any latent value. The engine forwards them to `pcfm-stats`.
 
-use pcfm_core::ids::PlayerId;
+use ds_core::ids::PlayerId;
 
 use crate::context::DuelType;
 

@@ -37,7 +37,7 @@ Current crates (as of 2026-10-26):
 
 | Crate | Responsibility | Plane | Tests |
 |---|---|---|---|
-| `pcfm-core` | RNG, event bus, IDs, hash, time | — | 22 |
+| `ds-core` | RNG, event bus, IDs, hash, time | — | 22 |
 | `pcfm-model` | Minimal entities (`Player`, `Squad`, `Match`, …) + `CauseTrace` | B/C | 21 |
 | `pcfm-hidden` | `GroundTruth`, `resolve_*`, `drain_observations` | **A** | 4 |
 | `pcfm-stats` | `MatchEvent`, `EventType`, `EventChain` | B | 11 |
@@ -69,7 +69,7 @@ The dependency graph is **inward-only**: a crate at level N depends on crates at
 
    [dependencies]
    # Only what you need. No dependency without an ADR (see §6).
-   pcfm-core.workspace = true
+   ds-core.workspace = true
 
    [lints]
    workspace = true

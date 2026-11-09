@@ -20,8 +20,8 @@
 
 use std::time::Instant;
 
+use ds_core::ids::{MatchId, PlayerId};
 use pcfm_calculator::{Characteristic, Custodian, Datum, Formula, Situation};
-use pcfm_core::ids::{MatchId, PlayerId};
 use pcfm_hidden::GroundTruth;
 
 const N_FORMULA: u32 = 200_000;

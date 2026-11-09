@@ -21,7 +21,7 @@ impl StreamName {
     /// # Example
     ///
     /// ```
-    /// use pcfm_core::rng::StreamName;
+    /// use ds_core::rng::StreamName;
     ///
     /// let name = StreamName::new("match:abc:micro-decisions").unwrap();
     /// assert_eq!(name.as_str(), "match:abc:micro-decisions");

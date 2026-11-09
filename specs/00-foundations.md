@@ -141,7 +141,7 @@ Same save + same match + same plugin configuration → same result. Always. **De
 Operational rules:
 
 - **Generational IDs**, never hashes or pointers
-- **No die in simulation paths**: no `ChaCha20Rng` stream is consumed to decide an outcome. The `Rng` type stays in `pcfm-core` for the generator (`pcfm-gen`, not written yet), not for the engine. Derivation from a key — `hash(world_seed, ...)` for latents (OI-53) — is not a die: it is a deterministic function of the world and the identity, not a decision made in place of the actor. See [`docs/adr/035-no-dice-in-simulation.md`](../docs/adr/035-no-dice-in-simulation.md).
+- **No die in simulation paths**: no `ChaCha20Rng` stream is consumed to decide an outcome. The `Rng` type stays in `ds-core` for the generator (`pcfm-gen`, not written yet), not for the engine. Derivation from a key — `hash(world_seed, ...)` for latents (OI-53) — is not a die: it is a deterministic function of the world and the identity, not a decision made in place of the actor. See [`docs/adr/035-no-dice-in-simulation.md`](../docs/adr/035-no-dice-in-simulation.md).
 - **Each piece has a transition function**: a player perceives (cone, gaze, latency), decides among perceived options (MD-43, geometric), and moves (F.7 formula); the ball has a declared trajectory (`advance_ball`); the interaction is the composition, not a draw.
 - **No global decider**: there is no point in the engine where a single function reads the whole state and returns the outcome of an action. If such a point exists, it is a bug in the model, not a feature.
 - **Perception is derived, not noisy by hash**: the error of perception is a function of the characteristics (`vision`, `concentration_level`), the distance, and the angle. A player with low vision sees less; the same player in the same situation sees the same thing. The world is deterministic; the information is incomplete in a way the model explains (revises the noise half of ADR-029).
@@ -217,7 +217,7 @@ To keep scope honest, these are **not** in the core, and most are not in v1.0:
 - **Structure:** [`../STRUCTURE.md`](../STRUCTURE.md) — the rules of the repo
 - **Glossary:** [`../docs/GLOSSARY.md`](../docs/GLOSSARY.md) — the terms used across the spec
 - **Module developer guide:** [`../docs/PLUGIN_DEVELOPER_GUIDE.md`](../docs/PLUGIN_DEVELOPER_GUIDE.md) — how to write a module
-- **Crate naming:** crates use the `pcfm-` prefix (`pcfm-core`, `pcfm-hidden`, `pcfm-match`, ...). The historical `fmr-` prefix is deprecated. See `STRUCTURE.md` §3.
+- **Crate naming:** crates use the `pcfm-` prefix (`ds-core`, `pcfm-hidden`, `pcfm-match`, ...). The historical `fmr-` prefix is deprecated. See `STRUCTURE.md` §3.
 - **Modules and worlds:** [`../docs/adr/012-plugins.md`](../docs/adr/012-plugins.md) and [`../docs/adr/013-worlds.md`](../docs/adr/013-worlds.md) *(accepted)* — the plugin contract and the world system. ADR-013 revised pillar 1 (determinism, from global to local).
 
 ## 9. Concentric Structure (Nest Model)
@@ -245,6 +245,6 @@ L3 — META               Registry, packs, generator, editor, assets, UI, statis
 - The `00-foundations` doctrine applies at all levels.
 - The Three Planes apply at all levels.
 
-**Terminology.** In this project, "L0" denotes the **base**: the match engine and its contract. It is not a module or a plugin. "Module" (or "plugin") denotes an extension at **L1 and above**, subject to the contract in ADR-012. Consequently: `L0-match/` is the specification of the base; `pcfm-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `pcfm-test-runner` are the implementation of the base; specs/plugins live above.
+**Terminology.** In this project, "L0" denotes the **base**: the match engine and its contract. It is not a module or a plugin. "Module" (or "plugin") denotes an extension at **L1 and above**, subject to the contract in ADR-012. Consequently: `L0-match/` is the specification of the base; `ds-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `pcfm-test-runner` are the implementation of the base; specs/plugins live above.
 
 **The full map is in [`_index.md`](_index.md).**

@@ -12,7 +12,7 @@
 //! the formula guarantees (deviation toward the shooter's side, up under
 //! pressure, wider under more pressure).
 
-use pcfm_core::ids::{MatchId, PlayerId};
+use ds_core::ids::{MatchId, PlayerId};
 use pcfm_hidden::{GroundTruth, ShotContext, ShotType};
 
 const fn shooter(slot: u32) -> PlayerId {

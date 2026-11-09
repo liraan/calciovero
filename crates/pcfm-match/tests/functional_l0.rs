@@ -39,7 +39,7 @@ fn functional_l0_the_engine_emits_the_claimed_shape() {
     //    The `Goal` comes from a LineCrossing, not from the shot directly.
     let mut saw_shot: std::collections::BTreeSet<(u32, u8)> = std::collections::BTreeSet::new();
     for e in events {
-        use pcfm_core::ids::ActorId;
+        use ds_core::ids::ActorId;
         let actor_slot = match e.actor {
             Some(ActorId::Player(p)) => Some(p.slot()),
             _ => None,

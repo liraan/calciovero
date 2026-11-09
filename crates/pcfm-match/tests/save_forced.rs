@@ -7,7 +7,7 @@
 //! `goalkeeping` of the keeper in seed 42, only on the monotone relation
 //! the formula declares.
 
-use pcfm_core::ids::{MatchId, PlayerId};
+use ds_core::ids::{MatchId, PlayerId};
 use pcfm_hidden::{GroundTruth, SaveContext};
 
 const fn keeper(slot: u32) -> PlayerId {

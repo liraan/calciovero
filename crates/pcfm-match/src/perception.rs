@@ -6,7 +6,7 @@
 //!
 //! See `docs/context/L0-POSITIONAL-SLICE.md` §3.3.
 
-use pcfm_core::ids::PlayerId;
+use ds_core::ids::PlayerId;
 use pcfm_model::Squad;
 
 use crate::spatial::{AgentState, SpatialState};
@@ -313,7 +313,7 @@ mod tests {
     use super::*;
     use pcfm_model::Pitch;
 
-    use pcfm_core::ids::SquadId;
+    use ds_core::ids::SquadId;
     use pcfm_model::{
         FormationId, PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId,
     };

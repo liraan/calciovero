@@ -132,7 +132,7 @@ fn is_goal_shot(event: &MatchEvent) -> bool {
 /// Projects one `MatchEvent` into an `EventRow`.
 fn event_row(event: &MatchEvent) -> EventRow {
     let (team, number) = match event.actor {
-        Some(pcfm_core::ids::ActorId::Player(id)) => {
+        Some(ds_core::ids::ActorId::Player(id)) => {
             let slot = id.slot();
             // Slot encoding: <100 = home, >=100 = away. The modulo brings
             // the shirt number into 0..=99, which always fits in u8.
@@ -143,7 +143,7 @@ fn event_row(event: &MatchEvent) -> EventRow {
                 (Team::Home, number)
             }
         }
-        Some(pcfm_core::ids::ActorId::Referee(_)) | None => (Team::Match, 0),
+        Some(ds_core::ids::ActorId::Referee(_)) | None => (Team::Match, 0),
     };
     EventRow {
         minute: event.timestamp_minute,
@@ -298,27 +298,27 @@ mod tests {
     #[test]
     fn slot_to_team_and_number() {
         let home = MatchEvent {
-            event_id: pcfm_core::ids::EventId::new(0, 0),
-            match_id: pcfm_core::ids::MatchId::new(1, 0),
-            actor: Some(pcfm_core::ids::ActorId::Player(
-                pcfm_core::ids::PlayerId::new(9, 0),
-            )),
+            event_id: ds_core::ids::EventId::new(0, 0),
+            match_id: ds_core::ids::MatchId::new(1, 0),
+            actor: Some(ds_core::ids::ActorId::Player(ds_core::ids::PlayerId::new(
+                9, 0,
+            ))),
             half: pcfm_stats::Half::First,
             timestamp_minute: 1,
             timestamp_second: 0,
             minutes_played_cumulative: 1,
             event_type: EventType::Pass,
             fields: serde_json::json!({}),
-            created_at: pcfm_core::time::GameInstant::from_raw(0),
+            created_at: ds_core::time::GameInstant::from_raw(0),
         };
         let row = event_row(&home);
         assert_eq!(row.team, Team::Home);
         assert_eq!(row.number, 9);
 
         let away = MatchEvent {
-            actor: Some(pcfm_core::ids::ActorId::Player(
-                pcfm_core::ids::PlayerId::new(109, 0),
-            )),
+            actor: Some(ds_core::ids::ActorId::Player(ds_core::ids::PlayerId::new(
+                109, 0,
+            ))),
             ..home
         };
         let row = event_row(&away);

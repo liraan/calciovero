@@ -38,7 +38,7 @@
 //! justifies the field, not the hidden performances: the manager never
 //! sees a true value (ADR-028 §2.4), so a latent never reaches a frame.
 
-use pcfm_core::ids::PlayerId;
+use ds_core::ids::PlayerId;
 use serde::{Deserialize, Serialize};
 
 use crate::error::ModelError;
@@ -233,7 +233,7 @@ fn check_unit(field: &'static str, value: f32) -> Result<(), ModelError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pcfm_core::ids::PlayerId;
+    use ds_core::ids::PlayerId;
 
     fn valid_player() -> Player {
         Player::try_new(

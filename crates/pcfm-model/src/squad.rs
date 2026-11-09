@@ -2,7 +2,7 @@
 //!
 //! See `specs/L0-match/03-entities-minimal.md` §2.4.
 
-use pcfm_core::ids::SquadId;
+use ds_core::ids::SquadId;
 use serde::{Deserialize, Serialize};
 
 use crate::error::ModelError;
@@ -96,7 +96,7 @@ impl Squad {
 mod tests {
     use super::*;
     use crate::player::{PhysicalStateMinimal, PsychologicalStateMinimal, RoleId};
-    use pcfm_core::ids::PlayerId;
+    use ds_core::ids::PlayerId;
 
     fn make_player(slot: u32) -> Player {
         Player::try_new(

@@ -3,7 +3,7 @@
 #[derive(Debug, Clone)]
 pub struct DuelOutcome {
     /// The winner.
-    pub winner: pcfm_core::ids::PlayerId,
+    pub winner: ds_core::ids::PlayerId,
     /// Whether the attacker kept the ball.
     pub ball_retained: bool,
     /// The foul committed, if any.

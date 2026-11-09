@@ -10,7 +10,7 @@ description = "Plane B (Observation) for PCFM: MatchEvent, EventChain, append-on
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-match/05-match-events.md"
 
 [dependencies]
-pcfm-core.workspace = true
+ds-core.workspace = true
 pcfm-model.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -4,7 +4,7 @@
 //! the latent `explosive_force` is keyed (ADR-029), not drawn from a
 //! stream. So the tests hold the player fixed and vary one datum.
 
-use pcfm_core::ids::{MatchId, PlayerId};
+use ds_core::ids::{MatchId, PlayerId};
 use pcfm_hidden::{GroundTruth, MovementContext};
 
 const fn player() -> PlayerId {

@@ -298,8 +298,8 @@ mod tests {
     }
     fn make_event(kind: EventType) -> pcfm_stats::MatchEvent {
         pcfm_stats::MatchEvent {
-            event_id: pcfm_core::ids::EventId::new(0, 0),
-            match_id: pcfm_core::ids::MatchId::new(1, 0),
+            event_id: ds_core::ids::EventId::new(0, 0),
+            match_id: ds_core::ids::MatchId::new(1, 0),
             actor: None,
             half: pcfm_stats::Half::First,
             timestamp_minute: 0,
@@ -307,7 +307,7 @@ mod tests {
             minutes_played_cumulative: 0,
             event_type: kind,
             fields: serde_json::json!({}),
-            created_at: pcfm_core::time::GameInstant::from_raw(0),
+            created_at: ds_core::time::GameInstant::from_raw(0),
         }
     }
 }

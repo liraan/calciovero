@@ -4,7 +4,7 @@
 //! `pcfm-hidden`. They carry only Plane B data (positions, ids); latents
 //! are read inside the crate.
 
-use pcfm_core::ids::PlayerId;
+use ds_core::ids::PlayerId;
 
 /// The type of a duel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

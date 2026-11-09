@@ -22,7 +22,7 @@
 
 use std::collections::BTreeMap;
 
-use pcfm_core::ids::{EventId, PlayerId};
+use ds_core::ids::{EventId, PlayerId};
 use pcfm_model::Match;
 use pcfm_stats::{EventChain, EventType, MatchEvent};
 use serde::{Deserialize, Serialize};
@@ -94,8 +94,8 @@ fn narrate_event(
 ) -> NarrativeEntry {
     let importance = importance_for(ev.event_type);
     let player = match ev.actor {
-        Some(pcfm_core::ids::ActorId::Player(id)) => names.get(&id).copied().unwrap_or("<unknown>"),
-        Some(pcfm_core::ids::ActorId::Referee(_)) | None => "<match>",
+        Some(ds_core::ids::ActorId::Player(id)) => names.get(&id).copied().unwrap_or("<unknown>"),
+        Some(ds_core::ids::ActorId::Referee(_)) | None => "<match>",
     };
     let minute = ev.timestamp_minute;
 
@@ -191,7 +191,7 @@ fn render_text(
         EventType::Duel => {
             let winner = field_u32(&ev.fields, "winner_slot");
             let actor = match ev.actor {
-                Some(pcfm_core::ids::ActorId::Player(id)) => Some(id.slot()),
+                Some(ds_core::ids::ActorId::Player(id)) => Some(id.slot()),
                 _ => None,
             };
             let lost = matches!((winner, actor), (Some(w), Some(a)) if w != a);
@@ -227,8 +227,8 @@ fn render_text(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pcfm_core::ids::{EventId, MatchId, PlayerId, RefereeId, SquadId};
-    use pcfm_core::time::GameInstant;
+    use ds_core::ids::{EventId, MatchId, PlayerId, RefereeId, SquadId};
+    use ds_core::time::GameInstant;
     use pcfm_model::{
         FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
         PsychologicalStateMinimal, Referee, RoleId, Squad,
@@ -275,7 +275,7 @@ mod tests {
         MatchEvent {
             event_id: EventId::new(slot, 0),
             match_id: MatchId::new(1, 0),
-            actor: Some(pcfm_core::ids::ActorId::Player(player_id)),
+            actor: Some(ds_core::ids::ActorId::Player(player_id)),
             half: pcfm_stats::Half::First,
             timestamp_minute: minute,
             timestamp_second: 0,

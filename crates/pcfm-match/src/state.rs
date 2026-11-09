@@ -3,8 +3,8 @@
 //! `MatchState` is mutated by the tick loop. At the end of the match, it
 //! produces a `MatchResult` via `finish`.
 
-use pcfm_core::ids::{ActorId, EventId, PlayerId};
-use pcfm_core::time::GameInstant;
+use ds_core::ids::{ActorId, EventId, PlayerId};
+use ds_core::time::GameInstant;
 use pcfm_model::Squad;
 use pcfm_stats::{EventChain, EventType, Half, MatchEvent};
 use std::collections::{BTreeMap, BTreeSet};
@@ -1085,7 +1085,7 @@ fn clamp_u16(value: u64) -> u16 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pcfm_core::ids::SquadId;
+    use ds_core::ids::SquadId;
     use pcfm_model::{
         FormationId, PhysicalStateMinimal, Pitch, Player, PsychologicalStateMinimal, RoleId,
     };

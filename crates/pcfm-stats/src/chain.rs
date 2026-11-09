@@ -14,7 +14,7 @@
 //! There is no `update`, no `delete`. The only way to change the chain is
 //! `try_append`, which validates the event and appends it.
 
-use pcfm_core::hash::Hash;
+use ds_core::hash::Hash;
 use serde::{Deserialize, Serialize};
 
 use crate::error::StatsError;
@@ -105,8 +105,8 @@ impl Default for EventChain {
 mod tests {
     use super::*;
     use crate::event::{EventType, Half, MatchEvent};
-    use pcfm_core::ids::{ActorId, EventId, MatchId, PlayerId};
-    use pcfm_core::time::GameInstant;
+    use ds_core::ids::{ActorId, EventId, MatchId, PlayerId};
+    use ds_core::time::GameInstant;
 
     fn make_event(slot: u32, minute: u8) -> MatchEvent {
         MatchEvent {

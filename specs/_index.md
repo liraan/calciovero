@@ -220,13 +220,13 @@ These are the `pcfm-*` crates that provide infrastructure to multiple modules. T
 
 | Component | Currently defined in | Dedicated module (planned) | Notes |
 |---|---|---|---|
-| `pcfm-core` | L0.01 §2.2 (RNG), L0.02 §2.1 (event bus), L0.03 §3.1 (IDs), `00-foundations` §4 (fixed-point) | — | The core crate. Used by every other crate. |
+| `ds-core` | L0.01 §2.2 (RNG), L0.02 §2.1 (event bus), L0.03 §3.1 (IDs), `00-foundations` §4 (fixed-point) | — | The core crate. Used by every other crate. |
 | `pcfm-stats` | L0.05 §2.4 (`EventChain`), L0.06 (consumer) | `L3-statistics` | Storage of `MatchEvent`, query engine. |
 | `pcfm-metrics` | L0.04 §2.4 (sub-models), L0.06 §2.3 (`MatchStatistics`) | `L3-statistics` | PPDA, progressive actions. xG removed from L0 on 2026-10-31 (latent-derived at L0, no observable features). |
 | `pcfm-data` | L0.07 §2.3 (migration scripts) | `L3-quality` | Loader, validator, migrations. |
 | `pcfm-bridge` | `docs/adr/004-panic-strategy-ffi.md`, `docs/adr/005-qt-binding.md` | `L3-ui` | Qt FFI shim. The only crate that knows Qt. |
 
-**Rule:** when a new module needs `pcfm-core` (or any other infrastructure crate), it does not re-specify the crate. It links to the existing definition. The dedicated module, when written, will be the single source of truth; until then, the "Currently defined in" column is the map.
+**Rule:** when a new module needs `ds-core` (or any other infrastructure crate), it does not re-specify the crate. It links to the existing definition. The dedicated module, when written, will be the single source of truth; until then, the "Currently defined in" column is the map.
 
 ### Cross-module components
 

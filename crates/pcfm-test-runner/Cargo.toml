@@ -14,7 +14,7 @@ name = "pcfm-test-runner"
 path = "src/main.rs"
 
 [dependencies]
-pcfm-core.workspace = true
+ds-core.workspace = true
 pcfm-model.workspace = true
 pcfm-hidden.workspace = true
 pcfm-stats.workspace = true

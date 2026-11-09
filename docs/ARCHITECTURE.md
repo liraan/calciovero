@@ -60,15 +60,15 @@ fit together.
 
 | Crate | Role | Plane | Depends on |
 |-------|------|-------|------------|
-| `pcfm-core` | Infrastructure: RNG, event bus, IDs, hash, time | — | (none) |
-| `pcfm-model` | Minimal entities: Player (no latents), Squad, Pitch, Referee, Match | B/C | `pcfm-core` |
-| `pcfm-hidden` | Plane A: GroundTruth, `resolve_*`, `drain_observations` | **A** | `pcfm-core`, `pcfm-model` |
-| `pcfm-stats` | Plane B: MatchEvent, EventChain (append-only, hash chain) | B | `pcfm-core`, `pcfm-model` |
-| `pcfm-match` | Match engine: orchestrator `simulate_match`, `TextMatchEngine`, save/load, narrative | — | `pcfm-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats` |
+| `ds-core` | Infrastructure: RNG, event bus, IDs, hash, time | — | (none) |
+| `pcfm-model` | Minimal entities: Player (no latents), Squad, Pitch, Referee, Match | B/C | `ds-core` |
+| `pcfm-hidden` | Plane A: GroundTruth, `resolve_*`, `drain_observations` | **A** | `ds-core`, `pcfm-model` |
+| `pcfm-stats` | Plane B: MatchEvent, EventChain (append-only, hash chain) | B | `ds-core`, `pcfm-model` |
+| `pcfm-match` | Match engine: orchestrator `simulate_match`, `TextMatchEngine`, save/load, narrative | — | `ds-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats` |
 | `pcfm-testkit` | Contract: `Scenario`, `Feature`, `TestRegistry` | — | (none) |
-| `pcfm-test-runner` | CLI: `--check`, `--list`, `--coverage` | — | `pcfm-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `pcfm-fixtures` |
-| `pcfm-demo` | CLI: simulate a match, render text/JSON/HTML | — | `pcfm-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-fixtures` |
-| `pcfm-fixtures` | Hardcoded squads and match fixture | — | `pcfm-core`, `pcfm-model` |
+| `pcfm-test-runner` | CLI: `--check`, `--list`, `--coverage` | — | `ds-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `pcfm-fixtures` |
+| `pcfm-demo` | CLI: simulate a match, render text/JSON/HTML | — | `ds-core`, `pcfm-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-fixtures` |
+| `pcfm-fixtures` | Hardcoded squads and match fixture | — | `ds-core`, `pcfm-model` |
 
 **Dependency rule:** every crate depends only on crates at a level **lower
 or equal** in the list above. No cycles. `pcfm-testkit` is intentionally
@@ -79,7 +79,7 @@ The crate-level dependency graph:
 
 ```
 pcfm-test-runner        pcfm-demo
-├── pcfm-core           ├── pcfm-core
+├── ds-core           ├── ds-core
 ├── pcfm-model          ├── pcfm-model
 ├── pcfm-hidden         ├── pcfm-hidden
 ├── pcfm-stats          ├── pcfm-stats
@@ -88,23 +88,23 @@ pcfm-test-runner        pcfm-demo
 └── pcfm-fixtures
 
 pcfm-fixtures
-├── pcfm-core
+├── ds-core
 └── pcfm-model
 
 pcfm-match
-├── pcfm-core
+├── ds-core
 ├── pcfm-model
 ├── pcfm-hidden
 └── pcfm-stats
 
 pcfm-hidden        pcfm-stats
-├── pcfm-core      ├── pcfm-core
+├── ds-core      ├── ds-core
 └── pcfm-model     └── pcfm-model
 
 pcfm-model
-└── pcfm-core
+└── ds-core
 
-pcfm-core          pcfm-testkit
+ds-core          pcfm-testkit
 (none)             (none)
 ```
 
@@ -145,7 +145,7 @@ the sequence that a future UI will follow.
 ```
 1. match_fixture(seed) -> Match           (pcfm-fixtures)
 2. GroundTruth::new(world_seed, id)    (pcfm-hidden)         [Plane A]
-3. RngRegistry::new(world_seed)        (pcfm-core)
+3. RngRegistry::new(world_seed)        (ds-core)
 4. EventChain::new()                   (pcfm-stats)          [Plane B, empty]
 5. MatchContext { match_, hidden, rng, chain, config }
 6. simulate_match(&mut ctx)            (pcfm-match::orchestrator)

@@ -58,7 +58,7 @@ fi
 # `cargo test` in C2 (closing step 1), and the README badge is the declared
 # value, not a second source. Checking the badge against itself is circular.
 # Excluded: lines with "as of" (historical).
-a4_real_crates=$(ls crates/ 2>/dev/null | grep -c '^pcfm-')
+a4_real_crates=$(ls crates/ 2>/dev/null | grep -cE '^(pcfm|ds)-')
 a4_real_adrs=$(ls docs/adr/*.md 2>/dev/null | grep -v '000-template' | wc -l | tr -d ' ')
 a4_bad=""
 for a4_f in README.md specs/_index.md STRUCTURE.md CONTRIBUTING.md; do
@@ -235,7 +235,7 @@ else
 # the platform; the engine may not.
 b9_banned='use std::(fs|net|thread|process|env|os|path)'
 b9_banned_crates='use (tokio|rayon|async_std|smol)'
-b9_sim_crates="crates/pcfm-core/src crates/pcfm-model/src crates/pcfm-hidden/src crates/pcfm-calculator/src crates/pcfm-match/src crates/pcfm-stats/src"
+b9_sim_crates="crates/ds-core/src crates/pcfm-model/src crates/pcfm-hidden/src crates/pcfm-calculator/src crates/pcfm-match/src crates/pcfm-stats/src"
 b9_hits=0
 for d in $b9_sim_crates; do
   if [ -d "$d" ]; then

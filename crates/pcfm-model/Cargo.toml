@@ -10,7 +10,7 @@ description = "Minimal entities for PCFM (L0.03): Player, Squad, Pitch, Referee,
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-match"
 
 [dependencies]
-pcfm-core.workspace = true
+ds-core.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 

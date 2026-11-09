@@ -10,7 +10,7 @@ description = "Plane A (Ground Truth) for PCFM: latent attributes, resolve_* API
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-match/10-ground-truth.md"
 
 [dependencies]
-pcfm-core.workspace = true
+ds-core.workspace = true
 pcfm-model.workspace = true
 pcfm-calculator.workspace = true
 rand_chacha.workspace = true

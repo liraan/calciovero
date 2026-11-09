@@ -7,8 +7,8 @@
 //! Events are **never** modified or deleted. The `EventChain` (in `chain.rs`)
 //! enforces this at the storage level: there is no `update` or `delete`.
 
-use pcfm_core::ids::{ActorId, EventId, MatchId};
-use pcfm_core::time::GameInstant;
+use ds_core::ids::{ActorId, EventId, MatchId};
+use ds_core::time::GameInstant;
 use serde::{Deserialize, Serialize};
 
 use crate::error::StatsError;
@@ -136,8 +136,8 @@ impl MatchEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pcfm_core::ids::{ActorId, EventId, MatchId, PlayerId};
-    use pcfm_core::time::GameInstant;
+    use ds_core::ids::{ActorId, EventId, MatchId, PlayerId};
+    use ds_core::time::GameInstant;
 
     fn valid_event() -> MatchEvent {
         MatchEvent {

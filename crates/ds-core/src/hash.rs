@@ -5,7 +5,7 @@
 //! deterministic, collision-resistant digest is needed.
 //!
 //! BLAKE3 is chosen for the same reason as the seed derivation in
-//! `pcfm-core::rng`: fast, deterministic, cryptographic.
+//! `ds-core::rng`: fast, deterministic, cryptographic.
 
 use serde::{Deserialize, Serialize};
 

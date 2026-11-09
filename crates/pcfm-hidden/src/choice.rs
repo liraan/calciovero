@@ -16,8 +16,8 @@
 //! Plane A values it cannot. See L0.11 §4.6 for the situation terms the
 //! calculator will read once OI-84 lands.
 
+use ds_core::ids::PlayerId;
 use pcfm_calculator::{Calculator, Characteristic, Custodian, Datum, Situation};
-use pcfm_core::ids::PlayerId;
 
 use crate::GroundTruth;
 

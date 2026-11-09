@@ -8,7 +8,7 @@
 //! Split out of `pcfm-debug::demo` when the demo binary was separated from
 //! the test runner (ADR-020).
 
-use pcfm_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
+use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
 use pcfm_model::{
     FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
     PsychologicalStateMinimal, Referee, RoleId, Squad,

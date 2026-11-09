@@ -4,7 +4,7 @@
 //! carries the tuneable parameters (loaded from `balance/match_engine.toml`
 //! in a future step; for now, defaults are enough).
 
-use pcfm_core::rng::RngRegistry;
+use ds_core::rng::RngRegistry;
 use pcfm_hidden::GroundTruth;
 use pcfm_model::Match;
 use pcfm_stats::EventChain;

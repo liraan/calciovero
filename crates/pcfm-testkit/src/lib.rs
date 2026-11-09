@@ -7,7 +7,7 @@
 //!
 //! # Design rules
 //!
-//! - No dependency on `pcfm-core`, `pcfm-match`, or any other crate.
+//! - No dependency on `ds-core`, `pcfm-match`, or any other crate.
 //! - No I/O, no network, no environment access.
 //! - Traits are object-safe so the registry can hold `Box<dyn Scenario>`.
 

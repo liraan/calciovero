@@ -205,7 +205,7 @@ The top-level seed from which all streams are derived. Changing it changes the e
 
 ### `SIM_VERSION`
 
-The version identifier of the simulation behaviour. Bumped whenever the outcome of a simulation changes for the same seed and inputs. Tracked in [`CHANGELOG-SIM.md`](../CHANGELOG-SIM.md). Defined in `pcfm-core` (planned).
+The version identifier of the simulation behaviour. Bumped whenever the outcome of a simulation changes for the same seed and inputs. Tracked in [`CHANGELOG-SIM.md`](../CHANGELOG-SIM.md). Defined in `ds-core` (planned).
 
 ### Golden test
 
@@ -222,7 +222,7 @@ A test that asserts a property that must hold for all inputs (e.g. "money is con
 ### `pcfm-*` crates
 
 The Rust crates of the project. Each has a single responsibility. The mapping:
-- `pcfm-core` — time, IDs, RNG, event bus, deterministic math
+- `ds-core` — time, IDs, RNG, event bus, deterministic math
 - `pcfm-hidden` — Plane A (latents, `resolve_*`)
 - `pcfm-match` — the match engine (orchestrator, L0.04)
 - `pcfm-stats` — Plane B storage (append-only)

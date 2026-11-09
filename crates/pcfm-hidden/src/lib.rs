@@ -40,12 +40,12 @@ pub use outcome::{
 use std::collections::BTreeMap;
 use std::fmt;
 
-use pcfm_core::ids::{MatchId, PlayerId};
-use pcfm_core::rng::{RngRegistry, StreamName};
+use ds_core::ids::{MatchId, PlayerId};
+use ds_core::rng::{RngRegistry, StreamName};
 use rand_chacha::ChaCha20Rng;
 
 use crate::latents::PlayerLatents;
-use pcfm_core::rng::next_unit;
+use ds_core::rng::next_unit;
 
 /// One RNG stream per noise consumer.
 ///
@@ -513,7 +513,7 @@ impl fmt::Debug for GroundTruth {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pcfm_core::ids::{MatchId, PlayerId};
+    use ds_core::ids::{MatchId, PlayerId};
 
     fn ctx_duel() -> DuelContext {
         DuelContext {
@@ -569,7 +569,7 @@ mod tests {
 #[cfg(test)]
 mod movement_tests {
     use super::*;
-    use pcfm_core::ids::{MatchId, PlayerId};
+    use ds_core::ids::{MatchId, PlayerId};
 
     fn gt() -> GroundTruth {
         GroundTruth::new(42, MatchId::new(1, 0))
@@ -621,7 +621,7 @@ mod movement_tests {
 #[cfg(test)]
 mod reception_tests {
     use super::*;
-    use pcfm_core::ids::{MatchId, PlayerId};
+    use ds_core::ids::{MatchId, PlayerId};
 
     fn params() -> ReceptionParams {
         ReceptionParams {
@@ -702,7 +702,7 @@ mod reception_tests {
 #[cfg(test)]
 mod latency_tests {
     use super::*;
-    use pcfm_core::ids::{MatchId, PlayerId};
+    use ds_core::ids::{MatchId, PlayerId};
 
     fn gt() -> GroundTruth {
         GroundTruth::new(42, MatchId::new(1, 0))

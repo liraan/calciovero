@@ -5,7 +5,7 @@
 //! `TestRegistry`. Behaviour is unchanged: the output of `--check` is the
 //! same six lines as before.
 
-use pcfm_core::time::GameInstant;
+use ds_core::time::GameInstant;
 use pcfm_match::{MatchConfig, MatchResult, MatchSave};
 use pcfm_model::Match;
 use pcfm_testkit::{Feature, Scenario, ScenarioResult, TestContext, TestRegistry};

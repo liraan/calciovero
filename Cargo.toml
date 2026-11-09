@@ -3,7 +3,7 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/pcfm-core",
+    "crates/ds-core",
     "crates/pcfm-model",
     "crates/pcfm-hidden",
     "crates/pcfm-match",
@@ -27,7 +27,7 @@ documentation = "https://github.com/liraan/calciovero/tree/main/modules"
 
 [workspace.dependencies]
 # Internal
-pcfm-core = { path = "crates/pcfm-core", version = "0.1.0" }
+ds-core = { path = "crates/ds-core", version = "0.1.0" }
 pcfm-model = { path = "crates/pcfm-model", version = "0.1.0" }
 pcfm-hidden = { path = "crates/pcfm-hidden", version = "0.1.0" }
 pcfm-stats = { path = "crates/pcfm-stats", version = "0.1.0" }

@@ -44,12 +44,12 @@ Read in this order:
 
 | # | File | Why |
 |---|------|-----|
-| 1 | `crates/pcfm-core/src/lib.rs` | The module map. 5 modules, nothing else. |
-| 2 | `crates/pcfm-core/src/rng.rs` | Deterministic named streams. Every consumer of randomness goes through here. |
-| 3 | `crates/pcfm-core/src/event_bus.rs` | In-process dispatch. Insertion-order, single-thread per match. |
-| 4 | `crates/pcfm-core/src/ids.rs` | Generational entity IDs. Why not `u32`. |
-| 5 | `crates/pcfm-core/src/hash.rs` | BLAKE3 digest, used by `EventChain`. |
-| 6 | `crates/pcfm-core/src/time.rs` | `GameInstant`, not `SystemTime`. |
+| 1 | `crates/ds-core/src/lib.rs` | The module map. 5 modules, nothing else. |
+| 2 | `crates/ds-core/src/rng.rs` | Deterministic named streams. Every consumer of randomness goes through here. |
+| 3 | `crates/ds-core/src/event_bus.rs` | In-process dispatch. Insertion-order, single-thread per match. |
+| 4 | `crates/ds-core/src/ids.rs` | Generational entity IDs. Why not `u32`. |
+| 5 | `crates/ds-core/src/hash.rs` | BLAKE3 digest, used by `EventChain`. |
+| 6 | `crates/ds-core/src/time.rs` | `GameInstant`, not `SystemTime`. |
 
 **After this stage you can answer:** why is `RngRegistry` a `BTreeMap` and
 not a `HashMap`? Why does `EventBus` not allow publishing during

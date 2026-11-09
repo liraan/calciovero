@@ -9,7 +9,7 @@ repository.workspace = true
 description = "Test fixtures for PCFM: hardcoded squads and match for scenarios and demos"
 
 [dependencies]
-pcfm-core.workspace = true
+ds-core.workspace = true
 pcfm-model.workspace = true
 
 [lints]

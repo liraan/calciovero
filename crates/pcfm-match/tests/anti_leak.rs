@@ -2,9 +2,9 @@
 //! A serialised save must not contain any known latent field name.
 //! Structural, not exhaustive: covers the names in the current prototype.
 
-use pcfm_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
-use pcfm_core::rng::RngRegistry;
-use pcfm_core::time::GameInstant;
+use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
+use ds_core::rng::RngRegistry;
+use ds_core::time::GameInstant;
 use pcfm_hidden::GroundTruth;
 use pcfm_match::{MatchConfig, MatchContext, MatchEngine, MatchSave, TextMatchEngine};
 use pcfm_model::{

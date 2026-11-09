@@ -1,4 +1,4 @@
-//! `pcfm-core` — core infrastructure for PCFM.
+//! `ds-core` — core infrastructure for PCFM.
 //!
 //! This crate is the foundation of every other crate in PCFM. It contains
 //! no game logic; only infrastructure: RNG, event bus, IDs, time, hash,
@@ -20,7 +20,7 @@ pub mod ids;
 pub mod rng;
 pub mod time;
 
-/// Returns the version of `pcfm-core`, as declared in `Cargo.toml`.
+/// Returns the version of `ds-core`, as declared in `Cargo.toml`.
 #[must_use]
 pub const fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")

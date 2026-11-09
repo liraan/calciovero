@@ -31,7 +31,7 @@
 
 use std::collections::BTreeMap;
 
-use pcfm_core::ids::PlayerId;
+use ds_core::ids::PlayerId;
 use pcfm_model::{Pitch, Squad};
 
 /// A player's position, velocity, heading and gaze on the pitch.
@@ -550,7 +550,7 @@ impl SpatialState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pcfm_core::ids::SquadId;
+    use ds_core::ids::SquadId;
     use pcfm_model::{PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId};
 
     fn make_bodies() -> BTreeMap<PlayerId, PlayerBody> {
@@ -635,7 +635,7 @@ mod tests {
         let h_before = s.agent(home_gk).unwrap().position;
         let a_before = s.agent(away_gk).unwrap().position;
         let bodies = make_bodies();
-        let mut hidden = pcfm_hidden::GroundTruth::new(42, pcfm_core::ids::MatchId::new(0, 0));
+        let mut hidden = pcfm_hidden::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
         s.move_agents(
             10500,
             6800,
@@ -762,7 +762,7 @@ mod tests {
         // read once F.6 makes it per-agent).
         let mut s = make_state();
         let bodies = make_bodies();
-        let mut hidden = pcfm_hidden::GroundTruth::new(42, pcfm_core::ids::MatchId::new(0, 0));
+        let mut hidden = pcfm_hidden::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
         s.move_agents(
             10500,
             6800,
