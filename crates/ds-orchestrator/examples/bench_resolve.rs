@@ -47,6 +47,7 @@ impl Situation for FixedSituation {
             Datum::Height => 180.0,
             Datum::Weight => self.weight,
             Datum::Fatigue => self.fatigue,
+            Datum::Crowding | Datum::NearestThreat => 0.0,
         }
     }
 }

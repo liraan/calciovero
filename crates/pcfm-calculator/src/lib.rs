@@ -96,6 +96,10 @@ pub enum Datum {
     Weight,
     /// Fatigue, 0.0–1.0 (state).
     Fatigue,
+    /// Crowding around the actor, 0.0-1.0 (scene term, §4.6 Decision family).
+    Crowding,
+    /// Nearest threat distance, 0.0-1.0 (scene term, §4.6 Decision family).
+    NearestThreat,
 }
 
 impl Datum {
@@ -106,6 +110,8 @@ impl Datum {
             Self::Height => "height",
             Self::Weight => "weight",
             Self::Fatigue => "fatigue",
+            Self::Crowding => "crowding",
+            Self::NearestThreat => "nearest_threat",
         }
     }
 
@@ -116,6 +122,8 @@ impl Datum {
             "height" => Some(Self::Height),
             "weight" => Some(Self::Weight),
             "fatigue" => Some(Self::Fatigue),
+            "crowding" => Some(Self::Crowding),
+            "nearest_threat" => Some(Self::NearestThreat),
             _ => None,
         }
     }
@@ -323,7 +331,7 @@ mod tests {
             match datum {
                 Datum::Height => self.height,
                 Datum::Weight => self.weight,
-                Datum::Fatigue => 0.0,
+                Datum::Fatigue | Datum::Crowding | Datum::NearestThreat => 0.0,
             }
         }
     }
@@ -410,7 +418,13 @@ mod tests {
         ] {
             assert_eq!(Characteristic::from_name(c.name()), Some(c));
         }
-        for d in [Datum::Height, Datum::Weight, Datum::Fatigue] {
+        for d in [
+            Datum::Height,
+            Datum::Weight,
+            Datum::Fatigue,
+            Datum::Crowding,
+            Datum::NearestThreat,
+        ] {
             assert_eq!(Datum::from_name(d.name()), Some(d));
         }
     }

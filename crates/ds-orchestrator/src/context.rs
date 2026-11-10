@@ -197,4 +197,8 @@ pub struct ReceptionParams {
 pub struct LatencyContext {
     /// The actor whose pace is resolved.
     pub player: PlayerId,
+    /// Crowding around the actor, 0.0-1.0 (scene term, ADR-044 §6).
+    pub crowding: f64,
+    /// Nearest threat distance, 0.0-1.0 (scene term, ADR-044 §6).
+    pub nearest_threat: f64,
 }

@@ -417,6 +417,7 @@ impl GroundTruth {
                     Datum::Height => self.height,
                     Datum::Weight => self.weight,
                     Datum::Fatigue => self.fatigue,
+                    Datum::Crowding | Datum::NearestThreat => 0.0,
                 }
             }
         }
@@ -465,20 +466,27 @@ impl GroundTruth {
     pub fn resolve_latency(&mut self, ctx: &LatencyContext) -> LatencyOutcome {
         use pcfm_calculator::{Calculator, Datum, Situation};
 
-        struct NoData;
-        impl Situation for NoData {
-            fn datum(&self, _datum: Datum) -> f64 {
-                // The latency formula declares no Plane B datum. A formula
-                // that declared one would be rejected at load time by the
-                // calculator's catalogue; this branch is unreachable today.
-                0.0
+        struct LatencySituation {
+            crowding: f64,
+            nearest_threat: f64,
+        }
+        impl Situation for LatencySituation {
+            fn datum(&self, datum: Datum) -> f64 {
+                match datum {
+                    Datum::Crowding => self.crowding,
+                    Datum::NearestThreat => self.nearest_threat,
+                    _ => 0.0,
+                }
             }
         }
 
         let mut custodian = self.custodian(ctx.player);
         let balance = &self.latency_balance;
         let formula = balance.formula();
-        let situation = NoData;
+        let situation = LatencySituation {
+            crowding: ctx.crowding,
+            nearest_threat: ctx.nearest_threat,
+        };
         let latency = Calculator::apply(formula, &mut custodian, &situation);
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let ticks = latency.round().max(1.0) as u64;
@@ -707,6 +715,8 @@ mod latency_tests {
     fn ctx(slot: u32) -> LatencyContext {
         LatencyContext {
             player: PlayerId::new(slot, 0),
+            crowding: 0.0,
+            nearest_threat: 0.0,
         }
     }
 
@@ -728,6 +738,31 @@ mod latency_tests {
     }
 
     #[test]
+    fn same_actor_in_two_scenes_decides_at_different_times() {
+        // P1: the latency must read the relation, not only the actor
+        // (ADR-044 §6). A crowded scene with a close threat extends the
+        // wait; an open scene shortens it. Same actor, same seed.
+        let mut g = gt();
+        let player = PlayerId::new(1, 0);
+        let open = LatencyContext {
+            player,
+            crowding: 0.0,
+            nearest_threat: 0.0,
+        };
+        let crowded = LatencyContext {
+            player,
+            crowding: 1.0,
+            nearest_threat: 1.0,
+        };
+        let t_open = g.resolve_latency(&open).ticks;
+        let t_crowded = g.resolve_latency(&crowded).ticks;
+        assert!(
+            t_crowded > t_open,
+            "a crowded, threatened scene must slow the same actor: open {t_open}, crowded {t_crowded}"
+        );
+    }
+
+    #[test]
     fn strong_decider_decides_sooner_than_weak_decider() {
         // Find two players whose decision_making differ enough that the
         // latency ordering is structural (not a tie). The derivation reads
@@ -737,7 +772,13 @@ mod latency_tests {
         let mut slowest = (0, 0u64);
         for slot in 1..=20u32 {
             let p = PlayerId::new(slot, 0);
-            let t = g.resolve_latency(&LatencyContext { player: p }).ticks;
+            let t = g
+                .resolve_latency(&LatencyContext {
+                    player: p,
+                    crowding: 0.0,
+                    nearest_threat: 0.0,
+                })
+                .ticks;
             if t < fastest.1 {
                 fastest = (slot, t);
             }

@@ -25,6 +25,16 @@ pub(crate) enum Possession {
 /// if it has not landed (MD-37). Arbitrary, declared: 15 ticks = 1.5 s.
 const FLIGHT_TICKS: u64 = 15;
 
+/// Radius within which an opponent counts as crowding, in cm. Arbitrary,
+/// declared (ADR-044 §6: the duration of the chain is in the relation).
+const CROWD_RADIUS_CM: i32 = 1500;
+
+/// The number of crowding opponents that saturates the term to 1.0.
+const CROWD_MAX: u32 = 3;
+
+/// Distance at which the nearest-threat term goes to 0.0, in cm.
+const THREAT_RADIUS_CM: f64 = 2000.0;
+
 /// Interception radius, in centimetres. A defender within this distance
 /// of the pass line intercepts, if the passer did not see him. Arbitrary,
 /// declared.
@@ -382,11 +392,6 @@ impl MatchState {
         if tick < due_at {
             return;
         }
-        let latency = ctx
-            .hidden
-            .resolve_latency(&ds_orchestrator::LatencyContext { player: attacker });
-        self.latencies
-            .insert(attacker, tick.saturating_add(latency.ticks));
 
         let (teammates, opponents): (Vec<PlayerId>, Vec<PlayerId>) = {
             let (own, other) = self.squads(ctx);
@@ -399,6 +404,27 @@ impl MatchState {
             Possession::Home => (i32::from(ctx.match_.pitch.length_m) * 100, 3400),
             Possession::Away => (0, 3400),
         };
+
+        // Scene terms for the latency (ADR-044 §6: the duration is in
+        // the relation). Both are geometric and in [0, 1]; the formula
+        // weights them in `balance/latency.json`.
+        let (crowding, nearest_threat) = self.latency_scene(attacker, &opponents);
+        let latency = ctx
+            .hidden
+            .resolve_latency(&ds_orchestrator::LatencyContext {
+                player: attacker,
+                crowding,
+                nearest_threat,
+            });
+        self.latencies
+            .insert(attacker, tick.saturating_add(latency.ticks));
+
+        if let Some(a) = self.spatial.agent(attacker) {
+            let h = heading_from_to(a.position, goal);
+            if let Some(am) = self.spatial.agent_mut(attacker) {
+                am.heading = h;
+            }
+        }
         if let Some(a) = self.spatial.agent(attacker) {
             let h = heading_from_to(a.position, goal);
             if let Some(am) = self.spatial.agent_mut(attacker) {
@@ -655,6 +681,50 @@ impl MatchState {
             Possession::Home => (&ctx.match_.home, &ctx.match_.away),
             Possession::Away => (&ctx.match_.away, &ctx.match_.home),
         }
+    }
+
+    /// The two scene terms for the latency formula (ADR-044 §6).
+    ///
+    /// `crowding` is the number of opponents within `CROWD_RADIUS_CM` of
+    /// the actor, saturated at `CROWD_MAX` and normalised to `[0, 1]`.
+    /// `nearest_threat` is the distance to the nearest opponent, normalised
+    /// so that `0.0` means at the actor's feet and `1.0` means at
+    /// `THREAT_RADIUS_CM` or beyond. Both are geometric and deterministic;
+    /// no die, no latent.
+    fn latency_scene(&self, actor: PlayerId, opponents: &[PlayerId]) -> (f64, f64) {
+        let Some(actor_pos) = self.spatial.agent(actor).map(|a| a.position) else {
+            return (0.0, 0.0);
+        };
+        let mut crowd_count: u32 = 0;
+        let mut nearest_sq: i64 = i64::MAX;
+        for &opp in opponents {
+            let Some(op) = self.spatial.agent(opp).map(|a| a.position) else {
+                continue;
+            };
+            let dx = i64::from(op.0 - actor_pos.0);
+            let dy = i64::from(op.1 - actor_pos.1);
+            let d_sq = dx * dx + dy * dy;
+            if d_sq < nearest_sq {
+                nearest_sq = d_sq;
+            }
+            let r = i64::from(CROWD_RADIUS_CM);
+            if d_sq <= r * r {
+                crowd_count += 1;
+            }
+        }
+        let crowd_norm = f64::from(crowd_count.min(CROWD_MAX)) / f64::from(CROWD_MAX);
+        // `nearest_sq` is i64::MAX when there are no opponents: threat 0.
+        #[allow(clippy::cast_precision_loss)]
+        let nearest_cm = if nearest_sq == i64::MAX {
+            f64::MAX
+        } else {
+            #[allow(clippy::cast_precision_loss)]
+            {
+                (nearest_sq as f64).sqrt()
+            }
+        };
+        let threat = (1.0 - nearest_cm / THREAT_RADIUS_CM).clamp(0.0, 1.0);
+        (crowd_norm, threat)
     }
 
     /// Emits `RelationEnterExit` when an opponent enters (or exits) the

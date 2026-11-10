@@ -1,6 +1,8 @@
 {
   "base_ticks": 1334,
   "decision_bias": 1.0,
-  "_note": "The latency of the carrier before he decides again, in ticks (IDEA-DESIGN-011, R.1-latency). base_ticks is derived: with the prototype action_probability 0.0005, the mean wait was 1/0.0005 = 2000 ticks; with decision_making at 0.5 and decision_bias 1.0, latency = base * (1 + (1 - decision_making) * bias) = base * 1.5; solving base * 1.5 = 2000 gives base = 1334. The form is derived (a slow decider waits longer); the values are declared arbitrary, to be calibrated at L3. decision_bias 0.0 means decision_making does not change the pace; 1.0 means a weak decider (0.0) waits twice as long as a strong one (1.0).",
-  "_source": "Derived from action_probability 0.0005 (CHANGELOG-SIM entry 18); the form is a model choice (one multiplicative bias, no die, ADR-035). Not calibrated."
+  "crowd_weight": 0.5,
+  "threat_weight": 0.5,
+  "_note": "The latency of the carrier before he decides again, in ticks (IDEA-DESIGN-011, R.1-latency; ADR-044 §6, R.1-relation). base_ticks is derived: with the prototype action_probability 0.0005, the mean wait was 1/0.0005 = 2000 ticks; with decision_making at 0.5 and decision_bias 1.0, latency = base * (1 + (1 - decision_making) * bias) = base * 1.5; solving base * 1.5 = 2000 gives base = 1334. The form is derived (a slow decider waits longer, a crowded scene waits longer, a closer threat waits longer). The values are declared arbitrary, to be calibrated at L3. crowd_weight and threat_weight are the weights of the two scene terms (ADR-044 §6: the duration is in the relation). A third term, plausible_options, is declared in the capture but not implemented: it would require plausibility inside resolve_latency, which is build_choice's job (D7, no duplicate). It is tracked as an OI. decision_bias 0.0 means decision_making does not change the pace; 1.0 means a weak decider (0.0) waits twice as long as a strong one (1.0).",
+  "_source": "Derived from action_probability 0.0005 (CHANGELOG-SIM entry 18); the form is a model choice (multiplicative biases, no die, ADR-035). Scene terms added by R.1-relation (ADR-044 §6, 2026-11-10). Not calibrated."
 }
