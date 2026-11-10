@@ -122,6 +122,8 @@ Default, if no decision: the second, because it does not widen the chain before 
 
 **What the filters do not judge.** The chain as a meta-principle is not filterable: its *applications* pass the filters, the principle does not. And one point is exposed: "every absence is a choice" is a principle of **representation**, not a phenomenon. The fan recognises the *significant* omission ("he should have closed and did not"), not millions of choices per match. The model represents more than the filter can verify. It is declared, not approved by the filters: the principle enters the pillar as a principle of representation, with its limit written.
 
+**2026-11-10 — D6 emended: the filter is the actors, not the fan.** The filter "partita vera" now reads "from the point of view of the actors that exist today" (L0: the players; L1: the manager and the sporting director; L2: the president). The fan is downstream: if the model is recognizable by the actor, the fan recognizes the effect; the converse is not true, and the goalkeeper is the case — the fan sees the dive, but without read and choice that dive is a threshold. The filters applied to this ADR all pass under the new form: they were read from the point of view of the actor, not the fan. See NEW-SESSION-PROMPT.md D6 (2026-11-10).
+
 ## What this ADR does not decide
 
 - **The two chains that meet** (§2): the outcome as a relation between two chains, not a comparison. It touches the shot, the duel, the save, the control. It is the largest open point, and it does not block the chain.

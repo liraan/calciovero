@@ -2,7 +2,9 @@
 
 **Purpose:** a short bookmark for resuming work across sessions. It records where we are, not what the project is. History is in `git log`; this file does not duplicate it.
 
-**Last commit verified:** `356ce92` - "docs(analysis): the shot is a direction, narrowed; the lob needs OI-88"
+**Last commit verified:** `ae6aa09` - "docs(context): closing -- ADR-044/045 accepted, R.1-relation, the goalkeeper cantiere's first artefact"
+
+**Sessione 2026-11-10 (diciannovesima, D6 emendato).** Su richiesta del maintainer, D6 emendato: il filtro "partita vera" non e piu "cio che vede il tifoso" ma "cio che succede dal punto di vista degli attori che oggi esistono" (L0 giocatori; L1 manager + DS; L2 presidente). Il tifoso e lettore **downstream**: se il modello e riconoscibile dall'attore, il tifoso riconosce l'effetto; il contrario non e vero (il caso del portiere, che senza lettura e scelta e una soglia). La clausola "attori futuri entrano quando il loro livello esiste" (D3) chiude due leak individuati nel pre-mortem. Una riga in `NEW-SESSION-PROMPT.md:164`, una nota datata in `docs/adr/044-the-chain.md` §"The filters" dopo riga 123, cattura E5 scritta. `Rules-Audit: 1 change, 0 contradictions, 0 leaks`. `NOTA-PER-NUOVA-AI.md` **non toccata** (`dup-check: partita-vera -> prompt:D6`, la voce e un puntatore). Plan e OI invariati (`[next] OI-81-goalkeeper`). `SIM_VERSION` invariato (nessun codice). C2 verde 233 test, gates GREEN.
 
 **Note on the field above:** it points to the last commit *before* this bookmark update (S1). It will look "stale" compared to HEAD; expected. Do not "fix" it without updating the rest of the bookmark in the same commit.
 
