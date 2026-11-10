@@ -1,0 +1,38 @@
+# Woodpecker CI for Codeberg -- the backup remote's remote gate.
+#
+# Purpose: replicate C2 (.github/workflows/ci.yml) on codeberg, so a push
+# to the backup is verified too. Declared differences from GitHub Actions:
+#
+# - ONE step, not eight. In Woodpecker each step runs in its own container:
+#   `rustup component add` in step 1 would not reach step 2, and every step
+#   would recompile from scratch. One container, one sequence, is the only
+#   shape that mirrors C2 without a shared volume.
+# - No cache. Named volumes between runs are not guaranteed on hosted
+#   Codeberg. If the first run exceeds the cap, either a named volume for
+#   target/ or a self-hosted runner; both are a later decision.
+# - `git` is installed explicitly: rust:1-slim is Debian but git is not
+#   part of the image, and scripts/gates.sh calls git.
+# - `rust-toolchain.toml` pins the channel and the components (rustfmt,
+#   clippy); rustup installs them on first use. No extra component step.
+#
+# The first run is the measurement: build from zero + 232 tests + golden.
+# If it exceeds the runner cap, the decision is cache vs self-hosted.
+
+when:
+  - event: push
+    branch: main
+  - event: pull_request
+
+steps:
+  - name: C2
+    image: rust:1-slim
+    commands:
+      - apt-get update && apt-get install -y --no-install-recommends git
+      - rustc --version && cargo --version
+      - cargo fmt --check
+      - cargo clippy --workspace --all-targets -- -D warnings
+      - cargo build --release
+      - cargo test --workspace
+      - cargo test -p pcfm-match --test golden_l0 -- --nocapture
+      - cargo run --release --bin pcfm-test-runner -- --check --seed 42
+      - bash scripts/gates.sh startup

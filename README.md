@@ -210,7 +210,7 @@ The full quality gate (**C2**) runs on every push and pull request:
 determinism check on the golden hash (OI-58), and `scripts/gates.sh`.
 
 On GitHub this is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). On
-Codeberg, a Woodpecker pipeline on `ci.codeberg.org` mirrors the same gate on
+Codeberg, [`.woodpecker/ci.yml`](.woodpecker/ci.yml) on `ci.codeberg.org` mirrors the same gate on
 the backup remote, to verify that the backup is not a stale copy: Codeberg is
 the backup, GitHub is primary.
 
