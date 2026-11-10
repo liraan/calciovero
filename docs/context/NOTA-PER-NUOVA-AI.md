@@ -1,7 +1,7 @@
 # Nota per una nuova AI — Calcio Vero
 
 **Status:** briefing (not normative, not an ADR, not a handoff).
-**Ultima revisione:** 2026-11-10 (rev. 6). **LCV:** `b129afc`.
+**Ultima revisione:** 2026-11-10 (rev. 7). **LCV:** `e50fb4e`.
 **Supersedes:** `docs/context/analysis/2026-11-08-nota-per-nuova-ai.md` (storia).
 
 **Cos'è.** La memoria delle cose emerse in chat che un agente nuovo non
@@ -112,7 +112,7 @@ IDEA-011 è atterrata (`c3c0b7f`): il tick è il substrato, il pace viene dall'a
 
 ## 8. Cose che non hanno un OI ma vanno sapute
 
-- **ADR-044 `proposed`: la catena, leggi prima di toccare un `resolve_*`.** Caratteristiche -> relazioni -> atti, nessuna eccezione (atto sbagliato, omissione, portiere, palla con catena corta). Caratteristiche (attori, latenti) e proprieta fisiche (palla, suolo, dati dichiarati) sono due parole, non una. `why-new:` senza, un agente legge il codice e crede che l'omissione non esista e che il portiere sia una soglia — e sono le eccezioni che ADR-044 vieta.
+- **ADR-044 `accepted` (e ADR-045): la catena, leggi prima di toccare un `resolve_*`.** Il tiro e una direzione verso la porta ristretta da caratteristiche, con la modalita (pallonetto/potenza/piazzata) come scelta sempre disponibile; la salienza pesa, non sceglie. `why-new:` senza, un agente legge il codice e crede che il tiro scelga un punto, e che il pallonetto sia un caso speciale da aggiungere. Caratteristiche -> relazioni -> atti, nessuna eccezione (atto sbagliato, omissione, portiere, palla con catena corta). Caratteristiche (attori, latenti) e proprieta fisiche (palla, suolo, dati dichiarati) sono due parole, non una. `why-new:` senza, un agente legge il codice e crede che l'omissione non esista e che il portiere sia una soglia — e sono le eccezioni che ADR-044 vieta.
 
 - **`resolve_duel` è ancora prototipo** (legge un dado). Debito in Plan E
   (OI-50), non un bug nuovo.
@@ -185,3 +185,4 @@ Artefatti nel report di chiusura: `dup-check: <termine> -> prompt:<regola>|none`
 - **2026-11-09 — rev. 5** (LCV `3ab20b2`). Una voce in §9: "siamo sicuri?" è una domanda, non un'assoluzione. `dup-check`: "siamo sicuri" -> prompt:none; "frasi brevi" -> prompt:none. `replaced: none`; **`overflow:` §4.3 ("le frasi brevi sono decisioni") non entra**, già coperta in spirito da §9 "domande-provocazione" e "le pause possono durare"; la nota è a 199 righe, sotto il tetto 200. `Rules-Audit` non richiesto (nessuna regola toccata).
 - **2026-11-09 — no change** (session 11, LCV `48c8134`). Nessuna voce nuova dopo la rev. 5: ADR-043 (proposed) è un artefatto ADR, non una regola di lavoro; il filtro non ha prodotto nulla di non scritto altrove.
 - **2026-11-10 — rev. 6** (LCV `b129afc`). Una voce in §8: ADR-044 proposed, la catena. `dup-check`: "catena" -> prompt:none; "caratteristiche vs proprieta fisiche" -> prompt:none (il vocabolario e in ADR-044, non nel prompt). `why-new:` chiaro. `replaced:` §6 (le quattro alternative al tick, 20 righe) con una sintesi di 6: IDEA-011 e atterrata, le alternative restano valutate, non serve il dettaglio. 16 righe risparmiate, la nota e a 186 righe, sotto il tetto 200. `Rules-Audit` non richiesto (nessuna regola toccata).
+- **2026-11-10 — rev. 7** (LCV `e50fb4e`). Aggiornata la voce §8 (ADR-044 era `proposed`, ora `accepted`; aggiunto il tiro come direzione+restringimento+modalita, ADR-045). `dup-check`: "tiro" -> prompt:none; "modalita" -> prompt:none. `why-new:` chiaro. `replaced: none`, la nota e a 188 righe, sotto il tetto 200. `Rules-Audit` non richiesto (nessuna regola toccata).
