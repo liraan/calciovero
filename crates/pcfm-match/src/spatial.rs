@@ -376,7 +376,7 @@ impl SpatialState {
         pitch_length_cm: i32,
         pitch_width_cm: i32,
         bodies: &BTreeMap<PlayerId, PlayerBody>,
-        hidden: &mut pcfm_hidden::GroundTruth,
+        hidden: &mut ds_orchestrator::GroundTruth,
         tick: u64,
         scan_balance: &crate::balance::ScanningBalance,
     ) {
@@ -434,7 +434,7 @@ impl SpatialState {
             let v_prev = self.agents.get(&entry.0).map_or(0, |a| {
                 i32::from(a.velocity.0.unsigned_abs().max(a.velocity.1.unsigned_abs()))
             });
-            let mctx = pcfm_hidden::MovementContext {
+            let mctx = ds_orchestrator::MovementContext {
                 player: entry.0,
                 height_cm: body.height_cm,
                 weight_kg: body.weight_kg,
@@ -635,7 +635,7 @@ mod tests {
         let h_before = s.agent(home_gk).unwrap().position;
         let a_before = s.agent(away_gk).unwrap().position;
         let bodies = make_bodies();
-        let mut hidden = pcfm_hidden::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
+        let mut hidden = ds_orchestrator::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
         s.move_agents(
             10500,
             6800,
@@ -762,7 +762,7 @@ mod tests {
         // read once F.6 makes it per-agent).
         let mut s = make_state();
         let bodies = make_bodies();
-        let mut hidden = pcfm_hidden::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
+        let mut hidden = ds_orchestrator::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
         s.move_agents(
             10500,
             6800,

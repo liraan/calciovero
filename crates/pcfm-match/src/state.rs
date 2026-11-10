@@ -296,7 +296,7 @@ fn heading_from_to(from: (i32, i32), to: (i32, i32)) -> u16 {
 /// geometrically, from positions and distances (ADR-028 §3: derived
 /// values are admitted in code). The cognitive latents do not enter
 /// here: `resolve_choice` reads them through the custodian. See
-/// `pcfm_hidden::choice` for the selection.
+/// `ds_orchestrator::choice` for the selection.
 ///
 /// Options, in the order they are built:
 /// - one `Pass { receiver }` for each teammate with enough freedom
@@ -320,10 +320,10 @@ fn build_choice(
     teammates: &[PlayerId],
     opponents: &[PlayerId],
 ) -> (
-    pcfm_hidden::ChoiceContext,
+    ds_orchestrator::ChoiceContext,
     std::collections::BTreeMap<PlayerId, i64>,
 ) {
-    use pcfm_hidden::{ChoiceCandidate, ChoiceContext, ChoiceKind};
+    use ds_orchestrator::{ChoiceCandidate, ChoiceContext, ChoiceKind};
 
     let mut candidates = Vec::new();
     let mut freedoms = std::collections::BTreeMap::new();
@@ -520,7 +520,7 @@ impl MatchState {
                     // REC: no interceptor at launch, the receiver tries to
                     // control. The pass succeeds if the receiver controls.
                     let params = self.reception_balance.to_params();
-                    let rctx = pcfm_hidden::ReceptionContext {
+                    let rctx = ds_orchestrator::ReceptionContext {
                         receiver: rcv,
                         distance_cm: di,
                         freedom_cm: fr,
@@ -590,7 +590,7 @@ impl MatchState {
         }
         let latency = ctx
             .hidden
-            .resolve_latency(&pcfm_hidden::LatencyContext { player: attacker });
+            .resolve_latency(&ds_orchestrator::LatencyContext { player: attacker });
         self.latencies
             .insert(attacker, tick.saturating_add(latency.ticks));
 
@@ -614,16 +614,16 @@ impl MatchState {
         let (choice_ctx, freedoms) =
             build_choice(&self.spatial, attacker, goal, &teammates, &opponents);
         let chosen = match ctx.hidden.resolve_choice(&choice_ctx).chosen {
-            pcfm_hidden::ChoiceKind::Pass(receiver) => {
+            ds_orchestrator::ChoiceKind::Pass(receiver) => {
                 let freedom_cm = freedoms.get(&receiver).copied().unwrap_or(PASS_FREEDOM_CM);
                 ChosenAction::Pass {
                     receiver,
                     freedom_cm,
                 }
             }
-            pcfm_hidden::ChoiceKind::Shoot => ChosenAction::Shoot,
-            pcfm_hidden::ChoiceKind::Duel => ChosenAction::Duel,
-            pcfm_hidden::ChoiceKind::Advance => ChosenAction::Advance,
+            ds_orchestrator::ChoiceKind::Shoot => ChosenAction::Shoot,
+            ds_orchestrator::ChoiceKind::Duel => ChosenAction::Duel,
+            ds_orchestrator::ChoiceKind::Advance => ChosenAction::Advance,
         };
 
         // The action belongs to the nearest agent; the ball follows.
@@ -645,7 +645,7 @@ impl MatchState {
                     (a.position.0, a.position.1, 0)
                 });
             let params = self.reception_balance.to_params();
-            let ctx_pass = pcfm_hidden::PassContext {
+            let ctx_pass = ds_orchestrator::PassContext {
                 passer: attacker,
                 from,
                 to,
@@ -712,7 +712,7 @@ impl MatchState {
                 .map_or(0, |d| {
                     i32::try_from(((1500 - d).max(0) * 100) / 1500).unwrap_or(0)
                 });
-            let ctx_shot = pcfm_hidden::ShotContext {
+            let ctx_shot = ds_orchestrator::ShotContext {
                 shooter: attacker,
                 from,
                 to,
@@ -765,10 +765,10 @@ impl MatchState {
         // reachable again. Removed-by: Plan E. Do not delete without
         // the migration: `resolve_duel` would lose its only caller.
         } else if chosen == ChosenAction::Duel {
-            let ctx_duel = pcfm_hidden::DuelContext {
+            let ctx_duel = ds_orchestrator::DuelContext {
                 attacker,
                 defender,
-                duel_type: pcfm_hidden::DuelType::Ground,
+                duel_type: ds_orchestrator::DuelType::Ground,
             };
             let outcome = ctx.hidden.resolve_duel(&ctx_duel);
             let fact = crate::fact::Fact::Contact {
@@ -975,7 +975,7 @@ impl MatchState {
         let saved = if let Some(gk_agent) = self.spatial.agent(gk) {
             let dy = f64::from((y_at - gk_agent.position.1).abs());
             if dy <= reach_cm {
-                let save_ctx = pcfm_hidden::SaveContext {
+                let save_ctx = ds_orchestrator::SaveContext {
                     goalkeeper: gk,
                     point: (plane_x, y_at, z_at),
                     offset_cm: dy,
@@ -1147,7 +1147,7 @@ mod tests {
         let pass_target_seen = ctx
             .candidates
             .iter()
-            .any(|c| matches!(c.kind, pcfm_hidden::ChoiceKind::Pass(p) if p == mate));
+            .any(|c| matches!(c.kind, ds_orchestrator::ChoiceKind::Pass(p) if p == mate));
         assert!(
             pass_target_seen,
             "the cone filtered the pass target: candidates = {:?}",

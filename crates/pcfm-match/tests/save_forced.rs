@@ -8,7 +8,7 @@
 //! the formula declares.
 
 use ds_core::ids::{MatchId, PlayerId};
-use pcfm_hidden::{GroundTruth, SaveContext};
+use ds_orchestrator::{GroundTruth, SaveContext};
 
 const fn keeper(slot: u32) -> PlayerId {
     PlayerId::new(slot, 0)

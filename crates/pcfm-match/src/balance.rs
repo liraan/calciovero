@@ -86,7 +86,7 @@ const INFLUENCE_JSON: &str = include_str!("../../../balance/influence.json");
 
 /// Influence weights as they appear in `balance/influence.json`.
 ///
-/// Converted to [`pcfm_hidden::InfluenceWeights`] at load time: `pcfm-hidden`
+/// Converted to [`ds_orchestrator::InfluenceWeights`] at load time: `pcfm-hidden`
 /// does not depend on `serde`, so the JSON shape lives here.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct InfluenceWeightsJson {
@@ -122,8 +122,8 @@ impl InfluenceWeightsJson {
 
     /// Converts to the `pcfm-hidden` type used by `resolve_influence`.
     #[must_use]
-    pub const fn to_weights(self) -> pcfm_hidden::InfluenceWeights {
-        pcfm_hidden::InfluenceWeights {
+    pub const fn to_weights(self) -> ds_orchestrator::InfluenceWeights {
+        ds_orchestrator::InfluenceWeights {
             w_space: self.w_space,
             w_skill: self.w_skill,
             w_cost: self.w_cost,
@@ -181,7 +181,7 @@ const RECEPTION_JSON: &str = include_str!("../../../balance/reception.json");
 
 /// Reception parameters as they appear in `balance/reception.json`.
 ///
-/// Converted to [`pcfm_hidden::ReceptionParams`] at load time: `pcfm-hidden`
+/// Converted to [`ds_orchestrator::ReceptionParams`] at load time: `pcfm-hidden`
 /// does not depend on `serde`, so the JSON shape lives here.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct ReceptionBalance {
@@ -221,8 +221,8 @@ impl ReceptionBalance {
 
     /// Converts to the `pcfm-hidden` type used by `resolve_reception`.
     #[must_use]
-    pub const fn to_params(self) -> pcfm_hidden::ReceptionParams {
-        pcfm_hidden::ReceptionParams {
+    pub const fn to_params(self) -> ds_orchestrator::ReceptionParams {
+        ds_orchestrator::ReceptionParams {
             speed_base_cm_per_tick: self.speed_base_cm_per_tick,
             speed_passing_bonus_cm_per_tick: self.speed_passing_bonus_cm_per_tick,
             freedom_ref_cm: self.freedom_ref_cm,

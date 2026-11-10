@@ -13,7 +13,7 @@
 //! pressure, wider under more pressure).
 
 use ds_core::ids::{MatchId, PlayerId};
-use pcfm_hidden::{GroundTruth, ShotContext, ShotType};
+use ds_orchestrator::{GroundTruth, ShotContext, ShotType};
 
 const fn shooter(slot: u32) -> PlayerId {
     PlayerId::new(slot, 0)

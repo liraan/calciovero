@@ -5,7 +5,7 @@
 //! stream. So the tests hold the player fixed and vary one datum.
 
 use ds_core::ids::{MatchId, PlayerId};
-use pcfm_hidden::{GroundTruth, MovementContext};
+use ds_orchestrator::{GroundTruth, MovementContext};
 
 const fn player() -> PlayerId {
     PlayerId::new(9, 0)

@@ -55,7 +55,7 @@ mod tests {
         FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
         PsychologicalStateMinimal, Referee, RoleId, Squad,
     };
-    use pcfm_hidden::GroundTruth;
+    use ds_orchestrator::GroundTruth;
     use pcfm_stats::EventChain;
 
     fn make_squad(id: u32, slot_base: u32) -> Squad {

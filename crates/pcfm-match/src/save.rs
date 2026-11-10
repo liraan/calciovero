@@ -51,7 +51,7 @@ use ds_core::ids::MatchId;
 use ds_core::rng::RngRegistry;
 use ds_core::time::GameInstant;
 use ds_model::Match;
-use pcfm_hidden::GroundTruth;
+use ds_orchestrator::GroundTruth;
 use pcfm_stats::EventChain;
 use serde::{Deserialize, Serialize};
 

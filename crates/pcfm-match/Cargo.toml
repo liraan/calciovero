@@ -12,7 +12,7 @@ documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-
 [dependencies]
 ds-core.workspace = true
 ds-model.workspace = true
-pcfm-hidden.workspace = true
+ds-orchestrator.workspace = true
 pcfm-stats.workspace = true
 serde.workspace = true
 serde_json.workspace = true

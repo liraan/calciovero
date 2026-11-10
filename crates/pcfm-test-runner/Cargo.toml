@@ -16,7 +16,7 @@ path = "src/main.rs"
 [dependencies]
 ds-core.workspace = true
 ds-model.workspace = true
-pcfm-hidden.workspace = true
+ds-orchestrator.workspace = true
 pcfm-stats.workspace = true
 pcfm-match.workspace = true
 serde_json.workspace = true

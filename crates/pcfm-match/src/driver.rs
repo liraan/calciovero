@@ -3,13 +3,13 @@
 //! `pcfm-demo` and `pcfm-test-runner` need a `MatchResult` from a `Match`
 //! and a seed. Without this function they construct `GroundTruth`,
 //! `RngRegistry`, `EventChain` and `MatchContext` themselves, which puts
-//! `pcfm_hidden::GroundTruth` in scope in crates that must not see Plane A
+//! `ds_orchestrator::GroundTruth` in scope in crates that must not see Plane A
 //! (ADR-003). This function keeps Plane A inside `pcfm-match`: the caller
 //! passes a `Match` and a seed, and receives a `MatchResult`.
 
 use ds_core::rng::RngRegistry;
 use ds_model::Match;
-use pcfm_hidden::GroundTruth;
+use ds_orchestrator::GroundTruth;
 use pcfm_stats::EventChain;
 
 use crate::context::{MatchConfig, MatchContext};

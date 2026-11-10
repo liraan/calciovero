@@ -1,13 +1,13 @@
 [package]
-name = "pcfm-hidden"
+name = "ds-orchestrator"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Plane A (Ground Truth) for PCFM: latent attributes, resolve_* API, drain_observations"
-documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-match/10-ground-truth.md"
+description = "The orchestrator: decides which actor, when (latency), with which formula; owns the contact (ADR-041 §4)"
+documentation = "https://github.com/liraan/calciovero/tree/main/docs/adr/041-one-crate-one-responsibility.md"
 
 [dependencies]
 ds-core.workspace = true
@@ -16,8 +16,6 @@ ds-db.workspace = true
 pcfm-calculator.workspace = true
 rand_chacha.workspace = true
 rand_core.workspace = true
-blake3.workspace = true
-thiserror.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

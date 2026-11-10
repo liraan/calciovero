@@ -9,7 +9,7 @@ use ds_model::{
     FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
     PsychologicalStateMinimal, Referee, RoleId, Squad,
 };
-use pcfm_hidden::GroundTruth;
+use ds_orchestrator::GroundTruth;
 use pcfm_match::{MatchConfig, MatchContext, MatchEngine, MatchSave, TextMatchEngine};
 use pcfm_stats::EventChain;
 

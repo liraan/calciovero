@@ -84,6 +84,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-orchestrator"
+version = "0.1.0"
+dependencies = [
+ "ds-core",
+ "ds-db",
+ "ds-model",
+ "pcfm-calculator",
+ "rand_chacha",
+ "rand_core",
+ "serde_json",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -151,28 +164,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "pcfm-hidden"
-version = "0.1.0"
-dependencies = [
- "blake3",
- "ds-core",
- "ds-db",
- "ds-model",
- "pcfm-calculator",
- "rand_chacha",
- "rand_core",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
 name = "pcfm-match"
 version = "0.1.0"
 dependencies = [
  "ds-core",
  "ds-model",
+ "ds-orchestrator",
  "pcfm-fixtures",
- "pcfm-hidden",
  "pcfm-stats",
  "serde",
  "serde_json",
@@ -197,8 +195,8 @@ version = "0.1.0"
 dependencies = [
  "ds-core",
  "ds-model",
+ "ds-orchestrator",
  "pcfm-fixtures",
- "pcfm-hidden",
  "pcfm-match",
  "pcfm-stats",
  "pcfm-testkit",

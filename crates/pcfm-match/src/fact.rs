@@ -8,7 +8,7 @@
 //! are emitted (CHANGELOG-SIM.md, "When to bump", point 2).
 
 use ds_core::ids::{ActorId, PlayerId};
-use pcfm_hidden::ShotType;
+use ds_orchestrator::ShotType;
 use pcfm_stats::EventType;
 
 /// A fact the engine produces in a tick. The narrator classifies it into

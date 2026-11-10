@@ -6,7 +6,7 @@
 
 use ds_core::rng::RngRegistry;
 use ds_model::Match;
-use pcfm_hidden::GroundTruth;
+use ds_orchestrator::GroundTruth;
 use pcfm_stats::EventChain;
 
 /// Configuration of the match engine.

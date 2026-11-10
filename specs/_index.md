@@ -234,7 +234,7 @@ These are components that are referenced across modules but are not crates. They
 
 | Component | Referenced in | Destination |
 |---|---|---|
-| `pcfm-hidden` / `GroundTruth` | L0.03, L0.04, L0.07, L0.08, ADR-003 | **L0.10** (documented here) ✅ |
+| `ds-orchestrator` / `GroundTruth` | L0.03, L0.04, L0.07, L0.08, ADR-003 | **L0.10** (documented here) ✅ |
 | `pcfm-gen` | ADR-003, L0.07, L0.10 | L3-generator *(planned)* |
 | `balance/*.toml` | L0.04, L0.06, L0.08 | L3-quality *(planned)* |
 | `registry/*.yaml` | L0.03, L0.05 | L3-registry *(planned)* |
