@@ -33,7 +33,20 @@ loop (the trajectory is there, the tick measures it), but today he is
 not, and he could not move even if he were. Two things are missing: the
 read during the flight, and the keeper's movement.
 
-## 2. The choose (the keeper's, not the engine's)
+## 2. The shot, and the keeper's choose
+
+### 2.1 The shot: a direction, narrowed
+
+The shooter does not choose a point in space. He chooses a **direction
+toward the goal**, and a **mode** (lob, power, placed); the direction is
+then narrowed by his characteristics — technique, psychology, cognition
+— into the trajectory the ball actually takes. The mode is the choice
+(ADR-039, choose); the narrowing is the band (contact). A lob is not a
+third option beside aim and power: it is a mode that changes **how** the
+shot narrows. The keeper does not read a point chosen at launch; he
+reads the narrowing, while the trajectory unfolds.
+
+### 2.2 The keeper's choose
 
 The keeper does not receive the shooter's `to`. He receives the ball's
 position and velocity **this tick**, the goal, and the time left. His
@@ -65,6 +78,16 @@ trajectory, and the trajectory unfolds.
 
 The cantiere, in order. Each step is a commit; the `SIM_VERSION` bump is
 declared where the behaviour changes.
+
+0. **The shot's mode is a choice (OI-88, prerequisite of the lob).**
+   Today `ShotContext.to` is the fixed goal centre (`state.rs:522`), and
+   the arrival point is an effect of the deviation, not an intention: the
+   shooter does not choose a mode. The lob is a mode that changes how the
+   shot narrows (§2.1), so it cannot exist before the mode is a choice.
+   This step is OI-88's cantiere, not a sub-step: it touches the
+   shooter's choose, and it is the condition for the lob on the keeper's
+   side. No `SIM_VERSION` bump in this note: the step is declared, not
+   implemented.
 
 1. **The keeper moves.** `GK_ANCHOR_CM` is not "he does not move": it is
    "he does not run after the ball like a field player". A dive is a
