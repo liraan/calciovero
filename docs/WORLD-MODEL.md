@@ -111,6 +111,8 @@ The 2D horizon keeps "ball with physics" in the force sense: a renderer or a fut
 - **`Pitch.condition` is not "reserved" either.** The 2026-11-02 note says it "stays reserved at v1.0: the field exists, no consumer reads it". T5 decides that pitch wear is out. Moreover, in the new engine the pitch is **only geometry**: a grass surface with `length_m` and `width_m`, on which the actors run and the ball rolls. It has no condition and no weather. The prototype's `Pitch` has four fields; the new engine inherits two.
 - **What this note does not change.** The horizon table stays as the record of the earlier vision; the ball, the posts, the `InFlight` position and the 3D-as-projection notes all stay valid.
 
+**Note (2026-11-10) — T5 is restricted, not contradicted (ADR-044 §4).** The 2026-11-05 note above says the pitch is *only* geometry. ADR-044 restricts that: the **condition** (weather, wear) stays out of the new engine, but the **stable properties of the surface** (the bouncing surface, elasticity per pitch, declared data at L1/L3) enter as a term, symmetric to the ball in the relation. Two things the common language calls "ground": the model separates them — one is out, the other enters. The combination of the two elasticities is a formula and lives in the calculator (ADR-028), not in the data module. The list of the surfaces' properties is not written (D3): the form is decided, the list arrives with the bounce formula. See `docs/adr/044-the-chain.md` §4.
+
 **Rule:** a horizon is not a promise. It is a place to put things so that the contract does not have to grow to accommodate them prematurely.
 
 ---

@@ -71,3 +71,5 @@ The relation is read from the actor's perspective (MD-43: the actor decides from
 - ADR-035 (no dice; `resolve_influence` "is a relation, already geometric")
 - IDEA-DESIGN-001 (conditions as relations; absorbed here)
 - `L0-POSITIONAL-SLICE` §0 (phenomenological, eight categories, weather as an input)
+
+**2026-11-10 — specified by ADR-044.** The pillar is **specified**, not replaced (maintainer, 2026-11-10): the chain *characteristics generate relations, relations generate acts* gives the lens a verification requirement. Two fragments change: "a lens, not a constraint" → "a lens for design, a requirement for verification"; "the lens guides the discussion; it does not close it" → "the chain closes the explanation, not the discussion on the model". The four remaining fragments stay intact. See `044-the-chain.md` §7 for the exact wording and for what the chain does not decide (the two chains that meet, the states, the list of physical properties).

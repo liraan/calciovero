@@ -1,6 +1,6 @@
 # ADR-044 — The chain: characteristics generate relations, relations generate acts (specifies pillar 11)
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-10
 - **Supersedes:** —
 - **Amends:** ADR-036 (specifies the pillar: the lens is for design, the chain is the requirement for verification); `specs/00-foundations.md` §2 pillar 11 (on acceptance); `docs/WORLD-MODEL.md` §5 note 2026-11-05 (the surface is not "only geometry": the condition is out, the stable properties are a term)
@@ -149,3 +149,5 @@ Default, if no decision: the second, because it does not widen the chain before 
 - ADR-028 §3/§5 (three components; derived values), ADR-029 (keyed derivation)
 - L0.11 §4.10 (no trig, no float in the critical path), T5 (weather and wear out)
 - `2026-11-10` captures: the two pauses that produced this ADR
+
+**2026-11-10 — Status: accepted.** The maintainer accepted after the read of the full text and the mechanical verification of the five code claims (`resolve_save` threshold, `reach_cm = height/2`, `BALL_*` hardcoded, `z < 0` no bounce, `FLIGHT_TICKS = 15`): all five true. ADR-036 not contradicted, specified. Consequences live in the same closing commit: R.1-latency reopened with the chain's shape, P5 (ADR-042 not tracked) annotated, bookmark updated. foundations v4.0 is a separate commit, second ok.
