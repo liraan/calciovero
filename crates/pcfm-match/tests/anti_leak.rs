@@ -86,3 +86,25 @@ fn save_contains_no_latent_field_name() {
         );
     }
 }
+
+/// P1 structural test: the decision is the actor's, not the engine's
+/// (ADR-043, A.1-actor).
+///
+/// `MatchState::decide` must not call `resolve_choice` directly: the
+/// call belongs to `ds_orchestrator::Actor::decide`. This test fails the
+/// moment a future edit puts the call back in the engine, which is the
+/// defect IDEA-DESIGN-013 names.
+///
+/// It reads its own crate's source (`state.rs`), so it is an artefact of
+/// the rule, not a behavioural test: the behaviour could be identical
+/// and the rule still broken (P1: a test that cannot fail is worse than
+/// no test; this one fails on the exact string).
+#[test]
+fn match_state_does_not_call_resolve_choice() {
+    let source = include_str!("../src/state.rs");
+    assert!(
+        !source.contains(".resolve_choice("),
+        "MatchState calls resolve_choice directly: the decision must go through \
+         ds_orchestrator::Actor::decide (ADR-043, A.1-actor)"
+    );
+}

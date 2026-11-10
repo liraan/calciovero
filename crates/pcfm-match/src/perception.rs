@@ -13,14 +13,10 @@ use crate::spatial::{AgentState, SpatialState};
 
 /// Squared Euclidean distance between two positions, in centimetres squared.
 ///
-/// Squared, not the square root: the comparison order is the same, and it
-/// avoids a non-deterministic `sqrt`.
-#[must_use]
-pub const fn distance_squared(a: (i32, i32), b: (i32, i32)) -> i64 {
-    let dx = (a.0 - b.0) as i64;
-    let dy = (a.1 - b.1) as i64;
-    dx * dx + dy * dy
-}
+/// Re-export of `ds_core::geometry::distance_squared` (one source of
+/// truth, D5): the primitive moved when the orchestrator needed it. The
+/// name stays `perception::distance_squared` for the existing callers.
+pub use ds_core::geometry::distance_squared;
 
 /// One entry of a nearest-neighbour list.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

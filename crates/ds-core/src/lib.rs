@@ -15,6 +15,7 @@
 #![deny(missing_docs)]
 
 pub mod event_bus;
+pub mod geometry;
 pub mod hash;
 pub mod identity;
 pub mod ids;

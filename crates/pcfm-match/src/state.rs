@@ -613,18 +613,19 @@ impl MatchState {
         }
         let (choice_ctx, freedoms) =
             build_choice(&self.spatial, attacker, goal, &teammates, &opponents);
-        let chosen = match ctx.hidden.resolve_choice(&choice_ctx).chosen {
-            ds_orchestrator::ChoiceKind::Pass(receiver) => {
-                let freedom_cm = freedoms.get(&receiver).copied().unwrap_or(PASS_FREEDOM_CM);
-                ChosenAction::Pass {
-                    receiver,
-                    freedom_cm,
+        let chosen =
+            match ds_orchestrator::Actor::new(attacker).decide(&choice_ctx, ctx.hidden, tick) {
+                ds_orchestrator::ChoiceKind::Pass(receiver) => {
+                    let freedom_cm = freedoms.get(&receiver).copied().unwrap_or(PASS_FREEDOM_CM);
+                    ChosenAction::Pass {
+                        receiver,
+                        freedom_cm,
+                    }
                 }
-            }
-            ds_orchestrator::ChoiceKind::Shoot => ChosenAction::Shoot,
-            ds_orchestrator::ChoiceKind::Duel => ChosenAction::Duel,
-            ds_orchestrator::ChoiceKind::Advance => ChosenAction::Advance,
-        };
+                ds_orchestrator::ChoiceKind::Shoot => ChosenAction::Shoot,
+                ds_orchestrator::ChoiceKind::Duel => ChosenAction::Duel,
+                ds_orchestrator::ChoiceKind::Advance => ChosenAction::Advance,
+            };
 
         // The action belongs to the nearest agent; the ball follows.
         self.spatial.set_carrier(Some(attacker));

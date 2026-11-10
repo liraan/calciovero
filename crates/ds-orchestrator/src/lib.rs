@@ -22,7 +22,9 @@ pub mod context;
 pub mod observation;
 pub mod outcome;
 
-mod choice;
+mod actor;
+pub mod choice;
+pub use actor::Actor;
 
 pub use choice::{ChoiceCandidate, ChoiceContext, ChoiceKind, ChoiceOutcome};
 pub use context::{
