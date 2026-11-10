@@ -1,0 +1,129 @@
+---
+title: "The goalkeeper meets the shot: the form of the two chains"
+version: "1.0"
+status: "analysis"
+last_updated: "2026-11-10"
+conforms_to: "ADR-044 (the chain), ADR-045 (the goalkeeper is an actor), ADR-039 (read, choose, contact, band), OI-81"
+---
+
+# The goalkeeper meets the shot
+
+This note is the first step of OI-81's cantiere (ADR-045: "the cantiere
+opens with the shape of the meeting, not with the formula"). It is a
+design note, not an ADR: the doctrine (ADR-044, ADR-045) is accepted, the
+note declares how the meeting is built on the code today. It can be
+corrected in session; a correction that changes the model becomes an ADR.
+
+## 1. The read (verified on the code, 2026-11-10)
+
+- `advance_ball` (`spatial.rs:306`) moves the ball every tick: gravity,
+  friction, stop threshold. The trajectory unfolds, it is not instant.
+- `tick()` (`state.rs:294`) calls `advance_ball`, then
+  `check_shot_crossing(prev, curr)` **every tick** with the two points.
+  The trajectory is already available tick by tick.
+- The goalkeeper enters **only** inside `check_shot_crossing`
+  (`state.rs:797`), when `prev.0 < pitch_length && curr.0 >= pitch_length`
+  (or the mirror): the point of crossing, after the ball has arrived. It
+  receives `(plane_x, y_at, z_at)`, not the trajectory.
+- The goalkeeper is **anchored** (`GK_ANCHOR_CM` 250, excluded from
+  `move_agents`): he cannot dive today, because he does not move.
+
+**The finding, sharper:** the keeper could be inserted in the flight
+loop (the trajectory is there, the tick measures it), but today he is
+not, and he could not move even if he were. Two things are missing: the
+read during the flight, and the keeper's movement.
+
+## 2. The choose (the keeper's, not the engine's)
+
+The keeper does not receive the shooter's `to`. He receives the ball's
+position and velocity **this tick**, the goal, and the time left. His
+choice is geometric (ADR-040, salience):
+
+- **stay**: cover the cone from where he is;
+- **dive**: reach a point on the goal plane in the time he has;
+- **come out**: close the angle on the ball, not on the line.
+
+The choice is the keeper's, as the carrier's is his. The engine provides
+the scene; the keeper reads it and chooses. No `to` at launch: the
+arrival point does not exist before the shot, it is the end of the
+trajectory, and the trajectory unfolds.
+
+## 3. The contact and the band
+
+- The **contact** is between the keeper's body (the dive's reach, the
+  standing reach) and the ball **in flight**. A dive is a distance
+  covered in a time; the time is the ball's, not a constant.
+- The **band** is the error of the contact: a strong `goalkeeping`
+  deviates less (where the ball ends up after a touch), a weak one more.
+  The same shape as the shot's (ADR-039).
+- The **outcome** belongs to the relation, not to either chain: the
+  ball's trajectory and the keeper's body meet at a point, and the point
+  decides. A save is not "the keeper wins"; it is "the two chains meet
+  here, and this is what happened".
+
+## 4. The implementation order (what the note proposes)
+
+The cantiere, in order. Each step is a commit; the `SIM_VERSION` bump is
+declared where the behaviour changes.
+
+1. **The keeper moves.** `GK_ANCHOR_CM` is not "he does not move": it is
+   "he does not run after the ball like a field player". A dive is a
+   movement, and the current model has no way to express it. The first
+   step is to give the keeper a movement that is a dive (lateral, in the
+   flight's direction), not a run. `move_agents` stops skipping him in
+   that case. No `SIM_VERSION` bump: no behaviour change yet (the dive is
+   unreachable until the read is inserted).
+
+2. **The read, in the flight loop.** `tick()` already has `prev_ball` and
+   `curr_ball`; the keeper's read is attached there, every tick, while
+   the shot is pending. The read produces the scene the keeper chooses
+   from: ball position, velocity, time to the plane. `SIM_VERSION` bump
+   (the keeper can now choose before the crossing).
+
+3. **The contact and the band.** `check_shot_crossing` stops being the
+   whole gesture: it becomes the **contact** (the keeper's body at the
+   crossing point) and the **band** (the error of the touch). The old
+   `resolve_save` becomes the band's formula, not the gesture. `SIM_VERSION`
+   bump (the save changes: a keeper who dived arrives, one who did not
+   does not).
+
+4. **The catalogue (OI-92, the condition).** `goalkeeping`,
+   `reactivity`, `explosive_force` enter the catalogue with the keeper's
+   read, not before. `SaveBalance` in `balance/` if the band needs a
+   formula.
+
+Steps 1-3 are the cantiere; step 4 is the condition, and it arrives when
+the read needs the terms, not before (D3).
+
+## 5. What this note does not decide
+
+- **The dive's numbers.** `dive_ref_cm` and `dive_time_s` come from a
+  cited sports-science source (OI-62), not from the note. The note
+  declares the form (a distance in a time), not the numbers.
+- **The keeper's exit.** "Come out" is in the choose; the geometry of
+  the exit (when it is a relation with the ball, not a run) is a
+  separate cantiere.
+- **The flight's duration.** `FLIGHT_TICKS = 15` is fixed
+  (`state.rs:26`); the keeper's contact needs the trajectory's real
+  duration. ADR-044 §3 already declares the dependency; the fix is a
+  separate cantiere.
+- **The two chains' formula.** The note declares the shape; the formula
+  is a separate ADR or implementation note, when the shape lands.
+
+## 6. Verified and not verified (D1)
+
+**Verified in this session:** `advance_ball` (`spatial.rs:306`), the
+`tick()` loop (`state.rs:294`), `check_shot_crossing` (`state.rs:797`),
+`GK_ANCHOR_CM` (`spatial.rs:138`), `SaveContext` (`context.rs:75`),
+`resolve_save` (`lib.rs:379`), `Characteristic` (`lib.rs:42`, 7 terms,
+no `goalkeeping`), `TechnicalLatents.goalkeeping` (`latents.rs:83`).
+
+**Not verified:** the `Pending` resolution path for a shot (only the pass
+path was read in full), the `move_agents` body (only the GK skip),
+`FLIGHT_TICKS` usage in the shot branch, `classify` for the shot's facts.
+
+## 7. What this note supersedes
+
+Nothing. It is the first artefact of OI-81's cantiere. ADR-045 stays
+`accepted`; this note is the shape the cantiere starts from, and it is
+corrected by the commits that implement it.
