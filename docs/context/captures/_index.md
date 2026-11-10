@@ -33,3 +33,5 @@ format: YYYY-MM-DD HH:MM | pause|task <id> | status | HEAD | commits LCV..HEAD |
 2026-11-09 21:53 | pause - | written | f191676 | 1 | - | docs/context/captures/2026-11.md
 2026-11-09 23:19 | pause - | written | 3ab20b2 | 1 | ADR-035(exists);  | docs/context/captures/2026-11.md
 2026-11-09 23:40 | pause - | written | 48c8134 | 1 | - | docs/context/captures/2026-11.md
+2026-11-10 07:44 | pause - | written | aee75ff | 1 | - | docs/context/captures/2026-11.md
+2026-11-10 08:12 | pause - | written | aee75ff | 1 | IDEA-YOUTH-001(exists); ADR-032(exists); ADR-035(exists); ADR-041(exists); ADR-043(exists);  | docs/context/captures/2026-11.md

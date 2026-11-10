@@ -1,6 +1,6 @@
 # ADR-043 — The actor decides: `Actor::decide` replaces `MatchState::decide`
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-09
 - **Supersedes:** —
 - **Superseded by:** —
@@ -83,3 +83,5 @@ The shape, declared for the implementation commit:
 
 - **2026-11-09 (this session).** Written after A.1-actor was opened as `[next]` and the seven files were read (D1: `tick`, `decide`, `pick_from_space`, `build_choice`, `resolve_choice`, `AgentState`, `move_agents`, `orchestrator.rs`). The two filters applied: partita vera (the decision is the player's, not the scene's) and luna (the engine has never had an actor as a first-class thing). Architecture (crate boundary) declared out of the filters' scope (NOTA §9).
 - **Not implemented.** This ADR is `proposed`. The code does not move until the maintainer accepts. The Plan row `A.1-actor` stays `[next]` until the implementation commit lands.
+
+- **2026-11-10 — accepted; the split is two crates, not three.** The maintainer accepts. One correction to the text above, found in the 2026-11-10 session: the `Con` of Option B (line 46) and ADR-041 §1 say the split produces `ds-db` + `ds-selector` + `ds-orchestrator`. `pcfm-hidden` contains two responsibilities (the vault with its derivation, and the orchestrator), not three. `ds-selector` is a **new** crate for a different responsibility (the selection of who plays), not a part of the split. It has no content at L0 (the 22 are input: `MatchContext` carries `home` and `away` as `Squad`; the first consumer is L1 formation or L2 substitutions, OI-48 Law 3), so it is tracked `Removed-by: L2` (D3; source: `docs/context/analysis/2026-11-09-chat-only-decisions.md` §41-42, verified 2026-11-10). The split produces `ds-db` and `ds-orchestrator`. The dated note on ADR-041 §2 records the same. Line 46 is left as history (the body of an accepted ADR is not rewritten); this note is the correction.
