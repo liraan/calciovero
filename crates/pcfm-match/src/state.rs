@@ -161,109 +161,32 @@ pub(crate) enum ChosenAction {
     Advance,
 }
 
-/// Minimum distance from the nearest opponent for a pass receiver, cm.
-const PASS_FREEDOM_CM: i64 = 800;
-
-/// Shoot below this distance from the opponent goal, cm.
-const SHOOT_RANGE_CM: i64 = 2500;
-
-/// Regulatory goal width, cm (7.32 m, Laws of the Game, Law 1). A real
-/// fact of football, not a model choice.
-const GOAL_WIDTH_CM: i64 = 732;
-
-/// Pass distance below this: the pass is not plausible, cm.
-const PASS_MIN_CM: i64 = 500;
-/// Pass distance: from here the plateau of the plausible short pass, cm.
-const PASS_NEAR_CM: i64 = 1000;
-/// Pass distance: from here the ramp down of the plausible long pass, cm.
-const PASS_FAR_CM: i64 = 3000;
-/// Pass distance above this: the pass is not plausible, cm.
-const PASS_MAX_CM: i64 = 4500;
-
-/// Duel proximity range: above this distance there is no contest, cm.
-/// (Declared, not used yet: the Duel candidate is the prototype fallback,
-/// see the note in ADR-040 dated 2026-11-09.)
-const DUEL_PROXIMITY_CM: i64 = 500;
-
-/// `distance_plausible(d)`: 0 below `PASS_MIN_CM`, linear up to 1 at
-/// `PASS_NEAR_CM`, 1 on the plateau `[PASS_NEAR_CM, PASS_FAR_CM]`, linear
-/// down to 0 at `PASS_MAX_CM`, 0 above. Piecewise linear, deterministic,
-/// no trig (L0.11 §4.10). The numbers are declared arbitrary; the family
-/// (a hump) is ADR-040's design choice (dated note 2026-11-09).
+/// Builds the `PerceivedScene` from the engine's spatial state.
+///
+/// The engine provides the facts (positions, goal, the two squads); the
+/// actor reads them in `ds_orchestrator::read::build_choice` (A.1-bis).
+/// Plane B by construction: positions, not latents (D2).
 #[must_use]
-#[allow(clippy::cast_precision_loss)] // distances in cm: well inside f64's exact range (2^52)
-fn distance_plausible(d_cm: i64) -> f64 {
-    if d_cm <= PASS_MIN_CM || d_cm >= PASS_MAX_CM {
-        return 0.0;
-    }
-    if d_cm < PASS_NEAR_CM {
-        return ((d_cm - PASS_MIN_CM) as f64) / ((PASS_NEAR_CM - PASS_MIN_CM) as f64);
-    }
-    if d_cm <= PASS_FAR_CM {
-        return 1.0;
-    }
-    ((PASS_MAX_CM - d_cm) as f64) / ((PASS_MAX_CM - PASS_FAR_CM) as f64)
-}
-
-/// `line_quality(from, to, opponent_positions)`: 1 - (blocked / samples).
-/// Three samples at 25/50/75% of the segment. A sample is "blocked" when
-/// some opponent is within `DUEL_PROXIMITY_CM` of it. Declared triangular
-/// approximation: a real interceptor's cone is not checked, only the
-/// distance. The simplification is stated in ADR-040's dated note.
-#[must_use]
-#[allow(clippy::cast_precision_loss)]
-#[allow(clippy::cast_possible_truncation)] // sample coords: from + (dx * k) / 4, well inside i32
-fn line_quality(from: (i32, i32), to: (i32, i32), opponents: &[(i32, i32)]) -> f64 {
-    if opponents.is_empty() {
-        return 1.0;
-    }
-    let dx = to.0 - from.0;
-    let dy = to.1 - from.1;
-    let mut blocked = 0_u32;
-    let samples = 3_u32;
-    for k in 1..=samples {
-        // k / (samples + 1) for k = 1..=samples -> 25/50/75 of the segment
-        let num = i64::from(k);
-        let den = i64::from(samples + 1);
-        let sx = from.0 + ((i64::from(dx) * num) / den) as i32;
-        let sy = from.1 + ((i64::from(dy) * num) / den) as i32;
-        let hit = opponents.iter().any(|&op| {
-            let dx = i64::from(sx) - i64::from(op.0);
-            let dy = i64::from(sy) - i64::from(op.1);
-            (dx * dx + dy * dy).isqrt() < DUEL_PROXIMITY_CM
-        });
-        if hit {
-            blocked += 1;
+fn scene_from(
+    spatial: &SpatialState,
+    attacker: PlayerId,
+    goal: (i32, i32),
+    teammates: Vec<PlayerId>,
+    opponents: Vec<PlayerId>,
+) -> ds_orchestrator::PerceivedScene {
+    let mut positions = std::collections::BTreeMap::new();
+    for id in teammates.iter().chain(opponents.iter()) {
+        if let Some(a) = spatial.agent(*id) {
+            positions.insert(*id, a.position);
         }
     }
-    1.0 - (f64::from(blocked) / f64::from(samples))
-}
-
-/// `goal_cone(pos, goal)`: the visible angular width of the goal mouth from
-/// `pos`, as `sin(angle)` = `|cross(a, b)| / (|a| * |b|)` with
-/// `a = post1 - pos`, `b = post2 - pos`. Polynomial, deterministic, no
-/// trig (L0.11 §4.10). Clipped to `[0, 1]`.
-#[must_use]
-#[allow(clippy::cast_precision_loss)]
-#[allow(clippy::cast_possible_truncation)] // sample coords: from + (dx * k) / 4, well inside i32
-fn goal_cone(pos: (i32, i32), goal: (i32, i32)) -> f64 {
-    let half = GOAL_WIDTH_CM / 2;
-    let a = (
-        i64::from(goal.0) - i64::from(pos.0),
-        i64::from(goal.1 - half as i32) - i64::from(pos.1),
-    );
-    let b = (
-        i64::from(goal.0) - i64::from(pos.0),
-        i64::from(goal.1 + half as i32) - i64::from(pos.1),
-    );
-    let cross = (a.0 * b.1 - a.1 * b.0).abs();
-    let len_a = (a.0 * a.0 + a.1 * a.1).isqrt();
-    let len_b = (b.0 * b.0 + b.1 * b.1).isqrt();
-    let denom = (len_a * len_b) as f64;
-    if denom <= 0.0 {
-        return 0.0;
+    ds_orchestrator::PerceivedScene {
+        actor: attacker,
+        teammates,
+        opponents,
+        positions,
+        goal,
     }
-    (cross as f64 / denom).clamp(0.0, 1.0)
 }
 
 /// The agent chooses geometrically, from what it sees (MD-43). No die in
@@ -289,135 +212,6 @@ fn heading_from_to(from: (i32, i32), to: (i32, i32)) -> u16 {
     best
 }
 
-/// Builds the choice context for `attacker` from the scene, and the
-/// freedom of each pass receiver (carried to `resolve_pass`).
-///
-/// The geometric score and the risk of each option are derived here,
-/// geometrically, from positions and distances (ADR-028 §3: derived
-/// values are admitted in code). The cognitive latents do not enter
-/// here: `resolve_choice` reads them through the custodian. See
-/// `ds_orchestrator::choice` for the selection.
-///
-/// Options, in the order they are built:
-/// - one `Pass { receiver }` for each teammate with enough freedom
-///   (>= `PASS_FREEDOM_CM`); geometric = `freedom_cm / 1000`, risk
-///   grows as `freedom_cm` shrinks towards `PASS_FREEDOM_CM`.
-/// - one `Shoot` if the attacker is within `SHOOT_RANGE_CM` of the
-///   goal; geometric falls with distance, risk rises with it.
-/// - one `Advance` fallback only if no other candidate exists (the
-///   actor carries the ball; `resolve_choice` turns `0.0` into
-///   `Advance` via the clarity threshold);
-///   geometric = 0.0, risk = 0.5 (declared defaults).
-///
-/// `freedom_cm` is returned alongside, keyed by receiver, so the
-/// caller can pass it to `resolve_pass` after the choice.
-#[must_use]
-#[allow(clippy::cast_precision_loss)] // distances in cm: well inside f64's exact range (2^52)
-fn build_choice(
-    spatial: &SpatialState,
-    attacker: PlayerId,
-    goal: (i32, i32),
-    teammates: &[PlayerId],
-    opponents: &[PlayerId],
-) -> (
-    ds_orchestrator::ChoiceContext,
-    std::collections::BTreeMap<PlayerId, i64>,
-) {
-    use ds_orchestrator::{ChoiceCandidate, ChoiceContext, ChoiceKind};
-
-    let mut candidates = Vec::new();
-    let mut freedoms = std::collections::BTreeMap::new();
-    let mut shot_distance: Option<i64> = None;
-
-    let Some(pos) = spatial.agent(attacker).map(|a| a.position) else {
-        return (
-            ChoiceContext {
-                actor: attacker,
-                candidates: vec![ChoiceCandidate {
-                    kind: ChoiceKind::Advance,
-                    geometric: 1.0,
-                    risk: 0.5,
-                }],
-            },
-            freedoms,
-        );
-    };
-
-    let goal_dist = distance_squared(pos, goal).isqrt();
-    if goal_dist < SHOOT_RANGE_CM {
-        shot_distance = Some(goal_dist);
-        // geometric: 1.0 at the goal line, 0.0 at the shoot range edge.
-        // ADR-040: geometric = salience, not probability. distance_factor
-        // (decreasing linearly with distance) times goal_cone (the visible
-        // angular width of the goal mouth from the shooter, no trig).
-        let distance_factor = ((SHOOT_RANGE_CM - goal_dist) as f64) / (SHOOT_RANGE_CM as f64);
-        let geom = distance_factor * goal_cone(pos, goal);
-        // risk: 0.0 at the goal line, 1.0 at the shoot range edge.
-        let risk = (goal_dist as f64) / (SHOOT_RANGE_CM as f64);
-        candidates.push(ChoiceCandidate {
-            kind: ChoiceKind::Shoot,
-            geometric: geom,
-            risk,
-        });
-    }
-    let _ = shot_distance;
-
-    let opponent_positions: Vec<(i32, i32)> = opponents
-        .iter()
-        .filter_map(|o| spatial.agent(*o).map(|a| a.position))
-        .collect();
-    for id in teammates {
-        if *id == attacker {
-            continue;
-        }
-        let Some(tpos) = spatial.agent(*id).map(|a| a.position) else {
-            continue;
-        };
-        let freedom = opponents
-            .iter()
-            .filter_map(|o| spatial.agent(*o).map(|a| a.position))
-            .map(|opos| distance_squared(tpos, opos).isqrt())
-            .min()
-            .unwrap_or(i64::MAX);
-        if freedom < PASS_FREEDOM_CM {
-            continue;
-        }
-        // ADR-040: salience, not probability. freedom x line x distance.
-        let freedom_norm = (freedom as f64) / (freedom as f64 + PASS_FREEDOM_CM as f64);
-        let lq = line_quality(pos, tpos, &opponent_positions);
-        let dp = distance_plausible(distance_squared(pos, tpos).isqrt());
-        let geom = freedom_norm * lq * dp;
-        // risk: 1.0 at PASS_FREEDOM_CM, falling with freedom.
-        let risk = (PASS_FREEDOM_CM as f64) / (freedom as f64);
-        candidates.push(ChoiceCandidate {
-            kind: ChoiceKind::Pass(*id),
-            geometric: geom,
-            risk,
-        });
-        freedoms.insert(*id, freedom);
-    }
-
-    // Fallback: no candidate today (no teammate with enough freedom,
-    // no shot in range). The actor carries the ball; the clarity
-    // threshold in `resolve_choice` turns this into `ChoiceKind::Advance`
-    // because `0.0` is below `clarity_threshold` (ADR-040 note 2026-11-09,
-    // IDEA-DESIGN-010).
-    if candidates.is_empty() {
-        candidates.push(ChoiceCandidate {
-            kind: ChoiceKind::Advance,
-            geometric: 0.0,
-            risk: 0.5,
-        });
-    }
-
-    (
-        ChoiceContext {
-            actor: attacker,
-            candidates,
-        },
-        freedoms,
-    )
-}
 impl MatchState {
     /// Creates the initial state: kickoff, home possession.
     ///
@@ -611,12 +405,15 @@ impl MatchState {
                 am.heading = h;
             }
         }
-        let (choice_ctx, freedoms) =
-            build_choice(&self.spatial, attacker, goal, &teammates, &opponents);
+        let scene = scene_from(&self.spatial, attacker, goal, teammates, opponents.clone());
+        let (choice_ctx, freedoms) = ds_orchestrator::read::build_choice(&scene);
         let chosen =
             match ds_orchestrator::Actor::new(attacker).decide(&choice_ctx, ctx.hidden, tick) {
                 ds_orchestrator::ChoiceKind::Pass(receiver) => {
-                    let freedom_cm = freedoms.get(&receiver).copied().unwrap_or(PASS_FREEDOM_CM);
+                    let freedom_cm = freedoms
+                        .get(&receiver)
+                        .copied()
+                        .unwrap_or(ds_orchestrator::read::PASS_FREEDOM_CM);
                     ChosenAction::Pass {
                         receiver,
                         freedom_cm,
@@ -1144,7 +941,14 @@ mod tests {
         // a choice, not perception).
         let teammates = [attacker, mate];
         let opponents: [PlayerId; 0] = [];
-        let (ctx, _freedoms) = build_choice(&s, attacker, (10500, 3400), &teammates, &opponents);
+        let scene = scene_from(
+            &s,
+            attacker,
+            (10500, 3400),
+            teammates.to_vec(),
+            opponents.to_vec(),
+        );
+        let (ctx, _freedoms) = ds_orchestrator::read::build_choice(&scene);
         let pass_target_seen = ctx
             .candidates
             .iter()

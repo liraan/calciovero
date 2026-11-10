@@ -24,7 +24,9 @@ pub mod outcome;
 
 mod actor;
 pub mod choice;
+pub mod read;
 pub use actor::Actor;
+pub use read::PerceivedScene;
 
 pub use choice::{ChoiceCandidate, ChoiceContext, ChoiceKind, ChoiceOutcome};
 pub use context::{
