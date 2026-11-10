@@ -1,7 +1,7 @@
 # Nota per una nuova AI — Calcio Vero
 
 **Status:** briefing (not normative, not an ADR, not a handoff).
-**Ultima revisione:** 2026-11-09 (rev. 5). **LCV:** `48c8134`.
+**Ultima revisione:** 2026-11-10 (rev. 6). **LCV:** `b129afc`.
 **Supersedes:** `docs/context/analysis/2026-11-08-nota-per-nuova-ai.md` (storia).
 
 **Cos'è.** La memoria delle cose emerse in chat che un agente nuovo non
@@ -94,26 +94,10 @@ per squadra e per livello.
 sale o la salienza scende ("no Pass emitted"). È il guardiano, non un
 test da rilassare.
 
-## 6. Le quattro alternative al tick
+## 6. Cambiare l'orologio? Prima leggi questo
 
-Se un agente chiede "cambiamo l'orologio?", queste sono già state
-valutate. Solo la prima è tracciata (IDEA-DESIGN-011).
+IDEA-011 è atterrata (`c3c0b7f`): il tick è il substrato, il pace viene dall'attore. Se qualcuno propone di cambiare l'orologio, la frase da citare è *"non cambiare l'orologio, cambia chi ha il permesso di fermarlo"*. Le quattro alternative (event-driven, passo variabile, due orologi, fase per agente) sono state valutate e non riprese: la seconda e la terza sono le uniche compatibili con il determinismo, e la forma attuale ne è già un caso parziale (scan ogni 5 tick). Non riaprirle senza un ADR.
 
-- **Event-driven discreto.** Salta da un evento al successivo. Perdi il
-  sottofondo (movimento, copertura, sguardo) che il tick dà gratis, e
-  devi dimostrare che tra un evento e l'altro non cambia niente (OI-26).
-  Il 2D (IDEA-INFRA-018) vuole fotogrammi.
-- **Passo variabile.** Deterministico solo se il passo è funzione dello
-  stato; la regola "quando lo stato cambia" nasconde accoppiamenti.
-- **Due orologi dichiarati.** Lento per le decisioni, veloce per
-  movimento e palla. **Già in parte** la forma di oggi (scan ogni 5
-  tick). Costo basso, la più economica da provare.
-- **Fase per agente.** Ogni agente ha il suo battito. Toglie l'artefatto
-  "tutti decidono nello stesso tick", ma cambia l'ordine di iterazione:
-  `SIM_VERSION` bump.
-
-**Da citare a chi propone il cambio:** *"non cambiare l'orologio, cambia
-chi ha il permesso di fermarlo"*. IDEA-011 è la sua forma operativa.
 
 ## 7. Decisioni orali del maintainer (non scritte altrove)
 
@@ -127,6 +111,8 @@ chi ha il permesso di fermarlo"*. IDEA-011 è la sua forma operativa.
   `pcfm-fixtures`.
 
 ## 8. Cose che non hanno un OI ma vanno sapute
+
+- **ADR-044 `proposed`: la catena, leggi prima di toccare un `resolve_*`.** Caratteristiche -> relazioni -> atti, nessuna eccezione (atto sbagliato, omissione, portiere, palla con catena corta). Caratteristiche (attori, latenti) e proprieta fisiche (palla, suolo, dati dichiarati) sono due parole, non una. `why-new:` senza, un agente legge il codice e crede che l'omissione non esista e che il portiere sia una soglia — e sono le eccezioni che ADR-044 vieta.
 
 - **`resolve_duel` è ancora prototipo** (legge un dado). Debito in Plan E
   (OI-50), non un bug nuovo.
@@ -198,3 +184,4 @@ Artefatti nel report di chiusura: `dup-check: <termine> -> prompt:<regola>|none`
 - **2026-11-09 — rev. 4** (LCV `f4c8098`). Una voce in §9: i filtri giudicano il modello, non l'architettura (ADR-041 non filtrabile, ADR-042 sì e corretto dai filtri). `dup-check`: A3/D6 -> prompt (puntatori); "filtri modello vs architettura" -> none (nuovo). Nota a 196 righe, sotto il tetto 200.
 - **2026-11-09 — rev. 5** (LCV `3ab20b2`). Una voce in §9: "siamo sicuri?" è una domanda, non un'assoluzione. `dup-check`: "siamo sicuri" -> prompt:none; "frasi brevi" -> prompt:none. `replaced: none`; **`overflow:` §4.3 ("le frasi brevi sono decisioni") non entra**, già coperta in spirito da §9 "domande-provocazione" e "le pause possono durare"; la nota è a 199 righe, sotto il tetto 200. `Rules-Audit` non richiesto (nessuna regola toccata).
 - **2026-11-09 — no change** (session 11, LCV `48c8134`). Nessuna voce nuova dopo la rev. 5: ADR-043 (proposed) è un artefatto ADR, non una regola di lavoro; il filtro non ha prodotto nulla di non scritto altrove.
+- **2026-11-10 — rev. 6** (LCV `b129afc`). Una voce in §8: ADR-044 proposed, la catena. `dup-check`: "catena" -> prompt:none; "caratteristiche vs proprieta fisiche" -> prompt:none (il vocabolario e in ADR-044, non nel prompt). `why-new:` chiaro. `replaced:` §6 (le quattro alternative al tick, 20 righe) con una sintesi di 6: IDEA-011 e atterrata, le alternative restano valutate, non serve il dettaglio. 16 righe risparmiate, la nota e a 186 righe, sotto il tetto 200. `Rules-Audit` non richiesto (nessuna regola toccata).
