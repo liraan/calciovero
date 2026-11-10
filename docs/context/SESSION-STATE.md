@@ -2,7 +2,7 @@
 
 **Purpose:** a short bookmark for resuming work across sessions. It records where we are, not what the project is. History is in `git log`; this file does not duplicate it.
 
-**Last commit verified:** `5596d14` - "docs(captures): goalkeeper is an actor, the tick is only time -- OI-81 reframed"
+**Last commit verified:** `bceb03b` - "docs(captures): ADR-045 amendments -- the keeper has a latency, reads before launch"
 
 **Note on the field above:** it points to the last commit *before* this bookmark update (S1). It will look "stale" compared to HEAD; expected. Do not "fix" it without updating the rest of the bookmark in the same commit.
 
