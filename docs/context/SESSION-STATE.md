@@ -2,7 +2,7 @@
 
 **Purpose:** a short bookmark for resuming work across sessions. It records where we are, not what the project is. History is in `git log`; this file does not duplicate it.
 
-**Last commit verified:** `2d48443` - "refactor(actor): Actor::decide replaces the engine resolve_choice call (A.1-actor)"
+**Last commit verified:** `192cd05` - "docs(context): bookmark -- A.1 first commit done, LCV to 2d48443"
 
 **Note on the field above:** it points to the last commit *before* this bookmark update (S1). It will look "stale" compared to HEAD; expected. Do not "fix" it without updating the rest of the bookmark in the same commit.
 
