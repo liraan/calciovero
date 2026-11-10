@@ -42,3 +42,4 @@ format: YYYY-MM-DD HH:MM | pause|task <id> | status | HEAD | commits LCV..HEAD |
 2026-11-10 17:11 | pause - | filtered:none | 05036c7 | 1 | - | docs/context/captures/2026-11.md
 2026-11-10 17:18 | pause - | written | 05036c7 | 1 | OI-84(exists);  | docs/context/captures/2026-11.md
 2026-11-10 17:29 | pause - | filtered:none | 5cd0cb3 | 2 | - | docs/context/captures/2026-11.md
+2026-11-10 18:40 | pause - | written | 1dbc8c5 | 1 | OI-81(exists); OI-92(exists);  | docs/context/captures/2026-11.md
