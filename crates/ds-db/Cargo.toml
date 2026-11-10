@@ -1,0 +1,18 @@
+[package]
+name = "ds-db"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Plane A vault: latent performances, keyed derivation, the custodian door (ADR-041 §3)"
+documentation = "https://github.com/liraan/calciovero/tree/main/docs/adr/041-one-crate-one-responsibility.md"
+
+[dependencies]
+ds-core.workspace = true
+pcfm-calculator.workspace = true
+blake3.workspace = true
+
+[lints]
+workspace = true

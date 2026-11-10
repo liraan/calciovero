@@ -27,6 +27,7 @@ impl CustodianView {
     ///
     /// `pub` in a private module: the orchestrator inside `pcfm-hidden` is
     /// the only caller.
+    #[must_use]
     pub const fn new(latents: PlayerLatents) -> Self {
         Self { latents }
     }

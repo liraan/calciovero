@@ -65,6 +65,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-db"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "ds-core",
+ "pcfm-calculator",
+]
+
+[[package]]
 name = "ds-model"
 version = "0.1.0"
 dependencies = [
@@ -147,6 +156,7 @@ version = "0.1.0"
 dependencies = [
  "blake3",
  "ds-core",
+ "ds-db",
  "ds-model",
  "pcfm-calculator",
  "rand_chacha",

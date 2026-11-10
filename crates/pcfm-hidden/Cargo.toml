@@ -12,6 +12,7 @@ documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-
 [dependencies]
 ds-core.workspace = true
 ds-model.workspace = true
+ds-db.workspace = true
 pcfm-calculator.workspace = true
 rand_chacha.workspace = true
 rand_core.workspace = true

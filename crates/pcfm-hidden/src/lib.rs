@@ -23,8 +23,6 @@ pub mod observation;
 pub mod outcome;
 
 mod choice;
-mod custodian;
-mod latents;
 
 pub use choice::{ChoiceCandidate, ChoiceContext, ChoiceKind, ChoiceOutcome};
 pub use context::{
@@ -37,15 +35,14 @@ pub use outcome::{
     ShotOutcome, ShotType,
 };
 
-use std::collections::BTreeMap;
 use std::fmt;
 
 use ds_core::ids::{MatchId, PlayerId};
 use ds_core::rng::{RngRegistry, StreamName};
 use rand_chacha::ChaCha20Rng;
 
-use crate::latents::PlayerLatents;
 use ds_core::rng::next_unit;
+use ds_db::latents::PlayerLatents;
 
 /// One RNG stream per noise consumer.
 ///
@@ -64,7 +61,7 @@ pub struct GroundTruth {
     world_seed: u64,
     match_id: MatchId,
     streams: Streams,
-    latents: BTreeMap<PlayerId, PlayerLatents>,
+    vault: ds_db::Vault,
     observations: Vec<ObservationEvent>,
     /// The movement balance, parsed once. `resolve_movement` is called
     /// for every agent every tick: parsing the JSON 1.2 million times is
@@ -96,7 +93,7 @@ impl GroundTruth {
             world_seed,
             match_id,
             streams,
-            latents: BTreeMap::new(),
+            vault: ds_db::Vault::new(ds_core::identity::Identity::new(world_seed, match_id)),
             observations: Vec::new(),
             movement_balance: pcfm_calculator::movement::MovementBalance::load(),
             latency_balance: pcfm_calculator::latency::LatencyBalance::load(),
@@ -125,8 +122,8 @@ impl GroundTruth {
     /// inside `pcfm-hidden` only and `pcfm-match` cannot name it. The
     /// engine never sees a `CustodianView`: the compile-time boundary of
     /// ADR-028 section 5 is this visibility.
-    pub(crate) fn custodian(&mut self, player: PlayerId) -> crate::custodian::CustodianView {
-        crate::custodian::CustodianView::new(self.latents_for(player))
+    pub(crate) fn custodian(&mut self, player: PlayerId) -> ds_db::CustodianView {
+        self.vault.custodian(player)
     }
 
     /// Resolves a duel.
@@ -492,12 +489,7 @@ impl GroundTruth {
     }
 
     fn latents_for(&mut self, player: PlayerId) -> PlayerLatents {
-        if let Some(l) = self.latents.get(&player) {
-            return *l;
-        }
-        let new = PlayerLatents::from_key(self.world_seed, player);
-        self.latents.insert(player, new);
-        new
+        self.vault.latents_for(player)
     }
 }
 

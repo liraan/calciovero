@@ -16,6 +16,7 @@
 
 pub mod event_bus;
 pub mod hash;
+pub mod identity;
 pub mod ids;
 pub mod rng;
 pub mod time;
