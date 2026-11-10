@@ -1,6 +1,6 @@
 # ADR-045 — The goalkeeper is an actor, not a threshold
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-10
 - **Supersedes:** —
 - **Amends:** ADR-039 (the goalkeeper re-enters the shape: read, choose, contact, band); ADR-044 §2 (the declared exception is closed, not restated); OI-81 (the item this ADR opens the cantiere for)
@@ -76,3 +76,5 @@ The catalogue (OI-92) must be able to express the terms the keeper's scene reads
 - 2026-11-10 captures: the pause that produced this ADR
 
 **2026-11-10 — two amendments from the filters, before acceptance.** The maintainer asked for the partita vera / luna reading of the ADR. The filters confirmed the shape (the keeper is an actor, the tick is only time, the catalogue is the condition) and corrected two sentences. (1) "No latency of his own" was false to the letter: the keeper has a duration, the time of the read, and it is a duration in the relation (ADR-044 §6), not an interval between decisions. The flight is the contact's window, not the read's latency. (2) The read happens **while** the shooter chooses (same scene, two reads), not after the launch; otherwise the dive is late and the partita vera filter fails. The §2 heading changed accordingly. The rest is untouched; "the two chains that meet" stays open, and the cantiere starts from the shape of the meeting, not from the formula. Verification: `SaveContext` has no shooter, no trajectory velocity, no time (only `goalkeeper`, `point`, `offset_cm`, `reach_cm`); `goalkeeping` is in `TechnicalLatents` but not in the `Characteristic` catalogue; the keeper is anchored (`GK_ANCHOR_CM` 250) and excluded from the movement. The amendments are consistent with the code.
+
+**2026-11-10 — Status: accepted.** Accepted by the derivable default (P6, maintainer directive 2026-11-07): the direction already answers it. ADR-044 (accepted) says "the goalkeeper answers the chain" and "the threshold is the clearest exception"; this ADR specifies it, the filters confirmed it (two amendments applied before acceptance), and the code confirms it (`SaveContext` has no shooter, no trajectory velocity, no time; `goalkeeping` is in `TechnicalLatents` but not in the `Characteristic` catalogue; the keeper is anchored and excluded from the movement). No code change, `SIM_VERSION` unchanged. The cantiere opens with the shape of the meeting of the two chains (shooter and keeper), not with the formula. OI-81 moves to `[next]`.
