@@ -47,3 +47,4 @@ format: YYYY-MM-DD HH:MM | pause|task <id> | status | HEAD | commits LCV..HEAD |
 2026-11-10 18:58 | pause - | written | edd0257 | 1 | OI-81(exists); ADR-045(exists);  | docs/context/captures/2026-11.md
 2026-11-10 19:04 | pause - | written | 5f7d99b | 1 | OI-81(exists);  | docs/context/captures/2026-11.md
 2026-11-10 19:16 | pause - | written | 26c5186 | 2 | OI-81(exists); ADR-045(exists);  | docs/context/captures/2026-11.md
+2026-11-10 19:42 | pause - | written | 70bd920 | 1 | OI-81(exists); OI-88(exists);  | docs/context/captures/2026-11.md
