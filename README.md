@@ -134,7 +134,7 @@ event types are emitted.
 
 The technology is Rust, chosen for type safety and for a determinism
 that can be *guaranteed*, not hoped for. Money is fixed-point, so it
-never drifts. The test harness (`pcfm-testkit`) is a small crate with
+never drifts. The test harness (`ds-testkit`) is a small crate with
 no dependency on the engine, so plugins and tools can contribute
 scenarios without coupling. The presentation is TUI-first in v1; the
 GUI is a future crate behind the same engine.

@@ -4,6 +4,6 @@
   "decision_bias": 0.2,
   "floor": 0.5,
   "clarity_threshold": 0.25,
-  "_note": "Choice score coefficients (F.6-shape, OI-85). Arbitrary and declared until calibration (D6). game_reading and risk_management enter the formula (`pcfm-calculator/src/choice.rs`); decision_making does not (it is a threshold on the *choice*, ADR-039 read/choose split): in `resolve_choice` a poorly deciding actor accepts the second-best candidate if `second.score * (1 + (1 - decision_making) * decision_bias) > best.score`. A strong decider (decision_making = 1) falls to pure argmax; a weak one (0) accepts up to `decision_bias` of loss.",
+  "_note": "Choice score coefficients (F.6-shape, OI-85). Arbitrary and declared until calibration (D6). game_reading and risk_management enter the formula (`ds-calculator/src/choice.rs`); decision_making does not (it is a threshold on the *choice*, ADR-039 read/choose split): in `resolve_choice` a poorly deciding actor accepts the second-best candidate if `second.score * (1 + (1 - decision_making) * decision_bias) > best.score`. A strong decider (decision_making = 1) falls to pure argmax; a weak one (0) accepts up to `decision_bias` of loss.",
   "_source": "Prototype. Weights and bias: no cited figure; the form follows L0.11 section 4.5 (product, sum, clamp) and ADR-028 section 3 (arbitrary declared). decision_bias default 0.2 = 'a weak decider accepts a candidate 20% worse'; to be calibrated against real decision-error rates (L3). `decision_weight` removed in F.6-shape: it made decision inert on the argmax (OI-85)."
 }

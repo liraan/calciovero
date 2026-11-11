@@ -94,7 +94,7 @@ Before the layout, the terminology. Three words, three things:
 |---|---|---|
 | **Module** | A directory of the specification, at one level. Contains sub-modules. | `specs/L0-match/`, `specs/L2-psyche/` |
 | **Sub-module** | A file inside a module. | `specs/L0-match/04-match-engine.md` |
-| **Plugin** | A Rust crate with a `sheet.toml`, that extends the engine at runtime. | `crates/pcfm-match-3d/` (future) |
+| **Plugin** | A Rust crate with a `sheet.toml`, that extends the engine at runtime. | `crates/ds-match-3d/` (future) |
 
 **A module is a document. A plugin is code.** The two are different things, and the terms are not interchangeable. The historical term **cell** is **deprecated**: it meant what is now called "module", and its use is discouraged in new text. The field `cell` in the frontmatter is a historical name: its value is the module directory name.
 
@@ -135,16 +135,16 @@ crates/
 ├── ds-model/       (minimal entities, CauseTrace)
 ├── ds-db/          (Plane A: vault, latent performances, custodian door)
 ├── ds-orchestrator/ (the orchestrator: GroundTruth, resolve_*)
-├── pcfm-stats/       (Plane B: MatchEvent, EventChain)
-├── pcfm-match/       (engine, narrative, save)
-├── pcfm-testkit/     (public test harness: Scenario, Feature, TestRegistry)
-├── pcfm-test-runner/ (CLI: --check, --list, --coverage)
-├── pcfm-demo/        (CLI: simulate a match, render text/JSON/HTML)
-├── pcfm-fixtures/    (hardcoded squads and match fixture)
-└── pcfm-calculator/  (formula from balance/*.json, applied to a player)
+├── ds-stats/       (Plane B: MatchEvent, EventChain)
+├── ds-match/       (engine, narrative, save)
+├── ds-testkit/     (public test harness: Scenario, Feature, TestRegistry)
+├── ds-test-runner/ (CLI: --check, --list, --coverage)
+├── ds-demo/        (CLI: simulate a match, render text/JSON/HTML)
+├── ds-fixtures/    (hardcoded squads and match fixture)
+└── ds-calculator/  (formula from balance/*.json, applied to a player)
 ```
 
-`pcfm-testkit` has **no dependency on any other `pcfm-*` crate**. It is the contract that core modules, plugins, and tools all implement.
+`ds-testkit` has **no dependency on any other `ds-*` crate**. It is the contract that core modules, plugins, and tools all implement.
 
 **Root files:**
 
@@ -200,7 +200,7 @@ pc-football-manager/
 
 **File naming:** `NN-kebab-case-name.md`, two-digit prefix, no Italian, no version in the filename. `04-match-engine.md`, not `Match Engine 04 (rev 1.1).md`. The filename is stable; the revision lives in the frontmatter.
 
-**Crate naming:** the crates in `crates/` use the `pcfm-` prefix. Current: `ds-core`, `ds-model`, `ds-db`, `ds-orchestrator`, `pcfm-calculator`, `pcfm-match`, `pcfm-stats`, `pcfm-testkit`, `pcfm-test-runner`, `pcfm-demo`, `pcfm-fixtures`. Planned (post-v1.0): `pcfm-packs`, `pcfm-assets`, `pcfm-pack`. `pcfm-testkit` is the public test harness contract: it has **no dependency on any other `pcfm-*` crate**, so core modules, plugins, and tools can all implement `pcfm_testkit::Scenario` without coupling. The historical prefix `fmr-` (from the original "FMR project" name) is deprecated and must not be used in new files. Rust module paths follow the same convention with an underscore: `ds_core::rng`, `pcfm_match::simulate`, `pcfm_testkit::Scenario`, etc.
+**Crate naming:** all crates in `crates/` use the `ds-` prefix (ADR-032, completed 2026-11-11). Current: `ds-core`, `ds-model`, `ds-db`, `ds-orchestrator`, `ds-calculator`, `ds-stats`, `ds-match`, `ds-testkit`, `ds-test-runner`, `ds-demo`, `ds-fixtures`. Planned (post-v1.0): `ds-packs`, `ds-assets`, `ds-pack`. `ds-testkit` is the public test harness contract: it has **no dependency on any other `ds-*` crate**, so core modules, plugins, and tools can all implement `ds_testkit::Scenario` without coupling. The historical prefixes `pcfm-` and `fmr-` (from the original names) are deprecated and must not be used in new files. Rust module paths follow the same convention with an underscore: `ds_core::rng`, `ds_match::simulate`, `ds_testkit::Scenario`, etc.
 
 **Modules vs sub-modules:** A **module** is a directory (`L0-match`, `L2-psyche`). A **sub-module** is a file inside a module (`04-match-engine.md`). A sub-sub-module is a section (`##`) inside a file. There is no third level of directories. If a sub-module needs its own children, it becomes a new module at the same level, not a deeper directory.
 

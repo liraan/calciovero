@@ -216,15 +216,15 @@ Some components are referenced across modules but do not (yet) have a dedicated 
 
 ### Infrastructure components
 
-These are the `pcfm-*` crates that provide infrastructure to multiple modules. They are not domain modules; they are services. Their full specification is **fragmented across the modules that use them**, until a dedicated module is written.
+These are the `ds-*` crates that provide infrastructure to multiple modules. They are not domain modules; they are services. Their full specification is **fragmented across the modules that use them**, until a dedicated module is written.
 
 | Component | Currently defined in | Dedicated module (planned) | Notes |
 |---|---|---|---|
 | `ds-core` | L0.01 §2.2 (RNG), L0.02 §2.1 (event bus), L0.03 §3.1 (IDs), `00-foundations` §4 (fixed-point) | — | The core crate. Used by every other crate. |
-| `pcfm-stats` | L0.05 §2.4 (`EventChain`), L0.06 (consumer) | `L3-statistics` | Storage of `MatchEvent`, query engine. |
-| `pcfm-metrics` | L0.04 §2.4 (sub-models), L0.06 §2.3 (`MatchStatistics`) | `L3-statistics` | PPDA, progressive actions. xG removed from L0 on 2026-10-31 (latent-derived at L0, no observable features). |
-| `pcfm-data` | L0.07 §2.3 (migration scripts) | `L3-quality` | Loader, validator, migrations. |
-| `pcfm-bridge` | `docs/adr/004-panic-strategy-ffi.md`, `docs/adr/005-qt-binding.md` | `L3-ui` | Qt FFI shim. The only crate that knows Qt. |
+| `ds-stats` | L0.05 §2.4 (`EventChain`), L0.06 (consumer) | `L3-statistics` | Storage of `MatchEvent`, query engine. |
+| `ds-metrics` | L0.04 §2.4 (sub-models), L0.06 §2.3 (`MatchStatistics`) | `L3-statistics` | PPDA, progressive actions. xG removed from L0 on 2026-10-31 (latent-derived at L0, no observable features). |
+| `ds-data` | L0.07 §2.3 (migration scripts) | `L3-quality` | Loader, validator, migrations. |
+| `ds-bridge` | `docs/adr/004-panic-strategy-ffi.md`, `docs/adr/005-qt-binding.md` | `L3-ui` | Qt FFI shim. The only crate that knows Qt. |
 
 **Rule:** when a new module needs `ds-core` (or any other infrastructure crate), it does not re-specify the crate. It links to the existing definition. The dedicated module, when written, will be the single source of truth; until then, the "Currently defined in" column is the map.
 
@@ -235,7 +235,7 @@ These are components that are referenced across modules but are not crates. They
 | Component | Referenced in | Destination |
 |---|---|---|
 | `ds-orchestrator` / `GroundTruth` | L0.03, L0.04, L0.07, L0.08, ADR-003 | **L0.10** (documented here) ✅ |
-| `pcfm-gen` | ADR-003, L0.07, L0.10 | L3-generator *(planned)* |
+| `ds-gen` | ADR-003, L0.07, L0.10 | L3-generator *(planned)* |
 | `balance/*.toml` | L0.04, L0.06, L0.08 | L3-quality *(planned)* |
 | `registry/*.yaml` | L0.03, L0.05 | L3-registry *(planned)* |
 | `locales/*` | L0.06 | L3-assets *(planned)*; translations at `locales/it/` *(planned)* |

@@ -10,7 +10,7 @@
 # `rand_chacha` and `rand_core` 0.10 are ignored. The major bump changes
 # the `ChaCha20Rng` API (`from_seed`, `next_u32`, `fill_bytes`), which is
 # the deterministic RNG core (`ds-core/src/rng.rs`,
-# `pcfm-hidden/src/latents.rs`). A breaking change there is a
+# `ds-db/src/latents.rs`). A breaking change there is a
 # `SIM_VERSION` decision, not a dependency bump. Verified locally on
 # 2026-11-01: `cargo clippy` fails on both 0.10 branches. Remove the
 # ignore when the RNG migration has its own session.

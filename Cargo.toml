@@ -7,13 +7,13 @@ members = [
     "crates/ds-model",
     "crates/ds-db",
     "crates/ds-orchestrator",
-    "crates/pcfm-match",
-    "crates/pcfm-stats",
-    "crates/pcfm-test-runner",
-    "crates/pcfm-demo",
-    "crates/pcfm-fixtures",
-    "crates/pcfm-testkit",   # ← NUOVO
-    "crates/pcfm-calculator",
+    "crates/ds-match",
+    "crates/ds-stats",
+    "crates/ds-test-runner",
+    "crates/ds-demo",
+    "crates/ds-fixtures",
+    "crates/ds-testkit",   # ← NUOVO
+    "crates/ds-calculator",
 ]
 
 [workspace.package]
@@ -32,12 +32,12 @@ ds-core = { path = "crates/ds-core", version = "0.1.0" }
 ds-model = { path = "crates/ds-model", version = "0.1.0" }
 ds-db = { path = "crates/ds-db", version = "0.1.0" }
 ds-orchestrator = { path = "crates/ds-orchestrator", version = "0.1.0" }
-ds-stats = { path = "crates/pcfm-stats", version = "0.1.0" }
-ds-match = { path = "crates/pcfm-match", version = "0.1.0" }
-ds-test-runner = { path = "crates/pcfm-test-runner", version = "0.1.0" }
-ds-testkit = { path = "crates/pcfm-testkit", version = "0.1.0" }
-ds-fixtures = { path = "crates/pcfm-fixtures", version = "0.1.0" }
-ds-calculator = { path = "crates/pcfm-calculator", version = "0.1.0" }
+ds-stats = { path = "crates/ds-stats", version = "0.1.0" }
+ds-match = { path = "crates/ds-match", version = "0.1.0" }
+ds-test-runner = { path = "crates/ds-test-runner", version = "0.1.0" }
+ds-testkit = { path = "crates/ds-testkit", version = "0.1.0" }
+ds-fixtures = { path = "crates/ds-fixtures", version = "0.1.0" }
+ds-calculator = { path = "crates/ds-calculator", version = "0.1.0" }
 # RNG
 rand_chacha = "0.9"
 rand_core = "0.9"

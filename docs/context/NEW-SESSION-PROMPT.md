@@ -33,7 +33,7 @@ I am resuming work on **Calcio Vero (Deep Simulator)**. The previous chat ended 
 
 **For current numbers (crates, tests, ADR count), read `SESSION-STATE.md` and `STRUCTURE.md` §5. This section only gives the stable structure: it does not duplicate counts that change every session.**
 
-- **Crates:** the prefix is in transition `pcfm-*` -> `ds-*` (ADR-032): `ds-core` renamed, then `ds-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `ds-test-runner`, `pcfm-demo`, `pcfm-fixtures`, `pcfm-calculator`. The count lives in `STRUCTURE.md` §5.
+- **Crates:** all crates use the `ds-*` prefix (ADR-032, completed 2026-11-11, seven commits one per crate plus the directory rename). `pcfm-*` survives in history (ADRs, `CHANGELOG-SIM`, `analysis/`, old commits), not in code. The count lives in `STRUCTURE.md` §5.
 - **`docs/context/`** holds briefing material (not normative): `NEW-SESSION-PROMPT.md`, `SESSION-STATE.md`, `AGENT-POLICY.md`, `GITHUB-SESSION-PROMPT.md`.
 
 ## Why these files matter (the commands are in the Startup ritual)
@@ -327,7 +327,7 @@ This very file — operating rules (A1, A2, B1-B4, C1, C2, D1, D2, D3, E1-E5), r
 ### 4. Confirm the numbers
 
     cargo test --workspace 2>/dev/null | grep "test result"
-    ls crates/ | grep pcfm | wc -l
+    ls -d crates/*/ | wc -l
     for f in docs/adr/*.md; do sed -n '3p' "$f"; done | grep -c 'Status:\*\* accepted'
 
 Compare with `SESSION-STATE.md` and this prompt. If they diverge, the docs are stale — report it before proceeding.
