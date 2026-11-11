@@ -53,6 +53,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-calculator"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "ds-core"
 version = "0.1.0"
 dependencies = [
@@ -69,8 +78,8 @@ name = "ds-db"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "ds-calculator",
  "ds-core",
- "pcfm-calculator",
 ]
 
 [[package]]
@@ -87,10 +96,10 @@ dependencies = [
 name = "ds-orchestrator"
 version = "0.1.0"
 dependencies = [
+ "ds-calculator",
  "ds-core",
  "ds-db",
  "ds-model",
- "pcfm-calculator",
  "rand_chacha",
  "rand_core",
  "serde_json",
@@ -131,15 +140,6 @@ name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
-
-[[package]]
-name = "pcfm-calculator"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror",
-]
 
 [[package]]
 name = "pcfm-demo"

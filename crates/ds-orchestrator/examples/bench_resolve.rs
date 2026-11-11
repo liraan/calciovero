@@ -20,9 +20,9 @@
 
 use std::time::Instant;
 
+use ds_calculator::{Characteristic, Custodian, Datum, Formula, Situation};
 use ds_core::ids::{MatchId, PlayerId};
 use ds_orchestrator::GroundTruth;
-use pcfm_calculator::{Characteristic, Custodian, Datum, Formula, Situation};
 
 const N_FORMULA: u32 = 200_000;
 const N_RESOLVE: u32 = 200_000;
@@ -61,7 +61,7 @@ fn main() {
     // The movement formula, from balance/movement.json (same code the
     // orchestrator loads). No hardcoded coefficients: if the file
     // changes, the bench follows.
-    let movement_balance = pcfm_calculator::movement::MovementBalance::load();
+    let movement_balance = ds_calculator::movement::MovementBalance::load();
     let movement = movement_balance.formula();
 
     // The same formula, reduced by hand: the Term (ExplosiveForce) is
@@ -112,7 +112,7 @@ fn main() {
     let start = Instant::now();
     let mut acc2 = 0.0f64;
     for _ in 0..N_FORMULA {
-        acc2 += pcfm_calculator::Calculator::apply(movement, &mut custodian, &situation);
+        acc2 += ds_calculator::Calculator::apply(movement, &mut custodian, &situation);
     }
     let t_full = start.elapsed();
 
@@ -121,7 +121,7 @@ fn main() {
     let start = Instant::now();
     let mut acc3 = 0.0f64;
     for _ in 0..N_FORMULA {
-        acc3 += pcfm_calculator::Calculator::apply(&movement_reduced, &mut custodian3, &situation);
+        acc3 += ds_calculator::Calculator::apply(&movement_reduced, &mut custodian3, &situation);
     }
     let t_red = start.elapsed();
 
@@ -177,7 +177,7 @@ fn main() {
     let mut acc7 = 0.0f64;
     let start = Instant::now();
     for _ in 0..N_CHOICE {
-        let b = pcfm_calculator::choice::ChoiceBalance::load();
+        let b = ds_calculator::choice::ChoiceBalance::load();
         acc7 += b.clarity_threshold;
     }
     let t_load = start.elapsed();

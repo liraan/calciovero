@@ -11,7 +11,7 @@ documentation = "https://github.com/liraan/calciovero/tree/main/docs/adr/041-one
 
 [dependencies]
 ds-core.workspace = true
-pcfm-calculator.workspace = true
+ds-calculator.workspace = true
 blake3.workspace = true
 
 [lints]

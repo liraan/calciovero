@@ -1,4 +1,4 @@
-//! `pcfm-calculator` — the second of the three components of ADR-028 §5.
+//! `ds-calculator` — the second of the three components of ADR-028 §5.
 //!
 //! The engine has three components, and each has one responsibility:
 //!

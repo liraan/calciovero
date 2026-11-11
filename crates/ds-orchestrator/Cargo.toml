@@ -13,7 +13,7 @@ documentation = "https://github.com/liraan/calciovero/tree/main/docs/adr/041-one
 ds-core.workspace = true
 ds-model.workspace = true
 ds-db.workspace = true
-pcfm-calculator.workspace = true
+ds-calculator.workspace = true
 rand_chacha.workspace = true
 rand_core.workspace = true
 

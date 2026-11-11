@@ -70,9 +70,9 @@ pub struct GroundTruth {
     /// The movement balance, parsed once. `resolve_movement` is called
     /// for every agent every tick: parsing the JSON 1.2 million times is
     /// waste, and the file does not change during a match.
-    movement_balance: pcfm_calculator::movement::MovementBalance,
-    latency_balance: pcfm_calculator::latency::LatencyBalance,
-    choice_balance: pcfm_calculator::choice::ChoiceBalance,
+    movement_balance: ds_calculator::movement::MovementBalance,
+    latency_balance: ds_calculator::latency::LatencyBalance,
+    choice_balance: ds_calculator::choice::ChoiceBalance,
 }
 
 impl GroundTruth {
@@ -99,9 +99,9 @@ impl GroundTruth {
             streams,
             vault: ds_db::Vault::new(ds_core::identity::Identity::new(world_seed, match_id)),
             observations: Vec::new(),
-            movement_balance: pcfm_calculator::movement::MovementBalance::load(),
-            latency_balance: pcfm_calculator::latency::LatencyBalance::load(),
-            choice_balance: pcfm_calculator::choice::ChoiceBalance::load(),
+            movement_balance: ds_calculator::movement::MovementBalance::load(),
+            latency_balance: ds_calculator::latency::LatencyBalance::load(),
+            choice_balance: ds_calculator::choice::ChoiceBalance::load(),
         }
     }
 
@@ -404,7 +404,7 @@ impl GroundTruth {
     /// boundary).
     #[must_use]
     pub fn resolve_movement(&mut self, ctx: &MovementContext) -> MovementOutcome {
-        use pcfm_calculator::{Calculator, Datum, Situation};
+        use ds_calculator::{Calculator, Datum, Situation};
 
         struct TheSituation {
             height: f64,
@@ -464,7 +464,7 @@ impl GroundTruth {
     /// same defect as `action_roll` in the other direction.
     #[must_use]
     pub fn resolve_latency(&mut self, ctx: &LatencyContext) -> LatencyOutcome {
-        use pcfm_calculator::{Calculator, Datum, Situation};
+        use ds_calculator::{Calculator, Datum, Situation};
 
         struct LatencySituation {
             crowding: f64,

@@ -13,7 +13,7 @@
 //! pure function of `(world_seed, player)`. `GroundTruth` does not
 //! implement `Custodian` directly: one door, not two (D7).
 
-use pcfm_calculator::{Characteristic, Custodian};
+use ds_calculator::{Characteristic, Custodian};
 
 use crate::latents::PlayerLatents;
 
@@ -61,7 +61,7 @@ impl Custodian for CustodianView {
 mod tests {
     use super::*;
     use crate::latents::PlayerLatents;
-    use pcfm_calculator::{Characteristic, Custodian};
+    use ds_calculator::{Characteristic, Custodian};
 
     /// The three terms OI-92 added (the shot's choice) return the
     /// player's latent, not a hardcoded 0.0. A regression here would
