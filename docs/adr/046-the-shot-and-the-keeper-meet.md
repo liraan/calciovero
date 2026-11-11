@@ -282,6 +282,24 @@ keeper in position; the power has no intrinsic correctness, it is right or
 wrong in the relation. This confirms §3 (the outcome is a meeting) and
 corrects the first draft of OI-88, which computed `aim_y` from the gap:
 the gap is a fact of the scene, not the shooter's choice.
+
+**2026-11-11 (third) — the choice depends on the shooter's cognitive and
+mental characteristics, per candidate.** The session fixed the direction:
+which of the complete actions wins is the actor's, and it depends on his
+cognitive and mental characteristics — the same way the keeper's choice
+(come out, dive, stay) does. The gap and the keeper's position are facts;
+the choice among the four candidates is the shooter's. Consequence, and
+it is a finding against the current formula: `resolve_choice` applies the
+same factor to every candidate (`geometric × (floor + (1-floor)·reading_weight·game_reading)
+× (1 − risk_weight·risk_management·risk)`). A factor identical for every
+candidate cannot change the argmax: a high-`game_reading` shooter and a
+low-`game_reading` shooter, in front of the same four candidates, would
+pick the same. OI-85 found this for `decision_making`; it is true for
+`game_reading` and `risk_management` too when the candidates are complete
+actions. The choice must read the latents **per candidate**, not as one
+common scalar. The form of the per-candidate salience is not decided here
+(it touches ADR-039 read/choose/contact and OI-85); it is the next
+cantiere, before any code on OI-88.
 ## References
 
 - `specs/00-foundations.md` §2 (pillar 11), §4 (determinism), §5 (no
