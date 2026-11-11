@@ -7,6 +7,9 @@ conforms_to: "SESSION-STATE.md, NEW-SESSION-PROMPT.md (startup ritual), ADR-043,
 supersedes: "2026-11-09-session-handoff-v7.md (salience implemented, before the split and the chain)"
 ---
 
+
+> **Snapshot 2026-11-10.** The numbers in §1 (232 tests, 41 ADRs, 60 OIs, `SIM_VERSION` 30) are the closing record of that session. Current state: `SESSION-STATE.md` (233 tests, 42 ADRs, 61 OIs, `SIM_VERSION` 31). §2-§3 stay valid: they are the continuity the bookmark does not carry.
+
 # Session handoff -- 2026-11-10, the chain
 
 For an agent who has never seen this repository. Read this file in full

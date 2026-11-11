@@ -52,3 +52,5 @@ format: YYYY-MM-DD HH:MM | pause|task <id> | status | HEAD | commits LCV..HEAD |
 2026-11-10 19:56 | pause - | written | 356ce92 | 1 | - | docs/context/captures/2026-11.md
 2026-11-10 22:01 | pause - | written | ae6aa09 | 1 | ADR-044(exists);  | docs/context/captures/2026-11.md
 2026-11-10 22:09 | pause - | written | ae6aa09 | 1 | - | docs/context/captures/2026-11.md
+2026-11-11 07:58 | pause - | written | 36c9b1d | 1 | - | docs/context/captures/2026-11.md
+2026-11-11 08:17 | pause - | written | 36c9b1d | 1 | - | docs/context/captures/2026-11.md

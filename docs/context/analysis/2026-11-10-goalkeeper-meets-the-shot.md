@@ -150,3 +150,36 @@ path was read in full), the `move_agents` body (only the GK skip),
 Nothing. It is the first artefact of OI-81's cantiere. ADR-045 stays
 `accepted`; this note is the shape the cantiere starts from, and it is
 corrected by the commits that implement it.
+
+## 8. The two questions, reformulated as match questions (2026-11-11)
+
+In the session of 2026-11-11 the two open questions of the cantiere (B2,
+B3) were reformulated from code questions to match questions. The
+reformulation changes what the cantiere starts from, not the doctrine.
+
+**B2 (original, code).** "If the keeper saves before the crossing, the
+Goal must not be emitted: who wins?" — a question about the `if/else` of
+`check_shot_crossing`.
+
+**B2 (reformulated, match).** Can a keeper touch the ball **before** the
+goal plane? Yes: the dive deflects it before it crosses. Then the real
+question is: **is the keeper's contact an act of its own?** If yes, Save
+and Goal are no longer mutually exclusive by construction, and the code
+must change **shape**, not order. Today they are an `if/else` on
+`inside: saved`, and the pending is consumed at `state.rs:831` before
+the `inside` test: no double emission today, but also no possibility of
+a "touch before the line".
+
+**B3 (original, code).** "The shot's pending resolves at
+`due_tick = tick + FLIGHT_TICKS`, who wins?" — an implementation detail.
+
+**B3 (reformulated, match).** Not a new question. `FLIGHT_TICKS = 15`
+fixed is a deferral already declared in ADR-044 §3 and ADR-045
+"does not decide": the flight's duration must follow the trajectory. It
+is a **dependency**, not an open question of this cantiere.
+
+**B1 (250 cm anchor).** Passes the filter as it is: a real keeper comes
+out of the anchor, and the fan — downstream reader — sees it.
+
+An agent who reopens the cantiere starts from here, not from the two
+code questions.
