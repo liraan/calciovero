@@ -2,7 +2,7 @@
 
 **Purpose:** a short bookmark for resuming work across sessions. It records where we are, not what the project is. History is in `git log`; this file does not duplicate it.
 
-**Last commit verified:** `8392eb8` - "feat(calculator): the shot's choice balance, inert (OI-88 preparatory)"
+**Last commit verified:** `9f8d0df` - "docs: test count 234 -> 235 in the four documents and the badge"
 
 **Sessione 2026-11-11 (ventitreesima, il finding che ferma OI-88).** La direzione del maintainer: la scelta tra le quattro azioni complete (due lati × due potenze) dipende dalle caratteristiche cognitive e mentali del tiratore, come la scelta del portiere (uscire, tuffarsi, stare). Conseguenza verificata sul codice: `resolve_choice` applica lo **stesso** fattore a ogni candidato (`geometric × (floor + (1−floor)·reading_weight·game_reading) × (1−risk_weight·risk_management·risk)`), quindi `game_reading` e `risk_management` non possono cambiare l'argmax — è lo stesso difetto che OI-85 aveva trovato per `decision_making`, ora vero per le azioni complete di ADR-046. La scelta deve leggere i latenti **per candidato**. Scritto in due posti: nota terza in ADR-046 (prima di References) e finding in coda alla cella OI-85. Plan: nuovo `[next]` **OI-85-form** (la forma della salienza per candidato, tocca ADR-039), OI-88 torna `[open]` e dipende da lui. La bozza di `read.rs` con pesi hardcoded è stata fermata **prima** di applicarla: sarebbe stata la stessa cosa che ADR-046 vieta. Preparatorio committato separato: `balance/shot_choice.json` + `ds-calculator/src/shot_choice.rs` (19 test, inerte, nessun comportamento). Nessun `SIM_VERSION` bump. Cattura E5 scritta. `Rules-Audit` non applicabile (nessuna regola toccata).
 
