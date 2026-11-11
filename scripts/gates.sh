@@ -235,8 +235,9 @@ else
 # the platform; the engine may not.
 b9_banned='use std::(fs|net|thread|process|env|os|path)'
 b9_banned_crates='use (tokio|rayon|async_std|smol)'
-b9_sim_crates="crates/ds-core/src crates/ds-model/src crates/pcfm-hidden/src crates/pcfm-calculator/src crates/pcfm-match/src crates/pcfm-stats/src"
+b9_sim_crates="crates/ds-core/src crates/ds-model/src crates/ds-db/src crates/ds-orchestrator/src crates/pcfm-calculator/src crates/pcfm-match/src crates/pcfm-stats/src"
 b9_hits=0
+b9_missing=0
 for d in $b9_sim_crates; do
   if [ -d "$d" ]; then
     n=$(grep -rEn "$b9_banned|$b9_banned_crates" "$d" 2>/dev/null | wc -l | tr -d ' ')
@@ -245,9 +246,14 @@ for d in $b9_sim_crates; do
       echo "  B9 hit in $d:"
       grep -rEn "$b9_banned|$b9_banned_crates" "$d" 2>/dev/null | sed 's/^/    /'
     fi
+  else
+    b9_missing=$((b9_missing + 1))
+    echo "  B9 missing simulation crate path: $d"
   fi
 done
-if [ "$b9_hits" -eq 0 ]; then
+if [ "$b9_missing" -gt 0 ]; then
+  say_fail "B9 $b9_missing missing simulation crate path(s): the list is stale"
+elif [ "$b9_hits" -eq 0 ]; then
   say_ok "B9 simulation path is platform-free (ADR-038)"
 else
   say_fail "B9 $b9_hits platform import(s) in the simulation path (ADR-038)"
