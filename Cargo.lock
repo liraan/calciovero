@@ -140,6 +140,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-test-runner"
+version = "0.1.0"
+dependencies = [
+ "ds-core",
+ "ds-fixtures",
+ "ds-match",
+ "ds-model",
+ "ds-orchestrator",
+ "ds-stats",
+ "ds-testkit",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "ds-testkit"
 version = "0.1.0"
 
@@ -189,21 +204,6 @@ dependencies = [
  "ds-model",
  "ds-stats",
  "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "pcfm-test-runner"
-version = "0.1.0"
-dependencies = [
- "ds-core",
- "ds-fixtures",
- "ds-match",
- "ds-model",
- "ds-orchestrator",
- "ds-stats",
- "ds-testkit",
  "serde_json",
  "thiserror",
 ]

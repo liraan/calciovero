@@ -1,7 +1,7 @@
 //! Test fixtures for PCFM.
 //!
 //! Hardcoded squads and a match builder, shared by `pcfm-demo` (to show a
-//! match) and `pcfm-test-runner` (to feed scenarios). They are *test data*,
+//! match) and `ds-test-runner` (to feed scenarios). They are *test data*,
 //! not production data: 11 starters per side, all "midfielder", all with
 //! the same physical and psychological state.
 //!

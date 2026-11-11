@@ -1,6 +1,6 @@
 //! `simulate_from_seed` — the high-level entry point.
 //!
-//! `pcfm-demo` and `pcfm-test-runner` need a `MatchResult` from a `Match`
+//! `pcfm-demo` and `ds-test-runner` need a `MatchResult` from a `Match`
 //! and a seed. Without this function they construct `GroundTruth`,
 //! `RngRegistry`, `EventChain` and `MatchContext` themselves, which puts
 //! `ds_orchestrator::GroundTruth` in scope in crates that must not see Plane A

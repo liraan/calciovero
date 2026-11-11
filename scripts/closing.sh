@@ -31,7 +31,7 @@ cargo test --workspace || FAIL=1
 echo "--- fmt --check ---"
 cargo fmt --check || FAIL=1
 echo "--- test-runner --check --seed 42 ---"
-cargo run --release --bin pcfm-test-runner -- --check --seed 42 || FAIL=1
+cargo run --release --bin ds-test-runner -- --check --seed 42 || FAIL=1
 echo ""
 
 echo "=== closing: gates (full set) ==="

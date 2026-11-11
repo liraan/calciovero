@@ -1,5 +1,5 @@
 [package]
-name = "pcfm-test-runner"
+name = "ds-test-runner"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,7 +10,7 @@ description = "CLI test runner for PCFM: run and inspect test scenarios"
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/docs/PLUGIN_DEVELOPER_GUIDE.md"
 
 [[bin]]
-name = "pcfm-test-runner"
+name = "ds-test-runner"
 path = "src/main.rs"
 
 [dependencies]

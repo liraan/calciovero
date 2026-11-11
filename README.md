@@ -99,7 +99,7 @@ different paradigm, not planned.
 Same seed → same match. Always. The same will hold for the season and
 the career when L1 and L2 exist; today the contract is local
 ([ADR-013](docs/adr/013-worlds.md)). This is verified on every commit
-by `pcfm-test-runner --check`:
+by `ds-test-runner --check`:
 
       ✅ demo teams are valid
       ✅ same seed → same state_hash
@@ -153,7 +153,7 @@ Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
 
     git clone https://github.com/liraan/calciovero.git
     cd calciovero
-    cargo run --release --bin pcfm-test-runner -- --check --seed 42
+    cargo run --release --bin ds-test-runner -- --check --seed 42
 
 If `--check` prints `6/6 checks passed`, the framework is healthy.
 Then watch a match:

@@ -60,8 +60,8 @@ jobs:
       - name: golden_l0 on Linux (OI-58)
         run: cargo test -p ds-match --test golden_l0 -- --nocapture
 
-      - name: pcfm-test-runner --check
-        run: cargo run --release --bin pcfm-test-runner -- --check --seed 42
+      - name: ds-test-runner --check
+        run: cargo run --release --bin ds-test-runner -- --check --seed 42
 
       # A1, A3, B1, B3, B6, B7: documentation coherence, fast. A2 is
       # skipped in startup mode (cargo test already ran above).

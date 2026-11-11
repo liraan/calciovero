@@ -34,5 +34,5 @@ steps:
       - cargo build --release
       - cargo test --workspace
       - cargo test -p ds-match --test golden_l0 -- --nocapture
-      - cargo run --release --bin pcfm-test-runner -- --check --seed 42
+      - cargo run --release --bin ds-test-runner -- --check --seed 42
       - bash scripts/gates.sh startup

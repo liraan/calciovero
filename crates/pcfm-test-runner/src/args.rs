@@ -109,10 +109,10 @@ where
 
 /// The help text.
 pub const HELP: &str = "\
-pcfm-test-runner — run PCFM test scenarios
+ds-test-runner — run PCFM test scenarios
 
 USAGE:
-    pcfm-test-runner [OPTIONS]
+    ds-test-runner [OPTIONS]
 
 OPTIONS:
     --seed <U64>       Seed for the scenarios (default: 42)
@@ -127,7 +127,7 @@ mod tests {
     use super::*;
 
     fn argv(items: &[&str]) -> Vec<String> {
-        std::iter::once("pcfm-test-runner")
+        std::iter::once("ds-test-runner")
             .chain(items.iter().copied())
             .map(String::from)
             .collect()

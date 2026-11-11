@@ -8,7 +8,7 @@ use crate::scenario::Scenario;
 /// A collection of scenarios.
 ///
 /// The registry is the aggregation point: core, plugins, and tools all
-/// register their scenarios here. The runner (e.g. `pcfm-test-runner`) creates
+/// register their scenarios here. The runner (e.g. `ds-test-runner`) creates
 /// one registry, registers the known scenarios, and executes them.
 #[derive(Default)]
 pub struct TestRegistry {

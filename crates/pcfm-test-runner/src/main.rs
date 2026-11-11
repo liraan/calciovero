@@ -1,4 +1,4 @@
-//! `pcfm-test-runner` — run PCFM test scenarios.
+//! `ds-test-runner` — run PCFM test scenarios.
 //!
 //! Formerly `pcfm-debug` (see ADR-020). The demo simulation was split into
 //! `pcfm-demo`; this crate only runs and inspects test scenarios.
@@ -6,10 +6,10 @@
 //! # Usage
 //!
 //! ```text
-//! pcfm-test-runner [--seed <U64>]
-//! pcfm-test-runner --check
-//! pcfm-test-runner --list
-//! pcfm-test-runner --coverage
+//! ds-test-runner [--seed <U64>]
+//! ds-test-runner --check
+//! ds-test-runner --list
+//! ds-test-runner --coverage
 //! ```
 //!
 //! With no command flag, `--check` is the default.
@@ -29,7 +29,7 @@ fn main() -> ExitCode {
     match run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("pcfm-test-runner: {e}");
+            eprintln!("ds-test-runner: {e}");
             ExitCode::FAILURE
         }
     }
@@ -43,7 +43,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             return Ok(());
         }
         Err(e) => {
-            eprintln!("pcfm-test-runner: {e}");
+            eprintln!("ds-test-runner: {e}");
             eprintln!();
             eprint!("{HELP}");
             return Err(Box::new(e));

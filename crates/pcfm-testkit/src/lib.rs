@@ -3,7 +3,7 @@
 //! This crate defines the *contract* for testable units in the PCFM
 //! ecosystem. It deliberately has **no dependency** on any other `pcfm-*`
 //! crate: core, plugins, and tools all implement the same traits against
-//! this crate, and the runner (`pcfm-test-runner`) aggregates them.
+//! this crate, and the runner (`ds-test-runner`) aggregates them.
 //!
 //! # Design rules
 //!

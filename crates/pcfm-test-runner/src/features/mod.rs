@@ -1,4 +1,4 @@
-//! Feature scenarios for `pcfm-test-runner`.
+//! Feature scenarios for `ds-test-runner`.
 //!
 //! Each submodule registers the scenarios for one feature area. The
 //! `register_all` function is the only entry point the rest of the binary
@@ -8,7 +8,7 @@ pub mod l0_match;
 
 use ds_testkit::TestRegistry;
 
-/// Register every scenario known to `pcfm-test-runner`.
+/// Register every scenario known to `ds-test-runner`.
 ///
 /// Called once at startup. When L1, L2, L3, or plugin scenarios exist,
 /// they are added here.
