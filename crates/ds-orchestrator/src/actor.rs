@@ -16,7 +16,7 @@
 //! `resolve_choice`, whose door is `ds_orchestrator::choice`.
 //!
 //! **What is not here yet:** the read (`build_choice`) still lives in
-//! `pcfm-match`. Moving it here is the second step (A.1-bis), and it is
+//! `ds-match`. Moving it here is the second step (A.1-bis), and it is
 //! the step that changes behaviour (the read becomes the actor's). This
 //! commit is the door: `Actor::decide` calls `resolve_choice` on a
 //! `ChoiceContext` the engine built. The form is (b) of the 2026-11-10
@@ -57,7 +57,7 @@ impl Actor {
     /// choose.
     ///
     /// **Shape, declared:** today the scene is a `ChoiceContext` built by
-    /// the engine (the read is still `build_choice` in `pcfm-match`).
+    /// the engine (the read is still `build_choice` in `ds-match`).
     /// A.1-bis moves the read here; the signature does not change.
     pub fn decide(
         &self,

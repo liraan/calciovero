@@ -10,7 +10,7 @@
 //! and the goal; no latent enters it. The characteristics enter later,
 //! in `resolve_choice`, through the custodian.
 //!
-//! Moved from `pcfm-match::state` in A.1-bis: the functions are the same,
+//! Moved from `ds-match::state` in A.1-bis: the functions are the same,
 //! the input is the scene instead of the engine's `SpatialState`.
 
 use std::collections::BTreeMap;

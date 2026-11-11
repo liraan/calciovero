@@ -4,7 +4,7 @@
 //! hidden performances and answer one characteristic at a time. The
 //! calculator is the only consumer. The engine never sees this type:
 //! the module `custodian` is private (`mod custodian;`), so the item is `pub`
-//! inside `pcfm-hidden` only: a caller in `pcfm-match` cannot reach it, and
+//! inside `pcfm-hidden` only: a caller in `ds-match` cannot reach it, and
 //! the type has no public API.
 //!
 //! The view holds the player's latents by value (`PlayerLatents` is

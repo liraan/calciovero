@@ -5,13 +5,13 @@
 use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
 use ds_core::rng::RngRegistry;
 use ds_core::time::GameInstant;
+use ds_match::{MatchConfig, MatchContext, MatchEngine, MatchSave, TextMatchEngine};
 use ds_model::{
     FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
     PsychologicalStateMinimal, Referee, RoleId, Squad,
 };
 use ds_orchestrator::GroundTruth;
 use ds_stats::EventChain;
-use pcfm_match::{MatchConfig, MatchContext, MatchEngine, MatchSave, TextMatchEngine};
 
 const LATENT_NAMES: &[&str] = &[
     "finishing",

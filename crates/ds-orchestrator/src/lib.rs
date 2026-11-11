@@ -123,7 +123,7 @@ impl GroundTruth {
     /// reads through it, the orchestrator (a `resolve_*` on
     /// `GroundTruth`) builds it. The boundary is the module, not the
     /// signature: `custodian` is a private module, so the item is `pub`
-    /// inside `pcfm-hidden` only and `pcfm-match` cannot name it. The
+    /// inside `pcfm-hidden` only and `ds-match` cannot name it. The
     /// engine never sees a `CustodianView`: the compile-time boundary of
     /// ADR-028 section 5 is this visibility.
     pub(crate) fn custodian(&mut self, player: PlayerId) -> ds_db::CustodianView {
@@ -400,7 +400,7 @@ impl GroundTruth {
     /// The two adapters are still local to this method (`CustodianView`
     /// and the situation struct): the calculator does not know either of
     /// them, and `CustodianView` lives in a private module (`mod
-    /// custodian;`), so `pcfm-match` cannot name it (ADR-028 section 5
+    /// custodian;`), so `ds-match` cannot name it (ADR-028 section 5
     /// boundary).
     #[must_use]
     pub fn resolve_movement(&mut self, ctx: &MovementContext) -> MovementOutcome {

@@ -2,7 +2,7 @@
 //! the narrator (T1, T2 in `SESSION-STATE.md`).
 //!
 //! A fact is Plane A -> Plane B: it carries the cause (who, where, under
-//! what condition), not the narrative. It is internal to `pcfm-match`:
+//! what condition), not the narrative. It is internal to `ds-match`:
 //! not part of `MatchResult`, not serialised, not in `ds-stats`.
 //! A new fact species is a `SIM_VERSION` bump if it changes which events
 //! are emitted (CHANGELOG-SIM.md, "When to bump", point 2).

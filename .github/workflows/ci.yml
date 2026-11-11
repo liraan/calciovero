@@ -58,7 +58,7 @@ jobs:
       # FMA divergence, not a simulation change: isolate with git bisect
       # before touching SIM_VERSION.
       - name: golden_l0 on Linux (OI-58)
-        run: cargo test -p pcfm-match --test golden_l0 -- --nocapture
+        run: cargo test -p ds-match --test golden_l0 -- --nocapture
 
       - name: pcfm-test-runner --check
         run: cargo run --release --bin pcfm-test-runner -- --check --seed 42

@@ -1,7 +1,7 @@
 //! The situated choice (F.6-cog): read, choose.
 //!
 //! ADR-039 gives every gesture four steps: read, choose, contact, band.
-//! This module is the "choose" step. The engine (`pcfm-match`) constructs
+//! This module is the "choose" step. The engine (`ds-match`) constructs
 //! a `ChoiceContext` from the scene it perceives (Plane B: candidates,
 //! geometry, risk); `resolve_choice` scores each candidate with a formula
 //! from `balance/choice.json` (latents via the custodian, geometry as a

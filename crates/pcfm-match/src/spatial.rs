@@ -1,7 +1,7 @@
 //! Spatial state for the positional engine (ADR-019, slice A).
 //!
 //! The position is **match state**, not player identity: it lives in
-//! `pcfm-match`, not in `ds-model`. See
+//! `ds-match`, not in `ds-model`. See
 //! `docs/context/L0-POSITIONAL-SLICE.md` §3.1.
 //!
 //! Coordinates are integer centimetres (ADR-019 D1: determinism). The pitch

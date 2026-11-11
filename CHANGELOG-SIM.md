@@ -76,7 +76,7 @@ If none of the above is true, `SIM_VERSION` is **not** bumped. A refactor that p
 A `SIM_VERSION` bump requires **all five steps**, in order. In phase 1 (ruleset disabled, no CI, single maintainer) the local C2 verification replaces the CI merge gate; see `AGENT-POLICY.md` §1 and §9.
 
 1. **Bump the value** in `pcfm-match` (`crates/pcfm-match/src/save.rs`). The value is a monotonic integer. It never goes down.
-2. **Regenerate the golden hash** — run `cargo test -p pcfm-match --test golden_l0`, copy the `left:` value from the failure, replace `EXPECTED` in `golden_l0.rs`. At L0 the test is N matches (not 10 seasons: L1 does not exist). The L1 form is a future artefact.
+2. **Regenerate the golden hash** — run `cargo test -p ds-match --test golden_l0`, copy the `left:` value from the failure, replace `EXPECTED` in `golden_l0.rs`. At L0 the test is N matches (not 10 seasons: L1 does not exist). The L1 form is a future artefact.
 3. **Write the entry** in the "History" section below, using the template.
 4. **Verify save compatibility** — every existing save fixture must still load. If a save cannot be reconstructed under the new `SIM_VERSION`, the entry must say so explicitly and a migration must be provided (see `L0.07` §2.3).
 5. **Review by a second pair of eyes.** In phase 1 there is one maintainer: the post-push review (`AGENT-POLICY.md` §9) replaces the second reviewer. In phase 2 (ruleset active, branch + PR), the reviewer confirms that the golden hash change is expected and that the entry is honest.

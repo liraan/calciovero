@@ -7,16 +7,16 @@
 //! the sort, not on the positions: this is the number the synthetic loop
 //! (18 ms, no perception, no resolve) did not give.
 //!
-//! Run with: `cargo run --release --example bench_perception -p pcfm-match`
+//! Run with: `cargo run --release --example bench_perception -p ds-match`
 
 #![allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 
 use std::time::Instant;
 
 use ds_fixtures::{away_squad, home_squad};
+use ds_match::perception::{nearest_opponents, nearest_teammates};
+use ds_match::spatial::SpatialState;
 use ds_model::Pitch;
-use pcfm_match::perception::{nearest_opponents, nearest_teammates};
-use pcfm_match::spatial::SpatialState;
 
 const TICKS: u32 = 54_000;
 const N: usize = 3;

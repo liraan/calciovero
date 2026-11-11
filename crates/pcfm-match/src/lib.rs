@@ -1,4 +1,4 @@
-//! `pcfm-match` — the match engine (L0.04).
+//! `ds-match` — the match engine (L0.04).
 //!
 //! The **orchestrator** of L0: it drives the tick loop, calls
 //! `GroundTruth::resolve_*` for every resolution, publishes events to the
@@ -9,7 +9,7 @@
 //! The **simulation** is in [`orchestrator::simulate_match`]. It is the
 //! **only** implementation of the tick loop and micro-decisions. Both
 //! [`TextMatchEngine`] (this crate) and a future `ThreeDEngine` (in a
-//! separate crate, e.g. `pcfm-match-3d`) call it. They differ only in
+//! separate crate, e.g. `ds-match-3d`) call it. They differ only in
 //! rendering.
 //!
 //! The **narrative** (see [`narrative`]) is **data**, not a rendered
@@ -50,7 +50,7 @@ pub use save::{MatchSave, SCHEMA_VERSION, SIM_VERSION, SaveError, replay};
 pub use spatial::{AgentState, SpatialState};
 pub use state::MatchState;
 
-/// Returns the version of `pcfm-match`, as declared in `Cargo.toml`.
+/// Returns the version of `ds-match`, as declared in `Cargo.toml`.
 #[must_use]
 pub const fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")

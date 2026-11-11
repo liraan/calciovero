@@ -6,16 +6,16 @@
 //! what the F.3 loop will do; it is not the coverage order (that was L2,
 //! MD-01).
 //!
-//! Run with: `cargo run --release --example bench_movement -p pcfm-match`
+//! Run with: `cargo run --release --example bench_movement -p ds-match`
 
 #![allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 
 use std::time::Instant;
 
 use ds_fixtures::{away_squad, home_squad};
+use ds_match::perception::distance_squared;
+use ds_match::spatial::SpatialState;
 use ds_model::Pitch;
-use pcfm_match::perception::distance_squared;
-use pcfm_match::spatial::SpatialState;
 
 const TICKS: u32 = 54_000;
 

@@ -4,7 +4,7 @@
 //! and a seed. Without this function they construct `GroundTruth`,
 //! `RngRegistry`, `EventChain` and `MatchContext` themselves, which puts
 //! `ds_orchestrator::GroundTruth` in scope in crates that must not see Plane A
-//! (ADR-003). This function keeps Plane A inside `pcfm-match`: the caller
+//! (ADR-003). This function keeps Plane A inside `ds-match`: the caller
 //! passes a `Match` and a seed, and receives a `MatchResult`.
 
 use ds_core::rng::RngRegistry;

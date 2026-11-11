@@ -22,7 +22,7 @@ pub enum Feature {
     CoreHash,
 
     // ── L0 — Match ──────────────────────────────────────────────────
-    /// The match engine (`pcfm-match`).
+    /// The match engine (`ds-match`).
     L0Match,
     /// Save/load (`MatchSave`).
     L0Save,

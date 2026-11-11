@@ -1,7 +1,7 @@
 //! Deterministic geometry primitives: integer, no trig, no float in the
 //! simulation path (D2, L0.11 §4.10).
 //!
-//! `distance_squared` was in `pcfm-match::perception`; it moved here when
+//! `distance_squared` was in `ds-match::perception`; it moved here when
 //! the orchestrator (`ds-orchestrator`, ADR-041 §4) needed the same
 //! primitive to read the scene. One source of truth (D5): a geometric
 //! fact is a primitive of the world, not a rule of the engine.

@@ -6,9 +6,9 @@
 //! same six lines as before.
 
 use ds_core::time::GameInstant;
+use ds_match::{MatchConfig, MatchResult, MatchSave};
 use ds_model::Match;
 use ds_testkit::{Feature, Scenario, ScenarioResult, TestContext, TestRegistry};
-use pcfm_match::{MatchConfig, MatchResult, MatchSave};
 
 use ds_fixtures::match_fixture;
 
@@ -30,7 +30,7 @@ use ds_fixtures::match_fixture;
 /// A seventh scenario would be added when L0's `DoD` grows. For example,
 /// a "replay produces the same result" scenario is covered by `SaveLoadScenario`
 /// (it calls `simulate` twice); a "golden test" scenario (1000 matches,
-/// same hash) is in `pcfm-match`'s own test suite, not here, because it
+/// same hash) is in `ds-match`'s own test suite, not here, because it
 /// is too slow for a `--check` run.
 ///
 /// When L1, L2, L3 are implemented, their scenarios go in
@@ -48,7 +48,7 @@ pub fn register(registry: &mut TestRegistry) {
 // ── Helper ─────────────────────────────────────────────────────────────
 
 fn simulate(match_: &Match, seed: u64) -> MatchResult {
-    pcfm_match::simulate_from_seed(match_, seed, MatchConfig::default())
+    ds_match::simulate_from_seed(match_, seed, MatchConfig::default())
 }
 // ── Scenario 1: demo team is valid ─────────────────────────────────────
 

@@ -10,8 +10,8 @@
 //! pitch model. The test at the bottom of this file checks it mechanically
 //! by scanning its own source with `include_str!`.
 
+use ds_match::{Importance, MatchResult, NarrativeEntry};
 use ds_stats::{EventType, MatchEvent};
-use pcfm_match::{Importance, MatchResult, NarrativeEntry};
 use serde::Serialize;
 
 /// Which side an event belongs to.

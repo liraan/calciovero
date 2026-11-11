@@ -9,8 +9,8 @@
 use ds_core::ids::{ActorId, EventId, MatchId, PlayerId};
 use ds_core::time::GameInstant;
 use ds_fixtures::match_fixture;
+use ds_match::narrate;
 use ds_stats::{EventChain, EventType, Half, MatchEvent};
-use pcfm_match::narrate;
 
 fn ev(actor_slot: Option<u32>, event_type: EventType, fields: serde_json::Value) -> MatchEvent {
     MatchEvent {
@@ -111,7 +111,7 @@ fn old_json_without_new_fields_deserializes() {
         "text": "GOAL!",
         "importance": "Critical"
     });
-    let e: pcfm_match::NarrativeEntry = serde_json::from_value(json).expect("old save");
+    let e: ds_match::NarrativeEntry = serde_json::from_value(json).expect("old save");
     assert_eq!(e.minute, 7);
     assert_eq!(e.text, "GOAL!");
 }

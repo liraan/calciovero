@@ -17,7 +17,7 @@
 //! # Determinism
 //!
 //! The hash chain is deterministic: the same sequence of events produces the
-//! same chain hash. This is used by `pcfm-match` to verify that a reloaded
+//! same chain hash. This is used by `ds-match` to verify that a reloaded
 //! save reconstructs the same event history.
 
 #![deny(missing_docs)]

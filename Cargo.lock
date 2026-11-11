@@ -91,6 +91,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-match"
+version = "0.1.0"
+dependencies = [
+ "ds-core",
+ "ds-fixtures",
+ "ds-model",
+ "ds-orchestrator",
+ "ds-stats",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "ds-model"
 version = "0.1.0"
 dependencies = [
@@ -171,22 +185,8 @@ version = "0.1.0"
 dependencies = [
  "ds-core",
  "ds-fixtures",
+ "ds-match",
  "ds-model",
- "ds-stats",
- "pcfm-match",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "pcfm-match"
-version = "0.1.0"
-dependencies = [
- "ds-core",
- "ds-fixtures",
- "ds-model",
- "ds-orchestrator",
  "ds-stats",
  "serde",
  "serde_json",
@@ -199,11 +199,11 @@ version = "0.1.0"
 dependencies = [
  "ds-core",
  "ds-fixtures",
+ "ds-match",
  "ds-model",
  "ds-orchestrator",
  "ds-stats",
  "ds-testkit",
- "pcfm-match",
  "serde_json",
  "thiserror",
 ]

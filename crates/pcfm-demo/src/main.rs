@@ -16,7 +16,7 @@ mod viewmodel;
 
 use std::process::ExitCode;
 
-use pcfm_match::MatchConfig;
+use ds_match::MatchConfig;
 
 const HELP: &str = "\
 pcfm-demo — simulate a PCFM match and print the result
@@ -109,7 +109,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let match_ = ds_fixtures::match_fixture(args.seed)?;
-    let result = pcfm_match::simulate_from_seed(&match_, args.seed, MatchConfig::default());
+    let result = ds_match::simulate_from_seed(&match_, args.seed, MatchConfig::default());
 
     if args.quiet {
         println!("{} - {}", result.score.home, result.score.away);
@@ -150,7 +150,7 @@ mod tests {
     #[test]
     fn rendering_a_result_does_not_panic() {
         let match_ = ds_fixtures::match_fixture(42).unwrap();
-        let result = pcfm_match::simulate_from_seed(&match_, 42, MatchConfig::default());
+        let result = ds_match::simulate_from_seed(&match_, 42, MatchConfig::default());
         let _ = render::print_text(&result);
         let _ = render::print_json(&result);
     }

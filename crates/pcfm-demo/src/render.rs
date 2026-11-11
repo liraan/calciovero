@@ -12,7 +12,7 @@
 
 use std::fmt::Write as _;
 
-use pcfm_match::{MatchResult, NarrativeEntry};
+use ds_match::{MatchResult, NarrativeEntry};
 
 /// Prints the match result as human-readable text.
 ///
@@ -175,10 +175,10 @@ pub fn write_html(result: &MatchResult, path: &str) -> std::io::Result<()> {
     html.push_str("<h2>Narrative</h2><ul class=\"narrative\">");
     for entry in &result.narrative {
         let cls = match entry.importance {
-            pcfm_match::Importance::Critical => "critical",
-            pcfm_match::Importance::High => "high",
-            pcfm_match::Importance::Medium => "medium",
-            pcfm_match::Importance::Low => "low",
+            ds_match::Importance::Critical => "critical",
+            ds_match::Importance::High => "high",
+            ds_match::Importance::Medium => "medium",
+            ds_match::Importance::Low => "low",
         };
         let _ = write!(
             html,
@@ -243,7 +243,7 @@ mod tests {
             minute: 7,
             event_id: ds_core::ids::EventId::new(1, 0),
             text: "GOAL!".to_string(),
-            importance: pcfm_match::Importance::Critical,
+            importance: ds_match::Importance::Critical,
         };
         assert_eq!(format_narrative(&entry), "[  7'] GOAL!");
     }

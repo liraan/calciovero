@@ -8,7 +8,7 @@
 //! 10 seasons. The 10-season golden test is an L1 artefact.
 
 use ds_fixtures::match_fixture;
-use pcfm_match::{MatchConfig, simulate_from_seed};
+use ds_match::{MatchConfig, simulate_from_seed};
 
 /// Number of matches in the golden run.
 const N: u64 = 10;

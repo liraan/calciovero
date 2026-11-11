@@ -1,8 +1,8 @@
 //! `simulate_match` — the shared simulation.
 //!
 //! This module contains the **only** implementation of the tick loop and
-//! micro-decisions. Both `TextMatchEngine` (in `pcfm-match`) and a future
-//! `ThreeDEngine` (in a separate crate, e.g. `pcfm-match-3d`) call
+//! micro-decisions. Both `TextMatchEngine` (in `ds-match`) and a future
+//! `ThreeDEngine` (in a separate crate, e.g. `ds-match-3d`) call
 //! `simulate_match` and differ only in rendering.
 //!
 //! # Match structure (ADR-026)
