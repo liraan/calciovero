@@ -201,3 +201,67 @@ consumer (D3). The model step is (a)+(b) together; the technical split
   scene, read before the launch, read in flight, contact, band. The
   order of the commits (§5) follows, and the first commit is (a)+(b)
   together, with a `SIM_VERSION` bump.
+
+**2026-11-11 (second) — the keeper's positioning is the first read; §5's order is corrected.**
+
+The filters (partita vera, luna) correct the order of §5. In a real match the
+keeper does not read and then move: he moves while reading, and his
+positioning is the read made visible. A keeper who reads and stays still does
+not exist; a keeper who moves without reading is a puppet.
+
+The defect today is not the read: it is that the keeper is anchored
+(`GK_ANCHOR_CM` 250, excluded from `move_agents`). He cannot move, so the read
+in flight would be a choice with no consumer (D3). The test
+`move_agents_does_not_move_the_goalkeeper` (`spatial.rs`) is the defect written
+as a test: it goes when the anchor is lifted.
+
+What §5 missed is step 2 of §4 (the read before the launch). The keeper's
+positioning **is** that read: he follows the ball laterally, advances when the
+ball is close and the space is there, stays when the ball is far.
+
+The form:
+
+- The keeper reads the ball (position, velocity), the goal, the distance
+  ball-goal, the shooter.
+- He chooses: stay on the line or advance; his lateral position (between the
+  ball and the goal centre).
+- The choice becomes movement through the same formula as the other agents
+  (`resolve_movement`), with a different target. No new balance file: the
+  movement formula is the same; what changes is the target.
+- `GK_ANCHOR_CM` is not "he does not move": it is "he does not run after the
+  ball like a field player". The keeper moves laterally and advances; he does
+  not chase.
+
+The corrected order of §5:
+
+1. (a)+(b) done: the keeper is in the scene (`e74eb33`).
+2. (e') **the keeper positions itself**: the anchor is lifted, the keeper
+   moves, `SIM_VERSION` bump, golden regenerated. This is the first commit of
+   the cantiere that changes the positions in the state hash.
+3. (c) the read in flight, attached to a body that moves.
+4. (d) the contact and the band. The dive is not a separate step: it is the
+   contact's movement (ADR-046 §2).
+5. (f) the catalogue.
+
+The positioning is a behaviour change: `SIM_VERSION` bump, golden regenerated.
+It is the first commit of the cantiere that changes the state hash, and the
+first that makes the keeper visible as a moving body.
+
+**The formula of the positioning (declared, arbitrary until L3).** The target
+is a point on the keeper's line: `y_target` is the ball's `y` moved toward the
+goal centre by a fraction that depends on the distance, and `x_target` is the
+goal line plus an advance that depends on how close the ball is:
+
+    t = clamp(1 - d_ball_goal / POSITIONING_RANGE_CM, 0, 1)
+    y_target = goal_y + (ball_y - goal_y) * t
+    x_target = goal_line_x ± ADVANCE_CM * t
+
+`POSITIONING_RANGE_CM` and `ADVANCE_CM` live in `balance/keeper.json` (new
+file, `_source`: geometry of the goal-line positioning, no cited figure). `t`
+is `0` when the ball is at or beyond the range (the keeper stays on the line,
+at the goal centre) and `1` when the ball is on the goal line (the keeper
+covers the post, advanced). The keeper's movement uses `resolve_movement` with
+the target: the same formula as the other agents, a different target. No die.
+No new characteristic: at L0 the positioning is geometric (it reads the ball
+and the goal, not the shooter's body); the shooter's body enters with the read
+in flight (step 3).
