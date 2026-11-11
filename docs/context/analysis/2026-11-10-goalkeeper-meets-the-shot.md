@@ -89,6 +89,22 @@ declared where the behaviour changes.
    side. No `SIM_VERSION` bump in this note: the step is declared, not
    implemented.
 
+   **Amendment 2026-11-11 (the actor plays, the engine provides facts).**
+   ADR-046 and the third pause of 2026-11-11 fix the principle: every act
+   is the actor's, with his talent, dedication, taste; the engine
+   provides facts, not choices; no "optimal" exists in the model. The
+   shot's point and power are the shooter's **choice**, not a point the
+   engine computes for him, and the keeper's position is a choice too.
+   Consequence for step 0: OI-88 cannot precede OI-92. The shooter's
+   choose needs the terms the catalogue does not have (`finishing`,
+   `shooting`, `left_foot`/`right_foot`, `composure`); without them,
+   `aim_point` and `power` would be a default of the engine with a new
+   name, which is the defect the principle forbids. **The new order is
+   OI-92 (the catalogue) then OI-88 (the shot's choice), then step 1
+   (the dive).** OI-92 stops being "the condition, not the work": for
+   the shot it is the work. This amendment supersedes the order of §4
+   step 0 for the shot; the keeper's steps 1-4 keep their order.
+
 1. **The keeper moves.** `GK_ANCHOR_CM` is not "he does not move": it is
    "he does not run after the ball like a field player". A dive is a
    movement, and the current model has no way to express it. The first
