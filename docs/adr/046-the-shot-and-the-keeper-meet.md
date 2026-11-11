@@ -260,6 +260,28 @@ practice.
 2. **Confirmed.** `resolve_save` (`ds-orchestrator/src/lib.rs`): `saved = ctx.offset_cm < f64::from(keeper.technical.goalkeeping) * ctx.reach_cm`; `reach_cm = height_cm / 2.0` (`state.rs`, `check_shot_crossing`); `let _ = ctx.point` (the crossing point is not read by the formula). No read, no choose, no band.
 3. **Confirmed.** `check_shot_crossing` is called at `state.rs:351` immediately after `advance_ball` at `:349`; the keeper is skipped in `move_agents` (`spatial.rs:396-398`, `GK_ANCHOR_CM` 250 at `:138`). The keeper enters only at the crossing, not during the flight.
 
+
+**2026-11-11 — the choice is entire, the result is relation (refinement, not
+contradiction).** The session of 2026-11-11 fixed two points that §1 and §5
+did not carry explicitly.
+
+(1) **The choice is entire**: the actor does not choose "shoot", then
+"where", then "how strong". He looks at the scene and chooses the complete
+action; the category ("shoot") is a reading of that action, not a step
+before it. Consequence: `ChoiceKind` is the complete action
+(`Shoot { aim_y, power }` like `Pass { receiver, freedom_cm }`), the read
+produces complete candidates from the scene, `resolve_choice` selects
+among them unchanged. The engine never computes a parameter after the
+choice: either the candidate is complete, or it is not a candidate.
+
+(2) **The result is relation**: the choice is the actor's, the success is
+not. The contact judges the chosen action against the scene (the keeper,
+the time, the trajectory), not against an absolute ideal. A strong shot
+from 30 m is right against a keeper off his line and wrong against a
+keeper in position; the power has no intrinsic correctness, it is right or
+wrong in the relation. This confirms §3 (the outcome is a meeting) and
+corrects the first draft of OI-88, which computed `aim_y` from the gap:
+the gap is a fact of the scene, not the shooter's choice.
 ## References
 
 - `specs/00-foundations.md` §2 (pillar 11), §4 (determinism), §5 (no

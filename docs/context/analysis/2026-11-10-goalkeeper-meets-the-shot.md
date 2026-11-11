@@ -105,6 +105,27 @@ declared where the behaviour changes.
    the shot it is the work. This amendment supersedes the order of §4
    step 0 for the shot; the keeper's steps 1-4 keep their order.
 
+
+   **Amendment 2026-11-11 (second, final form): the choice is entire, the
+   result is relation.** The first amendment said what OI-88 is not (the
+   engine does not compute the point). This says what it is. The actor
+   does not choose "shoot" and then where and how strong: he chooses the
+   **complete action** from the scene. `ChoiceKind::Shoot { aim_y, power }`
+   is the whole choice, like `Pass { receiver, freedom_cm }`; the read
+   produces complete candidates (the points and the powers the scene makes
+   visible, not the optimum), `resolve_choice` selects among them
+   unchanged, `ChosenAction::Shoot { aim_y, power }` carries the choice,
+   `resolve_shot` applies it. No parameter is computed after the choice.
+   The gap the first draft used to compute `aim_y` is a **fact** of the
+   scene, not the shooter's choice. The success is not the actor's: the
+   contact judges the chosen action against the scene (keeper, time,
+   trajectory), not against an absolute ideal. A strong shot from 30 m is
+   right against a keeper off his line and wrong against a keeper in
+   position; power has no intrinsic correctness, it is right or wrong in
+   the relation (ADR-046 §3, confirmed). The catalogue (OI-92) supplies
+   the cognitive terms the choice reads (`game_reading` for the point,
+   `risk_management` for the power); `finishing` and the feet belong to
+   the contact, not to the choice (ADR-039's read/choose/contact split).
 1. **The keeper moves.** `GK_ANCHOR_CM` is not "he does not move": it is
    "he does not run after the ball like a field player". A dive is a
    movement, and the current model has no way to express it. The first
