@@ -1,5 +1,5 @@
 [package]
-name = "pcfm-demo"
+name = "ds-demo"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,7 @@ repository.workspace = true
 description = "Demo CLI for PCFM: simulate a match and print the result"
 
 [[bin]]
-name = "pcfm-demo"
+name = "ds-demo"
 path = "src/main.rs"
 
 [dependencies]

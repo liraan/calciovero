@@ -1,4 +1,4 @@
-//! `pcfm-demo` — simulate a PCFM match and print the result.
+//! `ds-demo` — simulate a PCFM match and print the result.
 //!
 //! This is the demo binary split out of `pcfm-debug` (see ADR-020). It
 //! builds two hardcoded squads, simulates a match, and renders the result
@@ -7,7 +7,7 @@
 //! # Usage
 //!
 //! ```text
-//! pcfm-demo [--seed <U64>] [--json] [--html <PATH>] [--quiet] [--help]
+//! ds-demo [--seed <U64>] [--json] [--html <PATH>] [--quiet] [--help]
 //! ```
 
 mod board;
@@ -19,10 +19,10 @@ use std::process::ExitCode;
 use ds_match::MatchConfig;
 
 const HELP: &str = "\
-pcfm-demo — simulate a PCFM match and print the result
+ds-demo — simulate a PCFM match and print the result
 
 USAGE:
-    pcfm-demo [OPTIONS]
+    ds-demo [OPTIONS]
 
 OPTIONS:
     --seed <U64>    RNG seed (default: 0)
@@ -33,7 +33,7 @@ OPTIONS:
     --help          Print this help
 
 EXAMPLE:
-    pcfm-demo --seed 42 --html /tmp/match.html
+    ds-demo --seed 42 --html /tmp/match.html
 ";
 
 /// Parsed command-line arguments.
@@ -50,7 +50,7 @@ fn main() -> ExitCode {
     match run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("pcfm-demo: {e}");
+            eprintln!("ds-demo: {e}");
             ExitCode::FAILURE
         }
     }

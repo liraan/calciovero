@@ -298,7 +298,7 @@ pub fn scan(
 /// The team of an agent, from its slot: `0` = home, `1` = away.
 ///
 /// The convention (slot % 100 = number, slot >= 100 = team) is the one
-/// `pcfm-demo`'s viewmodel already reads (`viewmodel.rs`, OI-41).
+/// `ds-demo`'s viewmodel already reads (`viewmodel.rs`, OI-41).
 #[must_use]
 pub const fn team_of(id: PlayerId) -> u32 {
     id.slot() / 100

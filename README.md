@@ -158,7 +158,7 @@ Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
 If `--check` prints `6/6 checks passed`, the framework is healthy.
 Then watch a match:
 
-    cargo run --release --bin pcfm-demo -- --seed 42 --board
+    cargo run --release --bin ds-demo -- --seed 42 --board
 
 Every run with the same seed produces the same state hash. That is the
 determinism contract, verified on every commit. The board is the debug

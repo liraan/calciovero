@@ -1,4 +1,4 @@
-//! Board renderer for `pcfm-demo` (ADR-025).
+//! Board renderer for `ds-demo` (ADR-025).
 //!
 //! Fixed-width ASCII, no ANSI colour codes, no external dependencies.
 //! Reads a [`MatchViewModel`] only: never `MatchResult`, the engine's

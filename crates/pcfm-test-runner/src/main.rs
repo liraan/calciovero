@@ -1,7 +1,7 @@
 //! `ds-test-runner` — run PCFM test scenarios.
 //!
 //! Formerly `pcfm-debug` (see ADR-020). The demo simulation was split into
-//! `pcfm-demo`; this crate only runs and inspects test scenarios.
+//! `ds-demo`; this crate only runs and inspects test scenarios.
 //!
 //! # Usage
 //!
