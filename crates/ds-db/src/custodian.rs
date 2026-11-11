@@ -40,6 +40,9 @@ impl Custodian for CustodianView {
             Characteristic::GameReading => f64::from(self.latents.cognitive.game_reading),
             Characteristic::DecisionMaking => f64::from(self.latents.cognitive.decision_making),
             Characteristic::RiskManagement => f64::from(self.latents.cognitive.risk_management),
+            Characteristic::Finishing => f64::from(self.latents.technical.finishing),
+            Characteristic::LeftFoot => f64::from(self.latents.technical.left_foot),
+            Characteristic::RightFoot => f64::from(self.latents.technical.right_foot),
             // The catalogue declares three more physical characteristics
             // (`MaximalForce`, `Acceleration`, `MaxSpeed`) that no
             // formula reads yet. The calculator asks only for declared
@@ -51,5 +54,33 @@ impl Custodian for CustodianView {
             | Characteristic::Acceleration
             | Characteristic::MaxSpeed => 0.0,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::latents::PlayerLatents;
+    use pcfm_calculator::{Characteristic, Custodian};
+
+    /// The three terms OI-92 added (the shot's choice) return the
+    /// player's latent, not a hardcoded 0.0. A regression here would
+    /// silently turn the shot's choice into a default (ADR-046).
+    #[test]
+    fn finishing_and_feet_read_the_latent() {
+        let latents = PlayerLatents::from_key(42, ds_core::ids::PlayerId::new(7, 0));
+        let mut view = CustodianView::new(latents);
+        assert_eq!(
+            view.value(Characteristic::Finishing),
+            f64::from(latents.technical.finishing)
+        );
+        assert_eq!(
+            view.value(Characteristic::LeftFoot),
+            f64::from(latents.technical.left_foot)
+        );
+        assert_eq!(
+            view.value(Characteristic::RightFoot),
+            f64::from(latents.technical.right_foot)
+        );
     }
 }

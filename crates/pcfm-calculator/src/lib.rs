@@ -54,6 +54,18 @@ pub enum Characteristic {
     DecisionMaking,
     /// Risk management: the risk he accepts (Plane A, cognitive).
     RiskManagement,
+    /// Finishing, consumed by the shot choice (OI-92, ADR-046).
+    /// L0.11 7.2 calls the characteristic "shooting"; the latent
+    /// rename is OI-50.
+    Finishing,
+    /// Left foot, one of the two performances per foot (ADR-031).
+    /// Consumer: the shot choice (OI-92, ADR-046); the pass formula
+    /// is OI-64.
+    LeftFoot,
+    /// Right foot, one of the two performances per foot (ADR-031).
+    /// Consumer: the shot choice (OI-92, ADR-046); the pass formula
+    /// is OI-64.
+    RightFoot,
 }
 
 impl Characteristic {
@@ -68,6 +80,9 @@ impl Characteristic {
             Self::GameReading => "game_reading",
             Self::DecisionMaking => "decision_making",
             Self::RiskManagement => "risk_management",
+            Self::Finishing => "finishing",
+            Self::LeftFoot => "left_foot",
+            Self::RightFoot => "right_foot",
         }
     }
 
@@ -82,6 +97,9 @@ impl Characteristic {
             "game_reading" => Some(Self::GameReading),
             "decision_making" => Some(Self::DecisionMaking),
             "risk_management" => Some(Self::RiskManagement),
+            "finishing" => Some(Self::Finishing),
+            "left_foot" => Some(Self::LeftFoot),
+            "right_foot" => Some(Self::RightFoot),
             _ => None,
         }
     }
