@@ -119,10 +119,28 @@ impl GroundTruth {
             tiebreaks.push(tiebreak);
         }
 
+        // The read filter (ADR-039 §2: a high game_reading sees more
+        // options). It filters on `visibility`, not on `geometric`: an
+        // option can be good and hard to notice, and the weak reader
+        // misses it. `Advance` is the fallback and is never filtered. A
+        // filtered candidate keeps its score in `scores` (visible, D5)
+        // but cannot win.
+        let mut custodian = self.custodian(ctx.actor);
+        let game_reading = custodian.value(Characteristic::GameReading);
+        let perception_threshold = 1.0 - game_reading;
+        let mut effective = scores.clone();
+        for (i, candidate) in ctx.candidates.iter().enumerate() {
+            if candidate.visibility < perception_threshold
+                && !matches!(candidate.kind, ChoiceKind::Advance)
+            {
+                effective[i] = 0.0;
+            }
+        }
+
         // Sort by score descending, ties by PlayerId slot (deterministic).
         order.sort_by(|&a, &b| {
-            scores[b]
-                .total_cmp(&scores[a])
+            effective[b]
+                .total_cmp(&effective[a])
                 .then(tiebreaks[a].cmp(&tiebreaks[b]))
         });
 
@@ -141,8 +159,8 @@ impl GroundTruth {
         let mut chosen_index = order[0];
         if n > 1 {
             let accept_factor = (1.0 - decision_making).mul_add(balance.decision_bias, 1.0);
-            let top_score = scores[chosen_index];
-            let second_score = scores[order[1]];
+            let top_score = effective[chosen_index];
+            let second_score = effective[order[1]];
             if second_score * accept_factor > top_score {
                 chosen_index = order[1];
             }
@@ -153,7 +171,7 @@ impl GroundTruth {
         // no option is clear enough, and the actor carries the ball
         // (`Advance`). The threshold is in balance/choice.json; arbitrary
         // and declared until calibration (L3).
-        let chosen_kind = if scores[chosen_index] < balance.clarity_threshold {
+        let chosen_kind = if effective[chosen_index] < balance.clarity_threshold {
             ChoiceKind::Advance
         } else {
             ctx.candidates[chosen_index].kind

@@ -794,3 +794,78 @@ mod latency_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod choice_filter_tests {
+    use super::*;
+    use ds_calculator::{Characteristic, Custodian};
+    use ds_core::ids::{MatchId, PlayerId};
+
+    fn hidden_choice(slot: u32) -> ChoiceKind {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        g.resolve_choice(&ChoiceContext {
+            actor: PlayerId::new(slot, 0),
+            candidates: vec![
+                ChoiceCandidate {
+                    kind: ChoiceKind::Advance,
+                    geometric: 0.5,
+                    risk: 0.5,
+                    visibility: 1.0,
+                },
+                ChoiceCandidate {
+                    kind: ChoiceKind::Pass(PlayerId::new(200, 0)),
+                    geometric: 0.9,
+                    risk: 0.5,
+                    visibility: 0.2,
+                },
+            ],
+        })
+        .chosen
+    }
+
+    /// ADR-039 section 2: a high `game_reading` sees more options. The
+    /// hidden option is better (0.9 vs 0.5) but hard to notice (0.2); a
+    /// weak reader must miss it and pick the obvious one, a strong
+    /// reader must see it and pick it. Without the filter both pick the
+    /// hidden one, because 0.9 > 0.5: the test fails, which is the
+    /// positive proof that it measures the filter and not something else.
+    #[test]
+    fn a_weak_reader_misses_the_hidden_option_a_strong_reader_sees() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let mut weak = (0u32, 1.0f64);
+        let mut strong = (0u32, 0.0f64);
+        for slot in 1..=200u32 {
+            let gr = g
+                .custodian(PlayerId::new(slot, 0))
+                .value(Characteristic::GameReading);
+            if gr < weak.1 {
+                weak = (slot, gr);
+            }
+            if gr > strong.1 {
+                strong = (slot, gr);
+            }
+        }
+        assert!(
+            weak.1 < 0.3,
+            "the sample must contain a weak reader: {}",
+            weak.1
+        );
+        assert!(
+            strong.1 > 0.7,
+            "the sample must contain a strong reader: {}",
+            strong.1
+        );
+        let w = hidden_choice(weak.0);
+        let s = hidden_choice(strong.0);
+        assert_eq!(
+            w,
+            ChoiceKind::Advance,
+            "the weak reader takes the obvious option"
+        );
+        assert_eq!(
+            s,
+            ChoiceKind::Pass(PlayerId::new(200, 0)),
+            "the strong reader sees the hidden one"
+        );
+    }
+}
