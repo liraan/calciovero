@@ -23,7 +23,7 @@
 //! would require the plausibility of `build_choice` (D7: no duplicate) or
 //! a circular dependence (the latency would depend on the outcome of the
 //! choose). The two remaining terms are enough to make the relation
-//! visible; the third is tracked as an OI.
+//! visible; the third is tracked as OI-96.
 //!
 //! **The formula is built once, in `load()`** (2026-11-09, F.2-bis bench,
 //! same fix as movement). `formula()` returns a reference.
