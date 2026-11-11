@@ -289,17 +289,22 @@ which of the complete actions wins is the actor's, and it depends on his
 cognitive and mental characteristics — the same way the keeper's choice
 (come out, dive, stay) does. The gap and the keeper's position are facts;
 the choice among the four candidates is the shooter's. Consequence, and
-it is a finding against the current formula: `resolve_choice` applies the
-same factor to every candidate (`geometric × (floor + (1-floor)·reading_weight·game_reading)
-× (1 − risk_weight·risk_management·risk)`). A factor identical for every
-candidate cannot change the argmax: a high-`game_reading` shooter and a
-low-`game_reading` shooter, in front of the same four candidates, would
-pick the same. OI-85 found this for `decision_making`; it is true for
-`game_reading` and `risk_management` too when the candidates are complete
-actions. The choice must read the latents **per candidate**, not as one
-common scalar. The form of the per-candidate salience is not decided here
-(it touches ADR-039 read/choose/contact and OI-85); it is the next
-cantiere, before any code on OI-88.
+it is a finding against the current formula. `resolve_choice` applies the
+same factor to every candidate:
+`geometric × (floor + (1-floor)·reading_weight·game_reading) ×
+(1 − risk_weight·risk_management·risk)`.
+The reading modifier does not contain `geometric`, so it is the same for
+every candidate and cannot change the argmax: a high-`game_reading`
+shooter and a low-`game_reading` shooter, in front of the same four
+candidates, would pick the same. `risk_management` is **not** inert: its
+modifier multiplies the per-candidate `risk`, and it does change the
+argmax. The finding is: `game_reading` is inert today, and it must not
+be. The choice must read the latents **per candidate**, not as one
+common scalar. OI-85 found the same shape for `decision_making`. The form
+of the per-candidate salience is not decided here (it touches ADR-039
+read/choose/contact and OI-85); it is the next cantiere, before any code
+on OI-88.
+
 ## References
 
 - `specs/00-foundations.md` §2 (pillar 11), §4 (determinism), §5 (no
