@@ -6,8 +6,8 @@
 //!
 //! These tests run a real match (seed 42) and inspect the event stream.
 
+use ds_fixtures::match_fixture;
 use ds_stats::EventType;
-use pcfm_fixtures::match_fixture;
 use pcfm_match::{MatchConfig, simulate_from_seed};
 
 #[test]
@@ -101,7 +101,7 @@ fn functional_l0_the_engine_emits_the_claimed_shape() {
 
 #[test]
 fn functional_l0_agents_move_and_do_not_cluster() {
-    use pcfm_fixtures::match_fixture;
+    use ds_fixtures::match_fixture;
     use pcfm_match::{MatchConfig, simulate_from_seed};
 
     let m = match_fixture(42).expect("fixture");

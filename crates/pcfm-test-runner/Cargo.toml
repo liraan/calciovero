@@ -22,7 +22,7 @@ pcfm-match.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 pcfm-testkit.workspace = true
-pcfm-fixtures.workspace = true
+ds-fixtures.workspace = true
 
 [lints]
 workspace = true

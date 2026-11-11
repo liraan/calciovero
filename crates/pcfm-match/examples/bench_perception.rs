@@ -13,8 +13,8 @@
 
 use std::time::Instant;
 
+use ds_fixtures::{away_squad, home_squad};
 use ds_model::Pitch;
-use pcfm_fixtures::{away_squad, home_squad};
 use pcfm_match::perception::{nearest_opponents, nearest_teammates};
 use pcfm_match::spatial::SpatialState;
 

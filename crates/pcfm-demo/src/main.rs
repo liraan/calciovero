@@ -108,7 +108,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     };
 
-    let match_ = pcfm_fixtures::match_fixture(args.seed)?;
+    let match_ = ds_fixtures::match_fixture(args.seed)?;
     let result = pcfm_match::simulate_from_seed(&match_, args.seed, MatchConfig::default());
 
     if args.quiet {
@@ -142,14 +142,14 @@ mod tests {
 
     #[test]
     fn demo_match_is_valid() {
-        let m = pcfm_fixtures::match_fixture(42).unwrap();
+        let m = ds_fixtures::match_fixture(42).unwrap();
         assert_eq!(m.home.players.len(), 11);
         assert_eq!(m.away.players.len(), 11);
     }
 
     #[test]
     fn rendering_a_result_does_not_panic() {
-        let match_ = pcfm_fixtures::match_fixture(42).unwrap();
+        let match_ = ds_fixtures::match_fixture(42).unwrap();
         let result = pcfm_match::simulate_from_seed(&match_, 42, MatchConfig::default());
         let _ = render::print_text(&result);
         let _ = render::print_json(&result);

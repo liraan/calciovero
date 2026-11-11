@@ -10,7 +10,7 @@ use ds_model::Match;
 use pcfm_match::{MatchConfig, MatchResult, MatchSave};
 use pcfm_testkit::{Feature, Scenario, ScenarioResult, TestContext, TestRegistry};
 
-use pcfm_fixtures::match_fixture;
+use ds_fixtures::match_fixture;
 
 /// Register every L0 scenario.
 ///

@@ -7,7 +7,7 @@
 //! L0 only: a "season" does not exist at L0, so this is N matches, not
 //! 10 seasons. The 10-season golden test is an L1 artefact.
 
-use pcfm_fixtures::match_fixture;
+use ds_fixtures::match_fixture;
 use pcfm_match::{MatchConfig, simulate_from_seed};
 
 /// Number of matches in the golden run.

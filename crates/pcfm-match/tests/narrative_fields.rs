@@ -8,8 +8,8 @@
 
 use ds_core::ids::{ActorId, EventId, MatchId, PlayerId};
 use ds_core::time::GameInstant;
+use ds_fixtures::match_fixture;
 use ds_stats::{EventChain, EventType, Half, MatchEvent};
-use pcfm_fixtures::match_fixture;
 use pcfm_match::narrate;
 
 fn ev(actor_slot: Option<u32>, event_type: EventType, fields: serde_json::Value) -> MatchEvent {

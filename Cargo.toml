@@ -36,7 +36,7 @@ ds-stats = { path = "crates/pcfm-stats", version = "0.1.0" }
 pcfm-match = { path = "crates/pcfm-match", version = "0.1.0" }
 pcfm-test-runner = { path = "crates/pcfm-test-runner", version = "0.1.0" }
 pcfm-testkit = { path = "crates/pcfm-testkit", version = "0.1.0" }
-pcfm-fixtures = { path = "crates/pcfm-fixtures", version = "0.1.0" }
+ds-fixtures = { path = "crates/pcfm-fixtures", version = "0.1.0" }
 ds-calculator = { path = "crates/pcfm-calculator", version = "0.1.0" }
 # RNG
 rand_chacha = "0.9"

@@ -22,4 +22,4 @@ thiserror.workspace = true
 workspace = true
 
 [dev-dependencies]
-pcfm-fixtures.workspace = true
+ds-fixtures.workspace = true
