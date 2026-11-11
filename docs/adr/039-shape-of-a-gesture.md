@@ -174,3 +174,5 @@ its debt is the clearest".
   fixes both. Implementation shape validated against `choose_action`
   (state.rs:189), `resolve_shot` (pcfm-hidden/src/lib.rs:219) and
   `CognitiveLatents` (latents.rs:100, empty).
+
+- **2026-11-11 — the choose is recognition (ADR-047).** The maintainer: *"l'attore con la palla sceglie cosa fare istintivamente, è una derivata dell'allenamento e di quello che gli insegna il suo allenatore"*, *"(compreso il portiere)"*. ADR-047 specifies §2: the actor does not weigh the options during the match, he **recognises** the phrases his repertoire makes available in the scene. Recognition lives in the read (§1), weighing in the choose (§2): the two steps stay separate, the weighing is among the phrases the actor recognised, not among all physically possible options. The repertoire is the form of the cognitive latents (§1), not a new latent; the training (L1) modulates the latents and the repertoire follows. The body of this ADR is unchanged: the note specifies §2, it does not amend it.

@@ -318,3 +318,7 @@ on OI-88.
   cantiere's first artefact, §4 the implementation order)
 - 2026-11-11 session: the conversation that produced the six
   conclusions (capture E5)
+
+## Dated note
+
+- **2026-11-11 — the shot's choice is recognition (ADR-047).** The maintainer: *"l'attore con la palla (nel caso del tiro) sceglie cosa fare istintivamente, è una derivata dell'allenamento e di quello che gli insegna il suo allenatore"*, *"(compreso il portiere)"*. ADR-047 specifies §1: the shot's choice is not a weighing of the four candidates during the match, it is the recognition of the phrases the shooter's repertoire makes available against the keeper he reads. Consequences for this cantiere: (a) `PerceivedScene` must name the keeper, because the shooter recognises his phrases against him, not only against the goal mouth; (b) `build_choice` is the actor's act, not the engine's; (c) `ChoiceKind::Shoot` carries the complete phrase (`aim_y`, `power`, `contact_height`), the contact height being the actor's and not the engine's. The body of this ADR is unchanged: the note specifies §1, it does not amend it.
