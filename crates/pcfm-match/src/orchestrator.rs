@@ -17,7 +17,7 @@ use crate::balance::{StoppageTime, stoppage_for};
 use crate::context::MatchContext;
 use crate::result::MatchResult;
 use crate::state::MatchState;
-use pcfm_stats::{EventType, Half};
+use ds_stats::{EventType, Half};
 
 /// The regulation duration of one half, in minutes.
 const REGULATION_MINUTES: u64 = 45;

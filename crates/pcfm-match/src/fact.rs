@@ -3,13 +3,13 @@
 //!
 //! A fact is Plane A -> Plane B: it carries the cause (who, where, under
 //! what condition), not the narrative. It is internal to `pcfm-match`:
-//! not part of `MatchResult`, not serialised, not in `pcfm-stats`.
+//! not part of `MatchResult`, not serialised, not in `ds-stats`.
 //! A new fact species is a `SIM_VERSION` bump if it changes which events
 //! are emitted (CHANGELOG-SIM.md, "When to bump", point 2).
 
 use ds_core::ids::{ActorId, PlayerId};
 use ds_orchestrator::ShotType;
-use pcfm_stats::EventType;
+use ds_stats::EventType;
 
 /// A fact the engine produces in a tick. The narrator classifies it into
 /// zero or more `MatchEvent`s.

@@ -1,6 +1,6 @@
 //! Hash — a 32-byte BLAKE3 digest.
 //!
-//! Used for the `EventChain` hash chain (see `pcfm-stats::chain`), for
+//! Used for the `EventChain` hash chain (see `ds-stats::chain`), for
 //! `observed_attrs_snapshot_hash`, and for any other place where a
 //! deterministic, collision-resistant digest is needed.
 //!

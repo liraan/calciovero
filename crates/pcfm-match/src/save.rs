@@ -52,7 +52,7 @@ use ds_core::rng::RngRegistry;
 use ds_core::time::GameInstant;
 use ds_model::Match;
 use ds_orchestrator::GroundTruth;
-use pcfm_stats::EventChain;
+use ds_stats::EventChain;
 use serde::{Deserialize, Serialize};
 
 use crate::context::{MatchConfig, MatchContext};

@@ -10,8 +10,8 @@ use ds_model::{
     PsychologicalStateMinimal, Referee, RoleId, Squad,
 };
 use ds_orchestrator::GroundTruth;
+use ds_stats::EventChain;
 use pcfm_match::{MatchConfig, MatchContext, MatchEngine, MatchSave, TextMatchEngine};
-use pcfm_stats::EventChain;
 
 const LATENT_NAMES: &[&str] = &[
     "finishing",

@@ -6,9 +6,9 @@
 //!
 //! These tests run a real match (seed 42) and inspect the event stream.
 
+use ds_stats::EventType;
 use pcfm_fixtures::match_fixture;
 use pcfm_match::{MatchConfig, simulate_from_seed};
-use pcfm_stats::EventType;
 
 #[test]
 fn functional_l0_the_engine_emits_the_claimed_shape() {

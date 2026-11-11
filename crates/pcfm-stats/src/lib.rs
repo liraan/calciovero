@@ -1,4 +1,4 @@
-//! `pcfm-stats` — Plane B (Observation) for PCFM.
+//! `ds-stats` — Plane B (Observation) for PCFM.
 //!
 //! See `specs/L0-match/05-match-events.md` for the full specification.
 //!
@@ -30,7 +30,7 @@ pub use chain::EventChain;
 pub use error::StatsError;
 pub use event::{EventType, Half, MatchEvent};
 
-/// Returns the version of `pcfm-stats`, as declared in `Cargo.toml`.
+/// Returns the version of `ds-stats`, as declared in `Cargo.toml`.
 #[must_use]
 pub const fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")

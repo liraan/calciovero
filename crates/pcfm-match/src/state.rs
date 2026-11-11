@@ -6,7 +6,7 @@
 use ds_core::ids::{ActorId, EventId, PlayerId};
 use ds_core::time::GameInstant;
 use ds_model::Squad;
-use pcfm_stats::{EventChain, EventType, Half, MatchEvent};
+use ds_stats::{EventChain, EventType, Half, MatchEvent};
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::context::MatchContext;

@@ -6,7 +6,7 @@
 //! deterministic. Editing the file requires a rebuild, which is correct: a
 //! balance change is a `SIM_VERSION` bump.
 
-use pcfm_stats::EventType;
+use ds_stats::EventType;
 use serde::Deserialize;
 
 /// The embedded balance file.
@@ -73,7 +73,7 @@ impl StoppageTime {
 /// not in the table). No cap: the fixed point loop in `orchestrator` stops
 /// when the contribution is zero (ADR-026 §2).
 #[must_use]
-pub fn stoppage_for(events: &[pcfm_stats::MatchEvent], table: &StoppageTime) -> u32 {
+pub fn stoppage_for(events: &[ds_stats::MatchEvent], table: &StoppageTime) -> u32 {
     let mut total = table.base;
     for event in events {
         total = total.saturating_add(table.contribution(event.event_type));
@@ -296,12 +296,12 @@ mod tests {
         assert_eq!(b.weight_mark, 60);
         assert_eq!(b.mark_radius_cm, 800);
     }
-    fn make_event(kind: EventType) -> pcfm_stats::MatchEvent {
-        pcfm_stats::MatchEvent {
+    fn make_event(kind: EventType) -> ds_stats::MatchEvent {
+        ds_stats::MatchEvent {
             event_id: ds_core::ids::EventId::new(0, 0),
             match_id: ds_core::ids::MatchId::new(1, 0),
             actor: None,
-            half: pcfm_stats::Half::First,
+            half: ds_stats::Half::First,
             timestamp_minute: 0,
             timestamp_second: 0,
             minutes_played_cumulative: 0,

@@ -119,8 +119,8 @@ pub fn print_board(vm: &MatchViewModel) -> std::fmt::Result {
 /// stoppage. The half is explicit (ADR-026): the second half restarts from 0.
 fn format_time(event: &EventRow) -> String {
     let label = match event.half {
-        pcfm_stats::Half::First => "1T",
-        pcfm_stats::Half::Second => "2T",
+        ds_stats::Half::First => "1T",
+        ds_stats::Half::Second => "2T",
     };
     if event.minute > 45 {
         format!("{label} 45'+{}'", event.minute - 45)
@@ -162,7 +162,7 @@ mod tests {
             minute: 12,
             second: 34,
             kind: "GOAL",
-            half: pcfm_stats::Half::First,
+            half: ds_stats::Half::First,
             team: Team::Away,
             number: 9,
         });

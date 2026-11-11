@@ -10,8 +10,8 @@
 //! pitch model. The test at the bottom of this file checks it mechanically
 //! by scanning its own source with `include_str!`.
 
+use ds_stats::{EventType, MatchEvent};
 use pcfm_match::{Importance, MatchResult, NarrativeEntry};
-use pcfm_stats::{EventType, MatchEvent};
 use serde::Serialize;
 
 /// Which side an event belongs to.
@@ -46,7 +46,7 @@ pub struct EventRow {
     /// Event kind, as a stable display string.
     pub kind: &'static str,
     /// Which half the event belongs to.
-    pub half: pcfm_stats::Half,
+    pub half: ds_stats::Half,
     /// Which side the event belongs to.
     pub team: Team,
     /// Shirt number within the side (`slot % 100`).
@@ -303,7 +303,7 @@ mod tests {
             actor: Some(ds_core::ids::ActorId::Player(ds_core::ids::PlayerId::new(
                 9, 0,
             ))),
-            half: pcfm_stats::Half::First,
+            half: ds_stats::Half::First,
             timestamp_minute: 1,
             timestamp_second: 0,
             minutes_played_cumulative: 1,

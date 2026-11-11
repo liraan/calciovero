@@ -56,7 +56,7 @@ mod tests {
         PsychologicalStateMinimal, Referee, RoleId, Squad,
     };
     use ds_orchestrator::GroundTruth;
-    use pcfm_stats::EventChain;
+    use ds_stats::EventChain;
 
     fn make_squad(id: u32, slot_base: u32) -> Squad {
         let players: Vec<Player> = (0..11)

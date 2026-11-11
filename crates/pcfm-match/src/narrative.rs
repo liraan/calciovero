@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 
 use ds_core::ids::{EventId, PlayerId};
 use ds_model::Match;
-use pcfm_stats::{EventChain, EventType, MatchEvent};
+use ds_stats::{EventChain, EventType, MatchEvent};
 use serde::{Deserialize, Serialize};
 
 /// How important a narrative entry is.
@@ -233,7 +233,7 @@ mod tests {
         FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
         PsychologicalStateMinimal, Referee, RoleId, Squad,
     };
-    use pcfm_stats::{EventChain, EventType, MatchEvent};
+    use ds_stats::{EventChain, EventType, MatchEvent};
 
     fn make_squad(id: u32, slot_base: u32) -> Squad {
         let players: Vec<Player> = (0..11)
@@ -276,7 +276,7 @@ mod tests {
             event_id: EventId::new(slot, 0),
             match_id: MatchId::new(1, 0),
             actor: Some(ds_core::ids::ActorId::Player(player_id)),
-            half: pcfm_stats::Half::First,
+            half: ds_stats::Half::First,
             timestamp_minute: minute,
             timestamp_second: 0,
             minutes_played_cumulative: u16::from(minute),

@@ -106,6 +106,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-stats"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "ds-core",
+ "ds-model",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -147,9 +159,9 @@ version = "0.1.0"
 dependencies = [
  "ds-core",
  "ds-model",
+ "ds-stats",
  "pcfm-fixtures",
  "pcfm-match",
- "pcfm-stats",
  "serde",
  "serde_json",
  "thiserror",
@@ -170,20 +182,8 @@ dependencies = [
  "ds-core",
  "ds-model",
  "ds-orchestrator",
+ "ds-stats",
  "pcfm-fixtures",
- "pcfm-stats",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "pcfm-stats"
-version = "0.1.0"
-dependencies = [
- "blake3",
- "ds-core",
- "ds-model",
  "serde",
  "serde_json",
  "thiserror",
@@ -196,9 +196,9 @@ dependencies = [
  "ds-core",
  "ds-model",
  "ds-orchestrator",
+ "ds-stats",
  "pcfm-fixtures",
  "pcfm-match",
- "pcfm-stats",
  "pcfm-testkit",
  "serde_json",
  "thiserror",

@@ -1,7 +1,7 @@
 //! The result of a match simulation.
 
 use ds_core::hash::Hash;
-use pcfm_stats::EventChain;
+use ds_stats::EventChain;
 use serde::{Deserialize, Serialize};
 
 use crate::narrative::NarrativeEntry;

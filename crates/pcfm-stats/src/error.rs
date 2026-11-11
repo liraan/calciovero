@@ -1,4 +1,4 @@
-//! Errors for `pcfm-stats`.
+//! Errors for `ds-stats`.
 
 use thiserror::Error;
 
