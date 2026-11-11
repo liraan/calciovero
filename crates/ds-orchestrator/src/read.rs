@@ -186,6 +186,7 @@ pub fn build_choice(scene: &PerceivedScene) -> (ChoiceContext, BTreeMap<PlayerId
                     kind: ChoiceKind::Advance,
                     geometric: 1.0,
                     risk: 0.5,
+                    visibility: 1.0,
                 }],
             },
             freedoms,
@@ -207,6 +208,7 @@ pub fn build_choice(scene: &PerceivedScene) -> (ChoiceContext, BTreeMap<PlayerId
             kind: ChoiceKind::Shoot,
             geometric: geom,
             risk,
+            visibility: goal_cone(pos, goal),
         });
     }
     let _ = shot_distance;
@@ -242,6 +244,7 @@ pub fn build_choice(scene: &PerceivedScene) -> (ChoiceContext, BTreeMap<PlayerId
             kind: ChoiceKind::Pass(*id),
             geometric: geom,
             risk,
+            visibility: lq,
         });
         freedoms.insert(*id, freedom);
     }
@@ -256,6 +259,7 @@ pub fn build_choice(scene: &PerceivedScene) -> (ChoiceContext, BTreeMap<PlayerId
             kind: ChoiceKind::Advance,
             geometric: 0.0,
             risk: 0.5,
+            visibility: 1.0,
         });
     }
 
