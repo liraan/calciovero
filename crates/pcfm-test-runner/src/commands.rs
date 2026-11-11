@@ -7,7 +7,7 @@
 
 use std::collections::HashSet;
 
-use pcfm_testkit::{Feature, TestRegistry};
+use ds_testkit::{Feature, TestRegistry};
 
 use crate::features;
 

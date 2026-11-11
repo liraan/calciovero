@@ -1,5 +1,5 @@
 [package]
-name = "pcfm-testkit"
+name = "ds-testkit"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,7 +8,7 @@ description = "Public test harness for PCFM: Scenario, Feature, TestRegistry."
 publish = false
 
 [dependencies]
-# Deliberately empty: pcfm-testkit must not depend on any pcfm-* crate.
+# Deliberately empty: ds-testkit must not depend on any pcfm-* crate.
 # It is the contract that core, plugins, and tools all share.
 
 [lints]

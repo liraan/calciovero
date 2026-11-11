@@ -8,7 +8,7 @@
 //! future, `features/l1_*`, `features/l2_*`, `features/l3_*`, plugins).
 //! This file only knows how to run a registry and format the report.
 
-use pcfm_testkit::TestRegistry;
+use ds_testkit::TestRegistry;
 
 use crate::features;
 
@@ -54,7 +54,7 @@ pub fn run(seed: u64) -> CheckReport {
 ///
 /// One check = one line of output. Scenario-level errors are surfaced as
 /// a failing check named `"scenario"`.
-fn adapt(report: &pcfm_testkit::RunReport) -> CheckReport {
+fn adapt(report: &ds_testkit::RunReport) -> CheckReport {
     let mut out = CheckReport {
         passed: Vec::new(),
         failed: Vec::new(),

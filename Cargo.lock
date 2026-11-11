@@ -126,6 +126,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-testkit"
+version = "0.1.0"
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -198,15 +202,11 @@ dependencies = [
  "ds-model",
  "ds-orchestrator",
  "ds-stats",
+ "ds-testkit",
  "pcfm-match",
- "pcfm-testkit",
  "serde_json",
  "thiserror",
 ]
-
-[[package]]
-name = "pcfm-testkit"
-version = "0.1.0"
 
 [[package]]
 name = "ppv-lite86"

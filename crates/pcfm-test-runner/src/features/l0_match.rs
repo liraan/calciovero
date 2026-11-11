@@ -7,8 +7,8 @@
 
 use ds_core::time::GameInstant;
 use ds_model::Match;
+use ds_testkit::{Feature, Scenario, ScenarioResult, TestContext, TestRegistry};
 use pcfm_match::{MatchConfig, MatchResult, MatchSave};
-use pcfm_testkit::{Feature, Scenario, ScenarioResult, TestContext, TestRegistry};
 
 use ds_fixtures::match_fixture;
 

@@ -6,7 +6,7 @@
 
 pub mod l0_match;
 
-use pcfm_testkit::TestRegistry;
+use ds_testkit::TestRegistry;
 
 /// Register every scenario known to `pcfm-test-runner`.
 ///
