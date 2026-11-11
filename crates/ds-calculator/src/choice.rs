@@ -52,6 +52,17 @@ pub struct ChoiceBalance {
     /// until calibration (L3). First value 0.25: a typical pass sits
     /// between 0.1 and 0.4, so below 0.25 it is "not clear enough".
     pub clarity_threshold: f64,
+    /// Lowest relative salience an option may have and still be
+    /// perceived by the best reader (0..=1). See ADR-039 §2: a high
+    /// `game_reading` sees more options. `perception_floor` is the
+    /// threshold at `game_reading = 1`.
+    pub perception_floor: f64,
+    /// How much narrower the perceived set is for a reader with
+    /// `game_reading = 0`: the threshold is `perception_floor +
+    /// (1 - game_reading) * perception_range`. Scale-invariant: it is
+    /// relative to the best candidate, so normalising the scales (OI-86)
+    /// does not change it.
+    pub perception_range: f64,
 }
 
 impl ChoiceBalance {
