@@ -41,6 +41,17 @@ pub struct ShotContext {
     /// (opponents near the shooter, distance to goal). Declared model
     /// choice: the die widens its deviation under pressure. Not a latent.
     pub difficulty: i32,
+    /// The lateral component of the aim on the goal plane, cm (ADR-046 §1,
+    /// ADR-047): the actor's choice, not the engine's optimum. The engine
+    /// applies it in `resolve_shot` as the direction.
+    pub aim_y: f64,
+    /// The force of the shot, 0..=1 (ADR-046 §1): strong or placed. The
+    /// actor's choice; the engine maps it to speed and to the band.
+    pub power: f64,
+    /// The contact height, 0.0 low / 1.0 high (ADR-046 §1, §5): the
+    /// actor's choice, not the engine's. `0.0` in the first cantiere
+    /// (`Removed-by: ADR-046 §5`, the lob needs the flight's time).
+    pub contact_height: f64,
 }
 
 /// The context of a pass resolution.

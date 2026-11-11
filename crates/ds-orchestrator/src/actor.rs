@@ -22,9 +22,9 @@
 //! `ChoiceContext` the engine built. The form is (b) of the 2026-11-10
 //! session; the intermediate (a) was rejected by the filters.
 
+use crate::GroundTruth;
+use ds_calculator::Custodian;
 use ds_core::ids::PlayerId;
-
-use crate::{ChoiceContext, GroundTruth};
 
 /// The actor: a player, and the decision he makes.
 ///
@@ -49,24 +49,35 @@ impl Actor {
         self.player
     }
 
-    /// Decides, from the scene and the actor's characteristics.
+    /// Decides, from the scene the actor perceives (ADR-043, ADR-047).
     ///
-    /// The choice is the actor's: it is not a formula (ADR-039 step 2).
-    /// `resolve_choice` is the door (Plane A, through the custodian); the
-    /// scene is the read. The engine applies the outcome; it does not
-    /// choose.
+    /// The read is the actor's: he derives his preferred foot from the
+    /// custodian (a fact of the body, Plane B by the time the read sees
+    /// it), builds the complete phrases from the scene, and chooses.
+    /// The engine applies the outcome; it does not choose.
     ///
-    /// **Shape, declared:** today the scene is a `ChoiceContext` built by
-    /// the engine (the read is still `build_choice` in `ds-match`).
-    /// A.1-bis moves the read here; the signature does not change.
+    /// Returns the chosen kind and the freedoms of the pass receivers,
+    /// so the engine can carry them to `resolve_pass` after the choice.
     pub fn decide(
         &self,
-        scene: &ChoiceContext,
+        scene: &crate::read::PerceivedScene,
         hidden: &mut GroundTruth,
         tick: u64,
-    ) -> crate::ChoiceKind {
+    ) -> (crate::ChoiceKind, std::collections::BTreeMap<PlayerId, i64>) {
         let _ = tick;
-        hidden.resolve_choice(scene).chosen
+        let preferred_foot = {
+            let mut custodian = hidden.custodian(self.player);
+            let left = custodian.value(ds_calculator::Characteristic::LeftFoot);
+            let right = custodian.value(ds_calculator::Characteristic::RightFoot);
+            if left > right {
+                crate::Side::Left
+            } else {
+                crate::Side::Right
+            }
+        };
+        let balance = hidden.shot_choice_balance();
+        let (ctx, freedoms) = crate::read::build_choice(scene, preferred_foot, balance);
+        (hidden.resolve_choice(&ctx).chosen, freedoms)
     }
 }
 

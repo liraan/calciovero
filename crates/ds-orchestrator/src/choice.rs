@@ -22,17 +22,34 @@ use ds_core::ids::PlayerId;
 use crate::GroundTruth;
 
 /// The kind of an option the engine puts in front of the actor.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ChoiceKind {
     /// Pass to a teammate.
     Pass(PlayerId),
-    /// Shoot at the opponent goal.
-    Shoot,
+    /// Shoot: the complete phrase of ADR-046 §1 and ADR-047.
+    Shoot {
+        /// Lateral component of the aim on the goal plane, cm (ADR-046 §1).
+        aim_y: f64,
+        /// Force, 0..=1 (ADR-046 §1): strong or placed.
+        power: f64,
+        /// Vertical choice: 0.0 low, 1.0 high (ADR-046 §1, §5).
+        contact_height: f64,
+    },
     /// Contest the nearest opponent.
     Duel,
     /// Carry the ball forward: the carrier's gesture when the scene
     /// shows nothing clearer (ADR-040 note 2026-11-09, IDEA-DESIGN-010).
     Advance,
+}
+
+/// The side of the body: which foot the actor prefers (ADR-047, forma (d)).
+/// A fact of the body, not a latent: the shooter knows he is right-footed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Side {
+    /// Right foot.
+    Right,
+    /// Left foot.
+    Left,
 }
 
 /// One candidate option, with the Plane B values the engine derived.
@@ -114,7 +131,9 @@ impl GroundTruth {
             scores.push(score);
             let tiebreak = match candidate.kind {
                 ChoiceKind::Pass(p) => p.slot(),
-                ChoiceKind::Shoot | ChoiceKind::Duel | ChoiceKind::Advance => ctx.actor.slot(),
+                ChoiceKind::Shoot { .. } | ChoiceKind::Duel | ChoiceKind::Advance => {
+                    ctx.actor.slot()
+                }
             };
             tiebreaks.push(tiebreak);
         }

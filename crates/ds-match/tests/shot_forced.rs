@@ -25,6 +25,21 @@ const fn ctx_at(from_y: i32, difficulty: i32) -> ShotContext {
         from: (9000, from_y, 0),
         to: (10500, 3400, 244),
         difficulty,
+        aim_y: 3400.0,
+        power: 0.35,
+        contact_height: 0.0,
+    }
+}
+
+const fn ctx_contact(from_y: i32, difficulty: i32, contact_height: f64) -> ShotContext {
+    ShotContext {
+        shooter: shooter(9),
+        from: (9000, from_y, 0),
+        to: (10500, 3400, 244),
+        difficulty,
+        aim_y: 3400.0,
+        power: 0.35,
+        contact_height,
     }
 }
 
@@ -75,20 +90,20 @@ fn resolve_shot_deviates_laterally() {
 }
 
 #[test]
-fn resolve_shot_high_pressure_goes_up_low_pressure_goes_down() {
+fn resolve_shot_contact_height_picks_the_vertical_direction() {
     let mut gt = GroundTruth::new(42, MatchId::new(1, 0));
-    // Difficulty > 50: dz > 0 (above the crossbar line at 244 cm).
-    let high = gt.resolve_shot(&ctx_at(3400, 100));
+    // contact_height = 1.0 (high): dz > 0 (above the crossbar line).
+    let high = gt.resolve_shot(&ctx_contact(3400, 0, 1.0));
     assert!(
         high.to.2 > 244,
-        "high pressure should send the ball above the crossbar: to.2={}",
+        "high contact should send the ball above the crossbar: to.2={}",
         high.to.2
     );
-    // Difficulty <= 50: dz < 0 (below the crossbar line).
-    let low = gt.resolve_shot(&ctx_at(3400, 0));
+    // contact_height = 0.0 (low): dz < 0 (below the crossbar line).
+    let low = gt.resolve_shot(&ctx_contact(3400, 0, 0.0));
     assert!(
         low.to.2 < 244,
-        "low pressure should keep the ball below the crossbar: to.2={}",
+        "low contact should keep the ball below the crossbar: to.2={}",
         low.to.2
     );
 }

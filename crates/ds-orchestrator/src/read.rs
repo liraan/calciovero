@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 use ds_core::geometry::distance_squared;
 use ds_core::ids::PlayerId;
 
-use crate::{ChoiceCandidate, ChoiceContext, ChoiceKind};
+use crate::{ChoiceCandidate, ChoiceContext, ChoiceKind, Side};
 
 /// The facts the actor perceives, in Plane B.
 ///
@@ -168,7 +168,11 @@ pub fn goal_cone(pos: (i32, i32), goal: (i32, i32)) -> f64 {
 /// caller can pass it to `resolve_pass` after the choice.
 #[must_use]
 #[allow(clippy::cast_precision_loss)] // distances in cm: well inside f64's exact range (2^52)
-pub fn build_choice(scene: &PerceivedScene) -> (ChoiceContext, BTreeMap<PlayerId, i64>) {
+pub fn build_choice(
+    scene: &PerceivedScene,
+    preferred_foot: Side,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> (ChoiceContext, BTreeMap<PlayerId, i64>) {
     let attacker = scene.actor;
     let goal = scene.goal;
     let teammates: &[PlayerId] = &scene.teammates;
@@ -204,12 +208,30 @@ pub fn build_choice(scene: &PerceivedScene) -> (ChoiceContext, BTreeMap<PlayerId
         let geom = distance_factor * goal_cone(pos, goal);
         // risk: 0.0 at the goal line, 1.0 at the shoot range edge.
         let risk = (goal_dist as f64) / (SHOOT_RANGE_CM as f64);
-        candidates.push(ChoiceCandidate {
-            kind: ChoiceKind::Shoot,
-            geometric: geom,
-            risk,
-            visibility: goal_cone(pos, goal),
-        });
+        // ADR-046 §1, ADR-047: the shot is a complete phrase. The side
+        // is the actor's preferred foot (a fact of the body, not a
+        // latent); the two powers are the two phrases from
+        // `balance/shot_choice.json`. The contact height is 0.0 in this
+        // cantiere (`Removed-by: ADR-046 §5`, the lob needs the flight's
+        // time).
+        let aim_edge_cm = (GOAL_WIDTH_CM as f64) * 0.5 * balance.aim_edge_fraction;
+        let side_sign: f64 = match preferred_foot {
+            Side::Right => 1.0,
+            Side::Left => -1.0,
+        };
+        let aim_y = side_sign.mul_add(aim_edge_cm, f64::from(goal.1));
+        for power in [balance.power_strong, balance.power_placed] {
+            candidates.push(ChoiceCandidate {
+                kind: ChoiceKind::Shoot {
+                    aim_y,
+                    power,
+                    contact_height: 0.0,
+                },
+                geometric: geom,
+                risk,
+                visibility: goal_cone(pos, goal),
+            });
+        }
     }
     let _ = shot_distance;
 

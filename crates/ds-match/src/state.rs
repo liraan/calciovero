@@ -154,7 +154,7 @@ pub struct MatchState {
 }
 
 /// The action an agent chooses from its point of view (MD-01, MD-43).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum ChosenAction {
     /// Pass to the teammate with the most space, and how much space he
     /// has (cm, distance to the nearest opponent). The freedom is computed
@@ -162,7 +162,11 @@ pub(crate) enum ChosenAction {
     /// (D7, one source of truth).
     Pass { receiver: PlayerId, freedom_cm: i64 },
     /// Shoot at the opponent goal.
-    Shoot,
+    Shoot {
+        aim_y: f64,
+        power: f64,
+        contact_height: f64,
+    },
     /// Contest the nearest opponent.
     Duel,
     /// Carry the ball forward: the carrier's gesture when the scene shows
@@ -432,23 +436,31 @@ impl MatchState {
             }
         }
         let scene = scene_from(&self.spatial, attacker, goal, teammates, opponents.clone());
-        let (choice_ctx, freedoms) = ds_orchestrator::read::build_choice(&scene);
-        let chosen =
-            match ds_orchestrator::Actor::new(attacker).decide(&choice_ctx, ctx.hidden, tick) {
-                ds_orchestrator::ChoiceKind::Pass(receiver) => {
-                    let freedom_cm = freedoms
-                        .get(&receiver)
-                        .copied()
-                        .unwrap_or(ds_orchestrator::read::PASS_FREEDOM_CM);
-                    ChosenAction::Pass {
-                        receiver,
-                        freedom_cm,
-                    }
+        let (chosen_kind, freedoms) =
+            ds_orchestrator::Actor::new(attacker).decide(&scene, ctx.hidden, tick);
+        let chosen = match chosen_kind {
+            ds_orchestrator::ChoiceKind::Pass(receiver) => {
+                let freedom_cm = freedoms
+                    .get(&receiver)
+                    .copied()
+                    .unwrap_or(ds_orchestrator::read::PASS_FREEDOM_CM);
+                ChosenAction::Pass {
+                    receiver,
+                    freedom_cm,
                 }
-                ds_orchestrator::ChoiceKind::Shoot => ChosenAction::Shoot,
-                ds_orchestrator::ChoiceKind::Duel => ChosenAction::Duel,
-                ds_orchestrator::ChoiceKind::Advance => ChosenAction::Advance,
-            };
+            }
+            ds_orchestrator::ChoiceKind::Shoot {
+                aim_y,
+                power,
+                contact_height,
+            } => ChosenAction::Shoot {
+                aim_y,
+                power,
+                contact_height,
+            },
+            ds_orchestrator::ChoiceKind::Duel => ChosenAction::Duel,
+            ds_orchestrator::ChoiceKind::Advance => ChosenAction::Advance,
+        };
 
         // The action belongs to the nearest agent; the ball follows.
         self.spatial.set_carrier(Some(attacker));
@@ -514,7 +526,12 @@ impl MatchState {
             // REC: the Pass event is emitted at landing, in `tick`
             // (resolve_reception), not at launch: `complete` is the
             // reception, not the launch.
-        } else if chosen == ChosenAction::Shoot {
+        } else if let ChosenAction::Shoot {
+            aim_y,
+            power,
+            contact_height,
+        } = chosen
+        {
             let from = match self.spatial.agent(attacker) {
                 Some(a) => (a.position.0, a.position.1, 0),
                 None => self.spatial.ball_3d(),
@@ -541,6 +558,9 @@ impl MatchState {
                 from,
                 to,
                 difficulty,
+                aim_y,
+                power,
+                contact_height,
             };
             let outcome = ctx.hidden.resolve_shot(&ctx_shot);
             // F.3-b3: carrier released, ball flies. Goal (or Save) is
@@ -1018,7 +1038,9 @@ mod tests {
             teammates.to_vec(),
             opponents.to_vec(),
         );
-        let (ctx, _freedoms) = ds_orchestrator::read::build_choice(&scene);
+        let balance = ds_orchestrator::ShotChoiceBalance::load();
+        let (ctx, _freedoms) =
+            ds_orchestrator::read::build_choice(&scene, ds_orchestrator::Side::Right, &balance);
         let pass_target_seen = ctx
             .candidates
             .iter()

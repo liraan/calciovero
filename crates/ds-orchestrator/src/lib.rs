@@ -28,11 +28,12 @@ pub mod read;
 pub use actor::Actor;
 pub use read::PerceivedScene;
 
-pub use choice::{ChoiceCandidate, ChoiceContext, ChoiceKind, ChoiceOutcome};
+pub use choice::{ChoiceCandidate, ChoiceContext, ChoiceKind, ChoiceOutcome, Side};
 pub use context::{
     DuelContext, DuelType, InfluenceWeights, LatencyContext, MovementContext, PassContext,
     ReceptionContext, ReceptionParams, SaveContext, ShotContext, SkillKind,
 };
+pub use ds_calculator::shot_choice::ShotChoiceBalance;
 pub use observation::ObservationEvent;
 pub use outcome::{
     DuelOutcome, LatencyOutcome, MovementOutcome, PassOutcome, ReceptionOutcome, SaveOutcome,
@@ -73,6 +74,7 @@ pub struct GroundTruth {
     movement_balance: ds_calculator::movement::MovementBalance,
     latency_balance: ds_calculator::latency::LatencyBalance,
     choice_balance: ds_calculator::choice::ChoiceBalance,
+    shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance,
 }
 
 impl GroundTruth {
@@ -102,6 +104,7 @@ impl GroundTruth {
             movement_balance: ds_calculator::movement::MovementBalance::load(),
             latency_balance: ds_calculator::latency::LatencyBalance::load(),
             choice_balance: ds_calculator::choice::ChoiceBalance::load(),
+            shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance::load(),
         }
     }
 
@@ -128,6 +131,15 @@ impl GroundTruth {
     /// ADR-028 section 5 is this visibility.
     pub(crate) fn custodian(&mut self, player: PlayerId) -> ds_db::CustodianView {
         self.vault.custodian(player)
+    }
+
+    /// The shot's choice balance (ADR-047). Read by `Actor::decide` to
+    /// build the complete phrases from the scene; not a latent, a
+    /// declared coefficient (`balance/shot_choice.json`, L3).
+    pub(crate) const fn shot_choice_balance(
+        &self,
+    ) -> &ds_calculator::shot_choice::ShotChoiceBalance {
+        &self.shot_choice_balance
     }
 
     /// Resolves a duel.
@@ -243,26 +255,27 @@ impl GroundTruth {
 
         // Lateral side: PLACEHOLDER, the cause is NOT read here. A real
         // shooter's direction depends on the foot (ADR-031), the point of
-        // impact and the posture — not on his position relative to the
-        // goal centre. `lateral_sign` is a declared placeholder with a
-        // named cause (the foot, ADR-031, not yet a readable term: OI-65
-        // step 3+, Plan K). Removed-by: ADR-031 + OI-65 step 3+. See OI-79.
-        let lateral_sign: i32 = if ctx.from.1 < ctx.to.1 { 1 } else { -1 };
-
-        // Vertical: under pressure the shot tends up (over the bar), with
-        // time it stays low. The threshold is arbitrary, declared: 50 of
-        // `difficulty` (the same scale the rest of the shot uses). A shot
-        // under no pressure dips slightly (below the crossbar).
-        let vertical_sign: i32 = if ctx.difficulty > 50 { 1 } else { -1 };
-
-        // Amplitude per axis: a quarter of the total spread, the average
-        // magnitude of the old uniform draw `(rand - 0.5) * spread`. Same
-        // scale as before, geometric (no draw).
+        // Direction: the actor's choice (ADR-046 §1, ADR-047). `aim_y` is
+        // the lateral component of the aim on the goal plane, in cm; the
+        // arrival is `to.1 + dy`, with `dy` the direction plus the band's
+        // deviation. The old `lateral_sign` (from position) is gone as a
+        // direction; it stays only as the band's declared placeholder.
+        #[allow(clippy::cast_possible_truncation)]
+        let base_dy = (ctx.aim_y - f64::from(ctx.to.1)) as i32;
+        // Band: `spread` from finishing + difficulty, the deviation of the
+        // contact (ADR-039 step 4). The direction is the actor's; the
+        // deviation is his too, carried by the characteristic.
         #[allow(clippy::cast_possible_truncation)]
         let lateral_abs = (spread / 4.0) as i32;
+        let deviation_sign: i32 = if ctx.from.1 < ctx.to.1 { 1 } else { -1 };
+        let dy = base_dy + deviation_sign * lateral_abs;
+
+        // Vertical: the actor's `contact_height` (0.0 low, 1.0 high) picks
+        // the side; the band adds the deviation. `difficulty` no longer
+        // decides the direction; it stays in `spread`.
         #[allow(clippy::cast_possible_truncation)]
         let vertical_abs = ((spread / 4.0) * 0.5) as i32;
-        let dy = lateral_sign * lateral_abs;
+        let vertical_sign: i32 = if ctx.contact_height > 0.5 { 1 } else { -1 };
         let dz = vertical_sign * vertical_abs;
         let to = (ctx.to.0, ctx.to.1 + dy, ctx.to.2 + dz);
 
