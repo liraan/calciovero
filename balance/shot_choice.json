@@ -1,0 +1,9 @@
+{
+  "power_strong": 0.85,
+  "power_placed": 0.35,
+  "aim_edge_fraction": 0.9,
+  "reading_weight": 0.5,
+  "risk_weight": 0.5,
+  "_note": "The shot's choice (OI-88, ADR-046). Two complete actions per side of the gap: strong and placed. The actor does not choose 'shoot' and then where and how strong: he chooses one of these complete actions. power_strong and power_placed are the two powers the scene makes visible; the read does not compute the optimum. aim_edge_fraction is how near the post the aim sits (1.0 = the post). reading_weight and risk_weight modulate the salience of each action via game_reading and risk_management (L0.11 section 4.5: product, sum, clamp).",
+  "_source": "Prototype. No cited figure for the four coefficients; the form follows ADR-046 (the choice is entire) and ADR-028 section 3 (arbitrary declared). To be calibrated at L3 against real shot-placement and shot-power distributions. The values are declared, not chosen: a strong shot is 0.85, a placed one is 0.35, on a 0..1 scale."
+}
