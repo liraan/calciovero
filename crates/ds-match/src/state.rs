@@ -187,6 +187,8 @@ fn scene_from(
     goal: (i32, i32),
     teammates: Vec<PlayerId>,
     opponents: Vec<PlayerId>,
+    keeper: Option<PlayerId>,
+    keeper_reach_cm: f64,
 ) -> ds_orchestrator::PerceivedScene {
     let mut positions = std::collections::BTreeMap::new();
     for id in teammates.iter().chain(opponents.iter()) {
@@ -200,6 +202,8 @@ fn scene_from(
         opponents,
         positions,
         goal,
+        keeper,
+        keeper_reach_cm,
     }
 }
 
@@ -435,7 +439,19 @@ impl MatchState {
                 am.heading = h;
             }
         }
-        let scene = scene_from(&self.spatial, attacker, goal, teammates, opponents.clone());
+        let gk = opponents.iter().find(|p| p.slot() == 0).copied();
+        let keeper_reach_cm = gk
+            .and_then(|g| self.bodies.get(&g))
+            .map_or(0.0, |b| b.height_cm / 2.0);
+        let scene = scene_from(
+            &self.spatial,
+            attacker,
+            goal,
+            teammates,
+            opponents.clone(),
+            gk,
+            keeper_reach_cm,
+        );
         let (chosen_kind, freedoms) =
             ds_orchestrator::Actor::new(attacker).decide(&scene, ctx.hidden, tick);
         let chosen = match chosen_kind {
@@ -1037,6 +1053,8 @@ mod tests {
             (10500, 3400),
             teammates.to_vec(),
             opponents.to_vec(),
+            None,
+            0.0,
         );
         let balance = ds_orchestrator::ShotChoiceBalance::load();
         let (ctx, _freedoms) =

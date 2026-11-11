@@ -16,7 +16,9 @@ const N: u64 = 10;
 /// First seed of the range.
 const SEED_START: u64 = 42;
 
-/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 32.
+/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 34.
+/// Identical to 32 since the keeper was not in the scene of the golden
+/// seeds (no shot is emitted, same as entries 17, 22, 27, 28, 32).
 /// Regenerate when `SIM_VERSION` changes.
 const EXPECTED: &str = "f47e40895a42d9b5156a459b1779c2e092a699024ae7fd19f23066eca45e575b88bc10135da86cda4a84ca8e25c60b8258f612ac47b146df7e9fe882d1a1c545f87a5272a3c45a40be72988090535a834b70f15fabc538b883f507f2e357879bad689024db4d547f55958bcf6c3e13aa16596bd1ca6bc6bc95eba5f792c97e91f9d74156dc9092a37801f63582a42e17ce9ab42084999085c78afd4bdf7417af468364fece9dd09905322072a29dcaaeaba304ca1fac5620abf5f40546013b4159ef49e2bd92441ec3d4b48154fb5b2168ae20809431571d424549197bc5b9441c1cddd921109661c590fd0cbbaf005987f8a92522b67f42e09b76ce8fa6c8ee5a44a7d15eed1b375ed98fa27d8f88a3932432753a67ff52c12547882596cdb713f88fed4189599705d84662077f02a81e4ef096179c5155064a34d6b8d3cc5e";
 

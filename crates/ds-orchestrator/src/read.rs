@@ -36,6 +36,10 @@ pub struct PerceivedScene {
     pub positions: BTreeMap<PlayerId, (i32, i32)>,
     /// The goal the actor attacks, in cm.
     pub goal: (i32, i32),
+    /// The opponent goalkeeper, if he is in the scene (ADR-047 §3).
+    pub keeper: Option<PlayerId>,
+    /// The reach of the keeper, in cm (a visible fact: half his height).
+    pub keeper_reach_cm: f64,
 }
 
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
@@ -144,6 +148,70 @@ pub fn goal_cone(pos: (i32, i32), goal: (i32, i32)) -> f64 {
     }
     (cross as f64 / denom).clamp(0.0, 1.0)
 }
+/// Distance (cm) from `p` to the segment `a`--`b`, as an `f64`.
+///
+/// Integer geometry on `i64`, one float only at the end. Used by the
+/// keeper read (ADR-047 §3): a shot from the covered side is hard to
+/// notice.
+#[must_use]
+#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+pub fn point_to_segment_distance_cm(a: (i32, i32), b: (i32, i32), p: (i32, i32)) -> f64 {
+    let abx = i64::from(b.0 - a.0);
+    let aby = i64::from(b.1 - a.1);
+    let apx = i64::from(p.0 - a.0);
+    let apy = i64::from(p.1 - a.1);
+    let ab2 = abx * abx + aby * aby;
+    let (cx, cy) = if ab2 == 0 {
+        (i64::from(a.0), i64::from(a.1))
+    } else {
+        let t_num = (apx * abx + apy * aby).clamp(0, ab2);
+        (
+            i64::from(a.0) + (t_num * abx) / ab2,
+            i64::from(a.1) + (t_num * aby) / ab2,
+        )
+    };
+    let dx = i64::from(p.0) - cx;
+    let dy = i64::from(p.1) - cy;
+    ((dx * dx + dy * dy) as f64).sqrt()
+}
+
+/// The visibility of the shot from `pos` toward the post on
+/// `side_sign`'s side, with the keeper in the scene (ADR-047 §3, F4).
+///
+/// The keeper does not weigh the shot: he opens or closes a side. If his
+/// body is on the segment from the shooter to the post, that side is
+/// hard to notice; farther out, it becomes visible again. The form is a
+/// linear ramp: `d = reach` -> factor 0; `d = 2 * reach` -> factor 1.
+/// Declared, arbitrary until L3 (`_source`: geometry of the coverage).
+#[must_use]
+fn keeper_visibility(
+    scene: &PerceivedScene,
+    pos: (i32, i32),
+    goal: (i32, i32),
+    side_sign: f64,
+    base: f64,
+) -> f64 {
+    let Some(keeper) = scene.keeper else {
+        return base;
+    };
+    let Some(kpos) = scene.positions.get(&keeper).copied() else {
+        return base;
+    };
+    let reach = scene.keeper_reach_cm;
+    if reach <= 0.0 {
+        return base;
+    }
+    let half = i32::try_from(GOAL_WIDTH_CM / 2).unwrap_or(0);
+    let post_y = if side_sign > 0.0 {
+        goal.1 + half
+    } else {
+        goal.1 - half
+    };
+    let d = point_to_segment_distance_cm(pos, (goal.0, post_y), kpos);
+    let factor = ((d - reach) / reach).clamp(0.0, 1.0);
+    base * factor
+}
+
 /// Builds the choice context for `attacker` from the scene, and the
 /// freedom of each pass receiver (carried to `resolve_pass`).
 ///
@@ -220,6 +288,7 @@ pub fn build_choice(
             Side::Left => -1.0,
         };
         let aim_y = side_sign.mul_add(aim_edge_cm, f64::from(goal.1));
+        let shot_visibility = keeper_visibility(scene, pos, goal, side_sign, goal_cone(pos, goal));
         for power in [balance.power_strong, balance.power_placed] {
             candidates.push(ChoiceCandidate {
                 kind: ChoiceKind::Shoot {
@@ -229,7 +298,7 @@ pub fn build_choice(
                 },
                 geometric: geom,
                 risk,
-                visibility: goal_cone(pos, goal),
+                visibility: shot_visibility,
             });
         }
     }
@@ -292,4 +361,81 @@ pub fn build_choice(
         },
         freedoms,
     )
+}
+
+#[cfg(test)]
+mod geometry_tests {
+    use super::*;
+
+    #[test]
+    fn point_to_segment_distance_is_zero_on_the_segment() {
+        let d = point_to_segment_distance_cm((0, 0), (10, 0), (5, 0));
+        assert!(d < 1.0, "on the segment: {d}");
+    }
+
+    #[test]
+    fn point_to_segment_distance_is_the_perpendicular_distance() {
+        let d = point_to_segment_distance_cm((0, 0), (10, 0), (5, 3));
+        assert!((d - 3.0).abs() < 1.0, "perpendicular: {d}");
+    }
+
+    #[test]
+    fn point_to_segment_distance_uses_the_endpoint_beyond_the_segment() {
+        let d = point_to_segment_distance_cm((0, 0), (10, 0), (13, 4));
+        assert!((d - 5.0).abs() < 1.0, "endpoint: {d}");
+    }
+}
+
+#[cfg(test)]
+mod keeper_visibility_tests {
+    use super::*;
+
+    fn scene_with(keeper_y: Option<i32>) -> PerceivedScene {
+        let shooter = PlayerId::new(1, 0);
+        let keeper = PlayerId::new(100, 0);
+        let mut positions = BTreeMap::new();
+        positions.insert(shooter, (9000, 3400));
+        if let Some(y) = keeper_y {
+            positions.insert(keeper, (10500, y));
+        }
+        PerceivedScene {
+            actor: shooter,
+            teammates: vec![shooter],
+            opponents: if keeper_y.is_some() {
+                vec![keeper]
+            } else {
+                vec![]
+            },
+            positions,
+            goal: (10500, 3400),
+            keeper: keeper_y.map(|_| keeper),
+            keeper_reach_cm: 90.0,
+        }
+    }
+
+    fn shot_visibility(scene: &PerceivedScene) -> f64 {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let (ctx, _) = build_choice(scene, Side::Right, &balance);
+        ctx.candidates
+            .iter()
+            .find(|c| matches!(c.kind, ChoiceKind::Shoot { .. }))
+            .map(|c| c.visibility)
+            .expect("a shoot candidate")
+    }
+
+    #[test]
+    fn the_keeper_hides_the_shot_he_covers_and_only_that_shot() {
+        let visible = shot_visibility(&scene_with(None));
+        let covered = shot_visibility(&scene_with(Some(3400 + 300)));
+        let far = shot_visibility(&scene_with(Some(1000)));
+        assert!(
+            covered < 0.1,
+            "a keeper on the covered post must hide the shot: {covered}"
+        );
+        assert!(covered < visible, "covered={covered} vs visible={visible}");
+        assert!(
+            (far - visible).abs() < 1e-6,
+            "a keeper far from the line does not hide the shot: far={far} visible={visible}"
+        );
+    }
 }
