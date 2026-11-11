@@ -1,7 +1,7 @@
 # Nota per una nuova AI — Calcio Vero
 
 **Status:** briefing (not normative, not an ADR, not a handoff).
-**Ultima revisione:** 2026-11-10 (rev. 7). **LCV:** `e50fb4e`.
+**Ultima revisione:** 2026-11-11 (rev. 8). **LCV:** `45c946d`.
 **Supersedes:** `docs/context/analysis/2026-11-08-nota-per-nuova-ai.md` (storia).
 
 **Cos'è.** La memoria delle cose emerse in chat che un agente nuovo non
@@ -93,6 +93,8 @@ per squadra e per livello.
 `functional_l0_the_engine_emits_the_claimed_shape` fallisce se la soglia
 sale o la salienza scende ("no Pass emitted"). È il guardiano, non un
 test da rilassare.
+
+**Un filtro relativo al massimo non cambia l'argmax.** Una soglia `x/max < k` taglia le opzioni peggiori; l'argmax è il massimo, resta visibile a tutti, e due lettori diversi scelgono lo stesso. Per far divergere la scelta serve un campo per-candidato **indipendente dal punteggio** (`visibility`), non una soglia sul punteggio. `why-new:` senza, un agente ripropone il filtro geometrico e rifà l'errore due volte.
 
 ## 6. Cambiare l'orologio? Prima leggi questo
 
@@ -186,3 +188,4 @@ Artefatti nel report di chiusura: `dup-check: <termine> -> prompt:<regola>|none`
 - **2026-11-09 — no change** (session 11, LCV `48c8134`). Nessuna voce nuova dopo la rev. 5: ADR-043 (proposed) è un artefatto ADR, non una regola di lavoro; il filtro non ha prodotto nulla di non scritto altrove.
 - **2026-11-10 — rev. 6** (LCV `b129afc`). Una voce in §8: ADR-044 proposed, la catena. `dup-check`: "catena" -> prompt:none; "caratteristiche vs proprieta fisiche" -> prompt:none (il vocabolario e in ADR-044, non nel prompt). `why-new:` chiaro. `replaced:` §6 (le quattro alternative al tick, 20 righe) con una sintesi di 6: IDEA-011 e atterrata, le alternative restano valutate, non serve il dettaglio. 16 righe risparmiate, la nota e a 186 righe, sotto il tetto 200. `Rules-Audit` non richiesto (nessuna regola toccata).
 - **2026-11-10 — rev. 7** (LCV `e50fb4e`). Aggiornata la voce §8 (ADR-044 era `proposed`, ora `accepted`; aggiunto il tiro come direzione+restringimento+modalita, ADR-045). `dup-check`: "tiro" -> prompt:none; "modalita" -> prompt:none. `why-new:` chiaro. `replaced: none`, la nota e a 188 righe, sotto il tetto 200. `Rules-Audit` non richiesto (nessuna regola toccata).
+- **2026-11-11 — rev. 8** (LCV `45c946d`). Una voce in §5: un filtro relativo al massimo non cambia l'argmax (serve un campo per-candidato indipendente dal punteggio, `visibility`). `dup-check`: "argmax" -> prompt:none; "filtro relativo" -> prompt:none. `why-new:` senza, un agente ripropone il filtro geometrico (errore pagato due volte l'11-11). `replaced: none`, 190 righe, sotto il tetto 200. `Rules-Audit` non richiesto per questa voce (la NOTA non è un file di regole; il prompt è stato toccato nel commit `4721835`, già con `Rules-Audit: 2 changes, 0 contradictions, 0 leaks`).
