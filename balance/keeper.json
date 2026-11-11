@@ -1,0 +1,6 @@
+{
+  "positioning_range_cm": 3000,
+  "advance_cm": 400,
+  "_note": "The goalkeeper's positioning (OI-81-step-move, ADR-045, cantiere 2026-11-11 second). POSITIONING_RANGE_CM: beyond this distance from the ball to the goal line, the keeper stays on the line at the goal centre (t = 0). ADVANCE_CM: how far the keeper advances off his line when the ball is on the goal line (t = 1). The target is on the ball-goal segment: y_target = goal_y + (ball_y - goal_y) * t, x_target = goal_line +/- ADVANCE_CM * t, with t = clamp(1 - d_ball_goal / POSITIONING_RANGE_CM, 0, 1). The keeper moves with resolve_movement, like every other agent: the same formula, a different target. No die. At L0 the positioning is geometric (the ball and the goal); the shooter's body enters with the read in flight (OI-81-step-c).",
+  "_source": "Declared, arbitrary until L3: the form is geometry (the keeper covers the post, the keeper advances when the ball is close), the numbers are a prototype. Calibrate against real goalkeeper positioning distributions (distance from the line as a function of the ball distance). No cited figure for the two values."
+}

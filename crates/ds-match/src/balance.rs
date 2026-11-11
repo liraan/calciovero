@@ -176,6 +176,37 @@ impl ScanningBalance {
     }
 }
 
+/// The embedded keeper positioning balance file (OI-81-step-move).
+const KEEPER_JSON: &str = include_str!("../../../balance/keeper.json");
+
+/// Keeper positioning parameters as they appear in `balance/keeper.json`.
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct KeeperBalance {
+    /// Beyond this distance ball-goal, the keeper stays on the line (cm).
+    pub positioning_range_cm: i32,
+    /// How far the keeper advances when the ball is on the line (cm).
+    pub advance_cm: i32,
+}
+
+impl Default for KeeperBalance {
+    fn default() -> Self {
+        serde_json::from_str(KEEPER_JSON).expect("embedded keeper file is valid JSON")
+    }
+}
+
+impl KeeperBalance {
+    /// Loads the embedded keeper positioning parameters.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the embedded JSON is invalid. The test
+    /// `embedded_keeper_is_valid` catches this at test time.
+    #[must_use]
+    pub fn load() -> Self {
+        Self::default()
+    }
+}
+
 /// The embedded reception balance file (REC).
 const RECEPTION_JSON: &str = include_str!("../../../balance/reception.json");
 
@@ -284,6 +315,13 @@ mod tests {
         assert_eq!(w.space_threshold_cm, 2000);
         let hidden = w.to_weights();
         assert_eq!(hidden.w_space, w.w_space);
+    }
+
+    #[test]
+    fn embedded_keeper_is_valid() {
+        let b = KeeperBalance::load();
+        assert_eq!(b.positioning_range_cm, 3000);
+        assert_eq!(b.advance_cm, 400);
     }
 
     #[test]
