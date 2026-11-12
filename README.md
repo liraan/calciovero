@@ -2,12 +2,12 @@
 
 <img src="assets/calcio-vero-transparent.png" alt="Calcio Vero" width="280">
 
-# Calcio Vero — Deep Simulator
+# Calcio Vero
 
-**An open football management simulation.**<br>
-*Transparent by design. Deterministic by construction. Yours by default.*
+**An open football management game where the match tells you *why*.**<br>
+*No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
-[![Status](https://img.shields.io/badge/status-L0_ratified-yellow)](https://github.com/liraan/calciovero)
+[![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
 [![Tests](https://img.shields.io/badge/tests-255_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -18,273 +18,202 @@
 
 ---
 
-> What does it mean to *know* a footballer? Not his height, not his
-> weight, not the number a database assigns him. What does it mean to
-> know that a pass was late, that a defender read the play, that a
-> striker hesitated for half a second before shooting?
+> You have been here before. Your striker is "in superb form". The
+> scout gave him four and a half stars. You lose 3-0 at home, and the
+> match engine shrugs.
 >
-> This project is an attempt to answer that question, in code, without
-> lying to anyone.
+> Why did he miss? Was it his finishing, the defender, the pressure, the
+> pass that arrived on his weak foot? Somewhere a number knows. You will
+> never see it.
+>
+> **Calcio Vero is built on the opposite idea.**
 
-## Why this exists
+## If you play football managers, this is for you
 
-Football management games are extraordinary, and they are closed. The
-datasets are licensed, the formulas are secret, the ecosystems are
-gatekept. The genre learned to simulate football by simulating what
-could be bought, and forgot that the interesting part — the part that
-makes a fan lean forward — is *why* a pass was late, not how much the
-passer is rated.
+You already know what makes these games great: the squad you built
+yourself, the kid from the academy who made it, the season that
+turned in February. Calcio Vero keeps all of that. What it changes is
+**what you are allowed to understand**.
 
-Calcio Vero rebuilds that experience without the walls. No telemetry.
-No proprietary feeds. No hidden scalar pretending to be the truth.
-Every formula is public, every architectural decision is documented,
-every save is reproducible from its seed. You can read this project
-down to its bones, and if you disagree with a bone, you can say so.
+| You know this feeling… | Calcio Vero's answer |
+|---|---|
+| "My team played badly" is the whole post-match analysis. | **Every event has a cause you can read.** "Their 8 pressed your 6 from his blind side four times; he lost the ball twice; the second one was the goal." |
+| A 4.5-star player turns out to be a 2-star player. | **The scout gives an estimate *and how sure he is*.** A narrow band is a safe signing. A wide band is a gamble, and you can see it is one. |
+| Somewhere, a hidden "current ability" decides everything. | **There is no CA/PA.** A player is what he does: his characteristics, read in the situation, from his own point of view. |
+| The result feels like a dice roll you are not shown. | **No die is ever rolled in a match.** What looks like luck is a cause you have not spotted yet, and the game can show it to you. |
+| You cannot check the formulas, only argue about them on forums. | **Every formula is public.** Every parameter is a JSON file. Change a number, replay the same match, watch what changes. |
+| You lose a great save to a patch. | **Same save + same match = same result, on every machine.** Saves are reproducible from their seed. |
 
-This is not a Football Manager clone. It is a different philosophy
-applied to the same genre: where FM optimises for fidelity to licensed
-data, we optimise for **explainability and ownership**.
+## The match: decisions, and a ball with physics
 
-## The core question: what is the truth, and what do you get to see?
+The players are not puppets moved by a script. Each one is an **actor**:
+he sees the pitch from where he stands, with his own vision and his own
+reading of the game, and he chooses. A late pass is late *because* the
+passer was under pressure and looked up a moment too slowly. A defender
+who arrives a step late arrived late for a reason.
 
-The single most important architectural choice in this project is the
-strict separation of three things that most games quietly collapse:
-*what the simulation knows*, *what the game shows*, and *what people
-believe*.
+The ball is the other half. It does not choose: it has declared physical
+properties, gravity, friction, the bounce off the post, computed in
+integers so that the same match is the same everywhere.
 
-    ┌─────────────────────────────────────────────────────────┐
-    │  PLANE A — Ground Truth                     (hidden)    │
-    │  True attributes, real fatigue, latent psyche.          │
-    │  Readable only by the match engine and the world gen.   │
-    ├─────────────────────────────────────────────────────────┤
-    │  PLANE B — Observation                      (events)    │
-    │  MatchEvents: shots, passes, duels.                     │
-    │  Ratings computed from events, never from latents.      │
-    ├─────────────────────────────────────────────────────────┤
-    │  PLANE C — Estimation                       (visible)   │
-    │  Windowed indexes, projection bands, scout reports.     │
-    │  Never feeds back into Plane A.                         │
-    └─────────────────────────────────────────────────────────┘
+That is the whole design: **the players decide, the ball obeys physics,
+and every event carries the reason it happened.** The rest of the game,
+from scouting to the academy, is built so that you can ask "why?" and
+get an honest answer.
 
-Scouting, in this game, is not a lookup table. It is an *estimate of
-an observation of the truth*. The manager is meant to be uncertain.
-That uncertainty is the game.
+## What you will do as a manager
 
-The full doctrine is in [`doctrine/00-foundations.md`](doctrine/00-foundations.md).
-The enforcement is [ADR-003](doctrine/adr/003-plane-a-enforcement.md).
-The vision of why the engine has this shape is
-[`L0-match/design/L0-POSITIONAL-SLICE.md`](L0-match/design/L0-POSITIONAL-SLICE.md) §0.
+The loop is familiar, and that is the point:
 
-## A match is decisions, and a ball that obeys its properties
+```
+observe  ->  decide  ->  watch  ->  understand  ->  adjust
+```
 
-The players are not puppets. Each one is an actor: he perceives the
-scene from his own point of view, reads it with his own
-characteristics, and decides. The engine applies the act; it does not
-choose it ([ADR-043](doctrine/adr/043-the-actor-decides.md)). The
-goalkeepers are actors in the same sense
-([ADR-045](doctrine/adr/045-the-goalkeeper-is-an-actor.md)). A misplaced
-pass is an event with a cause — the passer's technique, the pressure he
-was under, his balance — not a computed force vector. A defender
-arriving a step late is a timing event, not an integration of
-acceleration.
+**Observe** what your players actually did, through ratings built from
+events, never from hidden numbers. **Decide** the eleven, the tactic,
+the training, the signings. **Watch** the match in a 2D view or as radio
+commentary. **Understand** what happened, down to the moment and the
+reason. **Adjust**, because you understood, not because a number went up.
 
-The ball is the other half. It does not read and it does not choose: it
-has **declared physical properties**, and its trajectory is their
-effect — gravity, friction, the reflection on a post, the bounce on the
-ground — computed in integers, so that the same match is the same on
-every machine ([ADR-044](doctrine/adr/044-the-chain.md) §3–§5,
-[ADR-048](doctrine/adr/048-the-ball-can-be-deflected.md)).
+The soul is old-school: dense, readable screens, text commentary, a
+world that reacts. Think of the depth of the modern games with the soul
+of the classic Italian ones. The longer version is in
+[`doctrine/VISION.md`](doctrine/VISION.md).
 
-So the engine is **phenomenological for the bodies and physical for the
-ball**. It does not simulate biomechanics or contact forces: the effect
-of a decision is modelled, not integrated. That keeps it deterministic,
-calibratable (parameters in `L0-match/balance/`, declared arbitrary until
-calibrated), and — most importantly — **explainable**: every event
-carries the fields to understand why it happened. "The pass was late
-because the pressing closed the lane" is the target. "The collision
-response exceeded the threshold" is not.
+## Where we are, honestly
 
-A physics engine for the bodies is not a later step of this project. It
-is a different paradigm, not planned.
+**There is no playable game yet.** This is an early prototype of the
+match engine, built in the open, one verified step at a time.
 
-This section states the direction. How much of it the code does today
-is in "What exists today", and it is less than this.
+What exists today:
 
-## What "deterministic" means, and why we mean it
+- a **deterministic match engine** for one match, with players who
+  perceive, choose and move, a ball that flies, a goalkeeper who
+  positions himself, posts and crossbar that deflect the ball;
+- a **text board** and an HTML page that show the result of a match;
+- **255 tests** and a health check that runs on every commit.
 
-Same seed → same match. Always. The same will hold for the season and
-the career when L1 and L2 exist; today the contract is local
-([ADR-013](doctrine/adr/013-worlds.md)). This is verified on every commit
-by `ds-test-runner --check`:
+What does not exist yet: a pitch view you can watch, the rules of the
+game (throw-ins, offside, fouls), fatigue, the season, the career, the
+transfer market. The order in which they arrive is public.
 
-      ✅ demo teams are valid
-      ✅ same seed → same state_hash
-      ✅ different seed → different state_hash
-      ✅ save/load roundtrip preserves state_hash
-      ✅ event chain is valid
-      ✅ statistics are sane
+| Milestone | What you get |
+|---|---|
+| **The match can be watched** | a 2D view of twenty-two players and a ball, from any seed |
+| **The match reads as football** | shots, saves, restarts, fouls; a match a fan recognises |
+| **A friendly you can play** | pick the line-ups, play ninety minutes, save, reload, read why you conceded |
+| **A season**, then **a career** | standings and fixtures; then scouting, the market, the academy |
 
-The rules that make this possible are not negotiable:
+The second one is the longest. We will not skip it to ship faster: a
+match that does not read as football would make everything after it
+pointless.
 
-- Determinism is by construction, not by seeded stream: every outcome
-  is a deterministic function of the state and the characteristics of
-  the actors, and interactions emerge from the local transitions
-  (perception, decision, movement, contact) composed geometrically. No
-  die is drawn in a simulation path
-  ([ADR-035](doctrine/adr/035-no-dice-in-simulation.md)).
-- `BTreeMap` everywhere in a simulation path, never `HashMap`.
-- Fixed-point arithmetic for money: zero numerical drift.
-- Golden hash tests on every simulation change.
-- `SIM_VERSION` bump procedure documented in
-  [`L0-match/CHANGELOG-SIM.md`](L0-match/CHANGELOG-SIM.md).
-
-## What exists today
-
-**L0 — the match engine — is complete as a contract, ratified,
-implemented, and tested.** That sentence is true and it is also
-honest: the engine is a *prototype*. It compiles, it is deterministic,
-it is covered by **255 tests**, and its health check is green. But most
-of the pitch is still a sketch: positions exist, movement is being
-rebuilt, the ball is only beginning to travel, five of the thirty-one
-event types are emitted.
-
-The technology is Rust, chosen for type safety and for a determinism
-that can be *guaranteed*, not hoped for. Money is fixed-point, so it
-never drifts. The test harness (`ds-testkit`) is a small crate with
-no dependency on the engine, so plugins and tools can contribute
-scenarios without coupling. The presentation is TUI-first in v1; the
-GUI is a future crate behind the same engine.
-
-The full table of what is settled and what is not lives in
-[`doctrine/STRUCTURE.md`](doctrine/STRUCTURE.md) §5, and the live tracker of what is
-being built is [`process/SESSION-STATE.md`](process/SESSION-STATE.md).
-This README will not pretend the prototype is the game.
-
-**No playable build exists yet.** The documentation has to be solid
-before the engine is.
-
-## Try it in thirty seconds
+## Try the engine today
 
 Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
 
     git clone https://github.com/liraan/calciovero.git
     cd calciovero
-    cargo run --release --bin ds-test-runner -- --check --seed 42
-
-If `--check` prints `6/6 checks passed`, the framework is healthy.
-Then watch a match:
-
     cargo run --release --bin ds-demo -- --seed 42 --board
 
-Every run with the same seed produces the same state hash. That is the
-determinism contract, verified on every commit. The board is the debug
-view, not the product; the product is the engine, and the engine is
-being built.
+Run it twice: same seed, same match, to the last event. Then open
+[`L0-match/balance/`](L0-match/balance/), change a number, and run it
+again.
 
-## Where to read next
+## How you can help, even without writing code
 
-The specification is **concentric**. Read it in this order.
+- **Star and watch the repository** to follow the milestones.
+- **Tell us what "real football" means to you.** The engine is judged
+  by one question: *would a fan recognise this?* Open a
+  [Discussion](https://github.com/liraan/calciovero/discussions) with
+  the situations a match engine always gets wrong for you.
+- **Bring your football knowledge.** Every parameter is waiting for a
+  sourced value instead of a guess.
+- **Play-test**, when the first friendly is playable.
 
-1. [`doctrine/00-foundations.md`](doctrine/00-foundations.md) — *Why does
-   this project exist? What are the non-negotiable rules?*
-2. [`doctrine/STRUCTURE.md`](doctrine/STRUCTURE.md) — *How is the repo organised?*
-3. [`doctrine/_index.md`](doctrine/_index.md) — *What exists at each level,
-   and in what state?*
-4. [`doctrine/adr/`](doctrine/adr/) — *Which decisions have been made, and
-   why?*
-5. [`doctrine/GLOSSARY.md`](doctrine/GLOSSARY.md) — *What does each term mean?*
-6. [`doctrine/PLUGIN_DEVELOPER_GUIDE.md`](doctrine/PLUGIN_DEVELOPER_GUIDE.md) —
-   *How do I write a module? How do I test it?*
+## For developers
 
-If you only have time for one file, read the doctrine. If you only
-have time for one commit, read the one that closed the last session.
+The project is written in Rust, and organised like its own design:
+concentric rings, one responsibility per directory, dependencies
+pointing inward.
 
-## How to contribute
+```
+doctrine/    the rules everything obeys: foundations, vision, decisions (ADRs)
+L0-match/    the match: its spec, its design notes, its parameters, its engine
+tools/       demo, fixtures, test harness, test runner
+process/     how the work is done: the bookmark, the session notes, the scripts
+```
 
-Contributions are welcome — code, docs, data, bug reports, honest
-criticism. The short version:
+Start with [`doctrine/00-foundations.md`](doctrine/00-foundations.md),
+then [`doctrine/STRUCTURE.md`](doctrine/STRUCTURE.md) and
+[`L0-match/README.md`](L0-match/README.md). The three rules you will
+meet everywhere:
 
-- One change per PR (one module, one ADR, one fix). In Phase 1 the
-  maintainer pushes directly on `main`; external contributors use
-  PRs.
-- English is canonical for code, commits, and technical docs
-  ([ADR-007](doctrine/adr/007-canonical-language.md)).
-- Every factual claim needs a source. Every decision that changes an
-  invariant needs an ADR.
-- Every contribution is **reviewed by a human**. AI may draft; humans
-  decide.
-- Determinism is not negotiable: PRs that break the seed → hash
-  invariant require an ADR.
+- **Three planes.** The truth (hidden), the observation (events and
+  statistics), the estimate (what the manager sees). Nothing leaks from
+  the first to the third.
+- **No die in a simulation path**
+  ([ADR-035](doctrine/adr/035-no-dice-in-simulation.md)). Determinism is
+  by construction.
+- **No hardcoded balance.** Every parameter lives in a file, with its
+  source or with an honest "arbitrary until calibrated".
 
-Full process in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Contributions are welcome: code, docs, data, bug reports, honest
+criticism. One change per PR, English for code and technical docs, a
+source for every factual claim, an ADR for every decision that changes an
+invariant, and a human review for everything. The full process is in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-## Continuous integration
-
-The full quality gate (**C2**) runs on every push and pull request:
-`cargo build --release`, `cargo clippy --workspace --all-targets -- -D warnings`,
-`cargo test --workspace` (255 tests), `cargo fmt --check`, the cross-platform
-determinism check on the golden hash (OI-58), and `process/scripts/gates.sh`.
-
-On GitHub this is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). On
-Codeberg, [`.woodpecker/ci.yml`](.woodpecker/ci.yml) on `ci.codeberg.org` mirrors the same gate on
-the backup remote, to verify that the backup is not a stale copy: Codeberg is
-the backup, GitHub is primary.
+**Continuous integration.** Every push runs the full gate: build,
+clippy with warnings as errors, the test suite with the golden hash,
+fmt, the health check and the documentation gates
+([`process/scripts/gates.sh`](process/scripts/gates.sh)). GitHub is the
+primary remote ([`.github/workflows/ci.yml`](.github/workflows/ci.yml));
+Codeberg is the backup, with the same gate on Woodpecker
+([`.woodpecker/ci.yml`](.woodpecker/ci.yml)).
 
 ## License
 
-**Dual license** ([ADR-006](doctrine/adr/006-license.md), accepted):
+**Dual license** ([ADR-006](doctrine/adr/006-license.md)):
 
-- **Code** — `MIT OR Apache-2.0` → [`LICENSE-MIT`](LICENSE-MIT),
-  [`LICENSE-APACHE`](LICENSE-APACHE)
-- **Assets and documentation** — `CC-BY-NC-SA-4.0` →
-  [`LICENSE-ASSETS`](LICENSE-ASSETS)
-- **Trademarks** — the "Calcio Vero" name and logo are project
-  trademarks; the licenses do not grant trademark rights.
+- **Code**: `MIT OR Apache-2.0` ([`LICENSE-MIT`](LICENSE-MIT),
+  [`LICENSE-APACHE`](LICENSE-APACHE)).
+- **Assets and documentation**: `CC-BY-NC-SA-4.0`
+  ([`LICENSE-ASSETS`](LICENSE-ASSETS)).
+- **Trademarks**: the "Calcio Vero" name and logo are project
+  trademarks; the licences do not grant trademark rights.
 
-Use the code however you want. Share the assets under the same terms,
-for non-commercial purposes.
+Calcio Vero uses no licensed data: no real squads, no real players, no
+scraped databases. Players are fictional; the football is real.
+
+Football Manager is a trademark of Sports Interactive. Calcio Vero is
+not affiliated with it.
 
 ## Support
 
 [![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/liraan)
 
 Calcio Vero is free and open. Donations are voluntary, one-off, and do
-not buy influence over the roadmap (see OI-69 in
-[`process/SESSION-STATE.md`](process/SESSION-STATE.md)).
+not buy influence over the roadmap.
 
 ## AI disclosure
 
-Some documentation and code in this repo was **drafted with AI**, then
-**reviewed, corrected, and owned by a human**. We say this openly
-because transparency applies to our own process too.
-
-- **AI drafts, humans decide.** Every architectural decision — the
-  Three Planes, the ban on CA/PA, the determinism rules — was made by
-  a person.
-- **AI makes mistakes.** Caught in review: a non-existent crate
-  dependency, a hasher that would have broken determinism, a
-  contradictory panic strategy at the FFI boundary. Verify before you
-  rely.
-- **AI has no memory.** Each session starts blank. This repository is
-  the memory.
-- **No unreviewed AI code.** There is no unreviewed AI-written code in
-  this repo. Every line has a human owner.
+Some documentation and code in this repository was **drafted with AI**,
+then **reviewed, corrected and owned by a human**. Every architectural
+decision was made by a person; AI drafts, humans decide. We say it
+openly because transparency applies to our own process too.
 
 ## Contact
 
-- **Discussions** — [GitHub Discussions](https://github.com/liraan/calciovero/discussions)
-- **Bugs / features** — [GitHub Issues](https://github.com/liraan/calciovero/issues)
-- **Community chat** — *to be decided*
-
-No private emails, no Telegram, no WhatsApp. Everything happens
-publicly on GitHub.
+Everything happens in public:
+[Discussions](https://github.com/liraan/calciovero/discussions) for ideas
+and questions, [Issues](https://github.com/liraan/calciovero/issues) for
+bugs.
 
 ---
 
 <div align="center">
 
-**© 2026 Calcio Vero Team**
-
-*Transparent by design. Open data. Your control.*
+*Transparent by design. Deterministic by construction. Yours by default.*
 
 </div>
