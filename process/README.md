@@ -1,5 +1,7 @@
 # process/ — how the work is done
 
+> **Contributors: you can ignore this directory.** It is the maintainer's working memory (bookmark, session notes, scripts). Start from [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+
 **Responsibility (one sentence):** the memory and the tools of the work — the bookmark, the session prompts, the policy, the ideas, the reports and the scripts. It is outside the rings: nothing in `doctrine/`, `L0-match/` or `tools/` reads it. The documentation for collaborators is `README.md` at the repo root and `doctrine/STRUCTURE.md`.
 
 ## Rule
