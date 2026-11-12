@@ -1,6 +1,6 @@
 # ADR-048 — The ball can be deflected, and the deflection has a cause
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-12
 - **Supersedes:** —
 - **Amends:** ADR-044 §3 (the ball's chain: this ADR specifies the deflection as a case of the chain, not an addition); ADR-044 §5 (the integer path: this ADR gives the ball's formula a door); OI-52 (the "Removed-by: never" was the wrong answer: the bounce is a case of the chain, not a debt)
@@ -215,3 +215,5 @@ modello da filtrare.
   `advance_ball`, `FLIGHT_TICKS` fixed, `BALL_*` hardcoded, `z < 0` no
   bounce) are verified: see ADR-044's 2026-11-10 verification for the
   same three, plus `advance_ball`'s body read in this session.
+
+**2026-11-12 — Status: accepted.** Accepted by the derivable default (P6, maintainer directive 2026-11-07): the direction already answers it. ADR-044 §3 (accepted) says the ball answers the chain and that the bounce is a case of the chain; this ADR specifies it, the filters confirmed it (partita vera passes: post, hand, bounce are three things a fan recognises; no contradiction with ADR-035, ADR-044 §3-§5, ADR-041, foundations §5), and the code confirms it. **Four code claims, verified one by one before acceptance:** (1) `advance_ball` has no collision (`grep collision|bounce` in `spatial.rs` returns 0); (2) `FLIGHT_TICKS = 15` fixed (`state.rs:26`, used at `:536`); (3) four hardcoded `BALL_*` constants (`spatial.rs`); (4) `if z < 0 { z = 0; vz = 0 }` at `spatial.rs:319`: the ball stops dead, it does not bounce. No code change, `SIM_VERSION` unchanged. The implementation is a cantiere: it starts from the static obstacle (OI-52) because that is the smallest case with a visible effect, then the surface, then the actor's contact (which lands with OI-81-step-d).
