@@ -43,7 +43,7 @@ pub mod state;
 pub use context::{MatchConfig, MatchContext};
 pub use driver::{simulate_from_seed, simulate_from_seed_recorded};
 pub use engine::{MatchEngine, TextMatchEngine};
-pub use narrative::{Importance, NarrativeEntry, narrate};
+pub use narrative::{Importance, NarratedTick, NarrativeEntry, narrate, narrate_ticks};
 pub use perception::{
     Neighbour, distance_squared, nearest_opponents, nearest_teammates, nearest_to_point,
 };
@@ -51,7 +51,7 @@ pub use record::{AgentFrame, BallFrame, TickRecord};
 pub use result::{MatchResult, MatchStatistics, Score};
 pub use save::{MatchSave, SCHEMA_VERSION, SIM_VERSION, SaveError, replay};
 pub use simulate::{simulate_match, simulate_match_recorded};
-pub use spatial::{AgentState, SpatialState};
+pub use spatial::{AgentState, BallState, SpatialState};
 pub use state::MatchState;
 
 /// Returns the version of `ds-match`, as declared in `Cargo.toml`.

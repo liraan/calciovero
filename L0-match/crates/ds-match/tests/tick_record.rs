@@ -108,3 +108,15 @@ fn the_clock_reads_as_a_broadcast() {
         .expect("a second half");
     assert_eq!(second.clock(), (45, 0), "the second half starts at 45'");
 }
+
+#[test]
+fn every_event_is_narrated_in_exactly_one_tick() {
+    let m = match_fixture(SEED).expect("fixture");
+    let (result, records) = simulate_from_seed_recorded(&m, SEED, MatchConfig::default());
+    let narrated = ds_match::narrate_ticks(&m, &result.events, records);
+    let entries: Vec<_> = narrated.iter().flat_map(|t| t.entries.iter()).collect();
+    assert_eq!(entries.len(), result.events.len());
+    for (entry, event) in entries.iter().zip(result.events.events()) {
+        assert_eq!(entry.event_id, event.event_id, "same order as the chain");
+    }
+}

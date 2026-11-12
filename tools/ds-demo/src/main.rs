@@ -7,10 +7,11 @@
 //! # Usage
 //!
 //! ```text
-//! ds-demo [--seed <U64>] [--json] [--html <PATH>] [--quiet] [--help]
+//! ds-demo [--seed <U64>] [--json] [--html <PATH>] [--board] [--tui ...] [--quiet] [--help]
 //! ```
 
 mod board;
+mod pitchview;
 mod render;
 mod viewmodel;
 
@@ -29,11 +30,22 @@ OPTIONS:
     --json          Print the result as JSON
     --board         Print a board (score, events, narrative, hash)
     --html <PATH>   Write a self-contained HTML page to PATH
+    --tui           Replay the match on a text pitch (2D debug view)
     --quiet         Print only the final score
     --help          Print this help
 
-EXAMPLE:
+TUI OPTIONS (with --tui):
+    --speed <N>     Match seconds per real second (default: 30)
+    --from <MIN>    Start at this minute (default: 0)
+    --to <MIN>      Stop at this minute (default: the end)
+    --step          Advance one frame each time Enter is pressed
+    --frame <MIN>   Print the frame at this minute and exit (no animation)
+    --cols <N>      Pitch width in characters (default: 70)
+
+EXAMPLES:
     ds-demo --seed 42 --html /tmp/match.html
+    ds-demo --seed 42 --tui --speed 60
+    ds-demo --seed 42 --tui --frame 12
 ";
 
 /// Parsed command-line arguments.
@@ -44,6 +56,31 @@ struct Args {
     html: Option<String>,
     quiet: bool,
     board: bool,
+    tui: Option<TuiArgs>,
+}
+
+/// Options of the 2D debug replay.
+#[derive(Debug, Clone, PartialEq)]
+struct TuiArgs {
+    speed: u32,
+    from_min: u32,
+    to_min: Option<u32>,
+    step: bool,
+    frame_min: Option<u32>,
+    cols: usize,
+}
+
+impl Default for TuiArgs {
+    fn default() -> Self {
+        Self {
+            speed: 30,
+            from_min: 0,
+            to_min: None,
+            step: false,
+            frame_min: None,
+            cols: 70,
+        }
+    }
 }
 
 fn main() -> ExitCode {
@@ -68,6 +105,9 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
     let mut html = None;
     let mut quiet = false;
     let mut board = false;
+    let mut tui = false;
+    let mut t = TuiArgs::default();
+    let mut tui_option = false;
 
     while let Some(arg) = iter.next() {
         match arg.as_str() {
@@ -86,12 +126,39 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
             }
             "--quiet" => quiet = true,
             "--board" => board = true,
+            "--tui" => tui = true,
+            "--speed" | "--from" | "--to" | "--frame" | "--cols" => {
+                tui_option = true;
+                let v = iter
+                    .next()
+                    .ok_or_else(|| format!("{arg} requires a value"))?;
+                let n: u32 = v.parse().map_err(|_| format!("invalid {arg}: {v}"))?;
+                match arg.as_str() {
+                    "--speed" => t.speed = n.max(1),
+                    "--from" => t.from_min = n,
+                    "--to" => t.to_min = Some(n),
+                    "--frame" => t.frame_min = Some(n),
+                    _ => t.cols = usize::try_from(n.clamp(20, 400)).unwrap_or(70),
+                }
+            }
+            "--step" => {
+                tui_option = true;
+                t.step = true;
+            }
             other => return Err(format!("unknown argument: {other}")),
         }
     }
 
-    if [json, html.is_some(), board].iter().filter(|x| **x).count() > 1 {
-        return Err("--json, --html and --board are mutually exclusive".to_string());
+    if [json, html.is_some(), board, tui]
+        .iter()
+        .filter(|x| **x)
+        .count()
+        > 1
+    {
+        return Err("--json, --html, --board and --tui are mutually exclusive".to_string());
+    }
+    if tui_option && !tui {
+        return Err("--speed, --from, --to, --step, --frame and --cols need --tui".to_string());
     }
 
     Ok(Some(Args {
@@ -100,6 +167,7 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
         html,
         quiet,
         board,
+        tui: tui.then_some(t),
     }))
 }
 
@@ -109,6 +177,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let match_ = ds_fixtures::match_fixture(args.seed)?;
+    if let Some(t) = &args.tui {
+        return run_tui(&match_, args.seed, t);
+    }
     let result = ds_match::simulate_from_seed(&match_, args.seed, MatchConfig::default());
 
     if args.quiet {
@@ -136,9 +207,101 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// The 2D debug replay: regenerate the match from the seed with its tick
+/// record, narrate it, and draw it frame by frame (M1, IDEA-INFRA-021).
+fn run_tui(
+    match_: &ds_model::Match,
+    seed: u64,
+    t: &TuiArgs,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use std::io::Write as _;
+
+    let config = MatchConfig::default();
+    let tps = u32::from(config.ticks_per_second).max(1);
+    let (result, records) = ds_match::simulate_from_seed_recorded(match_, seed, config);
+    let ticks = ds_match::narrate_ticks(match_, &result.events, records);
+    let rows = (t.cols * 3 / 10).max(10);
+    let view = pitchview::PitchView::new(t.cols, rows, match_.pitch.length_m, match_.pitch.width_m);
+    let index_of_minute = |min: u32| -> usize {
+        ticks
+            .iter()
+            .position(|nt| nt.record.clock().0 >= min)
+            .unwrap_or_else(|| ticks.len().saturating_sub(1))
+    };
+
+    let mut out = std::io::stdout().lock();
+    if let Some(min) = t.frame_min {
+        let at = index_of_minute(min);
+        let log: Vec<_> = ticks[..=at]
+            .iter()
+            .flat_map(|nt| nt.entries.clone())
+            .collect();
+        write!(out, "{}", view.frame(&ticks[at], &log))?;
+        return Ok(());
+    }
+
+    let from = index_of_minute(t.from_min);
+    let to = t.to_min.map_or(usize::MAX, index_of_minute);
+    // Ten frames per real second; each frame advances `speed / 10` match
+    // seconds.
+    let step = usize::try_from(t.speed * tps / 10).unwrap_or(1).max(1);
+    let mut log = Vec::new();
+    let stdin = std::io::stdin();
+    for (nt, new) in pitchview::Playback::new(&ticks, from, to, step) {
+        log.extend(new);
+        // Clear the screen and draw from the top-left corner.
+        write!(out, "\x1b[H\x1b[2J{}", view.frame(nt, &log))?;
+        out.flush()?;
+        if t.step {
+            write!(out, " [Enter: next frame, Ctrl+C: quit]")?;
+            out.flush()?;
+            let mut line = String::new();
+            if stdin.read_line(&mut line)? == 0 {
+                break;
+            }
+        } else {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+    }
+    writeln!(
+        out,
+        " final: HOME {} - {} AWAY   events: {}",
+        result.score.home,
+        result.score.away,
+        result.events.len()
+    )?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tui_options_need_tui() {
+        let err = parse(&["--speed", "60"]).expect_err("should reject");
+        assert!(err.contains("need --tui"), "got: {err}");
+    }
+
+    #[test]
+    fn tui_options_are_parsed() {
+        let args = parse(&[
+            "--tui", "--speed", "60", "--from", "10", "--to", "20", "--step",
+        ])
+        .expect("parse")
+        .expect("some");
+        let t = args.tui.expect("tui");
+        assert_eq!(
+            (t.speed, t.from_min, t.to_min, t.step),
+            (60, 10, Some(20), true)
+        );
+    }
+
+    #[test]
+    fn tui_rejects_board() {
+        let err = parse(&["--tui", "--board"]).expect_err("should reject");
+        assert!(err.contains("mutually exclusive"), "got: {err}");
+    }
 
     #[test]
     fn demo_match_is_valid() {

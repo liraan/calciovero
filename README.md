@@ -8,7 +8,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-262_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-273_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
 
@@ -90,8 +90,9 @@ What exists today:
 - a **deterministic match engine** for one match, with players who
   perceive, choose and move, a ball that flies, a goalkeeper who
   positions himself, posts and crossbar that deflect the ball;
-- a **text board** and an HTML page that show the result of a match;
-- **262 tests** and a health check that runs on every commit.
+- a **2D debug view** in the terminal that replays a match tick by tick,
+  and a text board and an HTML page with the result;
+- **273 tests** and a health check that runs on every commit.
 
 What does not exist yet: a pitch view you can watch, the rules of the
 game (throw-ins, offside, fouls), fatigue, the season, the career, the
@@ -99,7 +100,7 @@ transfer market. The order in which they arrive is public.
 
 | Milestone | What you get |
 |---|---|
-| **The match can be watched** | a 2D view of twenty-two players and a ball, from any seed |
+| **The match can be watched** | a 2D view of twenty-two players and a ball, from any seed (first version: done) |
 | **The match reads as football** | shots, saves, restarts, fouls; a match a fan recognises |
 | **A friendly you can play** | pick the line-ups, play ninety minutes, save, reload, read why you conceded |
 | **A season**, then **a career** | standings and fixtures; then scouting, the market, the academy |
@@ -114,7 +115,13 @@ Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
 
     git clone https://github.com/liraan/calciovero.git
     cd calciovero
-    cargo run --release --bin ds-demo -- --seed 42 --board
+    cargo run --release --bin ds-demo -- --seed 42 --tui
+
+That is the 2D debug view: the twenty-two (`A`-`K` home, `a`-`k` away)
+and the ball on a text pitch, with the events as they happen. It works
+in Git Bash too. Add `--speed 60` to go faster, `--step` to advance with
+Enter, `--frame 30` to print the pitch at the 30th minute. It is a debug
+view, and it shows the engine as it is today, stalls included.
 
 Run it twice: same seed, same match, to the last event. Then open
 [`L0-match/balance/`](L0-match/balance/), change a number, and run it
