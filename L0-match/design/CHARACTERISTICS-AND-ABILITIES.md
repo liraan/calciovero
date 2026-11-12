@@ -1,6 +1,6 @@
 ---
 title: "Characteristics and abilities — the tree, from the real match"
-version: "0.1"
+version: "0.2"
 status: "draft"
 last_updated: "2026-11-12"
 conforms_to: "doctrine/VISION.md (0.2) §3; L0-match/specs/11-player-characteristics.md (L0.11) §2, §7"
@@ -11,7 +11,7 @@ conforms_to: "doctrine/VISION.md (0.2) §3; L0-match/specs/11-player-characteris
 **What this is.** A design note: the chain of `VISION.md` §3 made
 concrete. It starts from what a fan sees in a real match and builds a
 tree: the **characteristics** are the roots, the **abilities** are the
-branches, the **states** dim the branches.
+branches, the **dimmers** (the states of the moment) dim the branches.
 
 **What it is not.** Not the contract. The contract is L0.11, ratified.
 Where this note differs from L0.11 (marked **★**), an ADR amends L0.11
@@ -40,8 +40,8 @@ roots, plus handling.
 |---|---|
 | **Physical** | explosive force, maximal force, acceleration, max speed, endurance, joint mobility, reactivity, body control (balance and coordination). Visible body data, measured, not hidden: height, weight |
 | **Technical** | first touch, passing, shooting, dribbling, heading, tackling, left foot, right foot, **handling** (the goalkeeper's hands; replaces the composite `goalkeeping`, OI-92) |
-| **Cognitive** | vision, game reading, decision making, risk management |
-| **Psychological** | consistency, resilience, emotional control, aggressiveness, courage, concentration (threshold), composure (threshold), ★ **discipline** (how closely he keeps to the role), ★ **work rate** (how much he works without the ball) |
+| **Cognitive** | vision, game reading, decision making, risk management, ★ **concentration** (how long and how well he holds his attention) |
+| **Psychological** | *modulating traits:* consistency, resilience, emotional control, composure (threshold). *Dispositions:* aggressiveness, courage, ★ **discipline** (how closely he keeps to the role), ★ **work rate** (how much he works without the ball) |
 
 ## 2. The branches: abilities, by situation of play
 
@@ -109,18 +109,34 @@ effect). Composure does not make a pass; it decides how much the pass
 holds when the pressing arrives. Discipline does not make a run; it
 decides whether the player keeps to the role or leaves it.
 
-## 4. The states: what dims the branches
+## 4. The dimmers: a category of their own
 
-The states dim the **branches**, never the roots: the player is the same,
-his moment is not.
+The states of the moment are a separate category (maintainer,
+2026-11-12, as football managers treat them): they are not the player,
+they are **how the player is right now**, and they dim the abilities.
+They dim the **branches**, never the roots. **Every dimmer has a root:
+the characteristic that governs how fast or how wide it moves.** The
+dimmers are of two kinds, because in a real match they move in two
+different ways.
 
-| State | What it dims |
-|---|---|
-| Fatigue | the **body** (arrives later, jumps less) and the **quality** (misplaces the easy pass); each formula reads it once (L0.11 §4.8) |
-| Concentration of the moment | reading and perception: lapses, positioning errors |
-| Composure of the moment | precision under pressure |
-| Confidence | how much he risks |
-| Morale | intensity and commitment |
+### 4.1 Dimmers that wear down with time: the match's duration
+
+| Dimmer | How it moves | Governed by (root) | What it dims |
+|---|---|---|---|
+| Fatigue | rises minute by minute, faster after sprints and duels; part of it recovers at half-time | endurance (and recovery between sprints) | the **body** (arrives later, jumps less) and the **quality** (misplaces the easy pass); each formula reads it once (L0.11 §4.8) |
+| Concentration of the moment | falls minute by minute, faster when tired; partly restored at half-time | concentration (cognitive) | reading and perception: lapses, late reads, positioning errors |
+
+### 4.2 Dimmers that swing with events: the match's story
+
+| Dimmer | How it moves | Governed by (root) | What it dims |
+|---|---|---|---|
+| Morale | up after a goal scored, down after a goal conceded or an injustice | resilience; consistency (how wide) | intensity and commitment |
+| Confidence | up after a gesture that worked, down after a mistake | resilience; consistency (how wide) | how much he risks |
+| Composure of the moment | falls under sustained pressure, after provocation, in decisive moments | composure (threshold), emotional control; consistency (how wide) | precision under pressure |
+
+The first kind tells the **duration** of the match, the second its
+**story**: the team that scores at the 60th and comes alive, the defender
+who after the error does not win another ball. Both kinds are needed.
 
 ## 5. Consistency without a die ★
 
@@ -131,8 +147,8 @@ reproducible one, and it contradicts ADR-035.
 From the real match: an inconsistent player does not draw a 9 or a 4. He
 is one who **loses his composure more**: after a mistake, under
 pressure, when tired. So consistency is the player's **sensitivity to
-the states**: how much concentration and composure swing with the
-events and with fatigue. The consistent player crosses the match almost
+the dimmers**: how wide the dimmers of §4.2 swing with the events. It is
+the root that governs their amplitude. The consistent player crosses the match almost
 unchanged; the inconsistent one rises and falls, and every time there is
 a cause that can be read. The phenomenon stays; the die goes.
 
@@ -151,6 +167,7 @@ them the first filter has no roots.
 | 1 | New psychological characteristic: **discipline** | the role's first filter (VISION §3) |
 | 2 | New psychological characteristic: **work rate** | pressing, covering, the work without the ball |
 | 3 | **Handling** replaces `goalkeeping` | `goalkeeping` is a composite; already planned (OI-92) |
-| 4 | **Consistency** as sensitivity to the states, not sampling | no die (ADR-035) |
-| 5 | Concentration and composure listed with the psychological characteristics | L0.11 §7.3 already says their threshold is a trait; here they are explicit |
+| 4 | **Consistency** as sensitivity to the dimmers, not sampling | no die (ADR-035) |
+| 5 | **Concentration** is cognitive (attention), **composure** psychological; the psychological family is split in modulating traits and dispositions | they fail for different reasons on the pitch: the lapse at the 70th is not the trembling at the penalty |
 | 6 | "Ability" named as the formula layer | L0.11 has characteristics and formulas, but no name for the branch |
+| 7 | The **dimmers** are a category of their own, in two kinds (wear down with time, swing with events), each governed by a root | L0.11 §7.6 has the states; here they get their dynamics and their root |
