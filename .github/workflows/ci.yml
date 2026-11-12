@@ -7,8 +7,7 @@
 # C2 is a sequence, not a graph: one job, one check. The ruleset requires
 # the context `CI` (the job's `name:`), not `workflow / job`.
 #
-# `scripts/gates.sh` is mode 100644 in git: it must be invoked with `bash`,
-# not `./`.
+# The scripts need bash (here-strings): they are invoked with `bash`.
 
 name: CI
 
@@ -52,13 +51,10 @@ jobs:
       - name: cargo test
         run: cargo test --workspace
 
-
-      # OI-58: cross-platform determinism. The golden hash must be the
-      # same on Linux as on Windows. A red result here means a libm or
-      # FMA divergence, not a simulation change: isolate with git bisect
-      # before touching SIM_VERSION.
-      - name: golden_l0 on Linux (OI-58)
-        run: cargo test -p ds-match --test golden_l0 -- --nocapture
+      # OI-58: the golden (`golden_l0`) runs inside `cargo test` above; a
+      # second run only repeated it. A red golden on one platform means a
+      # libm or FMA divergence, not a simulation change: isolate with git
+      # bisect before touching SIM_VERSION.
 
       - name: ds-test-runner --check
         run: cargo run --release --bin ds-test-runner -- --check --seed 42

@@ -20,12 +20,12 @@ if ! git diff --quiet HEAD 2>/dev/null; then
   exit 1
 fi
 
-if [ ! -x scripts/gates.sh ]; then
-  echo "pre-push: scripts/gates.sh not found or not executable" >&2
+if [ ! -f scripts/gates.sh ]; then
+  echo "pre-push: scripts/gates.sh not found" >&2
   exit 1
 fi
 
-if sh scripts/gates.sh; then
+if bash scripts/gates.sh closing; then
   exit 0
 else
   echo "" >&2

@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
+# Re-exec under bash when started as `sh script` (dash has no here-strings).
+[ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
 # starting.sh - one command for the startup ritual (E1).
 # Calls gates.sh resume (existing, prints pointers) and adds ONLY what
 # gates.sh does not do: the three git commands for alignment, and the
@@ -18,7 +20,7 @@ git log --oneline -5
 echo ""
 
 echo "=== startup: gates (resume = fast subset + pointers) ==="
-scripts/gates.sh resume
+bash scripts/gates.sh resume
 GATES=$?
 echo ""
 

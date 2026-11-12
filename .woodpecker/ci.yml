@@ -15,7 +15,7 @@
 # - `rust-toolchain.toml` pins the channel and the components (rustfmt,
 #   clippy); rustup installs them on first use. No extra component step.
 #
-# The first run is the measurement: build from zero + 232 tests + golden.
+# The first run is the measurement: build from zero + the test suite.
 # If it exceeds the runner cap, the decision is cache vs self-hosted.
 
 when:
@@ -33,6 +33,5 @@ steps:
       - cargo clippy --workspace --all-targets -- -D warnings
       - cargo build --release
       - cargo test --workspace
-      - cargo test -p ds-match --test golden_l0 -- --nocapture
       - cargo run --release --bin ds-test-runner -- --check --seed 42
       - bash scripts/gates.sh startup

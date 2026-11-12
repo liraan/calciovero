@@ -1,7 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
+# Re-exec under bash when started as `sh script` (dash has no here-strings).
+[ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
 # Gates A and B - mechanical checks from NEW-SESSION-PROMPT.md.
 # Exit 0 = green (all mechanical checks pass), 1 = red.
-# Run from the repo root.
+# Run from anywhere: it moves to the repo root. Needs bash (here-strings).
 #
 # Usage: scripts/gates.sh [startup|closing|resume]
 #   closing (default) - full set: A1, A3, B1, B3, B6, B7 + manual B2
@@ -14,6 +16,7 @@
 # leak (D5).
 
 set -u
+cd "$(dirname "$0")/.." || { echo "gates: cannot cd to repo root" >&2; exit 2; }
 MODE="${1:-closing}"
 fail=0
 
@@ -23,7 +26,7 @@ say_manual() { printf '  manual  %s\n' "$1"; }
 
 case "$MODE" in
   startup|closing|resume) : ;;
-  *) echo "gates: unknown mode '$MODE' (expected startup or closing)" >&2; exit 2 ;;
+  *) echo "gates: unknown mode '$MODE' (expected startup, closing or resume)" >&2; exit 2 ;;
 esac
 
 echo "Gates mode: $MODE"
@@ -224,7 +227,7 @@ if [ "$b8_missing" -eq 0 ]; then
   say_ok "B8 simplifications declare Removed-by:"
 else
   say_fail "B8 $b8_missing simplification(s) without a non-empty Removed-by: (MD-32)"
-  fi
+fi
 
 # B9 (ADR-038, 2026-11-07): the simulation path is platform-free. The
 # six simulation crates must not import platform modules (`std::fs`,

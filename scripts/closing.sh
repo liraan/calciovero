@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
+# Re-exec under bash when started as `sh script` (dash has no here-strings).
+[ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
 # closing.sh - one command for the closing ritual (E2), AFTER the maintainer
 # has written "chiudi". Calls C2 (the five commands, in order), gates.sh
 # closing, and capture.sh for the closing event. Adds ONLY the NEXT note.
@@ -35,11 +37,11 @@ cargo run --release --bin ds-test-runner -- --check --seed 42 || FAIL=1
 echo ""
 
 echo "=== closing: gates (full set) ==="
-scripts/gates.sh closing || FAIL=1
+bash scripts/gates.sh closing || FAIL=1
 echo ""
 
 echo "=== closing: capture (record the closing event) ==="
-scripts/capture.sh pause "closing ritual executed via scripts/closing.sh; C2 $( [ $FAIL -eq 0 ] && echo green || echo RED ); gates $( [ $FAIL -eq 0 ] && echo green || echo RED ); bookmark written next, commit/push by maintainer. -> none" || FAIL=1
+bash scripts/capture.sh pause "closing ritual executed via scripts/closing.sh; C2 $( [ $FAIL -eq 0 ] && echo green || echo RED ); gates $( [ $FAIL -eq 0 ] && echo green || echo RED ); bookmark written next, commit/push by maintainer. -> none" || FAIL=1
 echo ""
 
 if [ "$FAIL" -eq 0 ]; then

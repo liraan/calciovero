@@ -34,7 +34,7 @@ case "$staged_lcv" in
   "$head_short"*) : ;;
   *) echo "commit-msg: 'Last commit verified' ($staged_lcv) does not match HEAD ($head_short); S1 applies to every bookmark update (E4)" >&2; exit 1 ;;
 esac
-trailers=$(git interpret-trailers --parse < "$MSG")
+trailers=$msg_trailers
 
 
 # Redundancy guard (2026-11-01): the bookmark must not duplicate `git log`.

@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
+# Re-exec under bash when started as `sh script` (dash has no here-strings).
+[ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
 # capture.sh - register "what was said" at a pause or task boundary.
 # Not a second gates.sh resume: it does NOT count tests/ADRs/crates/ideas,
 # does NOT read remote, does NOT run cargo. Those are gates.sh's job.
@@ -96,8 +98,8 @@ else
       fi
     done
     for AD in $(printf '%s\n' "$PROMO_TEXT" | grep -oE 'ADR-[0-9]+' | sort -u); do
-      NUM=$(printf '%s\n' "$AD" | grep -oE '[0-9]+')
-      if ls docs/adr/*"$NUM"-*.md >/dev/null 2>&1; then
+      NUM=$(printf '%03d' "$((10#$(printf '%s\n' "$AD" | grep -oE '[0-9]+')))")
+      if ls docs/adr/"$NUM"-*.md >/dev/null 2>&1; then
         PROMOS="${PROMOS}${AD}(exists); "
       else
         PROMOS="${PROMOS}${AD}(MISSING); "

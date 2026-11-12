@@ -22,8 +22,10 @@ echo "$staged_rust" | sed 's/^/  /'
 echo "pre-commit: running cargo fmt --check..."
 cargo fmt --all -- --check
 
-echo "pre-commit: running cargo clippy --workspace -- -D warnings..."
-cargo clippy --workspace -- -D warnings
+# --all-targets, as in CI: without it a warning in a test passes here and
+# fails the remote gate.
+echo "pre-commit: running cargo clippy --workspace --all-targets -- -D warnings..."
+cargo clippy --workspace --all-targets -- -D warnings
 
 echo "pre-commit: running cargo test --workspace..."
 cargo test --workspace
