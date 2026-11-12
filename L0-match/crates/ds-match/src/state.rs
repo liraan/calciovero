@@ -147,6 +147,7 @@ pub struct MatchState {
     keeper_balance: crate::balance::KeeperBalance,
     obstacle_balance: crate::balance::ObstacleBalance,
     reception_balance: crate::balance::ReceptionBalance,
+    carry_balance: crate::balance::CarryBalance,
     pending: Option<Pending>,
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
@@ -257,6 +258,7 @@ impl MatchState {
             keeper_balance: crate::balance::KeeperBalance::load(),
             obstacle_balance: crate::balance::ObstacleBalance::load(),
             reception_balance: crate::balance::ReceptionBalance::load(),
+            carry_balance: crate::balance::CarryBalance::load(),
             bodies: {
                 let mut m = BTreeMap::new();
                 for p in match_.home.players.iter().chain(match_.away.players.iter()) {
@@ -370,6 +372,7 @@ impl MatchState {
             &self.scan_balance,
             &self.keeper_balance,
         );
+        self.spatial.follow_carrier();
         self.control_loose_ball(ctx);
         self.update_coverage(ctx, tick);
         match self.possession {
@@ -402,6 +405,14 @@ impl MatchState {
         // resolved from his `decision_making` (ADR-035: no die). If the
         // actor is not due, the tick advances the body and the scene (above)
         // and returns; nothing needs deciding yet.
+        // Only the player who has the ball can play it: the nearest player
+        // of the side in possession does not kick a ball he is not
+        // touching (OI-97; before, the ball left from his position, a
+        // teleport). Without a carrier nobody decides: the players move,
+        // and the first to reach the ball controls it (ADR-041 §5).
+        if self.spatial.carrier() != Some(attacker) {
+            return;
+        }
         let due_at = self.latencies.get(&attacker).copied().unwrap_or(0);
         if tick < due_at {
             return;
@@ -486,6 +497,21 @@ impl MatchState {
 
         // The action belongs to the nearest agent; the ball follows.
         self.spatial.set_carrier(Some(attacker));
+        if chosen == ChosenAction::Advance {
+            // He carries the ball towards the goal he attacks
+            // (IDEA-DESIGN-010); the ball follows him (`follow_carrier`).
+            if let Some(a) = self.spatial.agent(attacker) {
+                let (x, y) = a.position;
+                let d = self.carry_balance.carry_distance_cm;
+                let dx = goal.0 - x;
+                let dy = goal.1 - y;
+                let len = i64::from(dx).pow(2) + i64::from(dy).pow(2);
+                let len = i32::try_from(len.isqrt()).unwrap_or(1).max(1);
+                let step = d.min(len);
+                self.spatial
+                    .set_carry_target(Some((x + dx * step / len, y + dy * step / len)));
+            }
+        }
 
         if let ChosenAction::Pass {
             receiver,
@@ -691,6 +717,42 @@ impl MatchState {
         } else {
             Possession::Away
         };
+    }
+
+    /// The kick-off (Law 8): a player of the side that kicks off stands on
+    /// the ball, and it is his. The home side kicks off the first half, the
+    /// away side the second. Before, nobody was on the ball and nobody saw
+    /// it (every agent starts looking the same way), so the match began
+    /// only because the nearest player could kick a ball he was not
+    /// touching (OI-97).
+    pub fn kick_off(&mut self, ctx: &MatchContext<'_>, half: Half) {
+        let side = match half {
+            Half::First => Possession::Home,
+            Half::Second => Possession::Away,
+        };
+        self.kick_off_by(ctx, side);
+    }
+
+    /// A kick-off by `side` from the centre spot (Law 8): at the start of a
+    /// half, and after a goal by the side that conceded it.
+    fn kick_off_by(&mut self, ctx: &MatchContext<'_>, side: Possession) {
+        let squad = match side {
+            Possession::Home => &ctx.match_.home,
+            Possession::Away => &ctx.match_.away,
+        };
+        let ball = (
+            i32::from(ctx.match_.pitch.length_m) * 50,
+            i32::from(ctx.match_.pitch.width_m) * 50,
+        );
+        let Some(taker) = nearest_in_squad(&self.spatial, squad, ball) else {
+            return;
+        };
+        self.spatial.set_position(taker, ball);
+        self.spatial
+            .set_ball_in_flight((ball.0, ball.1, 0), (0, 0, 0));
+        self.spatial.advance_ball();
+        self.spatial.set_carrier(Some(taker));
+        self.possession = side;
     }
 
     /// What the pitch looks like after `tick` (the tick record,
@@ -1072,6 +1134,9 @@ impl MatchState {
             Possession::Away => self.score.home += 1,
         }
         self.possession = defending;
+        // Law 8: after a goal, the side that conceded kicks off. Before, the
+        // ball stayed in the net for the rest of the match (OI-97).
+        self.kick_off_by(ctx, defending);
     }
 
     fn emit_event(

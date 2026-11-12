@@ -1,0 +1,5 @@
+{
+  "carry_distance_cm": 1000,
+  "_note": "When the carrier chooses to carry the ball (IDEA-DESIGN-010), he runs with it towards the opponent goal, this far, until his next decision; the ball goes where he goes. His pace is the movement formula's, as for every agent.",
+  "_source": "Arbitrary, declared (2026-11-12, OI-97): about the distance a carrier covers in the 1-3 s of a decision at running pace. To be calibrated at L3."
+}

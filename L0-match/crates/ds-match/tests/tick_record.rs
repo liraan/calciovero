@@ -120,3 +120,22 @@ fn every_event_is_narrated_in_exactly_one_tick() {
         assert_eq!(entry.event_id, event.event_id, "same order as the chain");
     }
 }
+
+/// Law 8 (P1): at kick-off a player of the side that kicks off is on the
+/// ball and it is his; the home side kicks off the first half, the away
+/// side the second. Before `SIM_VERSION` 41 nobody was on the ball and
+/// nobody saw it.
+#[test]
+fn the_kick_off_has_a_taker() {
+    let m = match_fixture(SEED).expect("fixture");
+    let (_, records) = recorded();
+    let home = |id| m.home.players.iter().any(|p| p.id == id);
+    let first = records[0].carrier.expect("a taker at the first kick-off");
+    assert!(home(first), "the home side kicks off the first half");
+    let second = records
+        .iter()
+        .find(|r| r.half == ds_stats::Half::Second)
+        .and_then(|r| r.carrier)
+        .expect("a taker at the second kick-off");
+    assert!(!home(second), "the away side kicks off the second half");
+}

@@ -99,6 +99,9 @@ pub struct SpatialState {
     ball_velocity: (i16, i16, i16),
     /// The ball's declared physics (ADR-048 §4).
     ball_physics: crate::balance::BallBalance,
+    /// Where the carrier is taking the ball, if he chose to carry it
+    /// (IDEA-DESIGN-010: carrying is a choice). `None`: he holds it.
+    carry_target: Option<(i32, i32)>,
     /// The agent carrying the ball, if any.
     carrier: Option<PlayerId>,
     /// The formation slot of each agent, in centimetres. The default
@@ -212,6 +215,7 @@ impl SpatialState {
             ball_position: (length / 2, width / 2, 0),
             ball_velocity: (0, 0, 0),
             ball_physics: crate::balance::BallBalance::load(),
+            carry_target: None,
             carrier: None,
             slots,
             goalkeepers: (home.players[0].id, away.players[0].id),
@@ -351,11 +355,33 @@ impl SpatialState {
     /// Sets the carrier. `None` means the ball is loose.
     pub const fn set_carrier(&mut self, carrier: Option<PlayerId>) {
         self.carrier = carrier;
+        self.carry_target = None;
         if carrier.is_some() {
             self.ball = BallState::Possessed;
             self.ball_velocity = (0, 0, 0);
         } else if matches!(self.ball, BallState::Possessed) {
             self.ball = BallState::Loose;
+        }
+    }
+
+    /// The carrier chose to carry the ball towards `target` (IDEA-DESIGN-010).
+    /// The target is forgotten when the carrier changes.
+    pub const fn set_carry_target(&mut self, target: Option<(i32, i32)>) {
+        self.carry_target = target;
+    }
+
+    /// The ball is at the carrier's feet: it goes where he goes. A no-op
+    /// if nobody carries it.
+    pub fn follow_carrier(&mut self) {
+        if !matches!(self.ball, BallState::Possessed) {
+            return;
+        }
+        if let Some(pos) = self
+            .carrier
+            .and_then(|c| self.agents.get(&c))
+            .map(|a| a.position)
+        {
+            self.ball_position = (pos.0, pos.1, 0);
         }
     }
 
@@ -478,6 +504,10 @@ impl SpatialState {
         for entry in &mut work {
             let target = if let Some((_, kt)) = keeper_targets.iter().find(|(g, _)| *g == entry.0) {
                 *kt
+            } else if Some(entry.0) == self.carrier {
+                // The carrier holds the ball where he is, or carries it
+                // where he chose (IDEA-DESIGN-010).
+                self.carry_target.unwrap_or(entry.1)
             } else if Some(entry.0) == nearest {
                 ball
             } else {
@@ -574,12 +604,25 @@ impl SpatialState {
         // ADR-034: scan every `scan_interval_ticks`, not every tick. The
         // scan needs `&self` (read-only) to see the other agents; the
         // movement loop above held `&mut`, so the gaze pass is separate.
-        if scan_balance.scan_interval_ticks != 0 && tick % scan_balance.scan_interval_ticks == 0 {
-            for (id, _, _) in work {
-                if let Some(g) = crate::perception::scan(self, *id, ball, scan_balance) {
-                    if let Some(agent) = self.agents.get_mut(id) {
-                        agent.gaze = g;
-                    }
+        //
+        // The ball is the reference (OI-97, 2026-11-12): between two scans
+        // the gaze goes back to the ball, as a footballer's does; the scan
+        // is a glance (at the mark, the opponent on the ball), not a place
+        // where the head stays. Before, a marked player looked at his mark
+        // for good and never saw the ball again, and nobody went for it.
+        let scanning =
+            scan_balance.scan_interval_ticks != 0 && tick % scan_balance.scan_interval_ticks == 0;
+        for (id, _, _) in work {
+            let glance = if scanning {
+                crate::perception::scan(self, *id, ball, scan_balance)
+            } else {
+                None
+            };
+            if let Some(agent) = self.agents.get_mut(id) {
+                if let Some(g) = glance {
+                    agent.gaze = g;
+                } else if let Some(g) = crate::perception::heading_towards(agent.position, ball) {
+                    agent.gaze = g;
                 }
             }
         }

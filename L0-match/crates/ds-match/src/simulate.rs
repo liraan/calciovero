@@ -101,6 +101,7 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
 
     // --- First half ---
     state.begin_half(Half::First, 0);
+    state.kick_off(ctx, Half::First);
     state.emit_boundary(ctx, 0, EventType::KickOff);
     let tick_after_first = run_half(&mut state, ctx, 0, Half::First, tps, &table, rec);
 
@@ -109,6 +110,7 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
 
     // --- Second half ---
     state.begin_half(Half::Second, tick_after_first);
+    state.kick_off(ctx, Half::Second);
     state.emit_boundary(ctx, tick_after_first, EventType::SecondHalf);
     let tick_after_second = run_half(
         &mut state,

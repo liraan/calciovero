@@ -481,3 +481,40 @@ mod ball_tests {
         assert!((0..1000).contains(&b.ground_friction_milli));
     }
 }
+
+/// The embedded carrying parameters (IDEA-DESIGN-010).
+const CARRY_JSON: &str = include_str!("../../../balance/carry.json");
+
+/// How far a carrier who chose to carry the ball takes it (IDEA-DESIGN-010).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub struct CarryBalance {
+    /// Distance towards the opponent goal, cm.
+    pub carry_distance_cm: i32,
+}
+
+impl Default for CarryBalance {
+    fn default() -> Self {
+        serde_json::from_str(CARRY_JSON).expect("embedded carry file is valid JSON")
+    }
+}
+
+impl CarryBalance {
+    /// Loads the embedded carrying parameters.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the embedded JSON is invalid; `embedded_carry_is_valid`
+    /// catches it at test time.
+    #[must_use]
+    pub fn load() -> Self {
+        Self::default()
+    }
+}
+
+#[cfg(test)]
+mod carry_tests {
+    #[test]
+    fn embedded_carry_is_valid() {
+        assert!(super::CarryBalance::load().carry_distance_cm > 0);
+    }
+}
