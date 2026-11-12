@@ -529,14 +529,29 @@ impl MatchState {
             if let Some(a) = self.spatial.agent(attacker) {
                 let (x, y) = a.position;
                 let d = self.carry_balance.carry_distance_cm;
-                let dx = goal.0 - x;
-                let dy = goal.1 - y;
+                // With room he carries the ball towards the goal; without
+                // (blocked, or at the edge of the box with nothing on) he
+                // turns away with it, towards the open pitch. Before
+                // `SIM_VERSION` 50 he could only push towards the goal: a
+                // carrier on the goal line with no pass stood there for
+                // minutes, challenged every three seconds (seed 42, 70').
+                let centre = (
+                    i32::from(ctx.match_.pitch.length_m) * 50,
+                    i32::from(ctx.match_.pitch.width_m) * 50,
+                );
+                let towards = if can_carry { goal } else { centre };
+                let dx = towards.0 - x;
+                let dy = towards.1 - y;
                 let len = i64::from(dx).pow(2) + i64::from(dy).pow(2);
                 let len = i32::try_from(len.isqrt()).unwrap_or(1).max(1);
                 // Nobody dribbles into the goal: he carries the ball at most
                 // to the edge of the box (`carry_stop_from_goal_cm`), where
                 // he has to choose.
-                let room = len - self.carry_balance.carry_stop_from_goal_cm;
+                let room = if can_carry {
+                    len - self.carry_balance.carry_stop_from_goal_cm
+                } else {
+                    len
+                };
                 let step = d.min(room).max(0);
                 self.spatial
                     .set_carry_target(Some((x + dx * step / len, y + dy * step / len)));
@@ -1137,6 +1152,14 @@ impl MatchState {
         let exit = r * i64::from(p.pressure_exit_milli) / 1000;
         let exit_sq = exit * exit;
         let ball = self.spatial.ball();
+        // Pressure is on a carrier: a ball in flight or loose is pressed by
+        // nobody. Before `SIM_VERSION` 50 every opponent the ball flew past
+        // "pressed" it; with passes at their real speed that was 2,000
+        // Pressure events a match.
+        if self.spatial.carrier().is_none() {
+            self.coverage.clear();
+            return;
+        }
 
         // Compute the current coverage set (immutable phase).
         let (nominal_carrier, current): (PlayerId, BTreeSet<PlayerId>) = {

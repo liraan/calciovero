@@ -243,10 +243,12 @@ fn pressure_is_not_a_flood() {
         .iter()
         .filter(|e| e.event_type == ds_stats::EventType::Pressure)
         .count();
-    let team = |r: &TickRecord| r.carrier.map(|c| c.slot() >= 100);
+    // Every new carrier, of either side: a completed pass gives the
+    // opponents a new man to press. Counting only the changes of side
+    // undercounted them once passes travelled at their speed (SIM 50).
     let changes = records
         .windows(2)
-        .filter(|w| team(&w[1]).is_some() && team(&w[0]) != team(&w[1]))
+        .filter(|w| w[1].carrier.is_some() && w[0].carrier != w[1].carrier)
         .count()
         .max(1);
     assert!(
@@ -303,4 +305,33 @@ fn the_engine_does_not_pick_the_chaser() {
         state.contains("OffBallAct::Challenge"),
         "the duel follows the player's choice"
     );
+}
+
+/// A carrier with nothing on does not stand still (P1). Before
+/// `SIM_VERSION` 50 a carrier on the goal line with no pass could only push
+/// towards the goal: he stood there for minutes, challenged every three
+/// seconds (seed 42, 70', 1,129 duels in the match).
+#[test]
+fn a_carrier_with_nothing_on_does_not_stand_still() {
+    let (_, records) = recorded();
+    // A spell: the same carrier, within a metre of where it started.
+    let (mut start, mut run, mut longest) = (None, 0, 0);
+    for r in &records {
+        let here = r.carrier.map(|c| (c, r.ball.position));
+        let same = match (start, here) {
+            (Some((c0, p0)), Some((c, p))) => {
+                let (p0, p): ((i32, i32, i32), (i32, i32, i32)) = (p0, p);
+                c0 == c && (p0.0 - p.0).abs() <= 100 && (p0.1 - p.1).abs() <= 100
+            }
+            _ => false,
+        };
+        if same {
+            run += 1;
+            longest = longest.max(run);
+        } else {
+            start = here;
+            run = 0;
+        }
+    }
+    assert!(longest <= 300, "a carrier stood still for {longest} ticks");
 }

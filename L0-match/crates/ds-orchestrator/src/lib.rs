@@ -216,6 +216,19 @@ impl GroundTruth {
         outcome
     }
 
+    /// A velocity from a unit direction (thousandths) and a speed, cm/tick.
+    ///
+    /// Multiplied in `i32`: the old `i16::saturating_mul` saturated at
+    /// 32,767, so every pass and shot left at about 32 cm/tick (3 m/s)
+    /// whatever its speed (found measuring the shots, 2026-11-12).
+    fn velocity(dir: (i16, i16, i16), speed: i16) -> (i16, i16, i16) {
+        let c = |d: i16| {
+            let v = i32::from(d) * i32::from(speed) / 1000;
+            i16::try_from(v.clamp(i32::from(i16::MIN), i32::from(i16::MAX))).unwrap_or(0)
+        };
+        (c(dir.0), c(dir.1), c(dir.2))
+    }
+
     /// A unit-ish 3D direction from `from` to `to`, scaled to integer
     /// centimetres. Pure: no RNG, deterministic from the geometry.
     fn direction_3d(from: (i32, i32, i32), to: (i32, i32, i32)) -> (i16, i16, i16) {
@@ -318,11 +331,7 @@ impl GroundTruth {
 
         let dir = Self::direction_3d(ctx.from, to);
         let speed = Self::speed_from_on_target(on_target);
-        let initial_velocity = (
-            dir.0.saturating_mul(speed) / 1000,
-            dir.1.saturating_mul(speed) / 1000,
-            dir.2.saturating_mul(speed) / 1000,
-        );
+        let initial_velocity = Self::velocity(dir, speed);
         let outcome = ShotOutcome {
             to,
             on_target,
@@ -358,11 +367,7 @@ impl GroundTruth {
         let passer = self.latents_for(ctx.passer);
         let speed = Self::speed_from_passing(passer.technical.passing, params);
         let dir = Self::direction_3d(ctx.from, ctx.to);
-        let initial_velocity = (
-            dir.0.saturating_mul(speed) / 1000,
-            dir.1.saturating_mul(speed) / 1000,
-            dir.2.saturating_mul(speed) / 1000,
-        );
+        let initial_velocity = Self::velocity(dir, speed);
         PassOutcome { initial_velocity }
     }
 
@@ -636,6 +641,15 @@ mod direction_tests {
 mod tests {
     use super::*;
     use ds_core::ids::{MatchId, PlayerId};
+
+    /// A ball leaves at the speed it was given (P1). Before `SIM_VERSION`
+    /// 50 the product saturated in `i16`: every pass and shot left at
+    /// about 32 cm/tick, and a shot at 300 cm/tick rolled at 3 m/s.
+    #[test]
+    fn a_ball_leaves_at_its_speed() {
+        assert_eq!(GroundTruth::velocity((1000, 0, 0), 300), (300, 0, 0));
+        assert_eq!(GroundTruth::velocity((600, -800, 0), 250), (150, -200, 0));
+    }
 
     fn ctx_duel() -> DuelContext {
         DuelContext {
