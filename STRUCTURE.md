@@ -117,7 +117,6 @@ docs/
 ├── ARCHITECTURE.md
 ├── CODE_TOUR.md
 ├── GLOSSARY.md
-├── MIGRATION-01-04.md
 ├── PLUGIN_DEVELOPER_GUIDE.md
 └── PLUGINS-WORLDS-READING-GUIDE.md
 archive/
@@ -190,7 +189,6 @@ pc-football-manager/
 │   ├── legal/
 │   ├── calibration/
 │   ├── GLOSSARY.md
-│   ├── MIGRATION-01-04.md
 │   └── PLUGIN_DEVELOPER_GUIDE.md
 ├── registry/                  # empty until code exists
 ├── crates/                    # code (see current state)
@@ -208,7 +206,9 @@ The field `module_id` in the frontmatter is the stable identifier of the sub-mod
 
 ### `/archive` — the history
 
-Every superseded document goes here. Nothing is deleted. `Prompt_Master_v5.md`, `_v6.md`, `_v7.md` will live in `archive/prompts/` once recovered. When `00-foundations.md` is revised, the previous version is archived in `archive/doctrine/`. The four legacy Italian files (`01-architecture.md`, `02-registry.md`, `03-pack-system.md`, `04-data-model.md`) will be moved to `archive/legacy/` after migration (see `docs/MIGRATION-01-04.md`).
+When `00-foundations.md` is revised, the previous version is archived in `archive/doctrine/`.
+
+**Note (2026-11-12, maintainer) — history lives in git.** The earlier rule ("every superseded document goes here, nothing is deleted") is withdrawn for working documents: superseded handoffs, reviews, reports and plans are **deleted**, not archived, and are recovered with `git log -- <path>` and `git show <commit>:<path>`. The tree holds what is current. The four legacy Italian modules and the Prompt Master versions were never committed (see the 2026-10-25 note in git history, `docs/MIGRATION-01-04.md`): there is nothing to recover.
 
 **Rule:** the archive is read-only. Do not edit archived files. They exist for traceability, not for maintenance.
 

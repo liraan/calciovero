@@ -2,7 +2,7 @@
 
 **Status:** briefing (not normative, not an ADR, not a handoff).
 **Ultima revisione:** 2026-11-11 (rev. 8). **LCV:** `57f6c74`.
-**Supersedes:** `docs/context/analysis/2026-11-08-nota-per-nuova-ai.md` (storia).
+**Supersedes:** `docs/context/analysis/2026-11-08-nota-per-nuova-ai.md` (rimossa il 2026-11-12; è nella storia git).
 
 **Cos'è.** La memoria delle cose emerse in chat che un agente nuovo non
 troverebbe leggendo solo il repo. **Non** è un handoff (quello è in

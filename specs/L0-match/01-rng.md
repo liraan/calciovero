@@ -118,7 +118,7 @@ If the RNG algorithm, seed derivation, or stream naming changes, `SIM_VERSION` i
   MAINTAINER NOTE: this is the ONE thing that must never be "fixed quietly".
   A change to seed derivation = all previous golden tests invalidated. Always
   bump SIM_VERSION, regenerate the golden hash, review with a second pair of eyes.
-  The full procedure is documented in docs/MIGRATION-01-04.md (planned).
+  The full procedure is documented in CHANGELOG-SIM.md.
 -->
 
 ## 3. Data model
@@ -156,4 +156,4 @@ If the RNG algorithm, seed derivation, or stream naming changes, `SIM_VERSION` i
 - [`00-overview.md`](00-overview.md) — L0 cell map
 - [`04-match-engine.md`](04-match-engine.md) — consumer
 - [`08-random-events.md`](08-random-events.md) — consumer
-- `../../docs/MIGRATION-01-04.md` — `SIM_VERSION` bump procedure
+- `../../CHANGELOG-SIM.md` — `SIM_VERSION` bump procedure

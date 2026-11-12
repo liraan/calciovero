@@ -37,7 +37,7 @@ This exception applies **only to `docs/context/`**. Everywhere else, the standar
 
 **Subfolders:**
 
-- `analysis/` — review outputs and AI handoff assessments. Reviews are dated files (`YYYY-MM-DD-HH-MM-review.md`); the latest date is the current review. Written by the audit agent, never by the chat agent.
+- `analysis/` — current reports and the newest handoff, dated files. Superseded ones are deleted, not archived (2026-11-12): recover them with `git log -- <path>` and `git show <commit>:<path>`.
 
 ## Two modes, one policy
 

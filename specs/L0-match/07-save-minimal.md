@@ -82,7 +82,7 @@ pub fn migrate_save_if_needed(save: &mut MatchSave) -> Result<()>;
 - If `schema_version < CURRENT`, apply migrations in order
 - If `sim_version != CURRENT`, the save is **readable but not replayable**. The match result is shown as-is, but the user is warned that replay will differ.
 - Migration scripts live in `crates/pcfm-data/migrations/match/` *(planned — the `pcfm-data` crate does not exist yet)*
-- The migration procedure (and the `SIM_VERSION` bump rules) is documented in `docs/MIGRATION-01-04.md` and in [`CHANGELOG-SIM.md`](../../CHANGELOG-SIM.md)
+- The migration procedure (and the `SIM_VERSION` bump rules) is documented in [`CHANGELOG-SIM.md`](../../CHANGELOG-SIM.md)
 
 ### 2.4 Verification
 
@@ -169,7 +169,6 @@ At L0, there are no interactive commands (a friendly match runs to completion). 
 - [`06-match-output.md`](06-match-output.md) — result saved
 - [`10-ground-truth.md`](10-ground-truth.md) — `GroundTruth` API and the determinism contract
 - [`../../docs/adr/003-plane-a-enforcement.md`](../../docs/adr/003-plane-a-enforcement.md) — no latent in the save
-- [`../../docs/MIGRATION-01-04.md`](../../docs/MIGRATION-01-04.md) — migration procedure *(planned)*
 - [`../../CHANGELOG-SIM.md`](../../CHANGELOG-SIM.md) — `SIM_VERSION` bump procedure
 - `../L1-season/03-standings.md` — L1 save extends this *(planned — the L1-season directory does not exist yet)*
 - [`../../docs/GLOSSARY.md`](../../docs/GLOSSARY.md) — terms used in this cell

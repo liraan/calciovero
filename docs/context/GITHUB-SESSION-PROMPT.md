@@ -116,7 +116,7 @@ Each finding with `file:line` in `scripts/gates.sh` or in the ritual step that i
 
 Write to: `docs/context/analysis/YYYY-MM-DD-HH-MM-review.md` (ISO date, UTC).
 
-Structure: a header with `title`, `version`, `status`, `last_updated`, `auditor`, `conforms_to`; then sections 1-8 as in the existing reports (see `docs/context/analysis/archive/2026-10-29-18-18-review.md` for the exact structure). Number every finding `R-01`, `R-02`, … so the maintainer can verify each one with `grep`/`sed`.
+Structure: a header with `title`, `version`, `status`, `last_updated`, `auditor`, `conforms_to`; then sections 1-8 as in the existing reports (the earlier reviews, e.g. `docs/context/analysis/archive/2026-10-29-18-18-review.md`, were removed on 2026-11-12 and are in git history). Number every finding `R-01`, `R-02`, … so the maintainer can verify each one with `grep`/`sed`.
 
 **Classify every finding.** Each finding carries a class per the exit clause of `NEW-SESSION-PROMPT.md` D4: **pure** if it exposes a latent (D2), violates an invariant (`SIM_VERSION`, `chain_hash`, schema), touches a doctrine ADR, or has no executable first action; **gap** otherwise. Present the class in the finding's row: `R-NN | class | ... | maintainer_override`. A `maintainer_override` is written by the maintainer (e.g. `gap (reason)`) and **must not be re-classified** by a later audit: read it, do not overwrite it. Default when in doubt: pure.
 

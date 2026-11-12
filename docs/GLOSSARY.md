@@ -374,7 +374,7 @@ These terms appeared in previous versions of the specification and are no longer
 | **25-module structure** | Replaced by the concentric model (L0-L3) | Level + module |
 | **Cell** (deprecated) | Now called "module"; the `cell` field in the frontmatter is a historical name | Module |
 | **Sub-cell** (deprecated) | Now called "sub-module" | Sub-module |
-| **`01-architecture.md` … `04-data-model.md`** | Removed; content is being migrated | Distributed across L0, L1, L3 (see [`docs/MIGRATION-01-04.md`](MIGRATION-01-04.md)) |
+| **`01-architecture.md` … `04-data-model.md`** | Removed; content is being migrated | Never committed, not recoverable; their content is being rewritten in L0, L1, L3 |
 | **`Prompt Master`** | The original source doctrine, archived | [`specs/00-foundations.md`](../specs/00-foundations.md) |
 | **`specs/L1-season/00-overview.md` (link)** | The file does not exist yet | Marked `*(planned)*` in [`specs/_index.md`](../specs/_index.md) |
 

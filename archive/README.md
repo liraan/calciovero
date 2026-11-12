@@ -15,10 +15,6 @@ The archive exists for traceability: so that "why did we decide X?" can be answe
 | `Prompt_Master_v7.md` | The v7 doctrine (CA/PA removed, Three Planes explicit) | `specs/00-foundations.md` (v1.0) |
 | `00-foundations-vX.Y.md` | Previous versions of the doctrine | current `specs/00-foundations.md` |
 | `01-architecture-vX.Y.md` | Previous versions | current module |
-| `legacy/01-architecture.md` | The original Italian `01-architecture.md`, from the flat 25-module structure | `docs/MIGRATION-01-04.md` |
-| `legacy/02-registry.md` | The original Italian `02-registry.md` | `docs/MIGRATION-01-04.md` |
-| `legacy/03-pack-system.md` | The original Italian `03-pack-system.md` | `docs/MIGRATION-01-04.md` |
-| `legacy/04-data-model.md` | The original Italian `04-data-model.md` | `docs/MIGRATION-01-04.md` |
 
 *(The rows above are the planned contents. Some of them do not exist yet. See "Current contents" below.)*
 
@@ -26,7 +22,7 @@ The archive exists for traceability: so that "why did we decide X?" can be answe
 
 ## Current contents
 
-As of 2026-10-25, the archive is **empty**. The three Prompt Master versions and the four legacy modules are pending recovery (see [`../docs/MIGRATION-01-04.md`](../docs/MIGRATION-01-04.md)).
+As of 2026-10-25, the archive is **empty**. The three Prompt Master versions and the four legacy modules were never committed and are not recoverable.
 
 Once recovered, they will be placed here. Until then, the files are recoverable from git history:
 
@@ -101,7 +97,5 @@ The archive is not a graveyard. It is the project's memory.
   - This file is linked from:
       - specs/00-foundations.md §8 (as the historical reference, once it
         exists)
-      - docs/MIGRATION-01-04.md §5 (as the eventual destination of the
-        legacy modules)
     If you move or rename this file, update those links.
 -->
