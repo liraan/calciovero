@@ -1,0 +1,10 @@
+{
+  "reach_cm": 120,
+  "retry_ticks": 30,
+  "defender_tackling_milli": 700,
+  "defender_explosive_milli": 300,
+  "carrier_first_touch_milli": 600,
+  "carrier_explosive_milli": 400,
+  "_note": "The ground duel without a die (ADR-042 §3 and §5, core, maintainer's go 2026-11-12). An opponent within reach_cm of the ball challenges the carrier, at most once every retry_ticks (his own pace); the contact is deterministic: the defender's force is a weighted sum of his tackling and explosive force, the carrier's of his first touch (keeping the ball, a proxy until dribbling exists) and explosive force; the stronger contact wins, ties to the carrier. If the defender wins, the ball is his. Declared distance from ADR-042: no body control, maximal force, posture or point of impact yet (the latents do not exist), no foul band.",
+  "_source": "Arbitrary, declared, to be calibrated at L3. reach 120 cm: a leg's reach with a step; retry 30 ticks: a defender challenges again after about 3 s, and the carrier who loses the ball waits as long before he can win it back (no instant ping-pong)."
+}

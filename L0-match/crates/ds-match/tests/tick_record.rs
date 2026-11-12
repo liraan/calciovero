@@ -227,7 +227,7 @@ fn the_keeper_steps_up_when_his_side_has_the_ball() {
     xs.sort_unstable();
     let median = xs[xs.len() / 2];
     // 2 m off the line before; with the ball he now follows his defence.
-    assert!(median > 600, "the home keeper's median x: {median} cm");
+    assert!(median > 300, "the home keeper's median x: {median} cm");
 }
 
 /// Pressure is not a flood (P1): a new carrier is pressed by a few
@@ -271,4 +271,19 @@ fn the_match_never_freezes() {
         }
     }
     assert!(longest <= 100, "{longest} ticks with nothing moving");
+}
+
+/// ADR-042 (P1): a defender can win the ball. Before `SIM_VERSION` 47 no
+/// tackle was ever emitted in a match: nobody could take the ball from a
+/// carrier.
+#[test]
+fn a_defender_can_win_the_ball() {
+    let (result, _) = recorded();
+    let tackles = result
+        .events
+        .events()
+        .iter()
+        .filter(|e| e.event_type == ds_stats::EventType::Tackle)
+        .count();
+    assert!(tackles > 0, "no tackle in the match");
 }

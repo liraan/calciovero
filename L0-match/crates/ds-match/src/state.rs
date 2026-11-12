@@ -152,6 +152,8 @@ pub struct MatchState {
     /// Where the carrier was at his last decision: if he has not got
     /// anywhere since, he is blocked (OI-97).
     last_decision: Option<(PlayerId, (i32, i32))>,
+    /// When each defender may challenge again (ADR-042, his own pace).
+    challenges: BTreeMap<PlayerId, u64>,
     pending: Option<Pending>,
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
@@ -259,6 +261,7 @@ impl MatchState {
             carry_balance: crate::balance::CarryBalance::load(),
             pressure_balance: crate::balance::PressureBalance::load(),
             last_decision: None,
+            challenges: BTreeMap::new(),
             bodies: {
                 let mut m = BTreeMap::new();
                 for p in match_.home.players.iter().chain(match_.away.players.iter()) {
@@ -377,6 +380,7 @@ impl MatchState {
         );
         self.spatial.follow_carrier();
         self.control_loose_ball(ctx);
+        self.challenge_carrier(ctx, tick);
         self.update_coverage(ctx, tick);
         match self.possession {
             Possession::Home => self.home_possession_ticks += 1,
@@ -739,6 +743,55 @@ impl MatchState {
         } else {
             Possession::Away
         };
+    }
+
+    /// The ground duel (ADR-042, core): the opponent nearest to the ball,
+    /// once within `reach_cm` of it, challenges the carrier, at most once
+    /// every `retry_ticks` (his own pace). The contact decides, with no die
+    /// (`resolve_duel`); if the defender wins, the ball is his. Before, no
+    /// one could take the ball from a carrier: a pressing defender stood
+    /// next to him, and a blocked carrier froze the match (OI-97).
+    fn challenge_carrier(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        let Some(carrier) = self.spatial.carrier() else {
+            return;
+        };
+        if self.pending.is_some() {
+            return;
+        }
+        let ball = self.spatial.ball();
+        let (_, opponents) = self.squads(ctx);
+        let Some(defender) = nearest_in_squad(&self.spatial, opponents, ball) else {
+            return;
+        };
+        let duel = ctx.hidden.duel_balance();
+        let reach = i64::from(duel.reach_cm);
+        let close = self
+            .spatial
+            .agent(defender)
+            .is_some_and(|a| distance_squared(a.position, ball) <= reach * reach);
+        if !close || self.challenges.get(&defender).is_some_and(|t| tick < *t) {
+            return;
+        }
+        self.challenges.insert(defender, tick + duel.retry_ticks);
+        let outcome = ctx.hidden.resolve_duel(&ds_orchestrator::DuelContext {
+            attacker: carrier,
+            defender,
+            duel_type: ds_orchestrator::DuelType::Ground,
+        });
+        let fact = crate::fact::Fact::Contact {
+            attacker: carrier,
+            defender,
+            winner: outcome.winner,
+        };
+        for c in crate::fact::classify(&fact) {
+            self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
+        }
+        if outcome.winner == defender {
+            self.flip_possession();
+            self.spatial.set_carrier(Some(defender));
+            // The one who lost the ball does not win it back at once.
+            self.challenges.insert(carrier, tick + duel.retry_ticks);
+        }
     }
 
     /// The ball out of play gets a restart (Laws 15-17, `crate::rules`):

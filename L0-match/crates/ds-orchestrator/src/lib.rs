@@ -50,29 +50,14 @@ pub use outcome::{
 use std::fmt;
 
 use ds_core::ids::{MatchId, PlayerId};
-use ds_core::rng::{RngRegistry, StreamName};
-use rand_chacha::ChaCha20Rng;
 
-use ds_core::rng::next_unit;
 use ds_db::latents::PlayerLatents;
-
-/// One RNG stream per noise consumer.
-///
-/// Each `resolve_*` draws its noise from its own stream, so adding a
-/// new consumer never shifts the outcomes of the others
-/// (`00-foundations` 4, `01-rng.md` 2.3). Names are
-/// `hidden:{match_id}:{purpose}`, extensible to L1/L2. `:latents` is
-/// separate because latent generation is persistent state, not a
-/// transient decision: reordering resolves must not change the latents.
-struct Streams {
-    duel: ChaCha20Rng,
-}
 
 /// Plane A. The actual state of the world, never exposed.
 pub struct GroundTruth {
     world_seed: u64,
     match_id: MatchId,
-    streams: Streams,
+    duel_balance: ds_calculator::duel::DuelBalance,
     vault: ds_db::Vault,
     observations: Vec<ObservationEvent>,
     /// The movement balance, parsed once. `resolve_movement` is called
@@ -87,25 +72,14 @@ pub struct GroundTruth {
 impl GroundTruth {
     /// Creates a new `GroundTruth` from a world seed and a match id.
     ///
-    /// # Panics
-    ///
-    /// Panics if the derived stream name is empty. The name is a formatted
-    /// string that always contains at least the literal `"hidden:"`, so this
-    /// panic is unreachable in practice. It is documented for completeness.
+    /// It holds no random stream: no die is drawn in a simulation path
+    /// (ADR-035, ADR-042 §5).
     #[must_use]
     pub fn new(world_seed: u64, match_id: MatchId) -> Self {
-        let mut registry = RngRegistry::new(world_seed);
-        let name = |purpose: &str| {
-            StreamName::new(format!("hidden:{}:{purpose}", match_id.slot()))
-                .expect("stream name is always non-empty")
-        };
-        let streams = Streams {
-            duel: registry.stream(&name("duel")).clone(),
-        };
         Self {
             world_seed,
             match_id,
-            streams,
+            duel_balance: ds_calculator::duel::DuelBalance::load(),
             vault: ds_db::Vault::new(ds_core::identity::Identity::new(world_seed, match_id)),
             observations: Vec::new(),
             movement_balance: ds_calculator::movement::MovementBalance::load(),
@@ -189,7 +163,6 @@ impl GroundTruth {
     pub fn resolve_duel(&mut self, ctx: &DuelContext) -> DuelOutcome {
         let attacker = self.latents_for(ctx.attacker);
         let defender = self.latents_for(ctx.defender);
-        let noise = next_unit(&mut self.streams.duel);
 
         let attacker_score = match ctx.duel_type {
             DuelType::Aerial => attacker.technical.aerial,
@@ -202,7 +175,21 @@ impl GroundTruth {
             DuelType::WithGoalkeeper => defender.technical.goalkeeping,
         };
 
-        let attacker_wins = noise.mul_add(0.2, attacker_score) > defender_score;
+        // ADR-042 §5: no die. The ground contact is deterministic, with the
+        // weights of `balance/duel.json`; ties to the carrier.
+        let attacker_wins = match ctx.duel_type {
+            DuelType::Ground => {
+                let b = &self.duel_balance;
+                b.carrier_force(
+                    attacker.technical.first_touch,
+                    attacker.physical.explosive_force,
+                ) >= b.defender_force(
+                    defender.technical.tackling,
+                    defender.physical.explosive_force,
+                )
+            }
+            DuelType::Aerial | DuelType::WithGoalkeeper => attacker_score >= defender_score,
+        };
         let winner = if attacker_wins {
             ctx.attacker
         } else {
@@ -343,6 +330,12 @@ impl GroundTruth {
             on_target,
         });
         outcome
+    }
+
+    /// The ground duel's declared parameters (`balance/duel.json`).
+    #[must_use]
+    pub const fn duel_balance(&self) -> ds_calculator::duel::DuelBalance {
+        self.duel_balance
     }
 
     /// Resolves a pass: flight velocity only, no die (ADR-035, REC).

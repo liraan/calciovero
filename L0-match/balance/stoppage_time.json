@@ -2,5 +2,6 @@
   "base": 0,
   "goal": 60,
   "foul": 20,
-  "duel": 10
+  "duel": 0,
+  "_note": "Seconds of stoppage per event (ADR-026). duel 10 -> 0 (2026-11-12): a clean duel does not stop play; the time is lost to fouls, goals, injuries. With the duel in the match (SIM_VERSION 47) thousands of duels made a 328-minute match."
 }

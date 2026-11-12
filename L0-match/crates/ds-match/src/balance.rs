@@ -280,7 +280,7 @@ mod tests {
         assert_eq!(table.base, 0);
         assert_eq!(table.goal, 60);
         assert_eq!(table.foul, 20);
-        assert_eq!(table.duel, 10);
+        assert_eq!(table.duel, 0, "a clean duel does not stop play");
     }
 
     #[test]
@@ -288,7 +288,7 @@ mod tests {
         let table = StoppageTime::load();
         assert_eq!(table.contribution(EventType::Goal), 60);
         assert_eq!(table.contribution(EventType::Foul), 20);
-        assert_eq!(table.contribution(EventType::Duel), 10);
+        assert_eq!(table.contribution(EventType::Duel), 0);
         assert_eq!(table.contribution(EventType::Shot), 0);
         assert_eq!(table.contribution(EventType::KickOff), 0);
     }

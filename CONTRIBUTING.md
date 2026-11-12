@@ -142,7 +142,7 @@ If an ADR is `proposed` and touches an area, **no code is written in that area u
 
 ## Code
 
-The L0 specification is complete and ratified, and L0 is implemented (11 crates, 302 tests). Code contributions are welcome, but they must follow `doctrine/PLUGIN_DEVELOPER_GUIDE.md`.
+The L0 specification is complete and ratified, and L0 is implemented (11 crates, 305 tests). Code contributions are welcome, but they must follow `doctrine/PLUGIN_DEVELOPER_GUIDE.md`.
 
 When you write code:
 

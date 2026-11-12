@@ -30,6 +30,7 @@
 //! amendment to the model, not a formula (L0.11 §4.10).
 
 pub mod choice;
+pub mod duel;
 pub mod latency;
 pub mod movement;
 pub mod obstacle;
