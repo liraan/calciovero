@@ -230,6 +230,8 @@ pub struct ReceptionBalance {
     pub distance_penalty_max_milli: i64,
     /// Control threshold, milli.
     pub control_threshold_milli: i64,
+    /// A loose ball within this distance of a player is his (ADR-041 §5).
+    pub loose_control_radius_cm: i32,
 }
 
 impl Default for ReceptionBalance {

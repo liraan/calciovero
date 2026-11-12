@@ -370,6 +370,7 @@ impl MatchState {
             &self.scan_balance,
             &self.keeper_balance,
         );
+        self.control_loose_ball(ctx);
         self.update_coverage(ctx, tick);
         match self.possession {
             Possession::Home => self.home_possession_ticks += 1,
@@ -656,6 +657,34 @@ impl MatchState {
     pub fn emit_boundary(&mut self, ctx: &mut MatchContext<'_>, tick: u64, event_type: EventType) {
         self.emit_event(ctx, tick, None, event_type, serde_json::json!({}));
     }
+    /// The carrier is state, computed from the substrate (ADR-041 §5): a
+    /// loose ball, with no pass or shot pending, belongs to the nearest
+    /// player once he is within `loose_control_radius_cm` of it, and his
+    /// team has the possession. Before this the ball stayed loose until the
+    /// next decision, and the match stood still around it (OI-97).
+    fn control_loose_ball(&mut self, ctx: &MatchContext<'_>) {
+        if self.pending.is_some() || self.spatial.ball_state() != crate::spatial::BallState::Loose {
+            return;
+        }
+        let ball = self.spatial.ball();
+        let Some(id) = crate::perception::nearest_to_point(&self.spatial, ball) else {
+            return;
+        };
+        let Some(pos) = self.spatial.agent(id).map(|a| a.position) else {
+            return;
+        };
+        let r = i64::from(self.reception_balance.loose_control_radius_cm);
+        if distance_squared(pos, ball) > r * r {
+            return;
+        }
+        self.spatial.set_carrier(Some(id));
+        self.possession = if ctx.match_.home.players.iter().any(|p| p.id == id) {
+            Possession::Home
+        } else {
+            Possession::Away
+        };
+    }
+
     /// What the pitch looks like after `tick` (the tick record,
     /// IDEA-INFRA-018). Observable facts only: positions, ball, carrier,
     /// score, clock. `events` is the range of the chain born in this tick.
@@ -1286,5 +1315,48 @@ mod intercept_tests {
             MatchState::obstacle_hit(3400 + 366 + 100, 100, 3400, 366, 244, 6, 6),
             None
         );
+    }
+}
+
+#[cfg(test)]
+mod control_tests {
+    use super::*;
+    use ds_core::rng::RngRegistry;
+    use ds_orchestrator::GroundTruth;
+
+    /// ADR-041 §5 (P1): a loose ball within reach of a player is his, and
+    /// his team has the possession; a loose ball out of reach stays loose.
+    #[test]
+    fn a_loose_ball_within_reach_belongs_to_the_nearest_player() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = GroundTruth::new(42, m.id);
+        let mut rng = RngRegistry::new(42);
+        let mut chain = EventChain::new();
+        let ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            rng: &mut rng,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let away = m.away.players[5].id;
+        let at = (2000, 1500);
+        let mut s = MatchState::new(&m);
+        s.spatial.set_position(away, at);
+        s.possession = Possession::Home;
+        // A ball at rest just out of reach of the away player: still loose.
+        s.spatial
+            .set_ball_in_flight((at.0 + 300, at.1, 0), (0, 0, 0));
+        s.spatial.advance_ball();
+        assert_eq!(s.spatial.ball_state(), crate::spatial::BallState::Loose);
+        s.control_loose_ball(&ctx);
+        assert_eq!(s.spatial.carrier(), None, "out of reach");
+        // At his feet: his.
+        s.spatial
+            .set_ball_in_flight((at.0 + 50, at.1, 0), (0, 0, 0));
+        s.spatial.advance_ball();
+        s.control_loose_ball(&ctx);
+        assert_eq!(s.spatial.carrier(), Some(away));
+        assert_eq!(s.possession, Possession::Away);
     }
 }

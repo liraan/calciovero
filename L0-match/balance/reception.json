@@ -6,6 +6,7 @@
   "distance_ref_cm": 3000,
   "distance_penalty_max_milli": 300,
   "control_threshold_milli": 400,
+  "loose_control_radius_cm": 100,
   "_note": "Prototype, not calibrated. Reception is a geometric function of the receiver's first_touch (Plane A, L0.11 §7.2), his freedom at launch, and the pass distance. Flight speed scales with the passer's passing. No dice (ADR-035; foundation §5). Calibration (L3) is the reference study; until then the values are declared choices.",
-  "_source": "Prototype. Speed base 150 and passing bonus 150 reproduce the old prototype's flight range (~150-300 cm/tick). freedom_ref_cm matches PASS_FREEDOM_CM in state.rs. distance_ref_cm is a typical pass length (~30 m). control_threshold_milli 400/1000: a player with first_touch >= 0.4 controls in neutral situations; higher first_touch or more freedom gives margin; a very long or contested reception fails."
+  "_source": "Prototype. Speed base 150 and passing bonus 150 reproduce the old prototype's flight range (~150-300 cm/tick). freedom_ref_cm matches PASS_FREEDOM_CM in state.rs. distance_ref_cm is a typical pass length (~30 m). control_threshold_milli 400/1000: a player with first_touch >= 0.4 controls in neutral situations; higher first_touch or more freedom gives margin; a very long or contested reception fails. loose_control_radius_cm 100 (ADR-041 §5, 2026-11-12): a loose ball within about a stride of a player is his; arbitrary, declared, to be calibrated at L3."
 }
