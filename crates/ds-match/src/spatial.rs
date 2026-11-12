@@ -296,12 +296,15 @@ impl SpatialState {
         self.ball_velocity
     }
 
-    /// Sets the ball velocity, if the ball is in flight (ADR-048 §1: the
-    /// obstacle's reflection changes the trajectory, the ball keeps flying).
-    /// A no-op if the ball is not in flight: the reflection applies to a
-    /// moving ball only.
-    pub const fn set_ball_velocity(&mut self, velocity: (i16, i16, i16)) {
+    /// Deflects the ball in flight (ADR-048 §1): the ball is put back at the
+    /// impact point and keeps flying with the reflected velocity. The
+    /// tick's integration may have carried the ball past the obstacle; the
+    /// touch happened at `impact`, so the ball restarts from there, not from
+    /// behind the goal line. A no-op if the ball is not in flight: the
+    /// reflection applies to a moving ball only.
+    pub const fn deflect_ball(&mut self, impact: (i32, i32, i32), velocity: (i16, i16, i16)) {
         if matches!(self.ball, BallState::InFlight) {
+            self.ball_position = impact;
             self.ball_velocity = velocity;
         }
     }
@@ -776,6 +779,32 @@ mod tests {
         assert_eq!(s.ball_3d(), (100, 200, 50));
         assert_eq!(s.ball_state(), BallState::InFlight);
         assert_eq!(s.ball_velocity(), (10, 5, 20));
+    }
+
+    #[test]
+    fn deflect_ball_restarts_from_the_impact_and_comes_back_into_the_pitch() {
+        // ADR-048 §1 (P1): the integration carried the ball 250 cm past the
+        // goal plane at x = 10500; the post touched it on the plane. After
+        // the deflection the ball is on the plane, and the next tick moves
+        // it back toward the pitch, not deeper behind the line.
+        let mut s = make_state();
+        s.set_ball_in_flight((10_750, 3766, 100), (250, 0, 0));
+        s.deflect_ball((10_500, 3766, 100), (-200, 0, 0));
+        assert_eq!(s.ball_3d(), (10_500, 3766, 100));
+        s.advance_ball();
+        assert!(
+            s.ball_3d().0 < 10_500,
+            "the ball must come back: {:?}",
+            s.ball_3d()
+        );
+    }
+
+    #[test]
+    fn deflect_ball_is_a_noop_when_not_in_flight() {
+        let mut s = make_state();
+        let before = (s.ball_3d(), s.ball_velocity());
+        s.deflect_ball((10_500, 3766, 100), (-200, 0, 0));
+        assert_eq!((s.ball_3d(), s.ball_velocity()), before);
     }
 
     #[test]

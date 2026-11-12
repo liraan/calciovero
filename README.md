@@ -8,7 +8,7 @@
 *Transparent by design. Deterministic by construction. Yours by default.*
 
 [![Status](https://img.shields.io/badge/status-L0_ratified-yellow)](https://github.com/liraan/calciovero)
-[![Tests](https://img.shields.io/badge/tests-241_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-255_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
 
@@ -143,7 +143,7 @@ The rules that make this possible are not negotiable:
 **L0 — the match engine — is complete as a contract, ratified,
 implemented, and tested.** That sentence is true and it is also
 honest: the engine is a *prototype*. It compiles, it is deterministic,
-it is covered by **241 tests**, and its health check is green. But most
+it is covered by **255 tests**, and its health check is green. But most
 of the pitch is still a sketch: positions exist, movement is being
 rebuilt, the ball is only beginning to travel, five of the thirty-one
 event types are emitted.
@@ -222,7 +222,7 @@ Full process in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 The full quality gate (**C2**) runs on every push and pull request:
 `cargo build --release`, `cargo clippy --workspace --all-targets -- -D warnings`,
-`cargo test --workspace` (241 tests), `cargo fmt --check`, the cross-platform
+`cargo test --workspace` (255 tests), `cargo fmt --check`, the cross-platform
 determinism check on the golden hash (OI-58), and `scripts/gates.sh`.
 
 On GitHub this is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). On

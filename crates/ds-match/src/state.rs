@@ -848,6 +848,37 @@ impl MatchState {
         }
     }
 
+    /// The ball's velocity after it meets the woodwork at `impact` on the
+    /// goal plane, or `None` if it meets nothing (ADR-048 §1). Pure: the
+    /// geometry is `obstacle_hit`, the reflection is the calculator's.
+    ///
+    /// The post reverses the x component (the ball comes back toward the
+    /// pitch); the crossbar reverses x and z (it comes back, and down or up
+    /// off the bar).
+    fn goal_plane_deflection(
+        impact: (i32, i32, i32),
+        center_y: i32,
+        velocity: (i16, i16, i16),
+        b: &crate::balance::ObstacleBalance,
+    ) -> Option<(i16, i16, i16)> {
+        let hit = Self::obstacle_hit(
+            impact.1,
+            impact.2,
+            center_y,
+            b.goal_half_width_cm,
+            b.goal_height_cm,
+            b.post_radius_cm,
+            b.crossbar_thickness_cm,
+        )?;
+        Some(if hit == 0 {
+            b.post_reflection().reflect(velocity)
+        } else {
+            b.crossbar_reflections()
+                .iter()
+                .fold(velocity, |v, r| r.reflect(v))
+        })
+    }
+
     /// Checks whether the in-flight ball crossed a goal plane this tick
     /// (F.3-b3). The goal is born from the geometric crossing, not from
     /// the die's outcome: `on_target` is the die's intent, the crossing
@@ -896,26 +927,22 @@ impl MatchState {
         let inside = (y_at - goal_center_y).abs() < goal_half_w && (0..goal_h).contains(&z_at);
 
         // ADR-048 §1: the ball meets the post or the crossbar. If it does,
-        // the ball is deflected and keeps flying: the pending is not cleared,
-        // no goal, no save. The geometry is `obstacle_hit`, pure and testable.
-        let post_r = self.obstacle_balance.post_radius_cm;
-        let bar_t = self.obstacle_balance.crossbar_thickness_cm;
-        if let Some(axis) = Self::obstacle_hit(
-            y_at,
-            z_at,
+        // the ball is deflected and keeps flying from the impact point: the
+        // pending is not cleared, no goal, no save. The geometry and the
+        // reflection are `goal_plane_deflection`, pure and testable.
+        //
+        // Declared debt: the deflection emits no event. The L0 event set is
+        // closed (`ds-stats/src/event.rs`, spec L0.05) and has no woodwork
+        // kind; adding one is a change to the ratified vocabulary, the
+        // maintainer's decision. `Removed-by: the woodwork event in L0.05`.
+        let impact = (plane_x, y_at, z_at);
+        if let Some(v) = Self::goal_plane_deflection(
+            impact,
             goal_center_y,
-            goal_half_w,
-            goal_h,
-            post_r,
-            bar_t,
+            self.spatial.ball_velocity(),
+            &self.obstacle_balance,
         ) {
-            let v = self.spatial.ball_velocity();
-            let reflection = if axis == 0 {
-                self.obstacle_balance.post_reflection()
-            } else {
-                self.obstacle_balance.crossbar_reflection()
-            };
-            self.spatial.set_ball_velocity(reflection.reflect(v));
+            self.spatial.deflect_ball(impact, v);
             return;
         }
 
@@ -1151,6 +1178,46 @@ mod intercept_tests {
     fn perpendicular_distance_is_computed() {
         // 30 cm above the middle of a 100 cm segment.
         assert_eq!(point_segment_dist_sq((0, 0), (100, 0), (50, 30)), 900);
+    }
+
+    /// A shot arriving at the goal plane at x = 10500, travelling toward
+    /// the goal: `(vx, vy, vz)`.
+    const SHOT_V: (i16, i16, i16) = (250, 10, -5);
+
+    #[test]
+    fn a_shot_on_the_post_changes_trajectory() {
+        // ADR-048 §1 (P1, first way): the post reverses vx, the ball comes
+        // back toward the pitch; the other components are unchanged.
+        let b = crate::balance::ObstacleBalance::load();
+        let impact = (10_500, 3400 + b.goal_half_width_cm, 100);
+        let v = MatchState::goal_plane_deflection(impact, 3400, SHOT_V, &b)
+            .expect("the post must deflect the ball");
+        assert!(v.0 < 0, "vx must be reversed: {v:?}");
+        assert_eq!((v.1, v.2), (SHOT_V.1, SHOT_V.2));
+    }
+
+    #[test]
+    fn a_shot_on_target_is_not_deflected() {
+        // ADR-048 §1 (P1, second way): inside the mouth, away from the
+        // woodwork, nothing touches the ball; the crossing decides.
+        let b = crate::balance::ObstacleBalance::load();
+        assert_eq!(
+            MatchState::goal_plane_deflection((10_500, 3400, 100), 3400, SHOT_V, &b),
+            None
+        );
+    }
+
+    #[test]
+    fn a_shot_on_the_crossbar_comes_back_and_bounces() {
+        // The crossbar reverses vx and vz: a z-only reflection would leave
+        // the ball travelling into the goal, past the plane, with no outcome.
+        let b = crate::balance::ObstacleBalance::load();
+        let impact = (10_500, 3400, b.goal_height_cm);
+        let v = MatchState::goal_plane_deflection(impact, 3400, SHOT_V, &b)
+            .expect("the crossbar must deflect the ball");
+        assert!(v.0 < 0, "vx must be reversed: {v:?}");
+        assert!(v.2 > 0, "vz must be reversed: {v:?}");
+        assert_eq!(v.1, SHOT_V.1);
     }
 
     #[test]

@@ -407,13 +407,24 @@ impl ObstacleBalance {
         }
     }
 
-    /// The reflection on the z axis (the crossbar's underside).
+    /// The reflections of the crossbar: x (its face, the ball comes back
+    /// toward the pitch) and z (the ball bounces down or up off the bar).
+    /// A z-only reflection would leave the ball travelling into the goal
+    /// past the plane, where no crossing is checked any more: no goal, no
+    /// out, a ball lost behind the line.
     #[must_use]
-    pub const fn crossbar_reflection(&self) -> ds_calculator::obstacle::ObstacleReflection {
-        ds_calculator::obstacle::ObstacleReflection {
-            axis: 2,
-            elasticity_num: self.elasticity_num,
-            elasticity_den: self.elasticity_den,
-        }
+    pub const fn crossbar_reflections(&self) -> [ds_calculator::obstacle::ObstacleReflection; 2] {
+        [
+            ds_calculator::obstacle::ObstacleReflection {
+                axis: 0,
+                elasticity_num: self.elasticity_num,
+                elasticity_den: self.elasticity_den,
+            },
+            ds_calculator::obstacle::ObstacleReflection {
+                axis: 2,
+                elasticity_num: self.elasticity_num,
+                elasticity_den: self.elasticity_den,
+            },
+        ]
     }
 }
