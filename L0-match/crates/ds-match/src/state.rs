@@ -149,6 +149,9 @@ pub struct MatchState {
     reception_balance: crate::balance::ReceptionBalance,
     carry_balance: crate::balance::CarryBalance,
     pressure_balance: crate::balance::PressureBalance,
+    /// Where the carrier was at his last decision: if he has not got
+    /// anywhere since, he is blocked (OI-97).
+    last_decision: Option<(PlayerId, (i32, i32))>,
     pending: Option<Pending>,
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
@@ -255,6 +258,7 @@ impl MatchState {
             reception_balance: crate::balance::ReceptionBalance::load(),
             carry_balance: crate::balance::CarryBalance::load(),
             pressure_balance: crate::balance::PressureBalance::load(),
+            last_decision: None,
             bodies: {
                 let mut m = BTreeMap::new();
                 for p in match_.home.players.iter().chain(match_.away.players.iter()) {
@@ -454,12 +458,23 @@ impl MatchState {
             }
         }
         let gk = opponents.iter().find(|p| p.slot() == 0).copied();
-        // Room to carry: farther from the goal than the edge of the box.
-        let can_carry = self.spatial.agent(attacker).is_some_and(|a| {
-            let d = distance_squared(a.position, goal);
-            let stop = i64::from(self.carry_balance.carry_stop_from_goal_cm) + 100;
-            d > stop * stop
-        });
+        // Room to carry: farther from the goal than the edge of the box,
+        // and not blocked. A carrier who has not got anywhere since his last
+        // decision is blocked (an opponent in his way) and plays the ball
+        // instead of pushing again (OI-97: one carrier stood 38 minutes
+        // against a centre back, and the whole match with him).
+        let here = self.spatial.agent(attacker).map(|a| a.position);
+        let blocked = matches!(
+            (self.last_decision, here),
+            (Some((who, then)), Some(now)) if who == attacker && distance_squared(then, now) < 50 * 50
+        );
+        self.last_decision = here.map(|p| (attacker, p));
+        let can_carry = !blocked
+            && here.is_some_and(|p| {
+                let d = distance_squared(p, goal);
+                let stop = i64::from(self.carry_balance.carry_stop_from_goal_cm) + 100;
+                d > stop * stop
+            });
         let keeper_reach_cm = gk
             .and_then(|g| self.bodies.get(&g))
             .map_or(0.0, |b| b.height_cm / 2.0);

@@ -208,10 +208,14 @@ fn at_kick_off_each_side_is_in_its_own_half() {
 /// the pass back. Before `SIM_VERSION` 44 he stayed 2 m off the line.
 #[test]
 fn the_keeper_steps_up_when_his_side_has_the_ball() {
+    let m = match_fixture(SEED).expect("fixture");
+    let half = i32::from(m.pitch.length_m) * 50;
     let (_, records) = recorded();
+    // The home side has the ball in the opponent half: its keeper is up.
     let mut xs: Vec<i32> = records
         .iter()
         .filter(|r| r.carrier.is_some_and(|c| (1..100).contains(&c.slot())))
+        .filter(|r| r.ball.position.0 > half)
         .filter_map(|r| {
             r.agents
                 .iter()
@@ -219,30 +223,52 @@ fn the_keeper_steps_up_when_his_side_has_the_ball() {
                 .map(|a| a.position.0)
         })
         .collect();
-    assert!(!xs.is_empty(), "the home side has the ball at some point");
+    assert!(!xs.is_empty(), "the home side attacks at some point");
     xs.sort_unstable();
     let median = xs[xs.len() / 2];
     // 2 m off the line before; with the ball he now follows his defence.
-    assert!(
-        median > 500,
-        "the home keeper's median x with the ball: {median} cm"
-    );
+    assert!(median > 600, "the home keeper's median x: {median} cm");
 }
 
-/// Pressure is a few hundred events a match, not thousands (P1): within
-/// 5 m, with hysteresis. Before `SIM_VERSION` 45 the radius was 20 m with
-/// no hysteresis, and a match had 2,000-9,000 Pressure events.
+/// Pressure is not a flood (P1): a new carrier is pressed by a few
+/// opponents, not by one every tick. Within 5 m and with hysteresis; before
+/// `SIM_VERSION` 45 the radius was 20 m with no hysteresis, and an opponent
+/// on the edge "entered" again every tick.
 #[test]
 fn pressure_is_not_a_flood() {
-    let (result, _) = recorded();
-    let n = result
+    let (result, records) = recorded();
+    let pressures = result
         .events
         .events()
         .iter()
         .filter(|e| e.event_type == ds_stats::EventType::Pressure)
         .count();
+    let team = |r: &TickRecord| r.carrier.map(|c| c.slot() >= 100);
+    let changes = records
+        .windows(2)
+        .filter(|w| team(&w[1]).is_some() && team(&w[0]) != team(&w[1]))
+        .count()
+        .max(1);
     assert!(
-        n < 1500,
-        "{n} Pressure events (about 2,100 before, seed 42)"
+        pressures <= changes * 4,
+        "{pressures} Pressure events for {changes} new carriers"
     );
+}
+
+/// The match never freezes (P1): no spell of more than ten seconds in which
+/// nothing moves. Before `SIM_VERSION` 46 a blocked carrier pushed against
+/// a centre back for 38 minutes and the whole match stood still with him.
+#[test]
+fn the_match_never_freezes() {
+    let (_, records) = recorded();
+    let (mut run, mut longest) = (0, 0);
+    for w in records.windows(2) {
+        if w[0].agents == w[1].agents && w[0].ball == w[1].ball {
+            run += 1;
+            longest = longest.max(run);
+        } else {
+            run = 0;
+        }
+    }
+    assert!(longest <= 100, "{longest} ticks with nothing moving");
 }
