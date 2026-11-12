@@ -16,11 +16,10 @@ const N: u64 = 10;
 /// First seed of the range.
 const SEED_START: u64 = 42;
 
-/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 36.
-/// Identical to 32: the keeper was not in the scene of the golden
-/// seeds (no shot is emitted, same as 17, 22, 27, 28, 32, 33, 34, 35).
+/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 37.
+/// Changed at 37: long passes and shots travel for the first time (OI-97).
 /// Regenerate when `SIM_VERSION` changes.
-const EXPECTED: &str = "f47e40895a42d9b5156a459b1779c2e092a699024ae7fd19f23066eca45e575b88bc10135da86cda4a84ca8e25c60b8258f612ac47b146df7e9fe882d1a1c545f87a5272a3c45a40be72988090535a834b70f15fabc538b883f507f2e357879bad689024db4d547f55958bcf6c3e13aa16596bd1ca6bc6bc95eba5f792c97e91f9d74156dc9092a37801f63582a42e17ce9ab42084999085c78afd4bdf7417af468364fece9dd09905322072a29dcaaeaba304ca1fac5620abf5f40546013b4159ef49e2bd92441ec3d4b48154fb5b2168ae20809431571d424549197bc5b9441c1cddd921109661c590fd0cbbaf005987f8a92522b67f42e09b76ce8fa6c8ee5a44a7d15eed1b375ed98fa27d8f88a3932432753a67ff52c12547882596cdb713f88fed4189599705d84662077f02a81e4ef096179c5155064a34d6b8d3cc5e";
+const EXPECTED: &str = "1dea7a4d272bc69ce93627eabded3004810834c678aecd58b5ac2a443b72fa3586b5bc479f5f1ae8c4b1a1b4a37b6cc63c024160fb72d42d053e92eddde38b213a9229c3ab9647dcbae19b87b0fa3d005adaa731d73df4ba081bd6ca6fa79ece2796a49f8dcfe92395b59355f984dbd3d5aef2ea90879fb5cf71f8a74690eed8a0f23660fd807245f523607f842e343a2e8381131511b08fa453d973900d282d468364fece9dd09905322072a29dcaaeaba304ca1fac5620abf5f40546013b41f1797a1f95648d1c7b0ce9043ab90ba9aaaa03ff053c09b3216d581b51e7c0be34cd5db155f9cc05a825355e836fd35c19406b996a526bffe00ca6ceab0d3e651b27c1d2ebe54c7b0340f46a92921185d6f5e9172919f6f233b7ef83224afdf885b11c38e97e3e2af67afe78de466b3e7b0a41d41ddecd66d62ac9a323f92aa6";
 
 #[test]
 fn golden_l0_is_deterministic() {

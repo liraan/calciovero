@@ -216,12 +216,15 @@ impl GroundTruth {
         if len_sq == 0 {
             return (0, 0, 0);
         }
+        // The unit vector in thousandths. Multiply before dividing: the old
+        // `1000 / len` was zero for any distance over 10 m, so every pass
+        // and every shot longer than that left with a null velocity and
+        // stopped where it started (OI-97, found with the 2D view).
         let len = len_sq.isqrt();
-        let scale = 1000_i64 / len;
         (
-            i16::try_from(dx * scale).unwrap_or(0),
-            i16::try_from(dy * scale).unwrap_or(0),
-            i16::try_from(dz * scale).unwrap_or(0),
+            i16::try_from(dx * 1000 / len).unwrap_or(0),
+            i16::try_from(dy * 1000 / len).unwrap_or(0),
+            i16::try_from(dz * 1000 / len).unwrap_or(0),
         )
     }
     /// Flight speed from whether the shot was on target (MD-19: power is
@@ -531,6 +534,23 @@ impl fmt::Debug for GroundTruth {
             .field("world_seed", &self.world_seed)
             .field("match_id", &self.match_id)
             .finish_non_exhaustive()
+    }
+}
+
+#[cfg(test)]
+mod direction_tests {
+    use super::GroundTruth;
+
+    /// A long pass has a direction: the unit vector does not vanish with
+    /// the distance (OI-97).
+    #[test]
+    fn a_long_pass_has_a_direction() {
+        for len in [500, 1_500, 4_000, 9_000] {
+            let d = GroundTruth::direction_3d((0, 0, 0), (len, 0, 0));
+            assert_eq!(d, (1000, 0, 0), "length {len} cm");
+        }
+        let diag = GroundTruth::direction_3d((0, 0, 0), (3_000, 4_000, 0));
+        assert_eq!(diag, (600, 800, 0));
     }
 }
 
