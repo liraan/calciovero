@@ -588,3 +588,34 @@ mod block_tests {
         assert!(b.line_min_cm < b.line_max_out_of_possession_cm);
     }
 }
+
+/// When an opponent puts the carrier under pressure (`balance/influence.json`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+pub struct PressureBalance {
+    /// An opponent within this distance of the ball presses, cm.
+    pub pressure_radius_cm: i32,
+    /// He stops pressing beyond the radius times this, thousandths.
+    pub pressure_exit_milli: i32,
+}
+
+impl PressureBalance {
+    /// Loads the pressure parameters.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the embedded JSON is invalid; `embedded_pressure_is_valid`
+    /// catches it at test time.
+    #[must_use]
+    pub fn load() -> Self {
+        serde_json::from_str(INFLUENCE_JSON).expect("embedded influence file is valid JSON")
+    }
+}
+
+#[cfg(test)]
+mod pressure_tests {
+    #[test]
+    fn embedded_pressure_is_valid() {
+        let p = super::PressureBalance::load();
+        assert!(p.pressure_radius_cm > 0 && p.pressure_exit_milli >= 1000);
+    }
+}

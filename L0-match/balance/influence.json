@@ -4,5 +4,7 @@
   "w_cost": 20,
   "w_red": 50,
   "space_threshold_cm": 2000,
-  "_note": "Prototype, not calibrated. Weights per use (pressing, duel, receiver) are a later refinement; this is the first set. See L0-match/specs/03-entities-minimal.md §2.9."
+  "pressure_radius_cm": 500,
+  "pressure_exit_milli": 1300,
+  "_note": "Prototype, not calibrated. Weights per use (pressing, duel, receiver) are a later refinement; this is the first set. See L0-match/specs/03-entities-minimal.md §2.9. pressure_radius_cm and pressure_exit_milli (2026-11-12): an opponent puts the carrier under pressure when he comes within 5 m of the ball, and stays so until he is 30% farther (hysteresis). Before, the radius was space_threshold_cm (20 m) and there was no hysteresis: a match had 2,000-9,000 Pressure events (a real one has a few hundred), an opponent oscillating on the radius 'entered' again every tick. Arbitrary, declared, to be calibrated at L3."
 }

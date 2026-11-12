@@ -148,6 +148,7 @@ pub struct MatchState {
     obstacle_balance: crate::balance::ObstacleBalance,
     reception_balance: crate::balance::ReceptionBalance,
     carry_balance: crate::balance::CarryBalance,
+    pressure_balance: crate::balance::PressureBalance,
     pending: Option<Pending>,
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
@@ -253,6 +254,7 @@ impl MatchState {
             obstacle_balance: crate::balance::ObstacleBalance::load(),
             reception_balance: crate::balance::ReceptionBalance::load(),
             carry_balance: crate::balance::CarryBalance::load(),
+            pressure_balance: crate::balance::PressureBalance::load(),
             bodies: {
                 let mut m = BTreeMap::new();
                 for p in match_.home.players.iter().chain(match_.away.players.iter()) {
@@ -942,9 +944,15 @@ impl MatchState {
     /// per-tick event. The narrator classifies the enter fact as
     /// `Pressure` (T1); the engine emits the fact, not the event.
     fn update_coverage(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
-        let weights = crate::balance::InfluenceWeightsJson::load().to_weights();
-        let threshold_sq =
-            i64::from(weights.space_threshold_cm) * i64::from(weights.space_threshold_cm);
+        // Loaded once (it was parsed from JSON at every tick). An opponent
+        // presses within the radius, and keeps pressing until he is
+        // `pressure_exit_milli` of it away: without the hysteresis an
+        // opponent on the edge "entered" again every tick.
+        let p = self.pressure_balance;
+        let r = i64::from(p.pressure_radius_cm);
+        let threshold_sq = r * r;
+        let exit = r * i64::from(p.pressure_exit_milli) / 1000;
+        let exit_sq = exit * exit;
         let ball = self.spatial.ball();
 
         // Compute the current coverage set (immutable phase).
@@ -953,7 +961,8 @@ impl MatchState {
             let mut set: BTreeSet<PlayerId> = BTreeSet::new();
             for p in &opp.players {
                 if let Some(a) = self.spatial.agent(p.id) {
-                    if distance_squared(a.position, ball) <= threshold_sq {
+                    let d = distance_squared(a.position, ball);
+                    if d <= threshold_sq || (self.coverage.contains(&p.id) && d <= exit_sq) {
                         set.insert(p.id);
                     }
                 }

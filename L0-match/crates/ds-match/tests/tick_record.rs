@@ -228,3 +228,21 @@ fn the_keeper_steps_up_when_his_side_has_the_ball() {
         "the home keeper's median x with the ball: {median} cm"
     );
 }
+
+/// Pressure is a few hundred events a match, not thousands (P1): within
+/// 5 m, with hysteresis. Before `SIM_VERSION` 45 the radius was 20 m with
+/// no hysteresis, and a match had 2,000-9,000 Pressure events.
+#[test]
+fn pressure_is_not_a_flood() {
+    let (result, _) = recorded();
+    let n = result
+        .events
+        .events()
+        .iter()
+        .filter(|e| e.event_type == ds_stats::EventType::Pressure)
+        .count();
+    assert!(
+        n < 1500,
+        "{n} Pressure events (about 2,100 before, seed 42)"
+    );
+}
