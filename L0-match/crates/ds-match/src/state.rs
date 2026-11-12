@@ -656,6 +656,41 @@ impl MatchState {
     pub fn emit_boundary(&mut self, ctx: &mut MatchContext<'_>, tick: u64, event_type: EventType) {
         self.emit_event(ctx, tick, None, event_type, serde_json::json!({}));
     }
+    /// What the pitch looks like after `tick` (the tick record,
+    /// IDEA-INFRA-018). Observable facts only: positions, ball, carrier,
+    /// score, clock. `events` is the range of the chain born in this tick.
+    pub(crate) fn record(
+        &self,
+        tick: u64,
+        ticks_per_second: u8,
+        events: std::ops::Range<usize>,
+    ) -> crate::record::TickRecord {
+        let tps = u64::from(ticks_per_second).max(1);
+        let half_seconds =
+            u32::try_from(tick.saturating_sub(self.half_start_tick) / tps).unwrap_or(u32::MAX);
+        crate::record::TickRecord {
+            tick,
+            half: self.half,
+            half_seconds,
+            ball: crate::record::BallFrame {
+                position: self.spatial.ball_3d(),
+                state: self.spatial.ball_state(),
+            },
+            carrier: self.spatial.carrier(),
+            agents: self
+                .spatial
+                .iter()
+                .map(|(id, a)| crate::record::AgentFrame {
+                    id: *id,
+                    position: a.position,
+                    heading: a.heading,
+                })
+                .collect(),
+            score: self.score,
+            events,
+        }
+    }
+
     /// Produces the final result.
     #[must_use]
     #[allow(clippy::cast_precision_loss)]

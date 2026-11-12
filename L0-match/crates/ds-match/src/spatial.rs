@@ -77,7 +77,7 @@ pub struct PlayerBody {
 /// The state of the ball (MD-25). `Possessed` means at the carrier's feet
 /// (velocity zero, no physics). `InFlight` means travelling with its own
 /// velocity. `Loose` means free and at rest.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum BallState {
     /// At the carrier's feet.
     Possessed,

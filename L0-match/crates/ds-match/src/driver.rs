@@ -38,3 +38,29 @@ pub fn simulate_from_seed(match_: &Match, seed: u64, config: MatchConfig) -> Mat
     let mut engine = TextMatchEngine::new();
     engine.simulate(ctx)
 }
+
+/// Like [`simulate_from_seed`], and also returns the tick record.
+///
+/// One [`crate::TickRecord`] per tick (IDEA-INFRA-018). The result is the same
+/// as [`simulate_from_seed`]'s, narrative included: recording observes, it
+/// does not act. The record is regenerated, never saved.
+#[must_use]
+pub fn simulate_from_seed_recorded(
+    match_: &Match,
+    seed: u64,
+    config: MatchConfig,
+) -> (MatchResult, Vec<crate::record::TickRecord>) {
+    let mut hidden = GroundTruth::new(seed, match_.id);
+    let mut rng = RngRegistry::new(seed);
+    let mut chain = EventChain::new();
+    let mut ctx = MatchContext {
+        match_,
+        hidden: &mut hidden,
+        rng: &mut rng,
+        chain: &mut chain,
+        config,
+    };
+    let (mut result, records) = crate::simulate::simulate_match_recorded(&mut ctx);
+    result.narrative = crate::narrative::narrate(ctx.match_, &result.events);
+    (result, records)
+}

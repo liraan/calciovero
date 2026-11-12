@@ -8,7 +8,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-255_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-262_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
 
@@ -91,7 +91,7 @@ What exists today:
   perceive, choose and move, a ball that flies, a goalkeeper who
   positions himself, posts and crossbar that deflect the ball;
 - a **text board** and an HTML page that show the result of a match;
-- **255 tests** and a health check that runs on every commit.
+- **262 tests** and a health check that runs on every commit.
 
 What does not exist yet: a pitch view you can watch, the rules of the
 game (throw-ins, offside, fouls), fatigue, the season, the career, the
