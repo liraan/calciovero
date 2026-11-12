@@ -104,12 +104,19 @@ with their first consumer (ADR-051 §4).
 
 ## 7. The order of work (ADR-051 §5)
 
-1. **The save** — reaction time and dive: what the keeper reaches in the time the ball takes to arrive. Today's biggest error.
-2. **Kick power** — the shot and the long ball leave at the kicker's speed (shooting or passing, explosive force).
-3. **The foot** — weak and strong foot in the pass and the shot.
-4. **The turn** — an agile player turns faster than a stiff one.
-5. **The duel in its situation** — approach speed, angle, shielding.
-6. **The interception** — reach from reactivity and reading.
-7. **Fatigue** — the first dimmer, from endurance.
+**Every act is in every match, in potential.** The work does not add acts
+one at a time: a first pass gives every row of this catalogue its
+minimal real form (a candidate in its scenes, quantities that read their
+roots), family by family, until the repertoire test is green (every act
+appears at least once in the golden range of seeds). The families of the
+first pass:
 
-Then the off-ball candidates of ADR-049: offer, run in behind, mark, cover.
+1. **In goal** — position by reading, get set, dive, catch / parry / spill, come out, claim a cross, punch, distribute (today's biggest error: the save).
+2. **The kick** — power and the foot for every kick; the pass in its kinds (short, long, through ball, switch, cross), the shot, the clearance.
+3. **The body** — turn and change of direction, stop, jump; fatigue, the first dimmer.
+4. **In the air** — header in attack and in defence, the aerial duel.
+5. **With the ball under pressure** — shield, dribble past a man, the duel in its situation.
+6. **Without the ball** — intercept by reach, block, mark, cover, offer for a pass, run in behind.
+7. **Restarts** — the taker chosen, throw-in, corner and goal kick played as kicks.
+
+Then the depth, act by act, by what a fan sees wrong first.
