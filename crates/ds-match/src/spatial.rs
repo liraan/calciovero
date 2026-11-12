@@ -113,6 +113,11 @@ pub struct SpatialState {
     /// The formation slot of each agent, in centimetres. The default
     /// (`GRID_4_4_2`, mirrored) is a placeholder: L2 replaces it (MD-09).
     slots: BTreeMap<PlayerId, (i32, i32)>,
+    /// The goalkeeper of each team: `(home, away)`. A fact of the
+    /// formation, populated at construction (OI-81-step-move). The keeper
+    /// moves with `resolve_movement` like every agent; only his target
+    /// differs.
+    goalkeepers: (PlayerId, PlayerId),
 }
 
 /// The 4-4-2 grid, as `(x percent, y percent)` per slot.
@@ -131,11 +136,6 @@ const BODY_RADIUS_CM: i32 = 45;
 /// Distance from the goal line at which the goalkeeper stands (F.3-b3).
 /// Arbitrary, declared: 2 m off the line.
 const GK_LINE_OFFSET_CM: i32 = 200;
-
-/// An agent whose `x` is within this distance of either goal line is not
-/// moved by `move_agents` (F.3-b3). Declared simplification: the
-/// goalkeeper stays home, everyone else moves.
-const GK_ANCHOR_CM: i32 = 250;
 
 /// One agent's work tuple for the movement pass: id, current position,
 /// formation slot. A named type keeps the borrow simple and the signature
@@ -222,6 +222,7 @@ impl SpatialState {
             ball_velocity: (0, 0, 0),
             carrier: None,
             slots,
+            goalkeepers: (home.players[0].id, away.players[0].id),
         }
     }
 
@@ -362,15 +363,19 @@ impl SpatialState {
     /// record will read displacement, IDEA-INFRA-018).
     /// After the step, a minimal separation
     /// (`BODY_RADIUS_CM`) pushes overlapping agents apart (MD-12).
-    ///
-    /// **F.3-b3:** an anchored agent (the goalkeeper, `x` within
-    /// `GK_ANCHOR_CM` of a goal line) is excluded from the pass entirely:
-    /// it does not move and it is not separated. Declared simplification:
-    /// the goalkeeper stays home, everyone else moves. It reaches the ball
-    /// only via `resolve_save` (F.3-b3, engine side).
+    /// **OI-81-step-move:** the goalkeeper is no longer anchored. He moves
+    /// with the same formula as every agent; only his target differs:
+    /// a point on the ball-goal segment, advanced by a fraction that
+    /// depends on the ball's distance from the goal (`balance/keeper.json`).
+    /// At `t = 0` (ball far) he rests at `GK_LINE_OFFSET_CM` from the line;
+    /// at `t = 1` (ball on the line) he advances by `ADVANCE_CM` more.
+    /// The keeper is not a chaser: he is excluded from the `nearest`
+    /// computation (a keeper who runs after the ball is not a keeper).
     ///
     /// Deterministic: no RNG (S1). The variation comes from the inputs
     /// (positions, ball, slots), not from a die.
+    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_lines)]
     pub fn move_agents(
         &mut self,
         pitch_length_cm: i32,
@@ -379,6 +384,7 @@ impl SpatialState {
         hidden: &mut ds_orchestrator::GroundTruth,
         tick: u64,
         scan_balance: &crate::balance::ScanningBalance,
+        keeper_balance: &crate::balance::KeeperBalance,
     ) {
         let centre = (pitch_length_cm / 2, pitch_width_cm / 2);
         let ball = self.ball();
@@ -393,9 +399,6 @@ impl SpatialState {
             .iter()
             .filter_map(|(id, slot)| {
                 let a = self.agents.get(id)?;
-                if a.position.0 <= GK_ANCHOR_CM || a.position.0 >= pitch_length_cm - GK_ANCHOR_CM {
-                    return None;
-                }
                 Some((*id, a.position, *slot))
             })
             .collect();
@@ -406,7 +409,11 @@ impl SpatialState {
             // the ball. With gaze always towards the ball (OI-72), every
             // agent perceives it, so this filter is identity today: it
             // is now real: an agent that does not see the ball does not chase it (ADR-034).
-            .filter(|w| crate::perception::perceived_ball(&*self, w.0, ball).is_some())
+            .filter(|w| {
+                w.0 != self.goalkeepers.0
+                    && w.0 != self.goalkeepers.1
+                    && crate::perception::perceived_ball(&*self, w.0, ball).is_some()
+            })
             .min_by_key(|(_, pos, _)| {
                 let ddx = i64::from(pos.0 - ball.0);
                 let ddy = i64::from(pos.1 - ball.1);
@@ -422,8 +429,41 @@ impl SpatialState {
         // (no overshoot). The displacement is per-axis (L-infinity): a
         // diagonal step has the same per-axis magnitude as a cardinal one,
         // matching the previous rule (MD-09), not a new model choice.
+        // OI-81-step-move: the keeper positions himself on the
+        // ball-goal segment, with a fraction that depends on the
+        // distance from the ball to the goal (balance/keeper.json).
+        // The same movement formula as every agent, a different target.
+        // The rest x is GK_LINE_OFFSET_CM, not 0: the keeper does not
+        // stand on the goal line (existing fact, missing in the cantiere).
+        let goal_y = f64::from(pitch_width_cm) / 2.0;
+        let range = f64::from(keeper_balance.positioning_range_cm);
+        let advance = f64::from(keeper_balance.advance_cm);
+        let mut keeper_targets: Vec<(PlayerId, (i32, i32))> = Vec::with_capacity(2);
+        for (gk, goal_x) in [
+            (self.goalkeepers.0, 0.0_f64),
+            (self.goalkeepers.1, f64::from(pitch_length_cm)),
+        ] {
+            let delta_x = f64::from(ball.0) - goal_x;
+            let delta_y = f64::from(ball.1) - goal_y;
+            let d = delta_x.hypot(delta_y);
+            let t = (1.0 - d / range).clamp(0.0, 1.0);
+            let y_target = f64::mul_add(f64::from(ball.1) - goal_y, t, goal_y);
+            let sign = if goal_x == 0.0 { 1.0_f64 } else { -1.0_f64 };
+            let x_target = f64::mul_add(
+                sign,
+                f64::mul_add(advance, t, f64::from(GK_LINE_OFFSET_CM)),
+                goal_x,
+            );
+            #[allow(clippy::cast_possible_truncation)]
+            let tx = (x_target.round() as i32).clamp(0, pitch_length_cm);
+            #[allow(clippy::cast_possible_truncation)]
+            let ty = (y_target.round() as i32).clamp(0, pitch_width_cm);
+            keeper_targets.push((gk, (tx, ty)));
+        }
         for entry in &mut work {
-            let target = if Some(entry.0) == nearest {
+            let target = if let Some((_, kt)) = keeper_targets.iter().find(|(g, _)| *g == entry.0) {
+                *kt
+            } else if Some(entry.0) == nearest {
                 ball
             } else {
                 (entry.2.0 + dx, entry.2.1 + dy)
@@ -628,24 +668,33 @@ mod tests {
     }
 
     #[test]
-    fn move_agents_does_not_move_the_goalkeeper() {
+    fn move_agents_moves_the_goalkeeper_toward_the_ball_segment() {
         let mut s = make_state();
-        let home_gk = PlayerId::new(0, 0);
-        let away_gk = PlayerId::new(100, 0);
-        let h_before = s.agent(home_gk).unwrap().position;
-        let a_before = s.agent(away_gk).unwrap().position;
+        let gk = PlayerId::new(0, 0);
+        s.set_ball_in_flight((500, 3400, 0), (0, 0, 0));
+        let before = s.agent(gk).unwrap().position;
         let bodies = make_bodies();
         let mut hidden = ds_orchestrator::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
-        s.move_agents(
-            10500,
-            6800,
-            &bodies,
-            &mut hidden,
-            0,
-            &crate::balance::ScanningBalance::load(),
+        for tick in 0..50 {
+            s.move_agents(
+                10500,
+                6800,
+                &bodies,
+                &mut hidden,
+                tick,
+                &crate::balance::ScanningBalance::load(),
+                &crate::balance::KeeperBalance::load(),
+            );
+        }
+        let after = s.agent(gk).unwrap().position;
+        assert_ne!(
+            before, after,
+            "the keeper must move (P1): OI-81-step-move lifts the anchor"
         );
-        assert_eq!(s.agent(home_gk).unwrap().position, h_before);
-        assert_eq!(s.agent(away_gk).unwrap().position, a_before);
+        assert!(
+            after.0 > before.0,
+            "the keeper must advance, not retreat: {before:?} -> {after:?}"
+        );
     }
 
     #[test]
@@ -770,6 +819,7 @@ mod tests {
             &mut hidden,
             0,
             &crate::balance::ScanningBalance::load(),
+            &crate::balance::KeeperBalance::load(),
         );
         let mut moved = 0;
         for (id, a) in s.iter() {

@@ -144,6 +144,7 @@ pub struct MatchState {
     bodies: BTreeMap<PlayerId, PlayerBody>,
     /// Scanning parameters (ADR-034), loaded once at construction.
     scan_balance: crate::balance::ScanningBalance,
+    keeper_balance: crate::balance::KeeperBalance,
     reception_balance: crate::balance::ReceptionBalance,
     pending: Option<Pending>,
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
@@ -252,6 +253,7 @@ impl MatchState {
             spatial: SpatialState::from_squads(&match_.pitch, &match_.home, &match_.away),
             pending: None,
             scan_balance: crate::balance::ScanningBalance::load(),
+            keeper_balance: crate::balance::KeeperBalance::load(),
             reception_balance: crate::balance::ReceptionBalance::load(),
             bodies: {
                 let mut m = BTreeMap::new();
@@ -364,6 +366,7 @@ impl MatchState {
             ctx.hidden,
             tick,
             &self.scan_balance,
+            &self.keeper_balance,
         );
         self.update_coverage(ctx, tick);
         match self.possession {
