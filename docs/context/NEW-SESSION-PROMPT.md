@@ -317,7 +317,7 @@ At minimum: §1 (pillars), §2 (design pillars), §3 (Three Planes), §5 (banned
     sed -n '/^## 0\. Vision/,/^## 1\./p' docs/context/L0-POSITIONAL-SLICE.md
     grep -nE '^## 4|^## 5' docs/WORLD-MODEL.md
 
-The first is the vision (phenomenological simulation, not physics; eight categories; every event carries the fields to explain why). The second is the simulation/presentation boundary: the renderer does not invent events, it shows the ones the engine emits. Then read `docs/context/analysis/2026-11-04-direction-decisions.md` (the reasoning of the last session, written for an agent who was not there). Without these, an agent knows *what* to do and not *why the engine is like this*, and reopens decisions already taken.
+The first is the vision (phenomenological simulation: the actors decide and the ball has declared physics, no physics of the bodies — see the 2026-11-12 note in §0; eight categories; every event carries the fields to explain why). The second is the simulation/presentation boundary: the renderer does not invent events, it shows the ones the engine emits. Then read `docs/context/analysis/2026-11-04-direction-decisions.md` (the reasoning of the last session, written for an agent who was not there). Without these, an agent knows *what* to do and not *why the engine is like this*, and reopens decisions already taken.
 
 **If the direction sources disagree, this is the order:** `specs/00-foundations.md` > `L0-POSITIONAL-SLICE.md` §0 > `WORLD-MODEL.md` §4-5 > any dated `analysis/` report. A lower number wins. A report that contradicts a higher source is a finding to report, not a silent override (D4, maintainer decision). The full reasoning is in §8 of the direction-decisions report.
 

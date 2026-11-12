@@ -97,6 +97,8 @@ the **observable effects** of conditions and decisions, tick by tick. The
 effects are modelled, not simulated: a slip is an event with a cause, not
 a computed friction coefficient.
 
+> **Note (2026-11-12) — the paradigm restated: the actors decide, the ball has declared physics.** The paragraph above is the 2026-11-01 wording, and one word in it is no longer true: "trajectories". The maintainer's statement of the vision (2026-11-12): a deterministic engine that simulates a football match in depth, with everything that happens on the pitch; **phenomenological**, with **the ball with physics** and **the players with the power of choice** — thinking, evaluating, deciding actors, not puppets, the goalkeepers included. Accepted sources already say each half: ADR-043 (the actor decides) and ADR-045 (the goalkeeper is an actor); ADR-044 §3-§5 and ADR-048 (the ball answers a chain of declared physical properties — gravity, friction, elasticity — applied by a formula, in integers). What stays out is the physics **of the bodies**: contact forces and biomechanics are not simulated; a gesture is read, chosen, executed with a band (ADR-039). Wherever this note and `NEW-SESSION-PROMPT.md` say "not physics", read *no physics of the bodies*.
+
 ### The scope: eight categories, not one
 
 The engine models eight kinds of phenomena. **Weather is an input to two
@@ -154,6 +156,9 @@ engine emits 8. The gap is declared; this note is the plan to close it.
   `SpatialState.carrier`.
 
 Neither is used by the engine yet. See §7.
+
+> **Note (2026-11-12) — four statements in §0 that are prototype.** (1) "named RNG streams" (*Why phenomenological*): no die is drawn in a simulation path (ADR-035); determinism is by construction, not by seeded stream. (2) Weather as an input to categories 1 and 3, and "surface" in category 3: weather and wear are out (T5); the stable properties of the surface enter as a term (ADR-044 §4). (3) Referee "strictness, consistency" (category 8): the referee applies the rules (OI-55). (4) *The existing work* describes the code of 2026-11-01 (`pick_players` at random, slices A and B unused): none of it is true today. The actor is elected from space and decides through `Actor::decide`; the state is `SESSION-STATE.md`. The text above stays as history (D7).
+
 ## 1. The gap this note closes
 
 engine. The code is a prototype that does not implement it. This is declared,

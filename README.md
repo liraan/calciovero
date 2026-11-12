@@ -75,24 +75,40 @@ The enforcement is [ADR-003](docs/adr/003-plane-a-enforcement.md).
 The vision of why the engine has this shape is
 [`docs/context/L0-POSITIONAL-SLICE.md`](docs/context/L0-POSITIONAL-SLICE.md) §0.
 
-## A match is not physics. It is decisions.
+## A match is decisions, and a ball that obeys its properties
 
-This engine does not simulate physics. It models the **observable
-effects** of conditions and decisions, tick by tick. A misplaced pass
-is an event with a cause — the passer's technique, the pressure he was
-under, his balance — not a computed force vector. A defender arriving a
-step late is a timing event, not an integration of acceleration.
+The players are not puppets. Each one is an actor: he perceives the
+scene from his own point of view, reads it with his own
+characteristics, and decides. The engine applies the act; it does not
+choose it ([ADR-043](docs/adr/043-the-actor-decides.md)). The
+goalkeepers are actors in the same sense
+([ADR-045](docs/adr/045-the-goalkeeper-is-an-actor.md)). A misplaced
+pass is an event with a cause — the passer's technique, the pressure he
+was under, his balance — not a computed force vector. A defender
+arriving a step late is a timing event, not an integration of
+acceleration.
 
-A physical engine would need fixed-point physics, months of
-calibration, and data that does not exist publicly. A phenomenological
-engine is deterministic, calibratable (parameters in `balance/`,
-declared arbitrary until calibrated), and — most importantly —
-**explainable**: every event carries the fields to understand why it
-happened. "The pass was late because the pressing closed the lane" is
-the target. "The collision response exceeded the threshold" is not.
+The ball is the other half. It does not read and it does not choose: it
+has **declared physical properties**, and its trajectory is their
+effect — gravity, friction, the reflection on a post, the bounce on the
+ground — computed in integers, so that the same match is the same on
+every machine ([ADR-044](docs/adr/044-the-chain.md) §3–§5,
+[ADR-048](docs/adr/048-the-ball-can-be-deflected.md)).
 
-A physical engine is not a later step of this project. It is a
-different paradigm, not planned.
+So the engine is **phenomenological for the bodies and physical for the
+ball**. It does not simulate biomechanics or contact forces: the effect
+of a decision is modelled, not integrated. That keeps it deterministic,
+calibratable (parameters in `balance/`, declared arbitrary until
+calibrated), and — most importantly — **explainable**: every event
+carries the fields to understand why it happened. "The pass was late
+because the pressing closed the lane" is the target. "The collision
+response exceeded the threshold" is not.
+
+A physics engine for the bodies is not a later step of this project. It
+is a different paradigm, not planned.
+
+This section states the direction. How much of it the code does today
+is in "What exists today", and it is less than this.
 
 ## What "deterministic" means, and why we mean it
 
