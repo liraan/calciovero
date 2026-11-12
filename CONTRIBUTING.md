@@ -29,21 +29,21 @@ and say what you know: we will find you a piece.
 
 ### Open tasks for newcomers
 
-Real tasks the project needs now, each small enough for one pull request.
-Comment on the issue (or open one) before you start, so that two people do
-not take the same task.
+Real tasks the project needs now, each small enough for one pull request,
+each with its issue (label `good first issue`). Comment on the issue before
+you start, so that two people do not take the same task.
 
 | Task | Path | Where | Code? |
 |---|---|---|---|
-| Watch three seeds in the 2D view and report what a fan would not recognise | football | an issue *It is not football* | no |
-| Give `profiles.json` sourced values: heights and weights by position from public aggregate statistics | football | `L0-match/balance/profiles.json` | no |
-| Compare `block.json` with real team shapes (depth and width of a block, in and out of possession) and propose values with a source | football | `L0-match/balance/block.json` | no |
-| Add a 4-3-3 next to the 4-4-2 (the grid and the roles) | tactics | `shape.rs` | a little |
-| Write offside as a pure function: given the positions at a pass, is the receiver offside? | the Laws | `rules.rs` | a little |
-| A test scenario: "a pass to a free teammate a few metres away is completed" | testing | `tools/ds-testkit`, `tools/ds-test-runner` | yes |
-| Show each player's choice in the 2D view (who presses, who holds) with a different marker | tools | `tools/ds-demo/src/pitchview.rs` | yes |
-| An Italian (or other) translation of the README, as `README.<lang>.md` | writing | root | no |
-| Load a folder of changed `balance/` files at runtime, without rebuilding (needs an ADR first: the engine does no I/O, ADR-038) | the engine | `tools/ds-demo`, `L0-match/crates/ds-match` | yes |
+| [#9](https://github.com/liraan/calciovero/issues/9) Watch three seeds in the 2D view and report what a fan would not recognise | football | an issue *It is not football* | no |
+| [#10](https://github.com/liraan/calciovero/issues/10) Give `profiles.json` sourced values: heights and weights by position from public aggregate statistics | football | `L0-match/balance/profiles.json` | no |
+| [#11](https://github.com/liraan/calciovero/issues/11) Compare `block.json` with real team shapes (depth and width of a block, in and out of possession) and propose values with a source | football | `L0-match/balance/block.json` | no |
+| [#12](https://github.com/liraan/calciovero/issues/12) Add a 4-3-3 next to the 4-4-2 (the grid and the roles) | tactics | `shape.rs` | a little |
+| [#13](https://github.com/liraan/calciovero/issues/13) Write offside as a pure function: given the positions at a pass, is the receiver offside? | the Laws | `rules.rs` | a little |
+| [#14](https://github.com/liraan/calciovero/issues/14) A test scenario: "a pass to a free teammate a few metres away is completed" | testing | `tools/ds-testkit`, `tools/ds-test-runner` | yes |
+| [#15](https://github.com/liraan/calciovero/issues/15) Show each player's choice in the 2D view (who presses, who holds) with a different marker | tools | `tools/ds-demo/src/pitchview.rs` | yes |
+| [#16](https://github.com/liraan/calciovero/issues/16) An Italian (or other) translation of the README, as `README.<lang>.md` | writing | root | no |
+| [#17](https://github.com/liraan/calciovero/issues/17) Load a folder of changed `balance/` files at runtime, without rebuilding (needs an ADR first: the engine does no I/O, ADR-038) | the engine | `tools/ds-demo`, `L0-match/crates/ds-match` | yes |
 
 The list changes as tasks are done; the maintainer's own plan is in
 [`process/SESSION-STATE.md`](process/SESSION-STATE.md) (the `[next]` row).
