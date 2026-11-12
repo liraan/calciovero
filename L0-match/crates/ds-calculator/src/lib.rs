@@ -35,6 +35,7 @@ pub mod latency;
 pub mod movement;
 pub mod obstacle;
 pub mod offball;
+pub mod save;
 pub mod shot_choice;
 
 use std::collections::BTreeSet;

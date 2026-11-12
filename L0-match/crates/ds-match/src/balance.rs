@@ -190,6 +190,9 @@ pub struct KeeperBalance {
     pub support_gap_cm: i32,
     /// With the ball, the keeper never goes farther than this from his line (cm).
     pub support_max_cm: i32,
+    /// Without the ball, the keeper stands at most this share of the ball's
+    /// depth off his line, thousandths: always between the ball and the goal.
+    pub depth_share_milli: i32,
 }
 
 impl Default for KeeperBalance {

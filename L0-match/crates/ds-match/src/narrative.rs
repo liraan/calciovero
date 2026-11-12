@@ -231,7 +231,13 @@ fn render_text(
         EventType::Interception => format!("{player} intercepts in the {minute}'"),
         EventType::Clearance => format!("{player} clears in the {minute}'"),
         EventType::Block => format!("{player} blocks in the {minute}'"),
-        EventType::Save => format!("Save by {player} in the {minute}'"),
+        EventType::Save => {
+            if ev.fields.get("held").and_then(serde_json::Value::as_bool) == Some(false) {
+                format!("{player} parries in the {minute}'")
+            } else {
+                format!("Save by {player} in the {minute}'")
+            }
+        }
         EventType::Duel => {
             let winner = field_u32(&ev.fields, "winner_slot");
             let actor = match ev.actor {

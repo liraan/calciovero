@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine at `SIM_VERSION` 50.
+engine (updated at `SIM_VERSION` 51).
 
 **How to read the state.**
 
@@ -95,10 +95,10 @@ The variation comes from the situation, never from a die. Twin tests: the better
 
 | Act | Quantities | Roots | Engine today |
 |---|---|---|---|
-| Position (the angles) | where, relative to ball and goal | game reading, *concentration* | ✗ a rule (`balance/keeper.json`) |
+| Position (the angles) | where, relative to ball and goal | game reading, *concentration* | ✗ a rule (`balance/keeper.json`); since 51 always between the ball and the goal; game reading not read yet |
 | Get set | ready or not when the shot leaves | *reactivity*, *concentration* | — |
-| Dive, stop the shot | reach in the time the ball takes | *reactivity*, explosive force, *joint mobility*, height | **✗ standing reach only** (half his height × `goalkeeping`): about every shot on target is a goal |
-| Catch or parry | held, parried, spilled | *handling* (`goalkeeping` today), *body control* | — a stopped shot is always held |
+| Dive, stop the shot | reach in the time the ball takes | reactivity, explosive force, *joint mobility*, height | ✓ since 51: reaction time from reactivity, dive from explosive force, met where the ball passes him (`balance/save.json`); joint mobility not yet |
+| Catch or parry | held, parried, spilled | *handling* (`goalkeeping` today), *body control* | ◐ since 51: held or parried from his hands, the reach margin and the ball's speed; the parry rebounds loose; no spill yet |
 | Come out | whether | decision making, *courage* | ◐ the choice exists (ADR-049), only inside his area |
 | Claim a cross | whether, win | decision making, jump, *handling* | — |
 | Distribute | hands, feet | passing, foot, vision | ◐ as an outfield pass |

@@ -88,6 +88,7 @@ impl Profiles {
                 explosive_force: value("explosive_force", "family:physical"),
                 max_speed: value("max_speed", "family:physical"),
                 injury_proneness: value("injury_proneness", "family:physical"),
+                reactivity: value("reactivity", "family:physical"),
             },
             technical: TechnicalLatents {
                 finishing: value("finishing", "family:technical"),

@@ -501,11 +501,12 @@ impl SpatialState {
             let t = (1.0 - d / range).clamp(0.0, 1.0);
             let y_target = f64::mul_add(f64::from(ball.1) - goal_y, t, goal_y);
             let sign = if goal_x == 0.0 { 1.0_f64 } else { -1.0_f64 };
-            let x_target = f64::mul_add(
-                sign,
-                f64::mul_add(advance, t, f64::from(GK_LINE_OFFSET_CM)),
-                goal_x,
-            );
+            // Never deeper than a share of the ball's depth: he stays
+            // between the ball and his goal, on his line when the ball is
+            // on the line beside the post (ADR-051).
+            let depth_cap = delta_x.abs() * f64::from(keeper_balance.depth_share_milli) / 1000.0;
+            let off_line = f64::mul_add(advance, t, f64::from(GK_LINE_OFFSET_CM)).min(depth_cap);
+            let x_target = f64::mul_add(sign, off_line, goal_x);
             #[allow(clippy::cast_possible_truncation)]
             let mut tx = (x_target.round() as i32).clamp(0, pitch_length_cm);
             // With the ball his side moves up and so does he: he follows the

@@ -69,8 +69,10 @@ pub struct PassOutcome {
 /// The outcome of a save.
 #[derive(Debug, Clone)]
 pub struct SaveOutcome {
-    /// Whether the save succeeded.
+    /// Whether the keeper reached the ball and stopped it.
     pub saved: bool,
+    /// Whether he held it (else he parried it). Never true if not saved.
+    pub held: bool,
 }
 
 /// The outcome of a movement resolution (F.7).

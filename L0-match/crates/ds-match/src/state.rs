@@ -90,6 +90,10 @@ fn find_interceptor(
 pub(crate) struct ShotPending {
     /// The shooter.
     pub attacker: PlayerId,
+    /// The tick of the strike: the keeper's time runs from here.
+    pub struck: u64,
+    /// Where the ball was struck from.
+    pub from: (i32, i32, i32),
 }
 
 /// A pending fact the engine must resolve at a declared tick (MD-37).
@@ -217,6 +221,22 @@ fn scene_from(
         keeper_reach_cm,
         can_carry,
     }
+}
+
+/// Where a straight shot from `from` to `cross` (on the goal plane) passes
+/// the depth `x` of the keeper, and the share of the flight it has done
+/// there. A keeper behind the strike or beyond the plane meets it at the
+/// plane (share 1).
+fn meeting_point(from: (i32, i32, i32), cross: (i32, i32, i32), x: i32) -> ((i32, i32, i32), f64) {
+    let total = i64::from(cross.0 - from.0);
+    let done = i64::from(x - from.0);
+    if total == 0 || done.signum() != total.signum() || done.abs() >= total.abs() {
+        return (cross, 1.0);
+    }
+    let at = |a: i32, b: i32| a + i32::try_from(i64::from(b - a) * done / total).unwrap_or(0);
+    #[allow(clippy::cast_precision_loss)] // centimetres on a pitch
+    let share = done as f64 / total as f64;
+    ((x, at(from.1, cross.1), at(from.2, cross.2)), share)
 }
 
 /// The rules' name for a side.
@@ -691,7 +711,11 @@ impl MatchState {
                 receiver: None,
                 freedom_cm: None,
                 distance_cm: None,
-                shot: Some(ShotPending { attacker }),
+                shot: Some(ShotPending {
+                    attacker,
+                    struck: tick,
+                    from,
+                }),
             });
         // Reachable from the carrier's scene only when `ChoiceKind::Duel`
         // is emitted; `build_choice` no longer emits it (a carrier has
@@ -1262,6 +1286,75 @@ impl MatchState {
         })
     }
 
+    /// The keeper meets a shot on target (ADR-051, the family "in goal"):
+    /// `true` if he stopped it (held or parried; the event is emitted).
+    fn keeper_meets_the_shot(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        gk: PlayerId,
+        (from, struck): ((i32, i32, i32), u64),
+        (plane_x, y_at, z_at): (i32, i32, i32),
+        goal_center_y: i32,
+    ) -> bool {
+        // ADR-051, the family "in goal": the keeper reacts, dives in the
+        // time the ball takes, and holds or parries what he reaches. He
+        // meets the ball where it passes him, not on the goal line: off his
+        // line he narrows the angle and has less time (the line from the
+        // strike to the crossing, cut at his depth). The distance is from
+        // the centre of his body, across and up.
+        let reach_cm = self.bodies.get(&gk).map_or(0.0, |b| b.height_cm / 2.0);
+        let v = self.spatial.ball_velocity();
+        let speed = f64::from(v.0).hypot(f64::from(v.1)).hypot(f64::from(v.2));
+        #[allow(clippy::cast_precision_loss)] // ticks of one match: far below 2^52
+        let flight_ticks = tick.saturating_sub(struck) as f64;
+        let outcome = self.spatial.agent(gk).map(|gk_agent| {
+            let (meet, share) = meeting_point(from, (plane_x, y_at, z_at), gk_agent.position.0);
+            let body = ctx.hidden.save_balance().body_centre_cm;
+            let across = f64::from(meet.1 - gk_agent.position.1);
+            let up = f64::from(meet.2) - body;
+            ctx.hidden.resolve_save(&ds_orchestrator::SaveContext {
+                goalkeeper: gk,
+                point: (plane_x, y_at, z_at),
+                offset_cm: across.hypot(up),
+                reach_cm,
+                flight_ticks: flight_ticks * share,
+                ball_speed_cm_per_tick: speed,
+            })
+        });
+
+        let Some(o) = outcome.filter(|o| o.saved) else {
+            return false;
+        };
+        {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(gk)),
+                EventType::Save,
+                serde_json::json!({ "x": plane_x, "y": y_at, "z": z_at, "held": o.held }),
+            );
+            if o.held {
+                // In his hands: the ball is his.
+                self.spatial.set_carrier(Some(gk));
+            } else {
+                // Parried: the ball comes back into play, pushed away from
+                // the centre of the goal, loose for whoever gets there.
+                let k = i32::from(
+                    i16::try_from(ctx.hidden.save_balance().parry_rebound_milli).unwrap_or(0),
+                );
+                let away = if y_at >= goal_center_y { 1 } else { -1 };
+                let rebound = |c: i16| i16::try_from(i32::from(c) * k / 1000).unwrap_or(0);
+                let side = i16::try_from(away * i32::from(v.0).abs() * k / 1000).unwrap_or(0);
+                self.spatial.deflect_ball(
+                    (plane_x, y_at, z_at),
+                    (rebound(v.0).saturating_neg(), side, rebound(v.2).abs()),
+                );
+            }
+        }
+        true
+    }
+
     /// Checks whether the in-flight ball crossed a goal plane this tick
     /// (F.3-b3). The goal is born from the geometric crossing, not from
     /// the die's outcome: `on_target` is the die's intent, the crossing
@@ -1283,8 +1376,8 @@ impl MatchState {
         prev: (i32, i32, i32),
         curr: (i32, i32, i32),
     ) {
-        let attacker = match self.pending.as_ref().and_then(|p| p.shot.as_ref()) {
-            Some(s) => s.attacker,
+        let (attacker, struck, from) = match self.pending.as_ref().and_then(|p| p.shot.as_ref()) {
+            Some(s) => (s.attacker, s.struck, s.from),
             None => return,
         };
         let pitch_length = i32::from(ctx.match_.pitch.length_m) * 100;
@@ -1341,32 +1434,14 @@ impl MatchState {
             Possession::Home => PlayerId::new(0, 0),
             Possession::Away => PlayerId::new(100, 0),
         };
-        let reach_cm = self.bodies.get(&gk).map_or(0.0, |b| b.height_cm / 2.0);
-        let saved = if let Some(gk_agent) = self.spatial.agent(gk) {
-            let dy = f64::from((y_at - gk_agent.position.1).abs());
-            if dy <= reach_cm {
-                let save_ctx = ds_orchestrator::SaveContext {
-                    goalkeeper: gk,
-                    point: (plane_x, y_at, z_at),
-                    offset_cm: dy,
-                    reach_cm,
-                };
-                ctx.hidden.resolve_save(&save_ctx).saved
-            } else {
-                false
-            }
-        } else {
-            false
-        };
-
-        if saved {
-            self.emit_event(
-                ctx,
-                tick,
-                Some(ActorId::Player(gk)),
-                EventType::Save,
-                serde_json::json!({ "x": plane_x, "y": y_at, "z": z_at }),
-            );
+        if self.keeper_meets_the_shot(
+            ctx,
+            tick,
+            gk,
+            (from, struck),
+            (plane_x, y_at, z_at),
+            goal_center_y,
+        ) {
             self.possession = defending;
             return;
         }

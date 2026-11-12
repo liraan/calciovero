@@ -70,6 +70,7 @@ pub struct GroundTruth {
     latency_balance: ds_calculator::latency::LatencyBalance,
     choice_balance: ds_calculator::choice::ChoiceBalance,
     shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance,
+    save_balance: ds_calculator::save::SaveBalance,
 }
 
 impl GroundTruth {
@@ -90,6 +91,7 @@ impl GroundTruth {
             latency_balance: ds_calculator::latency::LatencyBalance::load(),
             choice_balance: ds_calculator::choice::ChoiceBalance::load(),
             shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance::load(),
+            save_balance: ds_calculator::save::SaveBalance::load(),
         }
     }
 
@@ -418,24 +420,45 @@ impl GroundTruth {
     /// `ctx.point` carries the crossing point so the engine can build the
     /// `Save` event with the right position, and so a future model can use
     /// it (F.5, L2) without changing the signature.
-    /// Resolves a save.
+    /// Resolves a save (ADR-051, the family "in goal").
     ///
-    /// The "saved" is geometric (ADR-035, no die): the goalkeeper reaches
-    /// `goalkeeping * reach_cm`; if the crossing point is within that
-    /// effective reach, the ball is held. A goalkeeper with `goalkeeping`
-    /// near 0 reaches almost nothing; a strong one covers the whole arm
-    /// span. `offset_cm` and `reach_cm` are computed by the caller (state.rs)
-    /// from the geometry: not a die, not a latent (reach is a dimension).
+    /// No die (ADR-035): the keeper reacts after his reaction time (his
+    /// `reactivity`), dives in the time left before the ball arrives (his
+    /// `explosive_force`), and reaches his standing reach plus the dive. A
+    /// ball within reach is stopped; his hands (`goalkeeping`, the
+    /// prototype of handling) hold it or parry it, harder at the edge of
+    /// the reach and on a faster ball. Formula and numbers in
+    /// `ds-calculator::save` and `balance/save.json`.
     pub fn resolve_save(&mut self, ctx: &SaveContext) -> SaveOutcome {
         let keeper = self.latents_for(ctx.goalkeeper);
-        let saved = ctx.offset_cm < f64::from(keeper.technical.goalkeeping) * ctx.reach_cm;
-        let outcome = SaveOutcome { saved };
+        let b = self.save_balance;
+        let reach = b.reach_cm(
+            ctx.reach_cm,
+            keeper.physical.reactivity,
+            keeper.physical.explosive_force,
+            ctx.flight_ticks,
+        );
+        let saved = ctx.offset_cm <= reach;
+        let held = saved
+            && b.held(
+                keeper.technical.goalkeeping,
+                ctx.offset_cm,
+                reach,
+                ctx.ball_speed_cm_per_tick,
+            );
+        let outcome = SaveOutcome { saved, held };
         self.observations.push(ObservationEvent::Save {
             goalkeeper: ctx.goalkeeper,
             saved,
         });
         let _ = ctx.point;
         outcome
+    }
+
+    /// The save's declared parameters (`balance/save.json`).
+    #[must_use]
+    pub const fn save_balance(&self) -> ds_calculator::save::SaveBalance {
+        self.save_balance
     }
     /// Resolves a movement: the acceleration of `ctx.player` this tick
     /// (F.7).

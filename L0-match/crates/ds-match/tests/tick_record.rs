@@ -335,3 +335,44 @@ fn a_carrier_with_nothing_on_does_not_stand_still() {
     }
     assert!(longest <= 300, "a carrier stood still for {longest} ticks");
 }
+
+/// The keeper stays between the ball and his goal (P1, ADR-051). Before
+/// `SIM_VERSION` 51, with the ball close to the line beside the post, he
+/// advanced 4 m and stood behind the shooter. Checked when the opponents
+/// have the ball near his goal; a keeper who went for the ball may stand
+/// level with it, never well beyond.
+#[test]
+fn the_keeper_stays_between_the_ball_and_his_goal() {
+    let m = match_fixture(SEED).expect("fixture");
+    let length = i32::from(m.pitch.length_m) * 100;
+    let (_, records) = recorded();
+    let (mut checked, mut beyond) = (0, 0);
+    for r in &records {
+        let Some(c) = r.carrier else { continue };
+        let (keeper_slot, goal_x) = if c.slot() >= 100 {
+            (0, 0)
+        } else {
+            (100, length)
+        };
+        let ball_depth = (r.ball.position.0 - goal_x).abs();
+        if ball_depth > 2000 {
+            continue;
+        }
+        let Some(k) = r.agents.iter().find(|a| a.id.slot() == keeper_slot) else {
+            continue;
+        };
+        let keeper_depth = (k.position.0 - goal_x).abs();
+        checked += 1;
+        if keeper_depth > ball_depth + 150 {
+            beyond += 1;
+        }
+    }
+    assert!(checked > 0, "the ball comes near a goal");
+    // A keeper moving back to his line after a restart may be caught a
+    // moment beyond the ball; standing there is the defect. Measured on
+    // seed 42: 3% of these ticks after the fix, 63% before.
+    assert!(
+        beyond * 20 <= checked,
+        "the keeper stood beyond the ball in {beyond} of {checked} ticks"
+    );
+}

@@ -62,6 +62,10 @@ pub struct PhysicalLatents {
     #[allow(dead_code)]
     // no consumer today: the die that read it is removed (ADR-035); arrives with the injury model (OI-60)
     pub injury_proneness: f32,
+    /// Reactivity: how soon the body answers what the eyes saw. Consumed
+    /// by the save (the keeper's reaction time, ADR-051); the interception
+    /// is its next consumer.
+    pub reactivity: f32,
 }
 
 /// Technical performances (L0.11 §7.2).
@@ -130,6 +134,7 @@ impl PlayerLatents {
                 explosive_force: unit_from_key(world_seed, player, "explosive_force"),
                 max_speed: unit_from_key(world_seed, player, "max_speed"),
                 injury_proneness: unit_from_key(world_seed, player, "injury_proneness"),
+                reactivity: unit_from_key(world_seed, player, "reactivity"),
             },
             technical: TechnicalLatents {
                 finishing: unit_from_key(world_seed, player, "finishing"),

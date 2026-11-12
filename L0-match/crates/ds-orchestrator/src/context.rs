@@ -90,12 +90,17 @@ pub struct SaveContext {
     /// The engine computes it from the trajectory; used by the caller for
     /// the `Save` event payload, not by the formula.
     pub point: (i32, i32, i32),
-    /// Lateral distance from the goalkeeper's position to the crossing
-    /// point, in centimetres. The geometry the reaction depends on.
+    /// Distance from the centre of the keeper's body to the crossing point,
+    /// in the goal plane (across and up), in centimetres.
     pub offset_cm: f64,
-    /// The goalkeeper's standing reach (arm span, ~height), in cm. The
-    /// ceiling the `goalkeeping` latent modulates; not a die.
+    /// The goalkeeper's standing reach (half his height), in cm, from the
+    /// centre of his body; the dive adds to it.
     pub reach_cm: f64,
+    /// Ticks from the strike to the ball reaching the goal plane: the time
+    /// the keeper has to react and dive.
+    pub flight_ticks: f64,
+    /// The ball's speed at the goal plane, cm/tick.
+    pub ball_speed_cm_per_tick: f64,
 }
 /// The context of a movement resolution (F.7).
 ///
