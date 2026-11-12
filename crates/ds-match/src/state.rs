@@ -145,6 +145,7 @@ pub struct MatchState {
     /// Scanning parameters (ADR-034), loaded once at construction.
     scan_balance: crate::balance::ScanningBalance,
     keeper_balance: crate::balance::KeeperBalance,
+    obstacle_balance: crate::balance::ObstacleBalance,
     reception_balance: crate::balance::ReceptionBalance,
     pending: Option<Pending>,
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
@@ -254,6 +255,7 @@ impl MatchState {
             pending: None,
             scan_balance: crate::balance::ScanningBalance::load(),
             keeper_balance: crate::balance::KeeperBalance::load(),
+            obstacle_balance: crate::balance::ObstacleBalance::load(),
             reception_balance: crate::balance::ReceptionBalance::load(),
             bodies: {
                 let mut m = BTreeMap::new();
@@ -819,6 +821,33 @@ impl MatchState {
         self.coverage = current;
     }
 
+    /// Which obstacle the ball meets at the goal plane, if any (ADR-048 §1).
+    ///
+    /// Pure geometry, no state: `Some(0)` a post, `Some(2)` the crossbar,
+    /// `None` nothing (the ball goes in or out, the caller decides).
+    #[must_use]
+    const fn obstacle_hit(
+        y_at: i32,
+        z_at: i32,
+        center_y: i32,
+        half_w: i32,
+        height: i32,
+        post_r: i32,
+        bar_t: i32,
+    ) -> Option<u8> {
+        let lateral_edge = (y_at - center_y).abs() - half_w;
+        let vertical_edge = z_at - height;
+        let hit_post = lateral_edge.abs() <= post_r && z_at <= height;
+        let hit_bar = vertical_edge.abs() <= bar_t && (y_at - center_y).abs() < half_w;
+        if hit_post {
+            Some(0)
+        } else if hit_bar {
+            Some(2)
+        } else {
+            None
+        }
+    }
+
     /// Checks whether the in-flight ball crossed a goal plane this tick
     /// (F.3-b3). The goal is born from the geometric crossing, not from
     /// the die's outcome: `on_target` is the die's intent, the crossing
@@ -861,10 +890,34 @@ impl MatchState {
         let t_num = i64::from(plane_x - prev.0);
         let y_at = prev.1 + i32::try_from((i64::from(curr.1 - prev.1) * t_num) / dx).unwrap_or(0);
         let z_at = prev.2 + i32::try_from((i64::from(curr.2 - prev.2) * t_num) / dx).unwrap_or(0);
-        let goal_half_w = 366;
-        let goal_h = 244;
+        let goal_half_w = self.obstacle_balance.goal_half_width_cm;
+        let goal_h = self.obstacle_balance.goal_height_cm;
         let goal_center_y = width / 2;
         let inside = (y_at - goal_center_y).abs() < goal_half_w && (0..goal_h).contains(&z_at);
+
+        // ADR-048 §1: the ball meets the post or the crossbar. If it does,
+        // the ball is deflected and keeps flying: the pending is not cleared,
+        // no goal, no save. The geometry is `obstacle_hit`, pure and testable.
+        let post_r = self.obstacle_balance.post_radius_cm;
+        let bar_t = self.obstacle_balance.crossbar_thickness_cm;
+        if let Some(axis) = Self::obstacle_hit(
+            y_at,
+            z_at,
+            goal_center_y,
+            goal_half_w,
+            goal_h,
+            post_r,
+            bar_t,
+        ) {
+            let v = self.spatial.ball_velocity();
+            let reflection = if axis == 0 {
+                self.obstacle_balance.post_reflection()
+            } else {
+                self.obstacle_balance.crossbar_reflection()
+            };
+            self.spatial.set_ball_velocity(reflection.reflect(v));
+            return;
+        }
 
         self.pending = None;
         self.spatial.set_carrier(None);
@@ -1098,5 +1151,38 @@ mod intercept_tests {
     fn perpendicular_distance_is_computed() {
         // 30 cm above the middle of a 100 cm segment.
         assert_eq!(point_segment_dist_sq((0, 0), (100, 0), (50, 30)), 900);
+    }
+
+    #[test]
+    fn obstacle_hit_detects_the_post() {
+        // Right post's edge: a post, not a goal.
+        assert_eq!(
+            MatchState::obstacle_hit(3400 + 366, 100, 3400, 366, 244, 6, 6),
+            Some(0)
+        );
+    }
+
+    #[test]
+    fn obstacle_hit_does_not_fire_inside_the_goal() {
+        assert_eq!(
+            MatchState::obstacle_hit(3400, 100, 3400, 366, 244, 6, 6),
+            None
+        );
+    }
+
+    #[test]
+    fn obstacle_hit_detects_the_crossbar() {
+        assert_eq!(
+            MatchState::obstacle_hit(3400, 244, 3400, 366, 244, 6, 6),
+            Some(2)
+        );
+    }
+
+    #[test]
+    fn obstacle_hit_does_not_fire_outside_the_post() {
+        assert_eq!(
+            MatchState::obstacle_hit(3400 + 366 + 100, 100, 3400, 366, 244, 6, 6),
+            None
+        );
     }
 }

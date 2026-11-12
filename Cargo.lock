@@ -108,6 +108,7 @@ dependencies = [
 name = "ds-match"
 version = "0.1.0"
 dependencies = [
+ "ds-calculator",
  "ds-core",
  "ds-fixtures",
  "ds-model",

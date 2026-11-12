@@ -325,6 +325,15 @@ mod tests {
     }
 
     #[test]
+    fn embedded_obstacles_is_valid() {
+        let b = ObstacleBalance::load();
+        assert_eq!(b.goal_half_width_cm, 366);
+        assert_eq!(b.goal_height_cm, 244);
+        assert!(b.elasticity_den != 0);
+        assert!(b.post_radius_cm > 0);
+    }
+
+    #[test]
     fn embedded_scanning_is_valid() {
         let b = ScanningBalance::load();
         assert_eq!(b.scan_interval_ticks, 5);
@@ -346,6 +355,65 @@ mod tests {
             event_type: kind,
             fields: serde_json::json!({}),
             created_at: ds_core::time::GameInstant::from_raw(0),
+        }
+    }
+}
+
+/// The embedded obstacles balance file (ADR-048).
+const OBSTACLES_JSON: &str = include_str!("../../../balance/obstacles.json");
+
+/// Goal geometry and obstacle reflection parameters (ADR-048 §1).
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct ObstacleBalance {
+    /// Half the distance between the posts, in cm (Law 1: 366).
+    pub goal_half_width_cm: i32,
+    /// Crossbar height, in cm (Law 1: 244).
+    pub goal_height_cm: i32,
+    /// Post radius, in cm (prototype).
+    pub post_radius_cm: i32,
+    /// Crossbar thickness, in cm (prototype).
+    pub crossbar_thickness_cm: i32,
+    /// Elasticity numerator (prototype 0.8).
+    pub elasticity_num: i32,
+    /// Elasticity denominator.
+    pub elasticity_den: i32,
+}
+
+impl Default for ObstacleBalance {
+    fn default() -> Self {
+        serde_json::from_str(OBSTACLES_JSON).expect("embedded obstacles file is valid JSON")
+    }
+}
+
+impl ObstacleBalance {
+    /// Loads the embedded obstacles parameters.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the embedded JSON is invalid. The test
+    /// `embedded_obstacles_is_valid` catches this at test time.
+    #[must_use]
+    pub fn load() -> Self {
+        Self::default()
+    }
+
+    /// The reflection on the x axis (a post's face).
+    #[must_use]
+    pub const fn post_reflection(&self) -> ds_calculator::obstacle::ObstacleReflection {
+        ds_calculator::obstacle::ObstacleReflection {
+            axis: 0,
+            elasticity_num: self.elasticity_num,
+            elasticity_den: self.elasticity_den,
+        }
+    }
+
+    /// The reflection on the z axis (the crossbar's underside).
+    #[must_use]
+    pub const fn crossbar_reflection(&self) -> ds_calculator::obstacle::ObstacleReflection {
+        ds_calculator::obstacle::ObstacleReflection {
+            axis: 2,
+            elasticity_num: self.elasticity_num,
+            elasticity_den: self.elasticity_den,
         }
     }
 }

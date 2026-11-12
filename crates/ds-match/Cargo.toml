@@ -13,6 +13,7 @@ documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-
 ds-core.workspace = true
 ds-model.workspace = true
 ds-orchestrator.workspace = true
+ds-calculator.workspace = true
 ds-stats.workspace = true
 serde.workspace = true
 serde_json.workspace = true

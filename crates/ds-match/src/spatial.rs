@@ -296,6 +296,16 @@ impl SpatialState {
         self.ball_velocity
     }
 
+    /// Sets the ball velocity, if the ball is in flight (ADR-048 §1: the
+    /// obstacle's reflection changes the trajectory, the ball keeps flying).
+    /// A no-op if the ball is not in flight: the reflection applies to a
+    /// moving ball only.
+    pub const fn set_ball_velocity(&mut self, velocity: (i16, i16, i16)) {
+        if matches!(self.ball, BallState::InFlight) {
+            self.ball_velocity = velocity;
+        }
+    }
+
     /// Advances the ball one tick if it is in flight (MD-17/18).
     ///
     /// Applies gravity to `vz`, gravity to `z`, friction to the horizontal

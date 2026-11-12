@@ -1,0 +1,10 @@
+{
+  "goal_half_width_cm": 366,
+  "goal_height_cm": 244,
+  "post_radius_cm": 6,
+  "crossbar_thickness_cm": 6,
+  "elasticity_num": 8,
+  "elasticity_den": 10,
+  "_note": "ADR-048: the static obstacle (post, crossbar). The ball's trajectory meets the obstacle's geometry; the effect is a declared reflection (the normal component of the velocity is reversed, scaled by the elasticity). No die.",
+  "_source": "FIFA Laws of the Game (Law 1): the distance between the posts is 7.32 m (half-width 366 cm); the crossbar is 2.44 m high. Posts and crossbar have the same width, max 12 cm; prototype radius 6 cm each side. Elasticity: arbitrary, declared, prototype 0.8 (a metal post returns most of the normal velocity, a wooden one less). The two radii are prototype values until a cited source is chosen (L3)."
+}
