@@ -7,7 +7,7 @@ its code, together. It depends only on `doctrine/`.
 | Directory | What it holds |
 |---|---|
 | [`specs/`](specs/) | the contract, ratified (L0.00 → L0.11). If the code and the spec disagree, the spec wins. |
-| [`design/`](design/) | how the contract is implemented: the positional slice (§0 is the vision of the engine), the movement note, the architecture, the code tour, the event coverage, the decision table |
+| [`design/`](design/) | how the contract is implemented: the acts on the pitch and what each reads ([`ACTIONS.md`](design/ACTIONS.md), with the engine's state act by act), the characteristics and abilities tree, the positional slice (§0 is the vision of the engine), the movement note, the architecture, the code tour, the event coverage, the decision table |
 | [`balance/`](balance/) | the declared parameters, one JSON per formula, each with `_source`; arbitrary until calibrated (L3) |
 | [`crates/`](crates/) | the engine, one responsibility per crate (ADR-041) |
 | [`CHANGELOG-SIM.md`](CHANGELOG-SIM.md) | every change of simulation behaviour, with its `SIM_VERSION` |

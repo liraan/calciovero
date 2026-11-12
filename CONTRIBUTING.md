@@ -22,7 +22,7 @@ piece.
 | **like testing** | write a scenario that proves something about a match | [`tools/`](tools/README.md) (`ds-testkit`) | Rust |
 | **like tools** | improve the 2D debug view, the board, the HTML page | [`tools/`](tools/README.md) (`ds-demo`) | Rust |
 | **like writing** | fix a document, explain something better, translate | any `.md` (§6) | no |
-| **want to go deep** | work on the engine itself: perception, choice, movement | [`L0-match/`](L0-match/README.md) | Rust, and an ADR for model changes |
+| **want to go deep** | work on the engine itself: perception, choice, movement. Every act on the pitch, what it reads and whether the engine does it yet, is in [`ACTIONS.md`](L0-match/design/ACTIONS.md): a ✗ row is a task | [`L0-match/`](L0-match/README.md) | Rust, and an ADR for model changes |
 
 If you are not sure, open a [Discussion](https://github.com/liraan/calciovero/discussions)
 and say what you know: we will find you a piece.
