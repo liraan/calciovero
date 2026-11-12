@@ -152,29 +152,7 @@ impl PlayerLatents {
     }
 }
 
-/// Derives a value in `[0, 1)` from `(world_seed, player_id, purpose)`.
-///
-/// The hash is BLAKE3, the same function used for the stream derivation in
-/// `ds-core::rng` and for the event chain. The key material is the world
-/// seed, the player's slot and generation (so two different players never
-/// collide), and the purpose (the characteristic name).
-#[must_use]
-pub fn unit_from_key(world_seed: u64, player: PlayerId, purpose: &str) -> f32 {
-    let mut hasher = blake3::Hasher::new();
-    hasher.update(&world_seed.to_le_bytes());
-    hasher.update(b"player:");
-    hasher.update(&player.slot().to_le_bytes());
-    hasher.update(&player.generation().to_le_bytes());
-    hasher.update(b"purpose:");
-    hasher.update(purpose.as_bytes());
-    let digest = hasher.finalize();
-    let bytes = digest.as_bytes();
-    let raw = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-    // `[0, 1)`: divide by 2^32, not by u32::MAX, so 1.0 is never produced.
-    #[allow(clippy::cast_possible_truncation)]
-    let unit = (f64::from(raw) / f64::from(u32::MAX) / 1.000_000_1) as f32;
-    unit
-}
+pub use ds_core::hash::unit_from_key;
 
 #[cfg(test)]
 mod tests {

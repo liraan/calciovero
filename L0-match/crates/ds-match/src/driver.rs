@@ -25,7 +25,7 @@ use crate::result::MatchResult;
 /// exists, a `simulate_with` variant takes the engine as a parameter.
 #[must_use]
 pub fn simulate_from_seed(match_: &Match, seed: u64, config: MatchConfig) -> MatchResult {
-    let mut hidden = GroundTruth::new(seed, match_.id);
+    let mut hidden = GroundTruth::for_match(seed, match_);
     let mut rng = RngRegistry::new(seed);
     let mut chain = EventChain::new();
     let ctx = MatchContext {
@@ -50,7 +50,7 @@ pub fn simulate_from_seed_recorded(
     seed: u64,
     config: MatchConfig,
 ) -> (MatchResult, Vec<crate::record::TickRecord>) {
-    let mut hidden = GroundTruth::new(seed, match_.id);
+    let mut hidden = GroundTruth::for_match(seed, match_);
     let mut rng = RngRegistry::new(seed);
     let mut chain = EventChain::new();
     let mut ctx = MatchContext {

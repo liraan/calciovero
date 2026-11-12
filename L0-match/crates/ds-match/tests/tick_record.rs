@@ -202,3 +202,29 @@ fn at_kick_off_each_side_is_in_its_own_half() {
         }
     }
 }
+
+/// The goalkeeper steps up with his side (P1, maintainer 2026-11-12): while
+/// his side has the ball, he is usually well off his line, an outlet for
+/// the pass back. Before `SIM_VERSION` 44 he stayed 2 m off the line.
+#[test]
+fn the_keeper_steps_up_when_his_side_has_the_ball() {
+    let (_, records) = recorded();
+    let mut xs: Vec<i32> = records
+        .iter()
+        .filter(|r| r.carrier.is_some_and(|c| (1..100).contains(&c.slot())))
+        .filter_map(|r| {
+            r.agents
+                .iter()
+                .find(|a| a.id.slot() == 0)
+                .map(|a| a.position.0)
+        })
+        .collect();
+    assert!(!xs.is_empty(), "the home side has the ball at some point");
+    xs.sort_unstable();
+    let median = xs[xs.len() / 2];
+    // 2 m off the line before; with the ball he now follows his defence.
+    assert!(
+        median > 500,
+        "the home keeper's median x with the ball: {median} cm"
+    );
+}

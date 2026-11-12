@@ -14,5 +14,6 @@ from the outside. Nothing in `L0-match/` depends on a crate here, except
 ```bash
 cargo run -p ds-demo -- --seed 42 --tui
 cargo run -p ds-demo -- --seed 42 --tui --frame 30
+cargo run -p ds-demo -- --seed 42 --roster
 cargo run --release --bin ds-test-runner -- --check --seed 42
 ```

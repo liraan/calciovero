@@ -21,6 +21,7 @@
 
 pub mod custodian;
 pub mod latents;
+pub mod profiles;
 
 pub use custodian::CustodianView;
 pub use latents::PlayerLatents;
@@ -39,6 +40,10 @@ use ds_core::ids::PlayerId;
 pub struct Vault {
     identity: Identity,
     latents: BTreeMap<PlayerId, PlayerLatents>,
+    /// Each player's role, for his profile (`balance/profiles.json`).
+    /// A player with no registered role is derived uniformly.
+    roles: BTreeMap<PlayerId, String>,
+    profiles: Option<profiles::Profiles>,
 }
 
 impl Vault {
@@ -48,6 +53,18 @@ impl Vault {
         Self {
             identity,
             latents: BTreeMap::new(),
+            roles: BTreeMap::new(),
+            profiles: None,
+        }
+    }
+
+    /// Registers each player's role: his characteristics are then derived
+    /// from his role's profile (`balance/profiles.json`), still by key.
+    /// Must be called before the first read of those players.
+    pub fn register_roles(&mut self, roles: impl IntoIterator<Item = (PlayerId, String)>) {
+        self.roles.extend(roles);
+        if self.profiles.is_none() {
+            self.profiles = Some(profiles::Profiles::load());
         }
     }
 
@@ -65,10 +82,14 @@ impl Vault {
     /// return the same value.
     #[must_use]
     pub fn latents_for(&mut self, player: PlayerId) -> PlayerLatents {
-        *self
-            .latents
-            .entry(player)
-            .or_insert_with(|| PlayerLatents::from_key(self.identity.world_seed, player))
+        *self.latents.entry(player).or_insert_with(|| {
+            let seed = self.identity.world_seed;
+            self.roles
+                .get(&player)
+                .zip(self.profiles.as_ref())
+                .and_then(|(role, p)| p.latents(seed, player, role))
+                .unwrap_or_else(|| PlayerLatents::from_key(seed, player))
+        })
     }
 
     /// Builds the custodian view for `player`, the door the calculator

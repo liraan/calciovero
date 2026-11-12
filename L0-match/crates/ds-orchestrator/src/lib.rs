@@ -115,6 +115,25 @@ impl GroundTruth {
         }
     }
 
+    /// The ground truth of a match: like [`GroundTruth::new`], with every
+    /// player's characteristics derived from his role's profile
+    /// (`balance/profiles.json`, maintainer 2026-11-12: random but
+    /// sensible, recognisable). The role is the player's visible label
+    /// (Plane B); the profile it selects stays hidden.
+    #[must_use]
+    pub fn for_match(world_seed: u64, match_: &ds_model::Match) -> Self {
+        let mut g = Self::new(world_seed, match_.id);
+        g.vault.register_roles(
+            match_
+                .home
+                .players
+                .iter()
+                .chain(match_.away.players.iter())
+                .map(|p| (p.id, p.role.as_str().to_string())),
+        );
+        g
+    }
+
     /// Returns the world seed.
     #[must_use]
     pub const fn world_seed(&self) -> u64 {

@@ -77,9 +77,10 @@ dependencies = [
 name = "ds-db"
 version = "0.1.0"
 dependencies = [
- "blake3",
  "ds-calculator",
  "ds-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -102,6 +103,8 @@ version = "0.1.0"
 dependencies = [
  "ds-core",
  "ds-model",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

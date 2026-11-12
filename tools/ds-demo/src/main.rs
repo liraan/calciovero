@@ -31,6 +31,7 @@ OPTIONS:
     --board         Print a board (score, events, narrative, hash)
     --html <PATH>   Write a self-contained HTML page to PATH
     --tui           Replay the match on a text pitch (2D debug view)
+    --roster        Print the two squads: letter, name, role, height, weight
     --quiet         Print only the final score
     --help          Print this help
 
@@ -52,11 +53,25 @@ EXAMPLES:
 #[derive(Debug)]
 struct Args {
     seed: u64,
-    json: bool,
-    html: Option<String>,
     quiet: bool,
-    board: bool,
-    tui: Option<TuiArgs>,
+    output: Output,
+}
+
+/// What the demo prints. The modes exclude each other.
+#[derive(Debug, Clone, PartialEq)]
+enum Output {
+    /// The text result (the default).
+    Text,
+    /// The result as JSON.
+    Json,
+    /// The text result, and a self-contained HTML page at this path.
+    Html(String),
+    /// The board: score, events, narrative, hash.
+    Board,
+    /// The two squads: letter, name, role, height, weight.
+    Roster,
+    /// The 2D debug replay.
+    Tui(TuiArgs),
 }
 
 /// Options of the 2D debug replay.
@@ -101,11 +116,8 @@ fn parse_args() -> Result<Option<Args>, String> {
 /// validation logic is testable without touching the process environment.
 fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Args>, String> {
     let mut seed = 0u64;
-    let mut json = false;
-    let mut html = None;
     let mut quiet = false;
-    let mut board = false;
-    let mut tui = false;
+    let mut modes: Vec<Output> = Vec::new();
     let mut t = TuiArgs::default();
     let mut tui_option = false;
 
@@ -119,14 +131,15 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
                 let v = iter.next().ok_or("--seed requires a value")?;
                 seed = v.parse().map_err(|_| format!("invalid seed: {v}"))?;
             }
-            "--json" => json = true,
+            "--json" => modes.push(Output::Json),
             "--html" => {
                 let v = iter.next().ok_or("--html requires a path")?;
-                html = Some(v);
+                modes.push(Output::Html(v));
             }
             "--quiet" => quiet = true,
-            "--board" => board = true,
-            "--tui" => tui = true,
+            "--board" => modes.push(Output::Board),
+            "--tui" => modes.push(Output::Tui(TuiArgs::default())),
+            "--roster" => modes.push(Output::Roster),
             "--speed" | "--from" | "--to" | "--frame" | "--cols" => {
                 tui_option = true;
                 let v = iter
@@ -149,25 +162,24 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
         }
     }
 
-    if [json, html.is_some(), board, tui]
-        .iter()
-        .filter(|x| **x)
-        .count()
-        > 1
-    {
-        return Err("--json, --html, --board and --tui are mutually exclusive".to_string());
+    if modes.len() > 1 {
+        return Err(
+            "--json, --html, --board, --roster and --tui are mutually exclusive".to_string(),
+        );
     }
-    if tui_option && !tui {
+    let output = match modes.pop() {
+        None => Output::Text,
+        Some(Output::Tui(_)) => Output::Tui(t),
+        Some(m) => m,
+    };
+    if tui_option && !matches!(output, Output::Tui(_)) {
         return Err("--speed, --from, --to, --step, --frame and --cols need --tui".to_string());
     }
 
     Ok(Some(Args {
         seed,
-        json,
-        html,
         quiet,
-        board,
-        tui: tui.then_some(t),
+        output,
     }))
 }
 
@@ -177,8 +189,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let match_ = ds_fixtures::match_fixture(args.seed)?;
-    if let Some(t) = &args.tui {
-        return run_tui(&match_, args.seed, t);
+    match &args.output {
+        Output::Roster => {
+            print!("{}", pitchview::roster(&match_));
+            return Ok(());
+        }
+        Output::Tui(t) => return run_tui(&match_, args.seed, t),
+        _ => {}
     }
     let result = ds_match::simulate_from_seed(&match_, args.seed, MatchConfig::default());
 
@@ -187,21 +204,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    if args.board {
-        let vm = viewmodel::MatchViewModel::from_result(&result);
-        board::print_board(&vm)?;
-        return Ok(());
-    }
-
-    if args.json {
-        render::print_json(&result)?;
-    } else {
-        render::print_text(&result)?;
-    }
-
-    if let Some(path) = &args.html {
-        render::write_html(&result, path)?;
-        eprintln!("HTML written to {path}");
+    match &args.output {
+        Output::Board => {
+            let vm = viewmodel::MatchViewModel::from_result(&result);
+            board::print_board(&vm)?;
+        }
+        Output::Json => render::print_json(&result)?,
+        Output::Html(path) => {
+            render::print_text(&result)?;
+            render::write_html(&result, path)?;
+            eprintln!("HTML written to {path}");
+        }
+        _ => render::print_text(&result)?,
     }
 
     Ok(())
@@ -290,7 +304,9 @@ mod tests {
         ])
         .expect("parse")
         .expect("some");
-        let t = args.tui.expect("tui");
+        let Output::Tui(t) = args.output else {
+            panic!("expected --tui");
+        };
         assert_eq!(
             (t.speed, t.from_min, t.to_min, t.step),
             (60, 10, Some(20), true)
@@ -325,9 +341,7 @@ mod tests {
     #[test]
     fn board_flag_is_accepted_alone() {
         let args = parse(&["--board"]).expect("parse").expect("some");
-        assert!(args.board);
-        assert!(!args.json);
-        assert!(args.html.is_none());
+        assert_eq!(args.output, Output::Board);
         assert!(!args.quiet);
     }
 
@@ -353,6 +367,6 @@ mod tests {
     fn quiet_alone_is_accepted() {
         let args = parse(&["--quiet"]).expect("parse").expect("some");
         assert!(args.quiet);
-        assert!(!args.board);
+        assert_eq!(args.output, Output::Text);
     }
 }

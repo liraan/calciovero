@@ -1,0 +1,396 @@
+{
+  "left_footed_share": 0.25,
+  "weak_foot_ratio": [
+    0.6,
+    0.15
+  ],
+  "family_weight": 0.4,
+  "roles": {
+    "goalkeeper": {
+      "height_cm": [
+        190,
+        5
+      ],
+      "weight_kg": [
+        85,
+        6
+      ],
+      "characteristics": {
+        "explosive_force": [
+          0.62,
+          0.12
+        ],
+        "max_speed": [
+          0.35,
+          0.1
+        ],
+        "injury_proneness": [
+          0.3,
+          0.15
+        ],
+        "finishing": [
+          0.1,
+          0.05
+        ],
+        "passing": [
+          0.45,
+          0.12
+        ],
+        "first_touch": [
+          0.45,
+          0.12
+        ],
+        "tackling": [
+          0.15,
+          0.08
+        ],
+        "aerial": [
+          0.55,
+          0.12
+        ],
+        "goalkeeping": [
+          0.7,
+          0.12
+        ],
+        "set_pieces": [
+          0.2,
+          0.1
+        ],
+        "game_reading": [
+          0.6,
+          0.12
+        ],
+        "decision_making": [
+          0.6,
+          0.12
+        ],
+        "risk_management": [
+          0.4,
+          0.12
+        ]
+      }
+    },
+    "centre_back": {
+      "height_cm": [
+        187,
+        5
+      ],
+      "weight_kg": [
+        82,
+        5
+      ],
+      "characteristics": {
+        "explosive_force": [
+          0.6,
+          0.12
+        ],
+        "max_speed": [
+          0.5,
+          0.12
+        ],
+        "injury_proneness": [
+          0.3,
+          0.15
+        ],
+        "finishing": [
+          0.2,
+          0.1
+        ],
+        "passing": [
+          0.5,
+          0.12
+        ],
+        "first_touch": [
+          0.5,
+          0.12
+        ],
+        "tackling": [
+          0.72,
+          0.1
+        ],
+        "aerial": [
+          0.75,
+          0.1
+        ],
+        "goalkeeping": [
+          0.05,
+          0.03
+        ],
+        "set_pieces": [
+          0.3,
+          0.12
+        ],
+        "game_reading": [
+          0.65,
+          0.12
+        ],
+        "decision_making": [
+          0.55,
+          0.12
+        ],
+        "risk_management": [
+          0.35,
+          0.12
+        ]
+      }
+    },
+    "full_back": {
+      "height_cm": [
+        176,
+        5
+      ],
+      "weight_kg": [
+        72,
+        5
+      ],
+      "characteristics": {
+        "explosive_force": [
+          0.6,
+          0.12
+        ],
+        "max_speed": [
+          0.7,
+          0.1
+        ],
+        "injury_proneness": [
+          0.3,
+          0.15
+        ],
+        "finishing": [
+          0.3,
+          0.1
+        ],
+        "passing": [
+          0.55,
+          0.12
+        ],
+        "first_touch": [
+          0.55,
+          0.12
+        ],
+        "tackling": [
+          0.62,
+          0.1
+        ],
+        "aerial": [
+          0.45,
+          0.12
+        ],
+        "goalkeeping": [
+          0.05,
+          0.03
+        ],
+        "set_pieces": [
+          0.35,
+          0.12
+        ],
+        "game_reading": [
+          0.55,
+          0.12
+        ],
+        "decision_making": [
+          0.5,
+          0.12
+        ],
+        "risk_management": [
+          0.45,
+          0.12
+        ]
+      }
+    },
+    "central_midfielder": {
+      "height_cm": [
+        180,
+        6
+      ],
+      "weight_kg": [
+        75,
+        5
+      ],
+      "characteristics": {
+        "explosive_force": [
+          0.55,
+          0.12
+        ],
+        "max_speed": [
+          0.55,
+          0.12
+        ],
+        "injury_proneness": [
+          0.3,
+          0.15
+        ],
+        "finishing": [
+          0.45,
+          0.12
+        ],
+        "passing": [
+          0.72,
+          0.1
+        ],
+        "first_touch": [
+          0.7,
+          0.1
+        ],
+        "tackling": [
+          0.55,
+          0.12
+        ],
+        "aerial": [
+          0.5,
+          0.12
+        ],
+        "goalkeeping": [
+          0.05,
+          0.03
+        ],
+        "set_pieces": [
+          0.5,
+          0.12
+        ],
+        "game_reading": [
+          0.7,
+          0.1
+        ],
+        "decision_making": [
+          0.68,
+          0.1
+        ],
+        "risk_management": [
+          0.5,
+          0.12
+        ]
+      }
+    },
+    "wide_midfielder": {
+      "height_cm": [
+        174,
+        6
+      ],
+      "weight_kg": [
+        70,
+        5
+      ],
+      "characteristics": {
+        "explosive_force": [
+          0.65,
+          0.12
+        ],
+        "max_speed": [
+          0.78,
+          0.1
+        ],
+        "injury_proneness": [
+          0.3,
+          0.15
+        ],
+        "finishing": [
+          0.5,
+          0.12
+        ],
+        "passing": [
+          0.62,
+          0.12
+        ],
+        "first_touch": [
+          0.68,
+          0.1
+        ],
+        "tackling": [
+          0.4,
+          0.12
+        ],
+        "aerial": [
+          0.4,
+          0.12
+        ],
+        "goalkeeping": [
+          0.05,
+          0.03
+        ],
+        "set_pieces": [
+          0.5,
+          0.12
+        ],
+        "game_reading": [
+          0.58,
+          0.12
+        ],
+        "decision_making": [
+          0.55,
+          0.12
+        ],
+        "risk_management": [
+          0.6,
+          0.12
+        ]
+      }
+    },
+    "striker": {
+      "height_cm": [
+        182,
+        7
+      ],
+      "weight_kg": [
+        78,
+        6
+      ],
+      "characteristics": {
+        "explosive_force": [
+          0.7,
+          0.12
+        ],
+        "max_speed": [
+          0.7,
+          0.12
+        ],
+        "injury_proneness": [
+          0.3,
+          0.15
+        ],
+        "finishing": [
+          0.75,
+          0.1
+        ],
+        "passing": [
+          0.5,
+          0.12
+        ],
+        "first_touch": [
+          0.68,
+          0.1
+        ],
+        "tackling": [
+          0.25,
+          0.1
+        ],
+        "aerial": [
+          0.62,
+          0.12
+        ],
+        "goalkeeping": [
+          0.05,
+          0.03
+        ],
+        "set_pieces": [
+          0.45,
+          0.12
+        ],
+        "game_reading": [
+          0.62,
+          0.12
+        ],
+        "decision_making": [
+          0.6,
+          0.12
+        ],
+        "risk_management": [
+          0.65,
+          0.12
+        ]
+      }
+    }
+  },
+  "_note": "The generated players' profiles, by role (maintainer, 2026-11-12: random but sensible, recognisable). Each value is [mean, spread]. A characteristic is derived by key, so the same world gives the same player: value = mean + spread * z, clamped to [0.02, 0.98], with z in [-1, 1] mixing the player's own key (1 - family_weight) and a key shared by his family of characteristics (family_weight), so that what goes together goes together (an explosive player is usually fast). The body (height, weight) is derived the same way. The strong foot follows the passing profile; the weak foot is a fraction of it (weak_foot_ratio); left_footed_share of the players are left-footed. Edit a role, replay the same seed, and the players change: no code to touch.",
+  "_source": "Orders of magnitude of real football: goalkeepers and centre backs are the tallest, wide players the lightest and fastest, strikers finish, centre backs tackle and head, midfielders pass and read; about a quarter of players are left-footed. Not calibrated on data: the real distributions are the generator's job (L3, IDEA-DESIGN-007), and this file is its declared prototype."
+}

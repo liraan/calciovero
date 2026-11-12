@@ -186,6 +186,10 @@ pub struct KeeperBalance {
     pub positioning_range_cm: i32,
     /// How far the keeper advances when the ball is on the line (cm).
     pub advance_cm: i32,
+    /// With the ball, the keeper stays this far behind his defensive line (cm).
+    pub support_gap_cm: i32,
+    /// With the ball, the keeper never goes farther than this from his line (cm).
+    pub support_max_cm: i32,
 }
 
 impl Default for KeeperBalance {

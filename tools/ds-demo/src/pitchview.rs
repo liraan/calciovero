@@ -125,6 +125,28 @@ impl PitchView {
     }
 }
 
+/// The two squads as the 2D shows them: letter, name, role, height and
+/// weight. Visible facts only (Plane B): the characteristics stay hidden.
+#[must_use]
+pub fn roster(m: &ds_model::Match) -> String {
+    let mut out = String::new();
+    for (label, squad) in [("HOME", &m.home), ("AWAY", &m.away)] {
+        let _ = writeln!(out, " {label}");
+        for p in &squad.players {
+            let _ = writeln!(
+                out,
+                "   {}  {:<10} {:<20} {} cm  {} kg",
+                marker(p.id),
+                p.name,
+                p.role.as_str().replace('_', " "),
+                p.height_cm,
+                p.weight_kg
+            );
+        }
+    }
+    out
+}
+
 /// The marker of a player: `A`-`K` home, `a`-`k` away, by squad slot.
 fn marker(id: PlayerId) -> char {
     let slot = id.slot();

@@ -74,7 +74,7 @@ pub const SCHEMA_VERSION: u32 = 2;
 /// event emission). A bump requires a `L0-match/CHANGELOG-SIM.md` entry and a
 /// golden-test regeneration. See `doctrine/adr/003-plane-a-enforcement.md` and
 /// `L0-match/CHANGELOG-SIM.md`.
-pub const SIM_VERSION: u32 = 43;
+pub const SIM_VERSION: u32 = 44;
 
 /// The save of a single match.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -183,7 +183,7 @@ impl MatchSave {
 /// the replay.
 #[must_use]
 pub fn replay(save: &MatchSave) -> MatchResult {
-    let mut hidden = GroundTruth::new(save.world_seed, save.match_id);
+    let mut hidden = GroundTruth::for_match(save.world_seed, &save.match_);
     let mut rng = RngRegistry::new(save.world_seed);
     let mut chain = EventChain::new();
     let config = MatchConfig::default();
@@ -271,7 +271,7 @@ mod tests {
 
     fn simulate(seed: u64) -> (Match, MatchResult) {
         let match_ = make_match();
-        let mut hidden = GroundTruth::new(seed, match_.id);
+        let mut hidden = GroundTruth::for_match(seed, &match_);
         let mut rng = RngRegistry::new(seed);
         let mut chain = EventChain::new();
         let config = MatchConfig::default();

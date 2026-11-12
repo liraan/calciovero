@@ -29,3 +29,30 @@ impl Hash {
         &self.0
     }
 }
+
+/// Derives a value in `[0, 1)` from `(world_seed, player, purpose)`.
+///
+/// The keyed derivation (ADR-029, OI-53). Not a die: the same world and the
+/// same player always give the same value, whenever it is read and
+/// however many players were derived before.
+///
+/// BLAKE3 over the world seed, the player's slot and generation, and the
+/// purpose. Shared by the vault (the hidden characteristics) and by
+/// whoever builds the visible body of a player (height, weight).
+#[must_use]
+pub fn unit_from_key(world_seed: u64, player: crate::ids::PlayerId, purpose: &str) -> f32 {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(&world_seed.to_le_bytes());
+    hasher.update(b"player:");
+    hasher.update(&player.slot().to_le_bytes());
+    hasher.update(&player.generation().to_le_bytes());
+    hasher.update(b"purpose:");
+    hasher.update(purpose.as_bytes());
+    let digest = hasher.finalize();
+    let bytes = digest.as_bytes();
+    let raw = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+    // `[0, 1)`: 1.0 is never produced.
+    #[allow(clippy::cast_possible_truncation)]
+    let unit = (f64::from(raw) / f64::from(u32::MAX) / 1.000_000_1) as f32;
+    unit
+}

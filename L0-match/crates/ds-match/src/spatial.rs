@@ -517,7 +517,42 @@ impl SpatialState {
                 goal_x,
             );
             #[allow(clippy::cast_possible_truncation)]
-            let tx = (x_target.round() as i32).clamp(0, pitch_length_cm);
+            let mut tx = (x_target.round() as i32).clamp(0, pitch_length_cm);
+            // With the ball his side moves up and so does he: he follows the
+            // defensive line at a distance and becomes an outlet for the
+            // pass back (maintainer, 2026-11-12).
+            let home = goal_x == 0.0;
+            if home == self.home_in_possession {
+                let line = crate::shape::place(
+                    crate::shape::Role {
+                        depth: 0,
+                        width: 500,
+                    },
+                    crate::shape::Situation {
+                        ball,
+                        in_possession: true,
+                        home,
+                        pitch: self.pitch_cm,
+                        kick_off: false,
+                    },
+                    &self.block,
+                );
+                let line_u = if home {
+                    line.0
+                } else {
+                    pitch_length_cm - line.0
+                };
+                let support_u = (line_u - keeper_balance.support_gap_cm)
+                    .clamp(GK_LINE_OFFSET_CM, keeper_balance.support_max_cm);
+                let current_u = if home { tx } else { pitch_length_cm - tx };
+                if support_u > current_u {
+                    tx = if home {
+                        support_u
+                    } else {
+                        pitch_length_cm - support_u
+                    };
+                }
+            }
             #[allow(clippy::cast_possible_truncation)]
             let ty = (y_target.round() as i32).clamp(0, pitch_width_cm);
             keeper_targets.push((gk, (tx, ty)));

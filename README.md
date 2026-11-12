@@ -8,7 +8,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-292_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-299_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
 
@@ -92,7 +92,7 @@ What exists today:
   positions himself, posts and crossbar that deflect the ball;
 - a **2D debug view** in the terminal that replays a match tick by tick,
   and a text board and an HTML page with the result;
-- **292 tests** and a health check that runs on every commit.
+- **299 tests** and a health check that runs on every commit.
 
 What does not exist yet: a pitch view you can watch, the rules of the
 game (throw-ins, offside, fouls), fatigue, the season, the career, the
@@ -123,8 +123,10 @@ in Git Bash too. Add `--speed 60` to go faster, `--step` to advance with
 Enter, `--frame 30` to print the pitch at the 30th minute. It is a debug
 view, and it shows the engine as it is today, stalls included.
 
-Run it twice: same seed, same match, to the last event. Then open
-[`L0-match/balance/`](L0-match/balance/), change a number, and run it
+Run it twice: same seed, same match, to the last event. `--roster` shows
+who is who: each player has a role and a body that fits it. Then open
+[`L0-match/balance/`](L0-match/balance/), change a number (a role's
+profile in `profiles.json`, the team's shape in `block.json`), and run it
 again.
 
 ## How you can help, even without writing code
