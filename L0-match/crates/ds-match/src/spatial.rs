@@ -109,6 +109,8 @@ pub struct SpatialState {
     pitch_cm: (i32, i32),
     /// Whether the home side has the ball (set by the match each tick).
     home_in_possession: bool,
+    /// Each player's off-ball act, as he chose it (ADR-049).
+    acts: BTreeMap<PlayerId, ds_orchestrator::OffBallAct>,
     /// Where the carrier is taking the ball, if he chose to carry it
     /// (IDEA-DESIGN-010: carrying is a choice). `None`: he holds it.
     carry_target: Option<(i32, i32)>,
@@ -195,6 +197,7 @@ impl SpatialState {
             pitch_cm: (length, width),
             home_in_possession: true,
             carry_target: None,
+            acts: BTreeMap::new(),
             carrier: None,
             goalkeepers: (home.players[0].id, away.players[0].id),
         };
@@ -212,6 +215,17 @@ impl SpatialState {
             }
         }
         s
+    }
+
+    /// A player's off-ball act, as he chose it (ADR-049).
+    pub fn set_act(&mut self, id: PlayerId, act: ds_orchestrator::OffBallAct) {
+        self.acts.insert(id, act);
+    }
+
+    /// A player's off-ball act, if he has chosen one.
+    #[must_use]
+    pub fn act(&self, id: PlayerId) -> Option<ds_orchestrator::OffBallAct> {
+        self.acts.get(&id).copied()
     }
 
     /// The side in possession, for the block (set by the match each tick).
@@ -455,33 +469,9 @@ impl SpatialState {
             .map(|(id, a)| (*id, a.position, a.position))
             .collect();
 
-        // Who goes for the ball (VISION §3): when someone has it, the
-        // nearest player of the other side presses him; when nobody has
-        // it, the nearest player of each side goes for it. Only a player
-        // who perceives the ball goes (ADR-034); goalkeepers keep their
-        // own target.
-        let carrier_team = self.carrier.map(crate::perception::team_of);
-        let chaser_of = |team: u32| {
-            work.iter()
-                .filter(|w| {
-                    crate::perception::team_of(w.0) == team
-                        && w.0 != self.goalkeepers.0
-                        && w.0 != self.goalkeepers.1
-                        && Some(w.0) != self.carrier
-                        && crate::perception::perceived_ball(&*self, w.0, ball).is_some()
-                })
-                .min_by_key(|(_, pos, _)| {
-                    let ddx = i64::from(pos.0 - ball.0);
-                    let ddy = i64::from(pos.1 - ball.1);
-                    ddx * ddx + ddy * ddy
-                })
-                .map(|(id, _, _)| *id)
-        };
-        let chasers: Vec<PlayerId> = [0_u32, 1]
-            .into_iter()
-            .filter(|t| carrier_team.is_none_or(|c| c != *t))
-            .filter_map(chaser_of)
-            .collect();
+        // Who goes where is each player's own choice (ADR-049): the engine
+        // only reads it. Before, the engine picked "the nearest player" of
+        // each side to chase or press.
 
         // F.7 step 7b: each agent's displacement comes from the movement
         // formula (`L0-match/balance/movement.json`, via `resolve_movement`), not from
@@ -558,14 +548,23 @@ impl SpatialState {
             keeper_targets.push((gk, (tx, ty)));
         }
         for entry in &mut work {
-            let target = if let Some((_, kt)) = keeper_targets.iter().find(|(g, _)| *g == entry.0) {
-                *kt
-            } else if Some(entry.0) == self.carrier {
+            let act = self.acts.get(&entry.0).copied();
+            let to_the_ball = matches!(
+                act,
+                Some(
+                    ds_orchestrator::OffBallAct::Press
+                        | ds_orchestrator::OffBallAct::Challenge
+                        | ds_orchestrator::OffBallAct::GoToBall
+                )
+            );
+            let target = if Some(entry.0) == self.carrier {
                 // The carrier holds the ball where he is, or carries it
-                // where he chose (IDEA-DESIGN-010).
+                // where he chose (IDEA-DESIGN-010); the keeper too.
                 self.carry_target.unwrap_or(entry.1)
-            } else if chasers.contains(&entry.0) {
+            } else if to_the_ball {
                 ball
+            } else if let Some((_, kt)) = keeper_targets.iter().find(|(g, _)| *g == entry.0) {
+                *kt
             } else {
                 let mine = (crate::perception::team_of(entry.0) == 0) == self.home_in_possession;
                 self.block_target(entry.0, ball, mine, false)

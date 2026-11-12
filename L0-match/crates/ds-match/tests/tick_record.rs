@@ -287,3 +287,20 @@ fn a_defender_can_win_the_ball() {
         .count();
     assert!(tackles > 0, "no tackle in the match");
 }
+
+/// ADR-049 (P1): the engine never picks a player. With nobody choosing to
+/// challenge, nobody challenges: every duel follows a player's own choice,
+/// and the source of `MatchState` no longer selects a chaser.
+#[test]
+fn the_engine_does_not_pick_the_chaser() {
+    let source = include_str!("../src/spatial.rs");
+    assert!(
+        !source.contains(concat!("let ", "chasers")),
+        "move_agents picks a chaser"
+    );
+    let state = include_str!("../src/state.rs");
+    assert!(
+        state.contains("OffBallAct::Challenge"),
+        "the duel follows the player's choice"
+    );
+}

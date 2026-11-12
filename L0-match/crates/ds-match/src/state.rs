@@ -152,8 +152,10 @@ pub struct MatchState {
     /// Where the carrier was at his last decision: if he has not got
     /// anywhere since, he is blocked (OI-97).
     last_decision: Option<(PlayerId, (i32, i32))>,
-    /// When each defender may challenge again (ADR-042, his own pace).
+    /// When a player who lost the ball may challenge again (ADR-042).
     challenges: BTreeMap<PlayerId, u64>,
+    /// When each player without the ball chooses again (ADR-049).
+    offball_due: BTreeMap<PlayerId, u64>,
     pending: Option<Pending>,
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
@@ -262,6 +264,7 @@ impl MatchState {
             pressure_balance: crate::balance::PressureBalance::load(),
             last_decision: None,
             challenges: BTreeMap::new(),
+            offball_due: BTreeMap::new(),
             bodies: {
                 let mut m = BTreeMap::new();
                 for p in match_.home.players.iter().chain(match_.away.players.iter()) {
@@ -403,6 +406,7 @@ impl MatchState {
     /// refactor, tracked as a note on IDEA-011.
     #[allow(clippy::too_many_lines)]
     pub fn decide(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
+        self.decide_off_ball(tick, ctx);
         let Some((attacker, defender)) = self.pick_from_space(ctx) else {
             return;
         };
@@ -745,12 +749,113 @@ impl MatchState {
         };
     }
 
-    /// The ground duel (ADR-042, core): the opponent nearest to the ball,
-    /// once within `reach_cm` of it, challenges the carrier, at most once
-    /// every `retry_ticks` (his own pace). The contact decides, with no die
-    /// (`resolve_duel`); if the defender wins, the ball is his. Before, no
-    /// one could take the ball from a carrier: a pressing defender stood
-    /// next to him, and a blocked carrier froze the match (OI-97).
+    /// Every player without the ball chooses his own act when his latency
+    /// expires (ADR-049): hold his place, press, challenge, go to the ball.
+    /// He reads his scene from where he stands; the engine only records the
+    /// choice and applies it (`move_agents`, `challenge_carrier`).
+    fn decide_off_ball(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
+        let ball = self.spatial.ball();
+        let carrier = self.spatial.carrier();
+        let ball_loose = carrier.is_none() && self.pending.is_none();
+        let duel = ctx.hidden.duel_balance();
+        let off = ctx.hidden.offball_balance();
+        let (length, width) = pitch_cm(ctx);
+        for (squad, other, home) in [
+            (&ctx.match_.home, &ctx.match_.away, true),
+            (&ctx.match_.away, &ctx.match_.home, false),
+        ] {
+            let carrier_opponent = carrier.filter(|c| other.players.iter().any(|p| p.id == *c));
+            let carrier_pos = carrier_opponent
+                .and_then(|c| self.spatial.agent(c))
+                .map(|a| a.position);
+            let keeper_id = squad.players.first().map(|p| p.id);
+            for p in &squad.players {
+                let id = p.id;
+                let Some(me) = self.spatial.agent(id).map(|a| a.position) else {
+                    continue;
+                };
+                // A presser who arrives within reach chooses at once: the
+                // scene has changed, he does not wait for his next turn.
+                let arrived = self.spatial.act(id) == Some(ds_orchestrator::OffBallAct::Press)
+                    && carrier_pos.is_some_and(|c| {
+                        distance_squared(me, c) <= i64::from(duel.reach_cm).pow(2)
+                    });
+                if Some(id) == carrier
+                    || (!arrived && self.offball_due.get(&id).is_some_and(|t| tick < *t))
+                {
+                    continue;
+                }
+                let keeper = Some(id) == keeper_id;
+                // How many outfield teammates he sees closer than him.
+                let rank = |target: (i32, i32)| {
+                    let mine = distance_squared(me, target);
+                    u32::try_from(
+                        squad
+                            .players
+                            .iter()
+                            .filter(|q| q.id != id && Some(q.id) != keeper_id)
+                            .filter_map(|q| self.spatial.agent(q.id))
+                            .filter(|a| distance_squared(a.position, target) < mine)
+                            .count(),
+                    )
+                    .unwrap_or(u32::MAX)
+                };
+                let to_carrier = carrier_pos.map(|c| distance_squared(me, c).isqrt());
+                let ball_in_own_box = {
+                    let depth = off.keeper_box_depth_cm;
+                    let in_depth = if home {
+                        ball.0 <= depth
+                    } else {
+                        ball.0 >= length - depth
+                    };
+                    in_depth && (ball.1 - width / 2).abs() <= off.keeper_box_half_width_cm
+                };
+                let sees_ball =
+                    crate::perception::perceived_ball(&self.spatial, id, ball).is_some();
+                let scene = ds_orchestrator::OffBallScene {
+                    actor: id,
+                    place: if keeper {
+                        ds_orchestrator::Place::Keeper {
+                            ball_in_area: ball_in_own_box,
+                        }
+                    } else {
+                        ds_orchestrator::Place::Outfield
+                    },
+                    loose_ball: (ball_loose && sees_ball).then(|| ds_orchestrator::Target {
+                        distance_cm: distance_squared(me, ball).isqrt(),
+                        rank: rank(ball),
+                    }),
+                    carrier: carrier_pos
+                        .zip(to_carrier)
+                        .map(|(c, d)| ds_orchestrator::Target {
+                            distance_cm: d,
+                            rank: rank(c),
+                        }),
+                    carrier_in_reach: to_carrier.is_some_and(|d| d <= i64::from(duel.reach_cm)),
+                };
+                let act = ctx.hidden.choose_off_ball(&scene);
+                self.spatial.set_act(id, act);
+                let opponents: Vec<PlayerId> = other.players.iter().map(|q| q.id).collect();
+                let (crowding, nearest_threat) = self.latency_scene(id, &opponents);
+                let latency = ctx
+                    .hidden
+                    .resolve_latency(&ds_orchestrator::LatencyContext {
+                        player: id,
+                        crowding,
+                        nearest_threat,
+                    });
+                self.offball_due
+                    .insert(id, tick.saturating_add(latency.ticks));
+            }
+        }
+    }
+
+    /// The challenge is the defender's choice (ADR-049, ADR-042): a player
+    /// who chose to challenge, and has the carrier within reach, tries to
+    /// win the ball, once per choice. The contact decides, with no die
+    /// (`resolve_duel`; the goalkeeper's one-on-one reads his goalkeeping);
+    /// if the challenger wins, the ball is his. The one who lost the ball
+    /// does not win it back at once.
     fn challenge_carrier(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
         let Some(carrier) = self.spatial.carrier() else {
             return;
@@ -759,37 +864,43 @@ impl MatchState {
             return;
         }
         let ball = self.spatial.ball();
-        let (_, opponents) = self.squads(ctx);
-        let Some(defender) = nearest_in_squad(&self.spatial, opponents, ball) else {
-            return;
-        };
         let duel = ctx.hidden.duel_balance();
         let reach = i64::from(duel.reach_cm);
-        let close = self
-            .spatial
-            .agent(defender)
-            .is_some_and(|a| distance_squared(a.position, ball) <= reach * reach);
-        if !close || self.challenges.get(&defender).is_some_and(|t| tick < *t) {
+        let (_, opponents) = self.squads(ctx);
+        let keeper = opponents.players.first().map(|p| p.id);
+        let Some(challenger) = opponents.players.iter().map(|p| p.id).find(|id| {
+            self.spatial.act(*id) == Some(ds_orchestrator::OffBallAct::Challenge)
+                && self.challenges.get(id).is_none_or(|t| tick >= *t)
+                && self
+                    .spatial
+                    .agent(*id)
+                    .is_some_and(|a| distance_squared(a.position, ball) <= reach * reach)
+        }) else {
             return;
-        }
-        self.challenges.insert(defender, tick + duel.retry_ticks);
+        };
+        // One attempt per choice: then he keeps pressing until he chooses again.
+        self.spatial
+            .set_act(challenger, ds_orchestrator::OffBallAct::Press);
         let outcome = ctx.hidden.resolve_duel(&ds_orchestrator::DuelContext {
             attacker: carrier,
-            defender,
-            duel_type: ds_orchestrator::DuelType::Ground,
+            defender: challenger,
+            duel_type: if Some(challenger) == keeper {
+                ds_orchestrator::DuelType::WithGoalkeeper
+            } else {
+                ds_orchestrator::DuelType::Ground
+            },
         });
         let fact = crate::fact::Fact::Contact {
             attacker: carrier,
-            defender,
+            defender: challenger,
             winner: outcome.winner,
         };
         for c in crate::fact::classify(&fact) {
             self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
         }
-        if outcome.winner == defender {
+        if outcome.winner == challenger {
             self.flip_possession();
-            self.spatial.set_carrier(Some(defender));
-            // The one who lost the ball does not win it back at once.
+            self.spatial.set_carrier(Some(challenger));
             self.challenges.insert(carrier, tick + duel.retry_ticks);
         }
     }

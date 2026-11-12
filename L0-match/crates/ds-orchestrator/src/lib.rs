@@ -27,6 +27,7 @@
 
 pub mod context;
 pub mod observation;
+pub mod offball;
 pub mod outcome;
 
 mod actor;
@@ -42,6 +43,7 @@ pub use context::{
 };
 pub use ds_calculator::shot_choice::ShotChoiceBalance;
 pub use observation::ObservationEvent;
+pub use offball::{OffBallAct, OffBallScene, Place, Target};
 pub use outcome::{
     DuelOutcome, LatencyOutcome, MovementOutcome, PassOutcome, ReceptionOutcome, SaveOutcome,
     ShotOutcome, ShotType,
@@ -58,6 +60,7 @@ pub struct GroundTruth {
     world_seed: u64,
     match_id: MatchId,
     duel_balance: ds_calculator::duel::DuelBalance,
+    offball_balance: ds_calculator::offball::OffBallBalance,
     vault: ds_db::Vault,
     observations: Vec<ObservationEvent>,
     /// The movement balance, parsed once. `resolve_movement` is called
@@ -80,6 +83,7 @@ impl GroundTruth {
             world_seed,
             match_id,
             duel_balance: ds_calculator::duel::DuelBalance::load(),
+            offball_balance: ds_calculator::offball::OffBallBalance::load(),
             vault: ds_db::Vault::new(ds_core::identity::Identity::new(world_seed, match_id)),
             observations: Vec::new(),
             movement_balance: ds_calculator::movement::MovementBalance::load(),
@@ -330,6 +334,12 @@ impl GroundTruth {
             on_target,
         });
         outcome
+    }
+
+    /// The off-ball choice's declared parameters (`balance/offball.json`).
+    #[must_use]
+    pub const fn offball_balance(&self) -> ds_calculator::offball::OffBallBalance {
+        self.offball_balance
     }
 
     /// The ground duel's declared parameters (`balance/duel.json`).
