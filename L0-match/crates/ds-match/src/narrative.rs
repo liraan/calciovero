@@ -135,7 +135,13 @@ fn narrate_event(
         Some(ds_core::ids::ActorId::Player(id)) => names.get(&id).copied().unwrap_or("<unknown>"),
         Some(ds_core::ids::ActorId::Referee(_)) | None => "<match>",
     };
-    let minute = ev.timestamp_minute;
+    // The broadcast clock: the second half starts at 45' (the event's own
+    // timestamp restarts at each half, ADR-026). Before, a goal at the 89th
+    // minute read "in the 44'" while the 2D clock said 89'.
+    let minute = match ev.half {
+        ds_stats::Half::First => ev.timestamp_minute,
+        ds_stats::Half::Second => ev.timestamp_minute.saturating_add(45),
+    };
 
     let text = render_text(ev, player, minute, slot_map);
 
@@ -418,6 +424,20 @@ mod tests {
         let narrative = narrate(&m, &chain);
         assert!(narrative[0].text.contains("Player0_0"));
         assert!(narrative[0].text.contains("45"));
+    }
+
+    /// The second half reads on the broadcast clock: its 44th minute is
+    /// the match's 89th.
+    #[test]
+    fn the_second_half_reads_on_the_match_clock() {
+        let m = make_match();
+        let mut chain = EventChain::new();
+        let mut ev = make_event(1, 44, EventType::Goal, PlayerId::new(0, 0));
+        ev.half = ds_stats::Half::Second;
+        chain.try_append(ev).unwrap();
+        let narrative = narrate(&m, &chain);
+        assert_eq!(narrative[0].minute, 89);
+        assert!(narrative[0].text.contains("89"), "{}", narrative[0].text);
     }
 
     #[test]
