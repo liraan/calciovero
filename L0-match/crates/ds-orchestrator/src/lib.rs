@@ -538,6 +538,32 @@ impl fmt::Debug for GroundTruth {
 }
 
 #[cfg(test)]
+mod latency_scale_tests {
+    use super::{GroundTruth, LatencyContext};
+    use ds_core::ids::{MatchId, PlayerId};
+
+    /// OI-97 (P1): a decision takes seconds, not minutes. Ten ticks are
+    /// one second; the slowest decider in the worst scene stays within
+    /// four seconds, the fastest in the best scene above a tenth.
+    #[test]
+    fn a_decision_takes_seconds_not_minutes() {
+        let mut gt = GroundTruth::new(42, MatchId::new(1, 0));
+        for slot in 0..11 {
+            for (crowding, threat) in [(0.0, 1.0), (1.0, 0.0)] {
+                let t = gt
+                    .resolve_latency(&LatencyContext {
+                        player: PlayerId::new(slot, 0),
+                        crowding,
+                        nearest_threat: threat,
+                    })
+                    .ticks;
+                assert!((1..=40).contains(&t), "slot {slot}: {t} ticks");
+            }
+        }
+    }
+}
+
+#[cfg(test)]
 mod direction_tests {
     use super::GroundTruth;
 
