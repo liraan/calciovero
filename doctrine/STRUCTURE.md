@@ -1,8 +1,8 @@
 # Repository Structure
 
-**Version:** 1.8
+**Version:** 2.0
 **Status:** active
-**Last updated:** 2026-10-26
+**Last updated:** 2026-11-12
 
 This document explains how the repository is organised, and the rules that keep it coherent as it grows. Read it before adding a file, revising a module, or proposing a change.
 
@@ -23,10 +23,10 @@ Doctrine  →  Modules (L0–L3)  →  ADRs  →  Code
 | Layer | Lives in | Purpose | Changes how often |
 |---|---|---|---|
 | **Doctrine** | `doctrine/00-foundations.md` | Why the project exists, the Three Planes, the banned things, the concentric model | Rarely. Only through a doctrine ADR. |
-| **Modules** | `specs/L0-*/`, `L1-*/`, `L2-*/`, `L3-*/` | How one subsystem works, at one level | Often. Each has its own revision history. |
+| **Modules** | `L0-match/specs/`, then `L1-*/specs/`, `L2-*/specs/`, `L3-*/specs/` | How one subsystem works, at one level | Often. Each has its own revision history. |
 | **ADRs** | `doctrine/adr/NNN-*.md` | Why one architectural decision was made | Never edited after acceptance. Superseded by a new ADR. |
-| **Plugins** | `crates/` + `sheet.toml` | A piece of code that extends the engine | Continuously, once the plugin system exists |
-| **Code** | `crates/` | The implementation | Continuously, once it exists. |
+| **Plugins** | a crate with a `sheet.toml`, in the ring it extends | A piece of code that extends the engine | Continuously, once the plugin system exists |
+| **Code** | `L0-match/crates/`, `tools/` | The implementation | Continuously, once it exists. |
 
 **Rule:** a module may *reference* the doctrine but may not *restate* it. If a module contradicts the doctrine, the module is wrong, not the doctrine.
 
@@ -86,147 +86,86 @@ The specification is not a flat list of 25 modules. It is organised in **four co
 
 ## 3. Directory Layout
 
-### Terminology
+### The rule: the tree is the nest
 
-Before the layout, the terminology. Three words, three things:
-
-| Term | What it is | Example |
-|---|---|---|
-| **Module** | A directory of the specification, at one level. Contains sub-modules. | `L0-match/specs/`, `specs/L2-psyche/` |
-| **Sub-module** | A file inside a module. | `L0-match/specs/04-match-engine.md` |
-| **Plugin** | A Rust crate with a `sheet.toml`, that extends the engine at runtime. | `crates/ds-match-3d/` (future) |
-
-**A module is a document. A plugin is code.** The two are different things, and the terms are not interchangeable. The historical term **cell** is **deprecated**: it meant what is now called "module", and its use is discouraged in new text. The field `cell` in the frontmatter is a historical name: its value is the module directory name.
-
-### Current state (as of 2026-10-30)
-
-The repository contains **documentation and code**.
-
-**Documentation:**
+The repository follows the same rule as the crates (ADR-041): **one
+directory, one responsibility**, declared in one sentence in its
+`README.md`. The concentric levels of §2 are the directory tree: the
+doctrine at the centre, each level a ring that holds *everything* of that
+level together (its specs, its design notes, its data, its code), and
+dependencies that point inward only. A level N directory may read the
+output of a level `< N` directory; never the reverse.
 
 ```
-specs/
-├── 00-foundations.md
-├── _index.md
-└── L0-match/         (11 files, 00 → 10)
-docs/
-├── adr/              (33 files, 000, 001–008, 012–035)
-├── calibration/      (.gitkeep)
-├── context/          (briefing material: not normative)
-├── legal/            (.gitkeep)
-├── ARCHITECTURE.md
-├── CODE_TOUR.md
-├── GLOSSARY.md
-├── PLUGIN_DEVELOPER_GUIDE.md
-└── PLUGINS-WORLDS-READING-GUIDE.md
-archive/
-├── README.md
-├── prompts/          (.gitkeep)
-├── doctrine/         (.gitkeep)
-└── legacy/           (.gitkeep)
+calciovero/
+├── README.md  CONTRIBUTING.md  CHANGELOG.md  LICENSE*   only what GitHub and
+├── Cargo.toml  Cargo.lock  rust-toolchain.toml          cargo need at the root
+├── assets/                  the project's identity (logo), shown by the README
+│
+├── doctrine/                THE CENTRE: what every level obeys
+│   ├── 00-foundations.md    the doctrine
+│   ├── VISION.md            what the manager does, why they choose this game
+│   ├── WORLD-MODEL.md       the map of everything that can exist in a match
+│   ├── GLOSSARY.md  STRUCTURE.md  _index.md (the module map)
+│   ├── PLUGIN_DEVELOPER_GUIDE.md  PLUGINS-WORLDS-READING-GUIDE.md
+│   └── adr/                 one decision, one file (§5)
+│
+├── L0-match/                FIRST RING: two teams play one match
+│   ├── specs/               the contract (L0.00 → L0.11)
+│   ├── design/              the notes that implement it, and the code maps
+│   ├── balance/             the declared parameters (`_source`, arbitrary until L3)
+│   ├── crates/              the engine, one responsibility per crate (below)
+│   └── CHANGELOG-SIM.md     every change of simulation behaviour
+│
+├── L1-season/ L2-career/ L3-meta/    created with their first file (D3)
+│
+├── tools/                   crates that are tools, not the simulation
+│   ├── ds-demo/             demonstrate a match (text, JSON, HTML)
+│   ├── ds-fixtures/         the demo and test squads
+│   ├── ds-testkit/          the test contract (no dependency on any ds-* crate)
+│   └── ds-test-runner/      run the scenarios (`--check`)
+│
+└── process/                 OUTSIDE THE RINGS: how the work is done
+    ├── SESSION-STATE.md     the bookmark: where we are
+    ├── NEW-SESSION-PROMPT.md  NOTA-PER-NUOVA-AI.md  AGENT-POLICY.md  …
+    ├── IDEAS.md             what is not decided
+    ├── analysis/  captures/ the current reports, the record of the pauses
+    └── scripts/             gates, starting, closing, capture
 ```
 
-**Code (255 tests passing):**
+`.githooks/`, `.github/` and `.woodpecker/` stay at the root: git and the
+CI services look for them there.
 
-```
-crates/
-├── ds-core/        (RNG, event bus, IDs, hash, time)
-├── ds-model/       (minimal entities, CauseTrace)
-├── ds-db/          (Plane A: vault, latent performances, custodian door)
-├── ds-orchestrator/ (the orchestrator: GroundTruth, resolve_*)
-├── ds-stats/       (Plane B: MatchEvent, EventChain)
-├── ds-match/       (engine, narrative, save)
-├── ds-testkit/     (public test harness: Scenario, Feature, TestRegistry)
-├── ds-test-runner/ (CLI: --check, --list, --coverage)
-├── ds-demo/        (CLI: simulate a match, render text/JSON/HTML)
-├── ds-fixtures/    (hardcoded squads and match fixture)
-└── ds-calculator/  (formula from L0-match/balance/*.json, applied to a player)
-```
+### The engine crates (`L0-match/crates/`)
 
-`ds-testkit` has **no dependency on any other `ds-*` crate**. It is the contract that core modules, plugins, and tools all implement.
+The dependency order is the reading order, from the inside out:
 
-**Root files:**
+| Crate | Responsibility (ADR-041 §2) |
+|---|---|
+| `ds-core` | the primitives: ids, time, hash, deterministic geometry |
+| `ds-model` | the identity of the world: Player, Squad, Pitch, Match |
+| `ds-stats` | the observation: events and statistics (Plane B), append-only |
+| `ds-calculator` | a formula from `balance/`, applied to a player and a situation |
+| `ds-db` | the vault: the players' performances, derived by key, one door |
+| `ds-orchestrator` | the decision: which actor, when, with which scene; the contact |
+| `ds-match` | the engine: the tick, the ball, the effect, the events, the save (multi-responsibility, declared: OI-94) |
 
-```
-README.md
-doctrine/STRUCTURE.md
-CONTRIBUTING.md
-LICENSE.md, LICENSE-MIT, LICENSE-APACHE, LICENSE-ASSETS
-CHANGELOG.md, L0-match/CHANGELOG-SIM.md, CHANGELOG-REGISTRY.md
-Cargo.toml, Cargo.lock, rust-toolchain.toml
-.gitignore, .gitattributes, .cargo/config.toml
-.github/PULL_REQUEST_TEMPLATE.md, .github/ISSUE_TEMPLATE/
-```
-
-### Target state
-
-The full structure, once L1–L3 are written. Items marked *(planned)* do not exist yet.
-
-```
-pc-football-manager/
-├── README.md
-├── doctrine/STRUCTURE.md
-├── CONTRIBUTING.md
-├── LICENSE.md
-├── LICENSE-MIT
-├── LICENSE-APACHE
-├── LICENSE-ASSETS
-├── CHANGELOG.md
-├── L0-match/CHANGELOG-SIM.md
-├── CHANGELOG-REGISTRY.md
-├── specs/
-│   ├── 00-foundations.md
-│   ├── _index.md
-│   ├── L0-match/
-│   ├── L1-season/             # *(planned)*
-│   ├── L1-world/              # *(planned)*
-│   ├── L1-roster/             # *(planned)*
-│   ├── L2-*/                  # *(planned)* 9 modules
-│   └── L3-*/                  # *(planned)* 8 modules
-├── archive/                   # historical Prompt Masters, when recovered
-├── docs/
-│   ├── adr/
-│   ├── legal/
-│   ├── calibration/
-│   ├── GLOSSARY.md
-│   └── PLUGIN_DEVELOPER_GUIDE.md
-├── registry/                  # empty until code exists
-├── crates/                    # code (see current state)
-├── mods/                      # empty until user packs exist
-└── data/                      # examples only, never real licensed data
-```
+### Naming
 
 **File naming:** `NN-kebab-case-name.md`, two-digit prefix, no Italian, no version in the filename. `04-match-engine.md`, not `Match Engine 04 (rev 1.1).md`. The filename is stable; the revision lives in the frontmatter.
 
-**Crate naming:** all crates in `crates/` use the `ds-` prefix (ADR-032, completed 2026-11-11). Current: `ds-core`, `ds-model`, `ds-db`, `ds-orchestrator`, `ds-calculator`, `ds-stats`, `ds-match`, `ds-testkit`, `ds-test-runner`, `ds-demo`, `ds-fixtures`. Planned (post-v1.0): `ds-packs`, `ds-assets`, `ds-pack`. `ds-testkit` is the public test harness contract: it has **no dependency on any other `ds-*` crate**, so core modules, plugins, and tools can all implement `ds_testkit::Scenario` without coupling. The historical prefixes `pcfm-` and `fmr-` (from the original names) are deprecated and must not be used in new files. Rust module paths follow the same convention with an underscore: `ds_core::rng`, `ds_match::simulate`, `ds_testkit::Scenario`, etc.
+**Crate naming:** every crate uses the `ds-` prefix (ADR-032). Rust module paths use an underscore: `ds_core::ids`, `ds_match::simulate`. The prefixes `pcfm-` and `fmr-` are historical and are not used in new files.
 
-**Modules vs sub-modules:** A **module** is a directory (`L0-match`, `L2-psyche`). A **sub-module** is a file inside a module (`04-match-engine.md`). A sub-sub-module is a section (`##`) inside a file. There is no third level of directories. If a sub-module needs its own children, it becomes a new module at the same level, not a deeper directory.
+**Modules vs sub-modules:** a **module** is a `specs/` directory of a level (`L0-match/specs/`). A **sub-module** is a file inside it (`04-match-engine.md`). A sub-sub-module is a section (`##`) inside a file. The field `module_id` in the frontmatter is the stable identifier (`L0.04`); the field `cell` is historical and names the level directory. A **plugin** is code: a Rust crate with a `sheet.toml` (ADR-012), placed in the ring it extends.
 
-The field `module_id` in the frontmatter is the stable identifier of the sub-module (`L0.04`). The field `cell` is the name of the module directory (`L0-match`); the field name is historical, its meaning is "module directory". In prose, prefer "sub-module L0.04" when talking about a file, and "module L0-match" when talking about a directory. A **plugin** is a different thing: a Rust crate with a `sheet.toml`, defined in ADR-012.
+### History lives in git
 
-### `/archive` — the history
+**Note (2026-11-12, maintainer).** Superseded documents are **deleted**, not archived: handoffs, reviews, reports, plans, earlier versions of the doctrine. They are recovered with `git log -- <path>` and `git show <commit>:<path>`. The tree holds what is current; `archive/` no longer exists. The four legacy Italian modules and the Prompt Master versions were never committed: there is nothing to recover.
 
-When `00-foundations.md` is revised, the previous version is archived in `archive/doctrine/`.
+### What appears later, and where
 
-**Note (2026-11-12, maintainer) — history lives in git.** The earlier rule ("every superseded document goes here, nothing is deleted") is withdrawn for working documents: superseded handoffs, reviews, reports and plans are **deleted**, not archived, and are recovered with `git log -- <path>` and `git show <commit>:<path>`. The tree holds what is current. The four legacy Italian modules and the Prompt Master versions were never committed (see the 2026-10-25 note in git history, `docs/MIGRATION-01-04.md`): there is nothing to recover.
-
-**Rule:** the archive is read-only. Do not edit archived files. They exist for traceability, not for maintenance.
-
-### `/docs/adr` — the decision log
-
-One file per architectural decision. See §5.
-
-### `/docs/legal` — data source compliance
-
-Licensing terms, provider constraints, what we can and cannot do with third-party data. *(planned — the directory exists but is empty)*
-
-### `/docs/calibration` — model calibration dashboards
-
-When the project ships, this folder holds the dashboards that compare internal models (xG, IR, projections) against real data. *(planned — the directory exists but is empty)*
-
-### `/crates`, `/registry`, `/mods`, `/data`
-
-`crates/` contains code (11 crates as of 2026-11-10). `registry/`, `mods/`, `data/` are empty until code or user packs exist. **Rule:** `data/` contains *examples only*. Never real licensed data. If you need to test with real data, keep it outside the repo.
+- `L1-season/`, `L2-career/`, `L3-meta/`: each with `specs/`, and `crates/` when it has code. The registry, packs, the generator, the editor and the calibration dashboards are L3; data-source compliance (`legal/`) goes with the module that imports data.
+- **Rule for data:** example data only, never real licensed data. Real data stays outside the repository (foundations §5).
 
 ---
 
@@ -427,7 +366,7 @@ Rationale:
 
 1. Bump `version` in the frontmatter. Minor for clarifications, major for invariant changes.
 2. If major, write an ADR first (or link to an existing one).
-3. Archive the previous version in `archive/` if the change is structural.
+3. The previous version stays in git history; there is no archive copy.
 4. Update `last_updated`.
 5. Open a PR with **one module only**.
 6. If the revision changes a dependency, update `referenced_by` in downstream modules.

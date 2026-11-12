@@ -1,6 +1,6 @@
-# Context directory — agent workspace
+# process/ — how the work is done
 
-This directory is an **agent workspace**, not human documentation. The documentation for collaborators is `README.md` at the repo root and `doctrine/STRUCTURE.md` (the normative source).
+**Responsibility (one sentence):** the memory and the tools of the work — the bookmark, the session prompts, the policy, the ideas, the reports and the scripts. It is outside the rings: nothing in `doctrine/`, `L0-match/` or `tools/` reads it. The documentation for collaborators is `README.md` at the repo root and `doctrine/STRUCTURE.md`.
 
 ## Rule
 
@@ -13,7 +13,7 @@ This directory contains **functional working documents** (session prompts, polic
 
 - Files here **can be removed, restructured, or rewritten** freely when their function has been served.
 - **Analysis reports** in `analysis/` are working documents. A report is **closed** when it has been **examined** and its findings are **entered in `SESSION-STATE.md`** — as steps to do, or as explicitly rejected/deferred items. Resolution is not required: the report is a transport for findings, and its function is served once the findings are in the plan. Closed reports are moved to `analysis/archive/` at the closing ritual (history preserved in git, active directory clean).
-- At the startup ritual, read **all reports in `analysis/`** (not `analysis/archive/`). No fixed count.
+- At the startup ritual, read **all reports in `analysis/`**. No fixed count.
 
 This exception applies **only to `process/`**. Everywhere else, the standard rules apply.
 
@@ -32,7 +32,6 @@ This exception applies **only to `process/`**. Everywhere else, the standard rul
 **Supporting material (not normative):**
 
 - `L0-POSITIONAL-SLICE.md` — design note for the current L0 work: §0 the vision (phenomenological, eight categories), §6-ter the event map, §7 where we are. **Not normative** (the spec is), but it is the entry point before touching the engine: a commit that touches `state.rs`, `spatial.rs`, `perception.rs`, `orchestrator.rs`, `save.rs` or `golden_l0.rs` carries `Note-Read: L0-POSITIONAL-SLICE §0, §6-ter, §7`.
-- `PROJECT-IDEA-LOG.md` — **archived** to `archive/PROJECT-IDEA-LOG.md` (historical record, frozen at 2026-10-27). Decisions now live in ADRs and `SESSION-STATE.md` Open items.
 - `IDEAS.md` — open and rejected ideas. Do not implement from it.
 
 **Subfolders:**

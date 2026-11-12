@@ -86,7 +86,7 @@ Including in AI-drafted text. Especially in AI-drafted text. The AI disclosure i
    - Minor (`1.0 → 1.1`) for clarifications, typo fixes, added examples.
    - Major (`1.0 → 2.0`) for changes that affect downstream cells.
 2. **If major, write an ADR first.** The ADR explains why. It's referenced from the cell.
-3. **Archive the previous version** in `archive/` if the change is structural.
+3. **The previous version stays in git history**: do not copy it anywhere.
 4. **Update `last_updated`.**
 5. **Update `referenced_by`** in downstream cells if the dependency changed.
 6. **Open a PR with one cell.**
