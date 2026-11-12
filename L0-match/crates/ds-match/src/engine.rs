@@ -2,13 +2,13 @@
 
 use crate::context::MatchContext;
 use crate::narrative::{NarrativeEntry, narrate};
-use crate::orchestrator::simulate_match;
 use crate::result::MatchResult;
+use crate::simulate::simulate_match;
 
 /// The trait that every match engine must implement.
 ///
 /// The trait is the **rendering** boundary: two implementations can share
-/// the simulation (via `crate::orchestrator::simulate_match`) and differ
+/// the simulation (via `crate::simulate::simulate_match`) and differ
 /// only in how they render the `MatchResult`.
 pub trait MatchEngine: Send + Sync {
     /// Simulates the match described by `ctx`, returning the result.
@@ -17,7 +17,7 @@ pub trait MatchEngine: Send + Sync {
 
 /// The text implementation of the match engine.
 ///
-/// A thin wrapper around `crate::orchestrator::simulate_match`. It runs the
+/// A thin wrapper around `crate::simulate::simulate_match`. It runs the
 /// shared simulation, then fills `MatchResult.narrative` using
 /// `crate::narrative::narrate`.
 pub struct TextMatchEngine;
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn simulate_match_alone_returns_empty_narrative() {
-        use crate::orchestrator::simulate_match;
+        use crate::simulate::simulate_match;
         let match_ = make_match();
         let mut hidden = GroundTruth::new(42, match_.id);
         let mut rng = RngRegistry::new(42);

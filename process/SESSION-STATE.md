@@ -95,7 +95,7 @@ physical engine is not a later step of this project: it is a different
 paradigm, not planned.
 
 **Gate: reading before touching the engine.** `state.rs`, `spatial.rs`,
-`perception.rs`, `orchestrator.rs`, `save.rs`, `golden_l0.rs` may only be
+`perception.rs`, `simulate.rs`, `save.rs`, `golden_l0.rs` may only be
 modified by a commit that carries `Note-Read: L0-POSITIONAL-SLICE §0,
 §6-ter, §7`. The trailer is self-declared but visible in `git log`; the
 hook check is deferred to a dedicated session (D5: an artefact today, a

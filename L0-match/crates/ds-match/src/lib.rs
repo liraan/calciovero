@@ -1,12 +1,14 @@
 //! `ds-match` — the match engine (L0.04).
 //!
-//! The **orchestrator** of L0: it drives the tick loop, calls
-//! `GroundTruth::resolve_*` for every resolution, publishes events to the
-//! `EventChain`, and produces a `MatchResult`.
+//! **Responsibility:** the engine. It drives the tick (time and substrate),
+//! moves the ball, applies the effect of the actors' decisions (taken in
+//! `ds-orchestrator`), publishes events to the `EventChain`, saves, and
+//! produces a `MatchResult`. It has more than one reason to change,
+//! declared (ADR-041 §2, OI-94).
 //!
 //! # Architecture: simulation vs rendering
 //!
-//! The **simulation** is in [`orchestrator::simulate_match`]. It is the
+//! The **simulation** is in [`simulate::simulate_match`]. It is the
 //! **only** implementation of the tick loop and micro-decisions. Both
 //! [`TextMatchEngine`] (this crate) and a future `ThreeDEngine` (in a
 //! separate crate, e.g. `ds-match-3d`) call it. They differ only in
@@ -30,10 +32,10 @@ pub mod driver;
 pub mod engine;
 mod fact;
 pub mod narrative;
-pub mod orchestrator;
 pub mod perception;
 pub mod result;
 pub mod save;
+pub mod simulate;
 pub mod spatial;
 pub mod state;
 
@@ -41,12 +43,12 @@ pub use context::{MatchConfig, MatchContext};
 pub use driver::simulate_from_seed;
 pub use engine::{MatchEngine, TextMatchEngine};
 pub use narrative::{Importance, NarrativeEntry, narrate};
-pub use orchestrator::simulate_match;
 pub use perception::{
     Neighbour, distance_squared, nearest_opponents, nearest_teammates, nearest_to_point,
 };
 pub use result::{MatchResult, MatchStatistics, Score};
 pub use save::{MatchSave, SCHEMA_VERSION, SIM_VERSION, SaveError, replay};
+pub use simulate::simulate_match;
 pub use spatial::{AgentState, SpatialState};
 pub use state::MatchState;
 

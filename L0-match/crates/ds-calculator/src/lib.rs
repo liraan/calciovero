@@ -2,11 +2,11 @@
 //!
 //! The engine has three components, and each has one responsibility:
 //!
-//! - the **custodian** (`pcfm-hidden`) holds the hidden performances and
+//! - the **custodian** (`ds-db`, the vault) holds the hidden performances and
 //!   answers one characteristic at a time;
 //! - the **calculator** (this crate) applies a formula from
 //!   `L0-match/balance/*.json` to a situation and a player;
-//! - the **orchestrator** (`resolve_*`) decides when, with which
+//! - the **orchestrator** (`ds-orchestrator`) decides when, with which
 //!   situation, for which formula.
 //!
 //! # Two kinds of input

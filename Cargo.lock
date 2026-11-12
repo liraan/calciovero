@@ -162,7 +162,6 @@ dependencies = [
  "ds-fixtures",
  "ds-match",
  "ds-model",
- "ds-orchestrator",
  "ds-stats",
  "ds-testkit",
  "serde_json",

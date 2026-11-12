@@ -1,8 +1,10 @@
-//! `ds-core` — core infrastructure for PCFM.
+//! `ds-core` — the primitives (ADR-041 §2).
 //!
-//! This crate is the foundation of every other crate in PCFM. It contains
-//! no game logic; only infrastructure: RNG, event bus, IDs, time, hash,
-//! deterministic math.
+//! **One responsibility:** the vocabulary every other crate shares. It
+//! contains no game logic; only infrastructure: IDs, time, hash,
+//! deterministic geometry, the event bus, and the RNG (kept for the
+//! generator; the engine draws no die, ADR-035, except the one declared
+//! in `resolve_duel`, Plan E).
 //!
 //! # Modules
 //!

@@ -1,11 +1,18 @@
-//! `pcfm-hidden` — Plane A (Ground Truth) for PCFM.
+//! `ds-orchestrator` — the decision (ADR-041 §2).
+//!
+//! **One responsibility:** it decides which actor acts, when (the
+//! latency), with which scene and with which formula, and it owns the
+//! contact of a gesture (the actor's side). It does not apply the effect
+//! to the world: `ds-match` does. The performances are read through the
+//! vault's door (`ds-db`, the `Custodian` trait); this crate keeps the
+//! `GroundTruth` handle that opens it, and the rules below are the door's.
 //!
 //! See `L0-match/specs/10-ground-truth.md` and
 //! `doctrine/adr/003-plane-a-enforcement.md` for the full specification.
 //!
 //! # What this crate is
 //!
-//! The only crate that contains latent attributes (Plane A). It exposes
+//! The only crate that reads latent attributes (Plane A, through `ds-db`). It exposes
 //! **only** computations (`resolve_*`) and **only** Plane B observations
 //! (`drain_observations`). It never exposes a latent value.
 //!
