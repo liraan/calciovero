@@ -265,3 +265,111 @@ the target: the same formula as the other agents, a different target. No die.
 No new characteristic: at L0 the positioning is geometric (it reads the ball
 and the goal, not the shooter's body); the shooter's body enters with the read
 in flight (step 3).
+
+**2026-11-12 — the shape of the read, and the ball that can be deflected (before any code).**
+
+The maintainer: *"la palla deve poter essere deviata, e la lettura del portiere
+e dell'attaccante e fatta sempre dal loro punto di vista in base alle proprie
+caratteristiche"*. This is not a refinement of OI-81-step-c: it is the shape
+that step-c and every future read must obey, and it is written before any code
+because writing it after would mean writing it around the code that exists.
+
+### 1. The ball can be deflected, and the deflection has a cause
+
+`advance_ball` has no collision: the ball crosses the goal plane and
+`check_shot_crossing` is the only place where it meets something. OI-52 (posts
+and crossbar) is the same hole from the other side. The chain (ADR-044 §3) says
+the ball answers `physical properties -> relations -> effects`: a deflection is
+an **effect of a relation with a cause**, not a random event and not a debt
+(`Removed-by: never` was the wrong answer for OI-52).
+
+Three kinds of cause, and each one is a relation:
+- **a static obstacle** (post, crossbar): the ball's trajectory meets the
+  obstacle's geometry; the effect is a declared reflection.
+- **an actor who touches it** (the keeper's hand, the defender on the line):
+  the contact is the actor's (ADR-039 step 3); the effect is a new trajectory.
+- **the surface** (the ground): the bounce (ADR-044 §4).
+
+The properties (elasticity of the ball, of the post, of the surface) are
+**declared data**, not latents: a second door, declared (ADR-044 §3). The
+combination is a formula, so it lives in the calculator (ADR-028), integer
+(ADR-044 §5). `FLIGHT_TICKS = 15` fixed is not the flight's duration: the
+duration follows the trajectory.
+
+**The filter (partita vera, l'attore che guarda la palla).** A fan sees a ball
+that hits the post and goes out, a keeper who touches it and changes its path,
+a ball that bounces. Today none of the three exists: the ball is a straight
+line to a plane. A read of a trajectory that cannot change is not a read: it is
+a lookup.
+
+### 2. The read is a stima, from the actor's point of view, with his characteristics
+
+The engine today computes the exact crossing point and hands it to
+`resolve_save`. The keeper does not read: the engine reads for him. The shape
+that the vision requires is the opposite:
+
+- **The actor perceives the ball** (position and velocity this tick) through
+  his own characteristics (`vision`, `game_reading`, `concentration`), not
+  through the engine's exact state. `perceived_ball` today is a binary cone,
+  no error, no characteristic: it is the geometry of looking, not the act of
+  reading.
+- **The read is a stima of the arrival point**, and the distance between the
+  stima and the true point is the actor's **band**: a strong keeper deviates
+  less, a weak one more (ADR-046 §2, the band is the characteristic; the point
+  inside the band is deterministic, ADR-035).
+- **The stima updates every tick** (ADR-045 amendment 2, cantiere §4 point 3):
+  if the ball is deflected, the next tick's perception is different, and a
+  keeper with a short horizon or a long latency arrives late.
+- **The same shape for the shooter**: the attacker reads the keeper and the
+  goal through his own characteristics (ADR-047 §1). Two actors, one scene,
+  two reads, two stimas.
+
+**The filter.** A keeper who reads the whole trajectory is omniscient, not a
+keeper; a keeper who reads a point computed by the engine is a calculator. The
+band is what makes the read an act: the actor *tries* to arrive, and the
+distance from the truth is his.
+
+### 3. The consequence on the order: step-c is not the next step
+
+`[next]` was OI-81-step-c (the read in flight). Written as it was, it would
+have produced a keeper who reads an exact point of a ball that cannot change:
+a calculator with a nicer name. The next step is the **shape of (1) and (2)**,
+and it is a piece of model, not of code:
+
+1. **The ball's deflection** (ADR-044 §3, OI-52): the static obstacle, the
+   actor's contact, the surface. Declared properties, a formula in the
+   calculator, integer, the flight's duration from the trajectory. This is a
+   cantiere of its own, and it comes **before** the read in flight, because a
+   read of a trajectory that cannot change is not a read.
+2. **The read as a stima with a band** (ADR-045 §1, ADR-046 §2, ADR-047 §1):
+   what the actor perceives, with which characteristics, with what error, and
+   how the stima updates when the ball changes. This is the shape of every
+   read, not only the keeper's: the shooter reads too.
+3. **The read in flight** (step-c) comes after (1) and (2). It is the
+   application of the shape to the keeper's chain during the flight. Its
+   `SIM_VERSION` bump is the first one whose golden can see the change: with
+   the ball that can be deflected, seeds 42-51 may produce a deflection, and
+   the hash moves for a reason.
+
+### 4. What is decided, and what is not
+
+**Decided.** The read is a stima, not a lookup. The stima has a band, and the
+band is the characteristic. The stima updates every tick. The ball can be
+deflected, and the deflection has a cause. The two reads (shooter, keeper) have
+the same shape. The order: (1) deflection, (2) the shape of the read, (3) the
+read in flight.
+
+**Not decided, and not to be assumed.** The exact terms of the stima's band
+(which characteristics, in which combination): a `balance/` formula, calibrated
+at L3, not invented now. The exact shape of the deflection's formula (one path
+with a case, or two paths each with its door): ADR-044 §5 declares the cost,
+not the resolution. The catalogue's terms (`vision`, `goalkeeping`,
+`reactivity`, `explosive_force`): they enter with the consumer, one by one
+(OI-92, D3). The `FLIGHT_TICKS` removal: it follows the trajectory, but the
+trajectory's duration depends on (1), so it lands with (1).
+
+**What this note is not.** Not an ADR: no code moves on its authority. Not a
+plan: the plan rows change only when the maintainer decides, and this note is
+the evidence the plan was wrong. Not a menu: the order (1) then (2) then (3) is
+derived from the chain, not offered as an option. If the maintainer sees a
+different order, the correction is the note.
