@@ -15,7 +15,7 @@
 
   <rect x="150" y="190" width="500" height="100" rx="8" fill="#3498db"/>
   <text x="400" y="225" text-anchor="middle" fill="#fff" font-size="18" font-weight="bold">THE CALCULATOR</text>
-  <text x="400" y="250" text-anchor="middle" fill="#ecf0f1" font-size="13">applies a formula from balance/*.json</text>
+  <text x="400" y="250" text-anchor="middle" fill="#ecf0f1" font-size="13">applies a formula from L0-match/balance/*.json</text>
   <text x="400" y="272" text-anchor="middle" fill="#eaf4fb" font-size="12" font-style="italic">the formula declares its terms; it asks only for those</text>
 
   <line x1="400" y1="290" x2="400" y2="338" stroke="#555" stroke-width="2" marker-end="url(#arr)"/>

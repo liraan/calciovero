@@ -1,6 +1,6 @@
 # License
 
-PC Football Manager uses a **dual license** to balance openness (for code) with protection of the project's identity (for assets). The full rationale is in [ADR-006](docs/adr/006-license.md), which is **accepted** and definitive.
+PC Football Manager uses a **dual license** to balance openness (for code) with protection of the project's identity (for assets). The full rationale is in [ADR-006](doctrine/adr/006-license.md), which is **accepted** and definitive.
 
 ## TL;DR
 
@@ -56,7 +56,7 @@ By contributing to this repository, you agree to license your contribution under
 
 ## Questions
 
-If anything here is unclear, open a [Discussion](https://github.com/liraan/pcfootballmanager/discussions) or read [ADR-006](docs/adr/006-license.md). This file is informational; in case of conflict, the full license texts prevail.
+If anything here is unclear, open a [Discussion](https://github.com/liraan/pcfootballmanager/discussions) or read [ADR-006](doctrine/adr/006-license.md). This file is informational; in case of conflict, the full license texts prevail.
 
 ---
 

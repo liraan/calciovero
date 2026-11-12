@@ -1,0 +1,19 @@
+[package]
+name = "ds-calculator"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+description = "The calculator of PCFM (ADR-028 section 5): applies a formula from L0-match/balance/*.json to a situation and a player"
+
+[dependencies]
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

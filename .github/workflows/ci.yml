@@ -62,4 +62,4 @@ jobs:
       # A1, A3, B1, B3, B6, B7: documentation coherence, fast. A2 is
       # skipped in startup mode (cargo test already ran above).
       - name: gates.sh startup
-        run: bash scripts/gates.sh startup
+        run: bash process/scripts/gates.sh startup

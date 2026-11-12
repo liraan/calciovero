@@ -70,19 +70,19 @@ Scouting, in this game, is not a lookup table. It is an *estimate of
 an observation of the truth*. The manager is meant to be uncertain.
 That uncertainty is the game.
 
-The full doctrine is in [`specs/00-foundations.md`](specs/00-foundations.md).
-The enforcement is [ADR-003](docs/adr/003-plane-a-enforcement.md).
+The full doctrine is in [`doctrine/00-foundations.md`](doctrine/00-foundations.md).
+The enforcement is [ADR-003](doctrine/adr/003-plane-a-enforcement.md).
 The vision of why the engine has this shape is
-[`docs/context/L0-POSITIONAL-SLICE.md`](docs/context/L0-POSITIONAL-SLICE.md) §0.
+[`L0-match/design/L0-POSITIONAL-SLICE.md`](L0-match/design/L0-POSITIONAL-SLICE.md) §0.
 
 ## A match is decisions, and a ball that obeys its properties
 
 The players are not puppets. Each one is an actor: he perceives the
 scene from his own point of view, reads it with his own
 characteristics, and decides. The engine applies the act; it does not
-choose it ([ADR-043](docs/adr/043-the-actor-decides.md)). The
+choose it ([ADR-043](doctrine/adr/043-the-actor-decides.md)). The
 goalkeepers are actors in the same sense
-([ADR-045](docs/adr/045-the-goalkeeper-is-an-actor.md)). A misplaced
+([ADR-045](doctrine/adr/045-the-goalkeeper-is-an-actor.md)). A misplaced
 pass is an event with a cause — the passer's technique, the pressure he
 was under, his balance — not a computed force vector. A defender
 arriving a step late is a timing event, not an integration of
@@ -92,13 +92,13 @@ The ball is the other half. It does not read and it does not choose: it
 has **declared physical properties**, and its trajectory is their
 effect — gravity, friction, the reflection on a post, the bounce on the
 ground — computed in integers, so that the same match is the same on
-every machine ([ADR-044](docs/adr/044-the-chain.md) §3–§5,
-[ADR-048](docs/adr/048-the-ball-can-be-deflected.md)).
+every machine ([ADR-044](doctrine/adr/044-the-chain.md) §3–§5,
+[ADR-048](doctrine/adr/048-the-ball-can-be-deflected.md)).
 
 So the engine is **phenomenological for the bodies and physical for the
 ball**. It does not simulate biomechanics or contact forces: the effect
 of a decision is modelled, not integrated. That keeps it deterministic,
-calibratable (parameters in `balance/`, declared arbitrary until
+calibratable (parameters in `L0-match/balance/`, declared arbitrary until
 calibrated), and — most importantly — **explainable**: every event
 carries the fields to understand why it happened. "The pass was late
 because the pressing closed the lane" is the target. "The collision
@@ -114,7 +114,7 @@ is in "What exists today", and it is less than this.
 
 Same seed → same match. Always. The same will hold for the season and
 the career when L1 and L2 exist; today the contract is local
-([ADR-013](docs/adr/013-worlds.md)). This is verified on every commit
+([ADR-013](doctrine/adr/013-worlds.md)). This is verified on every commit
 by `ds-test-runner --check`:
 
       ✅ demo teams are valid
@@ -131,12 +131,12 @@ The rules that make this possible are not negotiable:
   the actors, and interactions emerge from the local transitions
   (perception, decision, movement, contact) composed geometrically. No
   die is drawn in a simulation path
-  ([ADR-035](docs/adr/035-no-dice-in-simulation.md)).
+  ([ADR-035](doctrine/adr/035-no-dice-in-simulation.md)).
 - `BTreeMap` everywhere in a simulation path, never `HashMap`.
 - Fixed-point arithmetic for money: zero numerical drift.
 - Golden hash tests on every simulation change.
 - `SIM_VERSION` bump procedure documented in
-  [`CHANGELOG-SIM.md`](CHANGELOG-SIM.md).
+  [`L0-match/CHANGELOG-SIM.md`](L0-match/CHANGELOG-SIM.md).
 
 ## What exists today
 
@@ -156,8 +156,8 @@ scenarios without coupling. The presentation is TUI-first in v1; the
 GUI is a future crate behind the same engine.
 
 The full table of what is settled and what is not lives in
-[`STRUCTURE.md`](STRUCTURE.md) §5, and the live tracker of what is
-being built is [`docs/context/SESSION-STATE.md`](docs/context/SESSION-STATE.md).
+[`doctrine/STRUCTURE.md`](doctrine/STRUCTURE.md) §5, and the live tracker of what is
+being built is [`process/SESSION-STATE.md`](process/SESSION-STATE.md).
 This README will not pretend the prototype is the game.
 
 **No playable build exists yet.** The documentation has to be solid
@@ -185,15 +185,15 @@ being built.
 
 The specification is **concentric**. Read it in this order.
 
-1. [`specs/00-foundations.md`](specs/00-foundations.md) — *Why does
+1. [`doctrine/00-foundations.md`](doctrine/00-foundations.md) — *Why does
    this project exist? What are the non-negotiable rules?*
-2. [`STRUCTURE.md`](STRUCTURE.md) — *How is the repo organised?*
-3. [`specs/_index.md`](specs/_index.md) — *What exists at each level,
+2. [`doctrine/STRUCTURE.md`](doctrine/STRUCTURE.md) — *How is the repo organised?*
+3. [`doctrine/_index.md`](doctrine/_index.md) — *What exists at each level,
    and in what state?*
-4. [`docs/adr/`](docs/adr/) — *Which decisions have been made, and
+4. [`doctrine/adr/`](doctrine/adr/) — *Which decisions have been made, and
    why?*
-5. [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — *What does each term mean?*
-6. [`docs/PLUGIN_DEVELOPER_GUIDE.md`](docs/PLUGIN_DEVELOPER_GUIDE.md) —
+5. [`doctrine/GLOSSARY.md`](doctrine/GLOSSARY.md) — *What does each term mean?*
+6. [`doctrine/PLUGIN_DEVELOPER_GUIDE.md`](doctrine/PLUGIN_DEVELOPER_GUIDE.md) —
    *How do I write a module? How do I test it?*
 
 If you only have time for one file, read the doctrine. If you only
@@ -208,7 +208,7 @@ criticism. The short version:
   maintainer pushes directly on `main`; external contributors use
   PRs.
 - English is canonical for code, commits, and technical docs
-  ([ADR-007](docs/adr/007-canonical-language.md)).
+  ([ADR-007](doctrine/adr/007-canonical-language.md)).
 - Every factual claim needs a source. Every decision that changes an
   invariant needs an ADR.
 - Every contribution is **reviewed by a human**. AI may draft; humans
@@ -223,7 +223,7 @@ Full process in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 The full quality gate (**C2**) runs on every push and pull request:
 `cargo build --release`, `cargo clippy --workspace --all-targets -- -D warnings`,
 `cargo test --workspace` (255 tests), `cargo fmt --check`, the cross-platform
-determinism check on the golden hash (OI-58), and `scripts/gates.sh`.
+determinism check on the golden hash (OI-58), and `process/scripts/gates.sh`.
 
 On GitHub this is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). On
 Codeberg, [`.woodpecker/ci.yml`](.woodpecker/ci.yml) on `ci.codeberg.org` mirrors the same gate on
@@ -232,7 +232,7 @@ the backup, GitHub is primary.
 
 ## License
 
-**Dual license** ([ADR-006](docs/adr/006-license.md), accepted):
+**Dual license** ([ADR-006](doctrine/adr/006-license.md), accepted):
 
 - **Code** — `MIT OR Apache-2.0` → [`LICENSE-MIT`](LICENSE-MIT),
   [`LICENSE-APACHE`](LICENSE-APACHE)
@@ -250,7 +250,7 @@ for non-commercial purposes.
 
 Calcio Vero is free and open. Donations are voluntary, one-off, and do
 not buy influence over the roadmap (see OI-69 in
-[`docs/context/SESSION-STATE.md`](docs/context/SESSION-STATE.md)).
+[`process/SESSION-STATE.md`](process/SESSION-STATE.md)).
 
 ## AI disclosure
 

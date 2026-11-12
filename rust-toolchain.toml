@@ -3,7 +3,7 @@
 # We use `stable` for now. The MSRV is declared in Cargo.toml
 # (`rust-version = "1.85"`, for edition 2024). When the project ships,
 # pin to a specific stable version (e.g. "1.90.0") so that builds are
-# byte-for-byte reproducible. See docs/adr/001-language-rust.md.
+# byte-for-byte reproducible. See doctrine/adr/001-language-rust.md.
 #
 # Components are installed automatically by rustup on first use.
 # `miri` and `llvm-tools-preview` are intentionally omitted on Windows

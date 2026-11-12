@@ -11,7 +11,7 @@ Thank you for contributing. Before submitting, please fill in the sections below
 
   Examples:
   - "Adds L1-season/00-overview.md (first cell of L1)."
-  - "Fixes a broken link in specs/L0-match/07-save-minimal.md."
+  - "Fixes a broken link in L0-match/specs/07-save-minimal.md."
   - "Proposes ADR-008 on the calendar model."
 -->
 
@@ -49,7 +49,7 @@ If "Other", describe:
 ## Doctrine compliance
 
 <!--
-  The non-negotiable rules from specs/00-foundations.md.
+  The non-negotiable rules from doctrine/00-foundations.md.
   Tick every box. If a box cannot be ticked, explain in "Doctrine exceptions".
 -->
 
@@ -85,13 +85,13 @@ If "Other", describe:
   The specification is concentric (L0 → L1 → L2 → L3).
   A level N cell may read the OUTPUT of a level < N cell, never its internals.
   A level N cell may NOT depend on a level > N cell.
-  See STRUCTURE.md §2.
+  See doctrine/STRUCTURE.md §2.
 -->
 
 - [ ] If this PR adds a cell, the cell is at the **correct level** (L0, L1, L2, or L3).
 - [ ] If this PR adds a cell, its `depends_on` only lists cells at the **same level or below**.
 - [ ] If this PR adds a cell, its `referenced_by` is updated in downstream cells.
-- [ ] If this PR adds a cell, `specs/_index.md` is updated.
+- [ ] If this PR adds a cell, `doctrine/_index.md` is updated.
 
 If any box cannot be ticked, explain:
 
@@ -102,7 +102,7 @@ If any box cannot be ticked, explain:
 ## Frontmatter (for new or revised cells)
 
 <!--
-  Every cell has a frontmatter. See STRUCTURE.md §4.
+  Every cell has a frontmatter. See doctrine/STRUCTURE.md §4.
   Fill in the values for the cell this PR adds or revises.
 -->
 
@@ -153,7 +153,7 @@ conforms_to: "00-foundations (v1.1)"
 - [ ] The WHY is explained, not just the what.
 - [ ] One change per PR.
 - [ ] If the PR touches an open ADR, the ADR is accepted first (or this PR is the ratification).
-- [ ] `specs/_index.md` is updated if a cell was added.
+- [ ] `doctrine/_index.md` is updated if a cell was added.
 - [ ] `CHANGELOG.md` has an entry if the change is user-visible.
 - [ ] No contradiction with existing cells.
 - [ ] Language is English (or a translation in `locales/`).

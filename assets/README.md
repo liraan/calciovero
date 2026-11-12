@@ -16,4 +16,4 @@ source and the rights that the project actually holds.
   are used with permission, in a non-commercial project. If the project ever
   needs a logo it owns, it must be a mark drawn by a person (or an SVG
   written in this repository), not an output of a service that retains the
-  rights. Tracked in `docs/context/IDEAS.md`, `IDEA-PROJ-002`.
+  rights. Tracked in `process/IDEAS.md`, `IDEA-PROJ-002`.

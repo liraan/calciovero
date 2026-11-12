@@ -3,17 +3,17 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/ds-core",
-    "crates/ds-model",
-    "crates/ds-db",
-    "crates/ds-orchestrator",
-    "crates/ds-match",
-    "crates/ds-stats",
-    "crates/ds-test-runner",
-    "crates/ds-demo",
-    "crates/ds-fixtures",
-    "crates/ds-testkit",   # ← NUOVO
-    "crates/ds-calculator",
+    "L0-match/crates/ds-core",
+    "L0-match/crates/ds-model",
+    "L0-match/crates/ds-db",
+    "L0-match/crates/ds-orchestrator",
+    "L0-match/crates/ds-match",
+    "L0-match/crates/ds-stats",
+    "tools/ds-test-runner",
+    "tools/ds-demo",
+    "tools/ds-fixtures",
+    "tools/ds-testkit",   # ← NUOVO
+    "L0-match/crates/ds-calculator",
 ]
 
 [workspace.package]
@@ -28,16 +28,16 @@ documentation = "https://github.com/liraan/calciovero/tree/main/modules"
 
 [workspace.dependencies]
 # Internal
-ds-core = { path = "crates/ds-core", version = "0.1.0" }
-ds-model = { path = "crates/ds-model", version = "0.1.0" }
-ds-db = { path = "crates/ds-db", version = "0.1.0" }
-ds-orchestrator = { path = "crates/ds-orchestrator", version = "0.1.0" }
-ds-stats = { path = "crates/ds-stats", version = "0.1.0" }
-ds-match = { path = "crates/ds-match", version = "0.1.0" }
-ds-test-runner = { path = "crates/ds-test-runner", version = "0.1.0" }
-ds-testkit = { path = "crates/ds-testkit", version = "0.1.0" }
-ds-fixtures = { path = "crates/ds-fixtures", version = "0.1.0" }
-ds-calculator = { path = "crates/ds-calculator", version = "0.1.0" }
+ds-core = { path = "L0-match/crates/ds-core", version = "0.1.0" }
+ds-model = { path = "L0-match/crates/ds-model", version = "0.1.0" }
+ds-db = { path = "L0-match/crates/ds-db", version = "0.1.0" }
+ds-orchestrator = { path = "L0-match/crates/ds-orchestrator", version = "0.1.0" }
+ds-stats = { path = "L0-match/crates/ds-stats", version = "0.1.0" }
+ds-match = { path = "L0-match/crates/ds-match", version = "0.1.0" }
+ds-test-runner = { path = "tools/ds-test-runner", version = "0.1.0" }
+ds-testkit = { path = "tools/ds-testkit", version = "0.1.0" }
+ds-fixtures = { path = "tools/ds-fixtures", version = "0.1.0" }
+ds-calculator = { path = "L0-match/crates/ds-calculator", version = "0.1.0" }
 # RNG
 rand_chacha = "0.9"
 rand_core = "0.9"

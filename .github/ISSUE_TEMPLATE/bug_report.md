@@ -12,7 +12,7 @@ Thank you for taking the time to report an issue. This project is documentation-
 
 - a **broken link** (a link to a file that does not exist),
 - a **contradiction** between two documents,
-- a **doctrine violation** (a document that contradicts `specs/00-foundations.md`),
+- a **doctrine violation** (a document that contradicts `doctrine/00-foundations.md`),
 - a **stale reference** (a file mentioned as existing but not yet created, without the `(planned)` marker),
 - a **factual error** (a claim that is wrong, unsupported, or invented),
 - a **formatting problem** (broken frontmatter, broken table, broken code block).
@@ -26,9 +26,9 @@ If what you found is a code bug, this is not the right template: there is no cod
 <!--
   File path and, if possible, the line number or the section heading.
   Examples:
-    - specs/L0-match/04-match-engine.md, §2.6
+    - L0-match/specs/04-match-engine.md, §2.6
     - README.md, "Repository Structure"
-    - docs/adr/003-plane-a-enforcement.md, "Decision"
+    - doctrine/adr/003-plane-a-enforcement.md, "Decision"
 -->
 
 
@@ -57,7 +57,7 @@ If what you found is a code bug, this is not the right template: there is no cod
 - [ ] **Broken link** — a link points to a file that does not exist
 - [ ] **Broken internal link** — a link between two files in the repo is wrong
 - [ ] **Contradiction** — two documents disagree
-- [ ] **Doctrine violation** — a document contradicts `specs/00-foundations.md`
+- [ ] **Doctrine violation** — a document contradicts `doctrine/00-foundations.md`
 - [ ] **Stale reference** — a file is cited as if it exists, but it doesn't (and isn't marked `(planned)`)
 - [ ] **Factual error** — a claim is wrong or unsupported
 - [ ] **Formatting** — frontmatter, table, code block, or heading is broken
@@ -94,7 +94,7 @@ If "Other", describe:
 
 ## Checklist
 
-- [ ] I have read `specs/00-foundations.md` to check that my report is not itself a doctrine violation.
+- [ ] I have read `doctrine/00-foundations.md` to check that my report is not itself a doctrine violation.
 - [ ] I have searched existing issues to make sure this is not a duplicate.
 - [ ] I have checked the `(planned)` markers — if the file is planned and not yet created, it is not a bug.
 - [ ] I have not invented a fix; I have either described one or asked for help.

@@ -1,8 +1,0 @@
-{
-  "w_space": 100,
-  "w_skill": 40,
-  "w_cost": 20,
-  "w_red": 50,
-  "space_threshold_cm": 2000,
-  "_note": "Prototype, not calibrated. Weights per use (pressing, duel, receiver) are a later refinement; this is the first set. See specs/L0-match/03-entities-minimal.md §2.9."
-}
