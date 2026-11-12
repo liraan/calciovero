@@ -47,6 +47,10 @@ EXAMPLES:
     ds-demo --seed 42 --html /tmp/match.html
     ds-demo --seed 42 --tui --speed 60
     ds-demo --seed 42 --tui --frame 12
+
+Something does not look like football? Want to change how players behave?
+The numbers are in L0-match/balance/ (plain JSON), and CONTRIBUTING.md
+shows where to start, with or without code.
 ";
 
 /// Parsed command-line arguments.

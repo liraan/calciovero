@@ -10,6 +10,7 @@
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
 [![Tests](https://img.shields.io/badge/tests-311_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
+[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
 
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-supported-FF5E5B?logo=ko-fi&logoColor=white)](#support)
@@ -115,7 +116,8 @@ transfer market. The order in which they arrive is public.
 
 The second one is the longest. We will not skip it to ship faster: a
 match that does not read as football would make everything after it
-pointless.
+pointless. Each milestone goes faster with more people: see
+[Build it with us](#build-it-with-us).
 
 ## Try the engine today
 
@@ -137,16 +139,26 @@ who is who: each player has a role and a body that fits it. Then open
 profile in `profiles.json`, the team's shape in `block.json`), and run it
 again.
 
-## How you can help, even without writing code
+## Build it with us
 
-- **Star and watch the repository** to follow the milestones.
-- **Tell us what "real football" means to you.** The engine is judged
-  by one question: *would a fan recognise this?* Open a
-  [Discussion](https://github.com/liraan/calciovero/discussions) with
-  the situations a match engine always gets wrong for you.
-- **Bring your football knowledge.** Every parameter is waiting for a
-  sourced value instead of a guess.
-- **Play-test**, when the first friendly is playable.
+Calcio Vero is not built by a studio. It is built by people who love
+football and want a manager they can read to the bottom, and **it is
+designed so that each of them can own a piece**. You do not need to
+know the whole project, and for most pieces you do not need to code.
+
+| You know… | Your piece | Code? |
+|---|---|---|
+| **football** | spot what a fan would not recognise, and tell us where (seed, minute) | no |
+| **football** | tune the players' profiles, the team's shape, the duel, the keeper: plain JSON in [`L0-match/balance/`](L0-match/balance/README.md) | no |
+| **the Laws of the Game** | write a law the engine does not apply yet (offside, fouls) as a small pure function | a little |
+| **tactics** | add a formation, improve how a team moves without instructions | a little |
+| **testing, tools, writing** | a test scenario, the 2D view, a clearer document, a translation | some / no |
+| **Rust and simulation** | the engine: perception, choice, movement | yes |
+
+Every piece has a page that says what to do and how, and a list of
+open tasks for newcomers: start from **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+Questions go in [Discussions](https://github.com/liraan/calciovero/discussions);
+nothing happens in private.
 
 ## For developers
 

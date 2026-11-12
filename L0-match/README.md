@@ -24,6 +24,19 @@ its code, together. It depends only on `doctrine/`.
 | `ds-orchestrator` | the decision: which actor, when, with which scene; the contact | core, model, db, calculator |
 | `ds-match` | the engine: the tick, the ball, the effect, the events, the save | all of the above |
 
+## Contribute here
+
+- **No code:** the numbers in [`balance/`](balance/README.md), and reports
+  of what does not look like football (seed and minute).
+- **A little Rust:** a law in `rules.rs`, a formation or the block in
+  `shape.rs`. Pure functions with their own tests: you can work on them
+  without reading the rest of the engine.
+- **The engine:** perception, choice, movement. A change in how something
+  is modelled starts with an ADR; a change in behaviour bumps
+  `SIM_VERSION` ([`CHANGELOG-SIM.md`](CHANGELOG-SIM.md)).
+
+See [`../CONTRIBUTING.md`](../CONTRIBUTING.md) for the open tasks.
+
 `ds-match` has more than one reason to change, declared (OI-94). Inside
 it, the parts a volunteer can work on alone are pure modules, data in and
 a result out: `rules` (the restarts: who, where, how), `shape` (the team

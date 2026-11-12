@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a question or propose an idea
+    url: https://github.com/liraan/calciovero/discussions
+    about: Not sure where to start? Say what you know and we will find you a piece.
+  - name: How to contribute
+    url: https://github.com/liraan/calciovero/blob/main/CONTRIBUTING.md
+    about: The paths by what you know, the open tasks for newcomers, the rules.

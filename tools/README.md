@@ -11,6 +11,13 @@ from the outside. Nothing in `L0-match/` depends on a crate here, except
 | `ds-testkit` | the test contract (`Scenario`, `Feature`); no dependency on any `ds-*` crate |
 | `ds-test-runner` | run the scenarios; `--check` is the health check of every commit |
 
+## Contribute here
+
+The tools are the easiest Rust to start with: they read the match and
+never change it. Ideas: a marker per player's choice in the 2D view, a
+timeline of events, a scenario test that proves something about a match.
+See [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
+
 ```bash
 cargo run -p ds-demo -- --seed 42 --tui
 cargo run -p ds-demo -- --seed 42 --tui --frame 30

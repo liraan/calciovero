@@ -15,3 +15,14 @@ If a file anywhere else contradicts a file here, the other file is wrong.
 | [`PLUGIN_DEVELOPER_GUIDE.md`](PLUGIN_DEVELOPER_GUIDE.md), [`PLUGINS-WORLDS-READING-GUIDE.md`](PLUGINS-WORLDS-READING-GUIDE.md) | how to extend the engine (ADR-012, ADR-013) |
 
 Read in this order the first time: foundations, VISION, STRUCTURE.
+
+## Contribute here
+
+- **Question a decision.** Every ADR can be reviewed: if the options are
+  unbalanced or the decision contradicts the doctrine, say so in an issue
+  or a PR. That is the most valuable review there is.
+- **Propose a decision** for a new piece of the model: copy
+  [`adr/000-template.md`](adr/000-template.md), status `proposed`.
+- **Make a page clearer.** A document a newcomer cannot follow is a bug.
+
+See [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
