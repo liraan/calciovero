@@ -122,20 +122,83 @@ fn every_event_is_narrated_in_exactly_one_tick() {
 }
 
 /// Law 8 (P1): at kick-off a player of the side that kicks off is on the
-/// ball and it is his; the home side kicks off the first half, the away
-/// side the second. Before `SIM_VERSION` 41 nobody was on the ball and
-/// nobody saw it.
+/// centre spot; the home side kicks off the first half, the away side the
+/// second. Before `SIM_VERSION` 41 nobody was on the ball and nobody saw
+/// it.
 #[test]
 fn the_kick_off_has_a_taker() {
     let m = match_fixture(SEED).expect("fixture");
+    let centre = (
+        i32::from(m.pitch.length_m) * 50,
+        i32::from(m.pitch.width_m) * 50,
+    );
     let (_, records) = recorded();
     let home = |id| m.home.players.iter().any(|p| p.id == id);
-    let first = records[0].carrier.expect("a taker at the first kick-off");
-    assert!(home(first), "the home side kicks off the first half");
+    let nearest = |r: &TickRecord| {
+        r.agents
+            .iter()
+            .min_by_key(|a| {
+                let dx = i64::from(a.position.0 - centre.0);
+                let dy = i64::from(a.position.1 - centre.1);
+                dx * dx + dy * dy
+            })
+            .map(|a| a.id)
+            .expect("agents")
+    };
+    assert!(
+        home(nearest(&records[0])),
+        "the home side kicks off the first half"
+    );
     let second = records
         .iter()
         .find(|r| r.half == ds_stats::Half::Second)
-        .and_then(|r| r.carrier)
-        .expect("a taker at the second kick-off");
-    assert!(!home(second), "the away side kicks off the second half");
+        .expect("a second half");
+    assert!(
+        !home(nearest(second)),
+        "the away side kicks off the second half"
+    );
+}
+
+/// Laws 15-17 (P1, minimal form): the ball never stays out of the pitch;
+/// it gets a restart in the same tick. Before `SIM_VERSION` 42 a ball over
+/// a touchline or a goal line (not into the goal) stayed out for the rest
+/// of the match.
+#[test]
+fn the_ball_never_stays_out_of_the_pitch() {
+    let m = match_fixture(SEED).expect("fixture");
+    let (length, width) = (
+        i32::from(m.pitch.length_m) * 100,
+        i32::from(m.pitch.width_m) * 100,
+    );
+    let (_, records) = recorded();
+    for r in &records {
+        let (x, y, _) = r.ball.position;
+        assert!(
+            (0..=length).contains(&x) && (0..=width).contains(&y),
+            "tick {}: ball at {:?}",
+            r.tick,
+            r.ball.position
+        );
+    }
+}
+
+/// The team block (P1): at kick-off each side is in its own half (Law 8,
+/// OI-98). Before `SIM_VERSION` 42 the two formations spanned the whole
+/// pitch and stood on top of each other.
+#[test]
+fn at_kick_off_each_side_is_in_its_own_half() {
+    let m = match_fixture(SEED).expect("fixture");
+    let half = i32::from(m.pitch.length_m) * 50;
+    let (_, records) = recorded();
+    let home = |id| m.home.players.iter().any(|p| p.id == id);
+    for a in &records[0].agents {
+        if records[0].carrier == Some(a.id) {
+            continue; // the taker is on the centre spot
+        }
+        if home(a.id) {
+            assert!(a.position.0 <= half, "home {:?} at {:?}", a.id, a.position);
+        } else {
+            assert!(a.position.0 >= half, "away {:?} at {:?}", a.id, a.position);
+        }
+    }
 }

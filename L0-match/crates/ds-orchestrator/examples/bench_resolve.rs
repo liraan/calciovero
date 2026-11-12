@@ -128,6 +128,7 @@ fn main() {
     // --- 4. resolve_choice with 1 and 10 candidates ---
     let choice = ds_orchestrator::ChoiceContext {
         actor: player,
+        can_carry: true,
         candidates: vec![ds_orchestrator::ChoiceCandidate {
             kind: ds_orchestrator::ChoiceKind::Advance,
             geometric: 0.3,

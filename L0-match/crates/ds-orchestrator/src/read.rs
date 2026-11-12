@@ -40,10 +40,15 @@ pub struct PerceivedScene {
     pub keeper: Option<PlayerId>,
     /// The reach of the keeper, in cm (a visible fact: half his height).
     pub keeper_reach_cm: f64,
+    /// Whether the actor still has room to carry the ball towards the goal.
+    /// When he has none, he plays his best option even if it is not clear:
+    /// a player stopped at the edge of the box does not hold the ball
+    /// forever (OI-97).
+    pub can_carry: bool,
 }
 
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
-pub const PASS_FREEDOM_CM: i64 = 800;
+pub const PASS_FREEDOM_CM: i64 = 300;
 
 /// Shoot below this distance from the opponent goal, cm.
 const SHOOT_RANGE_CM: i64 = 2500;
@@ -254,6 +259,7 @@ pub fn build_choice(
         return (
             ChoiceContext {
                 actor: attacker,
+                can_carry: scene.can_carry,
                 candidates: vec![ChoiceCandidate {
                     kind: ChoiceKind::Advance,
                     geometric: 1.0,
@@ -358,6 +364,7 @@ pub fn build_choice(
         ChoiceContext {
             actor: attacker,
             candidates,
+            can_carry: scene.can_carry,
         },
         freedoms,
     )
@@ -410,6 +417,7 @@ mod keeper_visibility_tests {
             goal: (10500, 3400),
             keeper: keeper_y.map(|_| keeper),
             keeper_reach_cm: 90.0,
+            can_carry: true,
         }
     }
 

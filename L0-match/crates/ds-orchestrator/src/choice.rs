@@ -77,6 +77,10 @@ pub struct ChoiceContext {
     pub actor: PlayerId,
     /// The options the engine puts in front of him.
     pub candidates: Vec<ChoiceCandidate>,
+    /// Whether he can still carry the ball (the clarity threshold's
+    /// fallback). Without room, the best option is played even below the
+    /// threshold.
+    pub can_carry: bool,
 }
 
 /// The outcome of a choice resolution.
@@ -190,7 +194,9 @@ impl GroundTruth {
         // no option is clear enough, and the actor carries the ball
         // (`Advance`). The threshold is in L0-match/balance/choice.json; arbitrary
         // and declared until calibration (L3).
-        let chosen_kind = if effective[chosen_index] < balance.clarity_threshold {
+        let chosen_kind = if effective[chosen_index] < balance.clarity_threshold
+            && (ctx.can_carry || effective[chosen_index] <= 0.0)
+        {
             ChoiceKind::Advance
         } else {
             ctx.candidates[chosen_index].kind

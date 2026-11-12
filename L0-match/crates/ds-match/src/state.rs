@@ -190,8 +190,8 @@ fn scene_from(
     goal: (i32, i32),
     teammates: Vec<PlayerId>,
     opponents: Vec<PlayerId>,
-    keeper: Option<PlayerId>,
-    keeper_reach_cm: f64,
+    (keeper, keeper_reach_cm): (Option<PlayerId>, f64),
+    can_carry: bool,
 ) -> ds_orchestrator::PerceivedScene {
     let mut positions = std::collections::BTreeMap::new();
     for id in teammates.iter().chain(opponents.iter()) {
@@ -207,6 +207,7 @@ fn scene_from(
         goal,
         keeper,
         keeper_reach_cm,
+        can_carry,
     }
 }
 
@@ -363,6 +364,9 @@ impl MatchState {
         self.spatial.advance_ball();
         let curr_ball = self.spatial.ball_3d();
         self.check_shot_crossing(ctx, tick, prev_ball, curr_ball);
+        self.restart_if_out(ctx, tick);
+        self.spatial
+            .set_home_in_possession(self.possession == Possession::Home);
         self.spatial.move_agents(
             i32::from(ctx.match_.pitch.length_m) * 100,
             i32::from(ctx.match_.pitch.width_m) * 100,
@@ -457,6 +461,12 @@ impl MatchState {
             }
         }
         let gk = opponents.iter().find(|p| p.slot() == 0).copied();
+        // Room to carry: farther from the goal than the edge of the box.
+        let can_carry = self.spatial.agent(attacker).is_some_and(|a| {
+            let d = distance_squared(a.position, goal);
+            let stop = i64::from(self.carry_balance.carry_stop_from_goal_cm) + 100;
+            d > stop * stop
+        });
         let keeper_reach_cm = gk
             .and_then(|g| self.bodies.get(&g))
             .map_or(0.0, |b| b.height_cm / 2.0);
@@ -466,8 +476,8 @@ impl MatchState {
             goal,
             teammates,
             opponents.clone(),
-            gk,
-            keeper_reach_cm,
+            (gk, keeper_reach_cm),
+            can_carry,
         );
         let (chosen_kind, freedoms) =
             ds_orchestrator::Actor::new(attacker).decide(&scene, ctx.hidden, tick);
@@ -507,7 +517,11 @@ impl MatchState {
                 let dy = goal.1 - y;
                 let len = i64::from(dx).pow(2) + i64::from(dy).pow(2);
                 let len = i32::try_from(len.isqrt()).unwrap_or(1).max(1);
-                let step = d.min(len);
+                // Nobody dribbles into the goal: he carries the ball at most
+                // to the edge of the box (`carry_stop_from_goal_cm`), where
+                // he has to choose.
+                let room = len - self.carry_balance.carry_stop_from_goal_cm;
+                let step = d.min(room).max(0);
                 self.spatial
                     .set_carry_target(Some((x + dx * step / len, y + dy * step / len)));
             }
@@ -717,6 +731,78 @@ impl MatchState {
         } else {
             Possession::Away
         };
+    }
+
+    /// The ball out of play gets a restart (Laws 15, 16, 17), in its
+    /// minimal form: over a touchline, a throw-in for the side that did not
+    /// play it last, where it went out; over a goal line, a goal kick if the
+    /// attacking side played it last, a corner if the defending side did.
+    /// The taker is the nearest player of the restarting side, and the ball
+    /// is his. "Played it last" is read as the side in possession: an
+    /// approximation, declared. Before, a ball that left the pitch
+    /// elsewhere than into the goal stayed out for the rest of the match
+    /// (OI-97). `Removed-by: OI-48` (the rules module: rule as data,
+    /// application as code).
+    fn restart_if_out(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        let length = i32::from(ctx.match_.pitch.length_m) * 100;
+        let width = i32::from(ctx.match_.pitch.width_m) * 100;
+        let (x, y, _) = self.spatial.ball_3d();
+        if self.spatial.ball_state() == crate::spatial::BallState::Possessed
+            || ((0..=length).contains(&x) && (0..=width).contains(&y))
+        {
+            return;
+        }
+        let last = self.possession;
+        let other = Self::other(last);
+        let (side, spot, corner) = if (0..=width).contains(&y) {
+            // Over a goal line: whose goal line is it?
+            let home_goal_line = x < 0;
+            let defending = if home_goal_line {
+                Possession::Home
+            } else {
+                Possession::Away
+            };
+            let line_x = if home_goal_line { 0 } else { length };
+            if last == defending {
+                // The defenders played it last: a corner for the attackers.
+                let cy = if y < width / 2 { 0 } else { width };
+                (Self::other(defending), (line_x, cy), true)
+            } else {
+                // The attackers played it last: a goal kick (5.5 m area).
+                let gx = if home_goal_line { 550 } else { length - 550 };
+                (defending, (gx, width / 2), false)
+            }
+        } else {
+            // Throw-in, where the ball crossed the touchline.
+            (
+                other,
+                (x.clamp(100, length - 100), y.clamp(0, width)),
+                false,
+            )
+        };
+        self.pending = None;
+        let squad = match side {
+            Possession::Home => &ctx.match_.home,
+            Possession::Away => &ctx.match_.away,
+        };
+        let Some(taker) = nearest_in_squad(&self.spatial, squad, spot) else {
+            return;
+        };
+        self.spatial.set_position(taker, spot);
+        self.spatial
+            .set_ball_in_flight((spot.0, spot.1, 0), (0, 0, 0));
+        self.spatial.advance_ball();
+        self.spatial.set_carrier(Some(taker));
+        self.possession = side;
+        if corner {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(taker)),
+                EventType::Corner,
+                serde_json::json!({ "x": spot.0, "y": spot.1 }),
+            );
+        }
     }
 
     /// The kick-off (Law 8): a player of the side that kicks off stands on
@@ -1273,8 +1359,8 @@ mod tests {
             (10500, 3400),
             teammates.to_vec(),
             opponents.to_vec(),
-            None,
-            0.0,
+            (None, 0.0),
+            true,
         );
         let balance = ds_orchestrator::ShotChoiceBalance::load();
         let (ctx, _freedoms) =

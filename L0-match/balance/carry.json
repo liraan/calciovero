@@ -1,5 +1,6 @@
 {
   "carry_distance_cm": 1000,
+  "carry_stop_from_goal_cm": 1650,
   "_note": "When the carrier chooses to carry the ball (IDEA-DESIGN-010), he runs with it towards the opponent goal, this far, until his next decision; the ball goes where he goes. His pace is the movement formula's, as for every agent.",
-  "_source": "Arbitrary, declared (2026-11-12, OI-97): about the distance a carrier covers in the 1-3 s of a decision at running pace. To be calibrated at L3."
+  "_source": "Arbitrary, declared (2026-11-12, OI-97): about the distance a carrier covers in the 1-3 s of a decision at running pace. To be calibrated at L3. carry_stop_from_goal_cm 1650: the edge of the penalty area (Law 1, 16.5 m); a carrier stops there and chooses, he does not dribble onto the goal line."
 }

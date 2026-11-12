@@ -1,0 +1,14 @@
+{
+  "depth_in_possession_cm": 4500,
+  "depth_out_of_possession_cm": 3200,
+  "width_in_possession_cm": 6000,
+  "width_out_of_possession_cm": 4000,
+  "line_behind_ball_in_possession_cm": 3000,
+  "line_behind_ball_out_of_possession_cm": 1500,
+  "line_min_cm": 1000,
+  "line_max_in_possession_cm": 5800,
+  "line_max_out_of_possession_cm": 4500,
+  "ball_side_shift_milli": 600,
+  "_note": "The team block: what a side does without instructions (VISION §3, the role as a default intention, 2026-11-12). Each outfield player keeps his role's place inside a block: depth from the defensive line (0) to the forward line (1), and width from left (0) to right (1), read from the formation. The block follows the ball: the defensive line sits behind the ball (further behind and higher up the pitch when the side has the ball), within a minimum and a maximum distance from its own goal; the block shifts towards the ball's side. With the ball the side stretches (longer, wider), without it it compacts (shorter, narrower). The coach's instructions (L2) will move these numbers; they never script the players.",
+  "_source": "Order of magnitude of a real team's shape: a compact block out of possession is about 30-35 m deep and 35-45 m wide; in possession it stretches to about 45 m and uses most of the width. The other values are arbitrary, declared, to be calibrated at L3."
+}

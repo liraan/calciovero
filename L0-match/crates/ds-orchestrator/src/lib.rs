@@ -564,6 +564,36 @@ mod latency_scale_tests {
 }
 
 #[cfg(test)]
+mod no_room_tests {
+    use super::{ChoiceCandidate, ChoiceContext, ChoiceKind, GroundTruth};
+    use ds_core::ids::{MatchId, PlayerId};
+
+    fn choose(can_carry: bool) -> ChoiceKind {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        g.resolve_choice(&ChoiceContext {
+            actor: PlayerId::new(9, 0),
+            can_carry,
+            candidates: vec![ChoiceCandidate {
+                kind: ChoiceKind::Pass(PlayerId::new(7, 0)),
+                geometric: 0.05,
+                risk: 0.1,
+                visibility: 1.0,
+            }],
+        })
+        .chosen
+    }
+
+    /// OI-97 (P1): below the clarity threshold a player with room carries
+    /// the ball; a player with no room left plays his best option, he does
+    /// not hold the ball forever.
+    #[test]
+    fn without_room_the_best_option_is_played() {
+        assert_eq!(choose(true), ChoiceKind::Advance);
+        assert_eq!(choose(false), ChoiceKind::Pass(PlayerId::new(7, 0)));
+    }
+}
+
+#[cfg(test)]
 mod direction_tests {
     use super::GroundTruth;
 
@@ -871,6 +901,7 @@ mod choice_filter_tests {
         let mut g = GroundTruth::new(42, MatchId::new(1, 0));
         g.resolve_choice(&ChoiceContext {
             actor: PlayerId::new(slot, 0),
+            can_carry: true,
             candidates: vec![
                 ChoiceCandidate {
                     kind: ChoiceKind::Advance,

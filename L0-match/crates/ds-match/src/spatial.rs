@@ -99,6 +99,16 @@ pub struct SpatialState {
     ball_velocity: (i16, i16, i16),
     /// The ball's declared physics (ADR-048 §4).
     ball_physics: crate::balance::BallBalance,
+    /// The team block (VISION §3): where each outfield player stands
+    /// without instructions.
+    block: crate::balance::BlockBalance,
+    /// Each outfield player's place in the block: `(depth, width)` in
+    /// thousandths, from the formation (0 = defensive line / left).
+    roles: BTreeMap<PlayerId, (i32, i32)>,
+    /// The pitch, in centimetres: `(length, width)`.
+    pitch_cm: (i32, i32),
+    /// Whether the home side has the ball (set by the match each tick).
+    home_in_possession: bool,
     /// Where the carrier is taking the ball, if he chose to carry it
     /// (IDEA-DESIGN-010: carrying is a choice). `None`: he holds it.
     carry_target: Option<(i32, i32)>,
@@ -114,15 +124,19 @@ pub struct SpatialState {
     goalkeepers: (PlayerId, PlayerId),
 }
 
-/// The 4-4-2 grid, as `(x percent, y percent)` per slot.
-///
-/// Slot order: GK, LB, CB, CB, RB, LM, CM, CM, RM, ST, ST. It matches
-/// `Squad.players` **by index**. The formation parser is deferred (D3): a
-/// non-4-4-2 formation falls back to this grid.
-/// How much of the ball's displacement from the pitch centre translates
-/// the formation (MD-09). Arbitrary, declared: 30% of the ball's offset.
-const TRANSLATION_NUM: i32 = 30;
-const TRANSLATION_DEN: i32 = 100;
+/// Each outfield player's place in the block, `(depth, width)` in
+/// thousandths, read from the 4-4-2 grid: depth 0 for the defenders, 500
+/// for the midfielders, 1000 for the forwards; width from the grid's y.
+fn roles(home: &Squad, away: &Squad) -> BTreeMap<PlayerId, (i32, i32)> {
+    let mut out = BTreeMap::new();
+    for squad in [home, away] {
+        for (i, player) in squad.players.iter().enumerate().skip(1) {
+            let (px, py) = GRID_4_4_2[i.min(10)];
+            out.insert(player.id, (((px - 25) * 1000 / 50).clamp(0, 1000), py * 10));
+        }
+    }
+    out
+}
 
 /// ~45 cm shoulder half-width; two agents closer than 2R are pushed apart.
 const BODY_RADIUS_CM: i32 = 45;
@@ -135,6 +149,13 @@ const GK_LINE_OFFSET_CM: i32 = 200;
 /// formation slot. A named type keeps the borrow simple and the signature
 /// readable (clippy: complex type).
 type Work = (PlayerId, (i32, i32), (i32, i32));
+
+/// The 4-4-2 grid, as `(x percent, y percent)` per slot.
+///
+/// Slot order: GK, LB, CB, CB, RB, LM, CM, CM, RM, ST, ST. It matches
+/// `Squad.players` **by index**. The formation parser is deferred (D3).
+/// Since `SIM_VERSION` 42 it gives each player his role in the block
+/// (`roles`); the kick-off and the movement read the block, not the grid.
 const GRID_4_4_2: [(i32, i32); 11] = [
     (5, 50),
     (25, 15),
@@ -209,17 +230,95 @@ impl SpatialState {
             let (px, py) = GRID_4_4_2[i];
             slots.insert(player.id, (length - length * px / 100, width * py / 100));
         }
-        Self {
+        let mut s = Self {
             agents,
             ball: BallState::Loose,
             ball_position: (length / 2, width / 2, 0),
             ball_velocity: (0, 0, 0),
             ball_physics: crate::balance::BallBalance::load(),
+            block: crate::balance::BlockBalance::load(),
+            roles: roles(home, away),
+            pitch_cm: (length, width),
+            home_in_possession: true,
             carry_target: None,
             carrier: None,
             slots,
             goalkeepers: (home.players[0].id, away.players[0].id),
+        };
+        // Kick-off positions (Law 8, OI-98): each side in its own half, in
+        // its compact block around a ball on the centre spot. Before, the
+        // two formations spanned the whole pitch and stood on top of each
+        // other.
+        let centre = (length / 2, width / 2);
+        let ids: Vec<PlayerId> = s.roles.keys().copied().collect();
+        for id in ids {
+            if let Some(t) = s.block_target(id, centre, false, true) {
+                if let Some(a) = s.agents.get_mut(&id) {
+                    a.position = t;
+                }
+            }
         }
+        s
+    }
+
+    /// The side in possession, for the block (set by the match each tick).
+    pub const fn set_home_in_possession(&mut self, home: bool) {
+        self.home_in_possession = home;
+    }
+
+    /// Where an outfield player stands in his team's block (VISION §3:
+    /// the role as a default intention). `None` for a goalkeeper.
+    ///
+    /// The block follows the ball: the defensive line sits behind it,
+    /// between a minimum and a maximum distance from its own goal, and the
+    /// block shifts towards the ball's side; with the ball the side
+    /// stretches, without it it compacts (`balance/block.json`). With
+    /// `own_half` the player stays in his own half (the kick-off).
+    fn block_target(
+        &self,
+        id: PlayerId,
+        ball: (i32, i32),
+        in_possession: bool,
+        own_half: bool,
+    ) -> Option<(i32, i32)> {
+        let (rx, ry) = *self.roles.get(&id)?;
+        let (length, width) = self.pitch_cm;
+        let blk = &self.block;
+        let home = crate::perception::team_of(id) == 0;
+        let (depth, span, behind, line_max) = if in_possession {
+            (
+                blk.depth_in_possession_cm,
+                blk.width_in_possession_cm.min(width),
+                blk.line_behind_ball_in_possession_cm,
+                blk.line_max_in_possession_cm,
+            )
+        } else {
+            (
+                blk.depth_out_of_possession_cm,
+                blk.width_out_of_possession_cm.min(width),
+                blk.line_behind_ball_out_of_possession_cm,
+                blk.line_max_out_of_possession_cm,
+            )
+        };
+        // Distances along the side's own attacking direction (u = 0 at its
+        // own goal line).
+        let u_ball = if home { ball.0 } else { length - ball.0 };
+        let line = if own_half {
+            // The kick-off: the whole block in its own half, the forwards
+            // just behind the halfway line.
+            (length / 2 - 100 - depth).max(blk.line_min_cm)
+        } else {
+            (u_ball - behind).clamp(blk.line_min_cm, line_max.max(blk.line_min_cm))
+        };
+        let mut u = (line + depth * rx / 1000).min(length - 300);
+        if own_half {
+            u = u.min(length / 2 - 100);
+        }
+        let shift = (ball.1 - width / 2) * blk.ball_side_shift_milli / 1000;
+        let cy = (width / 2 + shift).clamp(span / 2, width - span / 2);
+        let y = (cy + span * (ry - 500) / 1000).clamp(100, width - 100);
+        let x = if home { u } else { length - u };
+        Some((x, y))
     }
 
     /// The state of one agent, or `None` if the id is not on the pitch.
@@ -427,10 +526,7 @@ impl SpatialState {
         scan_balance: &crate::balance::ScanningBalance,
         keeper_balance: &crate::balance::KeeperBalance,
     ) {
-        let centre = (pitch_length_cm / 2, pitch_width_cm / 2);
         let ball = self.ball();
-        let dx = (ball.0 - centre.0) * TRANSLATION_NUM / TRANSLATION_DEN;
-        let dy = (ball.1 - centre.1) * TRANSLATION_NUM / TRANSLATION_DEN;
 
         // Snapshot: agents and slots in deterministic (BTreeMap) order.
         // Same operations as the direct version, no per-pair map lookup.
@@ -444,23 +540,33 @@ impl SpatialState {
             })
             .collect();
 
-        let nearest = work
-            .iter()
-            // F.6 step 2: the chaser is the nearest agent who *perceives*
-            // the ball. With gaze always towards the ball (OI-72), every
-            // agent perceives it, so this filter is identity today: it
-            // is now real: an agent that does not see the ball does not chase it (ADR-034).
-            .filter(|w| {
-                w.0 != self.goalkeepers.0
-                    && w.0 != self.goalkeepers.1
-                    && crate::perception::perceived_ball(&*self, w.0, ball).is_some()
-            })
-            .min_by_key(|(_, pos, _)| {
-                let ddx = i64::from(pos.0 - ball.0);
-                let ddy = i64::from(pos.1 - ball.1);
-                ddx * ddx + ddy * ddy
-            })
-            .map(|(id, _, _)| *id);
+        // Who goes for the ball (VISION §3): when someone has it, the
+        // nearest player of the other side presses him; when nobody has
+        // it, the nearest player of each side goes for it. Only a player
+        // who perceives the ball goes (ADR-034); goalkeepers keep their
+        // own target.
+        let carrier_team = self.carrier.map(crate::perception::team_of);
+        let chaser_of = |team: u32| {
+            work.iter()
+                .filter(|w| {
+                    crate::perception::team_of(w.0) == team
+                        && w.0 != self.goalkeepers.0
+                        && w.0 != self.goalkeepers.1
+                        && Some(w.0) != self.carrier
+                        && crate::perception::perceived_ball(&*self, w.0, ball).is_some()
+                })
+                .min_by_key(|(_, pos, _)| {
+                    let ddx = i64::from(pos.0 - ball.0);
+                    let ddy = i64::from(pos.1 - ball.1);
+                    ddx * ddx + ddy * ddy
+                })
+                .map(|(id, _, _)| *id)
+        };
+        let chasers: Vec<PlayerId> = [0_u32, 1]
+            .into_iter()
+            .filter(|t| carrier_team.is_none_or(|c| c != *t))
+            .filter_map(chaser_of)
+            .collect();
 
         // F.7 step 7b: each agent's displacement comes from the movement
         // formula (`L0-match/balance/movement.json`, via `resolve_movement`), not from
@@ -508,10 +614,12 @@ impl SpatialState {
                 // The carrier holds the ball where he is, or carries it
                 // where he chose (IDEA-DESIGN-010).
                 self.carry_target.unwrap_or(entry.1)
-            } else if Some(entry.0) == nearest {
+            } else if chasers.contains(&entry.0) {
                 ball
             } else {
-                (entry.2.0 + dx, entry.2.1 + dy)
+                let mine = (crate::perception::team_of(entry.0) == 0) == self.home_in_possession;
+                self.block_target(entry.0, ball, mine, false)
+                    .unwrap_or(entry.2)
             };
             let Some(body) = bodies.get(&entry.0) else {
                 continue;
@@ -569,8 +677,15 @@ impl SpatialState {
                     } else {
                         i32::try_from(ddy.signum()).unwrap_or(0)
                     };
-                    work[i].1 = (ax - nx * push, ay - ny * push);
-                    work[j].1 = (bx + nx * push, by + ny * push);
+                    // The separation never pushes anyone off the pitch.
+                    work[i].1 = (
+                        (ax - nx * push).clamp(0, pitch_length_cm),
+                        (ay - ny * push).clamp(0, pitch_width_cm),
+                    );
+                    work[j].1 = (
+                        (bx + nx * push).clamp(0, pitch_length_cm),
+                        (by + ny * push).clamp(0, pitch_width_cm),
+                    );
                 }
             }
         }

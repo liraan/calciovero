@@ -490,6 +490,8 @@ const CARRY_JSON: &str = include_str!("../../../balance/carry.json");
 pub struct CarryBalance {
     /// Distance towards the opponent goal, cm.
     pub carry_distance_cm: i32,
+    /// The carrier stops this far from the goal and chooses, cm.
+    pub carry_stop_from_goal_cm: i32,
 }
 
 impl Default for CarryBalance {
@@ -516,5 +518,69 @@ mod carry_tests {
     #[test]
     fn embedded_carry_is_valid() {
         assert!(super::CarryBalance::load().carry_distance_cm > 0);
+    }
+}
+
+/// The embedded team block (VISION §3, the role as a default intention).
+const BLOCK_JSON: &str = include_str!("../../../balance/block.json");
+
+/// The team block: where each outfield player stands without instructions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub struct BlockBalance {
+    /// Depth of the block with the ball, cm.
+    pub depth_in_possession_cm: i32,
+    /// Depth of the block without the ball, cm.
+    pub depth_out_of_possession_cm: i32,
+    /// Width of the block with the ball, cm.
+    pub width_in_possession_cm: i32,
+    /// Width of the block without the ball, cm.
+    pub width_out_of_possession_cm: i32,
+    /// The defensive line sits this far behind the ball, with the ball, cm.
+    pub line_behind_ball_in_possession_cm: i32,
+    /// The defensive line sits this far behind the ball, without it, cm.
+    pub line_behind_ball_out_of_possession_cm: i32,
+    /// The closest the defensive line comes to its own goal line, cm.
+    pub line_min_cm: i32,
+    /// The farthest the defensive line goes from its own goal, with the ball, cm.
+    pub line_max_in_possession_cm: i32,
+    /// The farthest the defensive line goes from its own goal, without it, cm.
+    pub line_max_out_of_possession_cm: i32,
+    /// How much the block shifts towards the ball's side, thousandths.
+    pub ball_side_shift_milli: i32,
+}
+
+impl Default for BlockBalance {
+    fn default() -> Self {
+        serde_json::from_str(BLOCK_JSON).expect("embedded block file is valid JSON")
+    }
+}
+
+impl BlockBalance {
+    /// Loads the embedded team block.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the embedded JSON is invalid; `embedded_block_is_valid`
+    /// catches it at test time.
+    #[must_use]
+    pub fn load() -> Self {
+        Self::default()
+    }
+}
+
+#[cfg(test)]
+mod block_tests {
+    #[test]
+    fn embedded_block_is_valid() {
+        let b = super::BlockBalance::load();
+        assert!(
+            b.depth_in_possession_cm > b.depth_out_of_possession_cm,
+            "it stretches with the ball"
+        );
+        assert!(
+            b.width_in_possession_cm > b.width_out_of_possession_cm,
+            "and widens"
+        );
+        assert!(b.line_min_cm < b.line_max_out_of_possession_cm);
     }
 }
