@@ -658,12 +658,20 @@ impl MatchState {
         self.emit_event(ctx, tick, None, event_type, serde_json::json!({}));
     }
     /// The carrier is state, computed from the substrate (ADR-041 §5): a
-    /// loose ball, with no pass or shot pending, belongs to the nearest
+    /// ball on the ground (at rest or rolling), with no pass or shot
+    /// pending, belongs to the nearest
     /// player once he is within `loose_control_radius_cm` of it, and his
     /// team has the possession. Before this the ball stayed loose until the
     /// next decision, and the match stood still around it (OI-97).
     fn control_loose_ball(&mut self, ctx: &MatchContext<'_>) {
-        if self.pending.is_some() || self.spatial.ball_state() != crate::spatial::BallState::Loose {
+        // On the ground: at rest, or rolling (a footballer controls a ball
+        // that is still moving). A ball in the air is not his yet.
+        let on_ground = match self.spatial.ball_state() {
+            crate::spatial::BallState::Loose => true,
+            crate::spatial::BallState::InFlight => self.spatial.ball_3d().2 == 0,
+            crate::spatial::BallState::Possessed => false,
+        };
+        if self.pending.is_some() || !on_ground {
             return;
         }
         let ball = self.spatial.ball();

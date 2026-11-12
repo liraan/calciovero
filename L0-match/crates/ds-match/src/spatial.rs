@@ -86,20 +86,9 @@ pub enum BallState {
     /// Free and at rest.
     Loose,
 }
-/// Gravity in centimetres per tick squared (MD-18). Derived: g ≈ 9.8 m/s²
-/// at 10 ticks/s rounds to ~10 cm/tick². A different value is a bug, not
-/// an arbitrary parameter.
-const BALL_GRAVITY: i16 = 10;
-
-/// Horizontal friction numerator per tick (MD-18). Arbitrary, declared.
-const BALL_FRICTION_NUM: i32 = 990;
-
-/// Horizontal friction denominator per tick (MD-18). Arbitrary, declared.
-const BALL_FRICTION_DEN: i32 = 1000;
-
-/// Speed below which a grounded ball stops, in cm/tick (MD-18). Arbitrary,
-/// declared.
-const BALL_STOP_THRESHOLD: i16 = 1;
+// The ball's physical properties (gravity, friction in the air and on the
+// ground, stop threshold) are declared data, `balance/ball.json` (ADR-048
+// §4); they used to be four constants here.
 
 /// The spatial state of a match: every agent, plus the ball.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -108,6 +97,8 @@ pub struct SpatialState {
     ball: BallState,
     ball_position: (i32, i32, i32),
     ball_velocity: (i16, i16, i16),
+    /// The ball's declared physics (ADR-048 §4).
+    ball_physics: crate::balance::BallBalance,
     /// The agent carrying the ball, if any.
     carrier: Option<PlayerId>,
     /// The formation slot of each agent, in centimetres. The default
@@ -220,6 +211,7 @@ impl SpatialState {
             ball: BallState::Loose,
             ball_position: (length / 2, width / 2, 0),
             ball_velocity: (0, 0, 0),
+            ball_physics: crate::balance::BallBalance::load(),
             carrier: None,
             slots,
             goalkeepers: (home.players[0].id, away.players[0].id),
@@ -323,9 +315,16 @@ impl SpatialState {
         };
         let (mut vx, mut vy, mut vz) = self.ball_velocity;
         let (mut x, mut y, mut z) = self.ball_position;
-        vz = vz.saturating_sub(BALL_GRAVITY);
-        vx = i16::try_from(i32::from(vx) * BALL_FRICTION_NUM / BALL_FRICTION_DEN).unwrap_or(vx);
-        vy = i16::try_from(i32::from(vy) * BALL_FRICTION_NUM / BALL_FRICTION_DEN).unwrap_or(vy);
+        let p = self.ball_physics;
+        // On the ground the grass slows the ball more than the air does.
+        let friction = if z == 0 && vz <= 0 {
+            p.ground_friction_milli
+        } else {
+            p.air_friction_milli
+        };
+        vz = vz.saturating_sub(p.gravity_cm_per_tick2);
+        vx = i16::try_from(i32::from(vx) * friction / 1000).unwrap_or(vx);
+        vy = i16::try_from(i32::from(vy) * friction / 1000).unwrap_or(vy);
         x = x.saturating_add(i32::from(vx));
         y = y.saturating_add(i32::from(vy));
         z = z.saturating_add(i32::from(vz));
@@ -335,7 +334,10 @@ impl SpatialState {
         }
         self.ball_position = (x, y, z);
         self.ball_velocity = (vx, vy, vz);
-        if z == 0 && vx.abs() <= BALL_STOP_THRESHOLD && vy.abs() <= BALL_STOP_THRESHOLD {
+        if z == 0
+            && vx.abs() <= p.stop_threshold_cm_per_tick
+            && vy.abs() <= p.stop_threshold_cm_per_tick
+        {
             self.ball = BallState::Loose;
             self.ball_velocity = (0, 0, 0);
         }
@@ -805,6 +807,21 @@ mod tests {
         let before = (s.ball_3d(), s.ball_velocity());
         s.deflect_ball((10_500, 3766, 100), (-200, 0, 0));
         assert_eq!((s.ball_3d(), s.ball_velocity()), before);
+    }
+
+    /// ADR-048 §4 (P1): a ground pass at 15 m/s rolls tens of metres, not
+    /// hundreds. With one friction of 990 everywhere it rolled about 150 m
+    /// and left the pitch (OI-97).
+    #[test]
+    fn a_ground_pass_rolls_tens_of_metres() {
+        let mut s = make_state();
+        s.set_ball_in_flight((0, 3400, 0), (150, 0, 0));
+        for _ in 0..2000 {
+            s.advance_ball();
+        }
+        assert_eq!(s.ball_state(), BallState::Loose, "it comes to rest");
+        let x = s.ball_3d().0;
+        assert!((2500..=5000).contains(&x), "rolled {x} cm");
     }
 
     #[test]

@@ -1,0 +1,8 @@
+{
+  "gravity_cm_per_tick2": 10,
+  "air_friction_milli": 990,
+  "ground_friction_milli": 957,
+  "stop_threshold_cm_per_tick": 1,
+  "_note": "The ball's declared physical properties (ADR-048 §4: they move out of the code into declared data). Per tick, 10 ticks = 1 s. Gravity pulls vz down; friction multiplies the horizontal velocity by friction_milli/1000 each tick, in the air or on the ground; a grounded ball slower than the stop threshold comes to rest. Before 2026-11-12 one friction (990) applied everywhere: a pass rolled for hundreds of metres and left the pitch (OI-97). The ground friction (957) makes a ground pass at about 15 m/s travel about 35 m, the order of magnitude of a real pass on grass.",
+  "_source": "gravity: g = 9.8 m/s² at 10 ticks/s, about 10 cm/tick² (MD-18), derived, not arbitrary. air_friction 990: prototype value (MD-18), arbitrary. ground_friction 957: chosen so that v0 / (1 - k) is about 35 m for v0 = 150 cm/tick, from the order of magnitude of a ground pass on grass; arbitrary until L3, and the surface's own properties (ADR-044 §4, ADR-048 §3) enter with the bounce. stop_threshold 1: prototype (MD-18)."
+}

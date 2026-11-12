@@ -430,3 +430,54 @@ impl ObstacleBalance {
         ]
     }
 }
+
+/// The embedded ball physics (ADR-048 §4).
+const BALL_JSON: &str = include_str!("../../../balance/ball.json");
+
+/// The ball's declared physical properties (ADR-048 §4), per tick.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub struct BallBalance {
+    /// Gravity, cm/tick² (MD-18, derived from g).
+    pub gravity_cm_per_tick2: i16,
+    /// Horizontal friction in the air, thousandths kept per tick.
+    pub air_friction_milli: i32,
+    /// Horizontal friction on the ground, thousandths kept per tick.
+    pub ground_friction_milli: i32,
+    /// A grounded ball slower than this comes to rest, cm/tick.
+    pub stop_threshold_cm_per_tick: i16,
+}
+
+impl Default for BallBalance {
+    fn default() -> Self {
+        serde_json::from_str(BALL_JSON).expect("embedded ball file is valid JSON")
+    }
+}
+
+impl BallBalance {
+    /// Loads the embedded ball physics.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the embedded JSON is invalid; `embedded_ball_is_valid`
+    /// catches it at test time.
+    #[must_use]
+    pub fn load() -> Self {
+        Self::default()
+    }
+}
+
+#[cfg(test)]
+mod ball_tests {
+    use super::BallBalance;
+
+    #[test]
+    fn embedded_ball_is_valid() {
+        let b = BallBalance::load();
+        assert_eq!(b.gravity_cm_per_tick2, 10);
+        assert!(
+            b.ground_friction_milli < b.air_friction_milli,
+            "grass slows more than air"
+        );
+        assert!((0..1000).contains(&b.ground_friction_milli));
+    }
+}
