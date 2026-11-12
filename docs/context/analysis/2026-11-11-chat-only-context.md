@@ -163,11 +163,12 @@ working-style part -- derive vs ask, stop when told, write before code
 - **"il 2d di debug sara costruito sopra il testrunner giusto?"** No.
   ADR-020 split `pcfm-debug` into a test runner (tests) and a demo
   (demo); ADR-025 put the board in the demo; Plan G says the first 2D
-  commit is "probably `ds-demo --2d`". The 2D is a renderer: it consumes
-  the tick record (IDEA-INFRA-018) and the events, and it does not talk
+  commit is "probably `ds-demo --2d`". The 2D is a renderer: it
+  consumes the narrator’s output, which consumes the tick record
+  (IDEA-INFRA-018) and the events; it does not talk
   to the engine directly (WORLD-MODEL §4). Building it on the test
   runner would mix the two responsibilities ADR-020 separated.
-  **Not verified in full:** Plan G, IDEA-INFRA-018, IDEA-INFRA-021,
+  **Verified 2026-11-12:** Plan G, IDEA-INFRA-018, IDEA-INFRA-021,
   `direction-decisions` §5 in prose. The answer is "the repo leans to
   the demo", not "the exact form is verified".
 - **"dobbiamo cambiare tutti i suffissi"** -- yes, and it was done:

@@ -60,7 +60,7 @@ threshold (a latent read in `resolve_choice`, not in the formula).
 | **Reception** | `first_touch` | R | `distance`, `freedom` | `reception.json` |
 | **Shot — choice (target)** | none (geometric only) | -c | `distance_factor`, `goal_cone` | — (constants in `state.rs`) |
 | **Shot — execution** | `finishing` | R | `difficulty` (pressure, computed in `tick`) | constants in `pcfm-hidden/src/lib.rs` |
-| **Save** | `goalkeeping` | R | `offset_cm`, `reach_cm` (= height / 2) | none (formula in Rust) |
+| **Keeper — contact** | `handling` (retired `goalkeeping`) | R | `body_part_allowed`, `offset_cm`, `reach_cm` | none (formula in Rust, until step (d) of OI-81) |
 | **Duel** | `tackling`, `finishing`, `goalkeeping` (by `DuelType`) | R | **die** (`noise.mul_add(0.2, …)`) | none |
 | **Advance** | none | — | `clarity_threshold` (the best of the others did not pass) | `choice.json` |
 
@@ -71,7 +71,7 @@ each option is Plane B, derived by the engine, not a latent.
 
 ## 3. The catalogue declared and the catalogue implemented
 
-L0.11 §4.6 declares **25 Plane A terms**. `Characteristic` has **7**
+L0.11 §4.6 declares **25 Plane A terms**. `Characteristic` has **10**
 variants, and 3 of them return `0.0` from the custodian
 (`MaximalForce`, `Acceleration`, `MaxSpeed`):
 
