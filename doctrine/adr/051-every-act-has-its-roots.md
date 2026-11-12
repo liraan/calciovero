@@ -1,6 +1,6 @@
 # ADR-051 — Every act has its roots, and you can see them
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-12
 - **Supersedes:** —
 - **Amends:** L0.11 (`L0-match/specs/11-player-characteristics.md`), with the changes of `L0-match/design/CHARACTERISTICS-AND-ABILITIES.md` §7, each when its first consumer enters
@@ -41,3 +41,6 @@ Each change is a normal change: `SIM_VERSION` bump, golden, P1 and twin test, th
 - **Ratings per act (a "pace" number, a "diving" number).** Rejected: an ability is a formula over characteristics, never a stored datum (`CHARACTERISTICS-AND-ABILITIES.md`, decided 2026-11-12); a rating per act would be a second, hidden copy of the player.
 
 ## Dated notes
+
+- **2026-11-12 — amended** by the maintainer before acceptance: *"every action must, in potential, be present in every match"* (§1, §5: the whole repertoire first, guarded by the repertoire test, then the depth).
+- **2026-11-12 — accepted** by the maintainer ("si approvo l'adr51"). The duel's form discussed the same day (two choices that meet, the contact decided by the bodies in the scene, four outcomes) is recorded in `ACTIONS.md` §4 as the target of the family "with the ball under pressure"; where it differs from ADR-042 (proposed), ADR-042 is amended before that family is coded.

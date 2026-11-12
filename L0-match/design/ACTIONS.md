@@ -3,7 +3,7 @@ title: "The acts on the pitch — what each one reads, and what the engine does 
 version: "0.1"
 status: "draft"
 last_updated: "2026-11-12"
-conforms_to: "doctrine/adr/051-every-act-has-its-roots.md (proposed); doctrine/VISION.md §3; L0-match/design/CHARACTERISTICS-AND-ABILITIES.md"
+conforms_to: "doctrine/adr/051-every-act-has-its-roots.md (accepted); doctrine/VISION.md §3; L0-match/design/CHARACTERISTICS-AND-ABILITIES.md"
 ---
 
 # The acts on the pitch
@@ -80,6 +80,16 @@ with their first consumer (ADR-051 §4).
 | Offer for a pass | where, when | game reading, decision making | — |
 | Run in behind | when | game reading, sprint | — |
 | Aerial duel (defend) | win or lose | *heading*, jump, *maximal force* | — |
+
+### 4.1 The duel: the target form (maintainer, 2026-11-12)
+
+Today the duel is an instant comparison of two weighted sums (`balance/duel.json`): the same two players give the same result in every scene, the carrier chooses nothing, and the outcome is only "kept" or "won". The target form:
+
+- **two choices that meet.** The defender chooses how to go in (standing tackle, slide, jockey, wait for the mistake), each with its risk: a slide wins more often, and if it misses he is out of the play and may foul. The carrier chooses how to answer (shield with the body, take him on, release the ball first);
+- **the contact is decided by the bodies in the scene**: approach speed and angle, who is between the ball and the opponent, *maximal force*, *body control*, weight, the fatigue of the moment;
+- **four outcomes**: ball kept, ball won, ball loose, foul.
+
+The variation comes from the situation, never from a die. Twin tests: the better shielder keeps the ball more, the better tackler wins it more, and it shows in the 2D. Where this differs from ADR-042 (proposed), ADR-042 is amended first.
 
 ## 5. In goal
 
