@@ -1,6 +1,6 @@
 # ADR-050 — The carrier reads what an option brings
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-12
 - **Supersedes:** —
 - **Amends:** ADR-040 (the salience of the pass and of the shot: a term each)
@@ -32,3 +32,7 @@ All terms are deterministic and read only the carrier's scene and his characteri
 
 - **Tune the clarity threshold or the shot range only.** Rejected: it would raise the number of shots without giving the carrier a reason; the backward pass would stay as salient as the forward one.
 - **A global "attack" mode for the side in possession.** Rejected: a global decider, and the choice would be the team's, not the player's (ADR-049).
+
+## Dated notes
+
+- **2026-11-12 — accepted** by the maintainer ("procedi"). Implemented at `SIM_VERSION` 49. First measure, seeds 42-51: 10-96 shots (median about 30), 1,000-2,000 passes, 6-56 duels, goals still rare (one in ten seeds).

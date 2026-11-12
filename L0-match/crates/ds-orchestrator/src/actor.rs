@@ -75,8 +75,13 @@ impl Actor {
                 crate::Side::Right
             }
         };
+        // His appetite for risk: how much he weighs going forward (ADR-050).
+        let risk_appetite = hidden
+            .custodian(self.player)
+            .value(ds_calculator::Characteristic::RiskManagement);
         let balance = hidden.shot_choice_balance();
-        let (ctx, freedoms) = crate::read::build_choice(scene, preferred_foot, balance);
+        let (ctx, freedoms) =
+            crate::read::build_choice(scene, preferred_foot, risk_appetite, balance);
         (hidden.resolve_choice(&ctx).chosen, freedoms)
     }
 }

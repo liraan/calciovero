@@ -777,6 +777,7 @@ impl MatchState {
                 // A presser who arrives within reach chooses at once: the
                 // scene has changed, he does not wait for his next turn.
                 let arrived = self.spatial.act(id) == Some(ds_orchestrator::OffBallAct::Press)
+                    && self.challenges.get(&id).is_none_or(|t| tick >= *t)
                     && carrier_pos.is_some_and(|c| {
                         distance_squared(me, c) <= i64::from(duel.reach_cm).pow(2)
                     });
@@ -902,6 +903,9 @@ impl MatchState {
             self.flip_possession();
             self.spatial.set_carrier(Some(challenger));
             self.challenges.insert(carrier, tick + duel.retry_ticks);
+        } else {
+            // Beaten, he needs time to recover before he can try again.
+            self.challenges.insert(challenger, tick + duel.retry_ticks);
         }
     }
 
@@ -1502,8 +1506,12 @@ mod tests {
             true,
         );
         let balance = ds_orchestrator::ShotChoiceBalance::load();
-        let (ctx, _freedoms) =
-            ds_orchestrator::read::build_choice(&scene, ds_orchestrator::Side::Right, &balance);
+        let (ctx, _freedoms) = ds_orchestrator::read::build_choice(
+            &scene,
+            ds_orchestrator::Side::Right,
+            0.5,
+            &balance,
+        );
         let pass_target_seen = ctx
             .candidates
             .iter()

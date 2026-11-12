@@ -68,7 +68,7 @@ Modules marked *(planned)* below do not have a file yet. Their links are intenti
 | L0.10 | [`L0-match/10-ground-truth.md`](../L0-match/specs/10-ground-truth.md) | ✅ ratified | 00, L0.01, L0.03 |
 | L0.11 | [`L0-match/11-player-characteristics.md`](../L0-match/specs/11-player-characteristics.md) | 🟡 draft | 00, L0.03, L0.10, ADR-003, ADR-028 |
 
-**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (11 crates, 311 tests). See `doctrine/STRUCTURE.md` §3.
+**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (11 crates, 314 tests). See `doctrine/STRUCTURE.md` §3.
 
 ---
 
@@ -294,6 +294,6 @@ These are components that are referenced across modules but are not crates. They
 | [047](adr/047-the-choice-is-recognition.md) | The choice is recognition, not weighing | ✅ accepted | The actor does not weigh the options during the match: he recognises the phrases his repertoire makes available in the scene (instinct as a derivative of training). Recognition in the read (which phrases are available, keeper included), weighing in the choose (which phrase he plays). The repertoire is the form of the cognitive latents, not a new latent; at L0 the input does not change, at L1 the training modulates the latents and the repertoire follows. Blocks OI-88 and OI-81. No code, no `SIM_VERSION` bump. |
 | [048](adr/048-the-ball-can-be-deflected.md) | The ball can be deflected, and the deflection has a cause | ✅ accepted | Three causes: static obstacle (post, crossbar), actor's contact (the keeper's hand), surface (the ground). The properties are declared data, not latents (a second door, ADR-044 §3). The formula lives in the calculator, integer (ADR-044 §5). `BALL_*` hardcoded moves to `L0-match/balance/` (foundations §5). `FLIGHT_TICKS` fixed becomes a computed expiry. Closes OI-52 ("Removed-by: never" was wrong). Unblocks OI-81-step-c. No code, no `SIM_VERSION` bump. |
 | [049](adr/049-the-off-ball-act-is-the-players.md) | The off-ball act is the player's | ✅ accepted | Every player, the goalkeeper included, chooses his own act (hold, press, challenge, go to the ball); the engine applies (VISION §3, ADR-043 extended). |
-| [050](adr/050-the-carrier-reads-what-an-option-brings.md) | The carrier reads what an option brings | 🟡 proposed | The pass reads its progression, weighted by the carrier's risk appetite and the pressure; the shot does not vanish at 25 m (amends ADR-040). |
+| [050](adr/050-the-carrier-reads-what-an-option-brings.md) | The carrier reads what an option brings | ✅ accepted | The pass reads its progression, weighted by the carrier's risk appetite and the pressure; the shot does not vanish at 25 m (amends ADR-040). |
 
 **Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048 (42). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).

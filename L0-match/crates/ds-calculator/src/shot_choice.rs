@@ -29,6 +29,16 @@ pub struct ShotChoiceBalance {
     pub reading_weight: f64,
     /// Weight of `risk_management` in the salience of a complete action.
     pub risk_weight: f64,
+    /// The shot is an option within this distance of the goal, cm (ADR-050).
+    pub shot_range_cm: i64,
+    /// The distance at which the shot's distance factor halves, cm (ADR-050).
+    pub shot_distance_ref_cm: i64,
+    /// How much a pass's progression counts, for a full appetite (ADR-050).
+    pub progression_gain: f64,
+    /// The least a backward pass's salience is multiplied by (ADR-050).
+    pub progression_floor: f64,
+    /// An opponent within this distance presses the carrier, cm (ADR-050).
+    pub pressure_radius_cm: i64,
 }
 
 impl ShotChoiceBalance {

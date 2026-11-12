@@ -50,9 +50,6 @@ pub struct PerceivedScene {
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
 pub const PASS_FREEDOM_CM: i64 = 300;
 
-/// Shoot below this distance from the opponent goal, cm.
-const SHOOT_RANGE_CM: i64 = 2500;
-
 /// Regulatory goal width, cm (7.32 m, Laws of the Game, Law 1). A real
 /// fact of football, not a model choice.
 const GOAL_WIDTH_CM: i64 = 732;
@@ -217,6 +214,47 @@ fn keeper_visibility(
     base * factor
 }
 
+/// The pressure on the carrier (ADR-050): 1 with an opponent at his feet,
+/// 0 beyond `pressure_radius_cm`.
+#[allow(clippy::cast_precision_loss)] // pitch distances are far below 2^52
+fn pressure_on(
+    pos: (i32, i32),
+    scene: &PerceivedScene,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> f64 {
+    scene
+        .opponents
+        .iter()
+        .filter_map(|o| scene.positions.get(o).copied())
+        .map(|opos| distance_squared(pos, opos).isqrt())
+        .min()
+        .map_or(0.0, |d| {
+            let r = balance.pressure_radius_cm.max(1);
+            (1.0 - (d as f64) / (r as f64)).clamp(0.0, 1.0)
+        })
+}
+
+/// What a pass brings (ADR-050): its progression in [-1, 1] (nearer to the
+/// goal is positive), weighed by the carrier's appetite for risk, less
+/// under pressure. A pass back stays a real option (the floor).
+#[allow(clippy::cast_precision_loss)] // pitch distances are far below 2^52
+fn brings(
+    from: (i32, i32),
+    to: (i32, i32),
+    goal: (i32, i32),
+    risk_appetite: f64,
+    pressure: f64,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> f64 {
+    let carrier_to_goal = distance_squared(from, goal).isqrt().max(1) as f64;
+    let receiver_to_goal = distance_squared(to, goal).isqrt() as f64;
+    let progression = ((carrier_to_goal - receiver_to_goal) / carrier_to_goal).clamp(-1.0, 1.0);
+    let weight = balance.progression_gain * risk_appetite * (1.0 - pressure);
+    weight
+        .mul_add(progression, 1.0)
+        .max(balance.progression_floor)
+}
+
 /// Builds the choice context for `attacker` from the scene, and the
 /// freedom of each pass receiver (carried to `resolve_pass`).
 ///
@@ -230,7 +268,7 @@ fn keeper_visibility(
 /// - one `Pass { receiver }` for each teammate with enough freedom
 ///   (>= `PASS_FREEDOM_CM`); geometric = `freedom_cm / 1000`, risk
 ///   grows as `freedom_cm` shrinks towards `PASS_FREEDOM_CM`.
-/// - one `Shoot` if the attacker is within `SHOOT_RANGE_CM` of the
+/// - one `Shoot` if the attacker is within `shot_range_cm` (balance) of the
 ///   goal; geometric falls with distance, risk rises with it.
 /// - one `Advance` fallback only if no other candidate exists (the
 ///   actor carries the ball; `resolve_choice` turns `0.0` into
@@ -244,6 +282,7 @@ fn keeper_visibility(
 pub fn build_choice(
     scene: &PerceivedScene,
     preferred_foot: Side,
+    risk_appetite: f64,
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
 ) -> (ChoiceContext, BTreeMap<PlayerId, i64>) {
     let attacker = scene.actor;
@@ -271,15 +310,18 @@ pub fn build_choice(
     };
 
     let goal_dist = distance_squared(pos, goal).isqrt();
-    if goal_dist < SHOOT_RANGE_CM {
+    let shoot_range = balance.shot_range_cm.max(1);
+    if goal_dist < shoot_range {
         // geometric: 1.0 at the goal line, 0.0 at the shoot range edge.
         // ADR-040: geometric = salience, not probability. distance_factor
         // (decreasing linearly with distance) times goal_cone (the visible
         // angular width of the goal mouth from the shooter, no trig).
-        let distance_factor = ((SHOOT_RANGE_CM - goal_dist) as f64) / (SHOOT_RANGE_CM as f64);
+        // ADR-050: high in the box, small but never zero from distance.
+        let rel = (goal_dist as f64) / (balance.shot_distance_ref_cm.max(1) as f64);
+        let distance_factor = 1.0 / rel.mul_add(rel, 1.0);
         let geom = distance_factor * goal_cone(pos, goal);
         // risk: 0.0 at the goal line, 1.0 at the shoot range edge.
-        let risk = (goal_dist as f64) / (SHOOT_RANGE_CM as f64);
+        let risk = (goal_dist as f64) / (shoot_range as f64);
         // ADR-046 §1, ADR-047: the shot is a complete phrase. The side
         // is the actor's preferred foot (a fact of the body, not a
         // latent); the two powers are the two phrases from
@@ -307,6 +349,8 @@ pub fn build_choice(
         }
     }
 
+    let pressure = pressure_on(pos, scene, balance);
+
     let opponent_positions: Vec<(i32, i32)> = opponents
         .iter()
         .filter_map(|o| scene.positions.get(o).copied())
@@ -331,7 +375,8 @@ pub fn build_choice(
         let freedom_norm = (freedom as f64) / (freedom as f64 + PASS_FREEDOM_CM as f64);
         let lq = line_quality(pos, tpos, &opponent_positions);
         let dp = distance_plausible(distance_squared(pos, tpos).isqrt());
-        let geom = freedom_norm * lq * dp;
+        let brings = brings(pos, tpos, goal, risk_appetite, pressure, balance);
+        let geom = freedom_norm * lq * dp * brings;
         // risk: 1.0 at PASS_FREEDOM_CM, falling with freedom.
         let risk = (PASS_FREEDOM_CM as f64) / (freedom as f64);
         candidates.push(ChoiceCandidate {
@@ -420,7 +465,7 @@ mod keeper_visibility_tests {
 
     fn shot_visibility(scene: &PerceivedScene) -> f64 {
         let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
-        let (ctx, _) = build_choice(scene, Side::Right, &balance);
+        let (ctx, _) = build_choice(scene, Side::Right, 0.5, &balance);
         ctx.candidates
             .iter()
             .find(|c| matches!(c.kind, ChoiceKind::Shoot { .. }))
@@ -442,5 +487,73 @@ mod keeper_visibility_tests {
             (far - visible).abs() < 1e-6,
             "a keeper far from the line does not hide the shot: far={far} visible={visible}"
         );
+    }
+
+    #[cfg(test)]
+    mod brings_tests {
+        use super::*;
+
+        fn scene(mate: (i32, i32), opponent: Option<(i32, i32)>) -> PerceivedScene {
+            let me = PlayerId::new(6, 0);
+            let them = PlayerId::new(7, 0);
+            let opp = PlayerId::new(105, 0);
+            let mut positions = BTreeMap::new();
+            positions.insert(me, (5000, 3400));
+            positions.insert(them, mate);
+            if let Some(o) = opponent {
+                positions.insert(opp, o);
+            }
+            PerceivedScene {
+                actor: me,
+                teammates: vec![me, them],
+                opponents: opponent.map_or_else(Vec::new, |_| vec![opp]),
+                positions,
+                goal: (10500, 3400),
+                keeper: None,
+                keeper_reach_cm: 0.0,
+                can_carry: true,
+            }
+        }
+
+        fn pass_salience(s: &PerceivedScene, appetite: f64) -> f64 {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let (ctx, _) = build_choice(s, Side::Right, appetite, &b);
+            ctx.candidates
+                .iter()
+                .find(|c| matches!(c.kind, ChoiceKind::Pass(_)))
+                .map_or(0.0, |c| c.geometric)
+        }
+
+        /// ADR-050 (P1): a pass forward is more salient than the same pass back,
+        /// and a pass back is still an option.
+        #[test]
+        fn a_pass_forward_brings_more_than_a_pass_back() {
+            let forward = pass_salience(&scene((6500, 3400), None), 0.8);
+            let back = pass_salience(&scene((3500, 3400), None), 0.8);
+            assert!(forward > back, "{forward} vs {back}");
+            assert!(back > 0.0, "a pass back stays an option");
+        }
+
+        /// ADR-050: under pressure the carrier weighs going forward less.
+        #[test]
+        fn under_pressure_progression_counts_less() {
+            let free = pass_salience(&scene((6500, 3400), None), 0.8);
+            let pressed = pass_salience(&scene((6500, 3400), Some((5100, 3400))), 0.8);
+            assert!(free > pressed, "{free} vs {pressed}");
+        }
+
+        /// ADR-050: the shot does not vanish at 25 m.
+        #[test]
+        fn a_shot_from_thirty_metres_is_still_an_option() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let mut s = scene((0, 0), None);
+            s.positions.insert(s.actor, (10500 - 3000, 3400));
+            let (ctx, _) = build_choice(&s, Side::Right, 0.5, &b);
+            assert!(
+                ctx.candidates
+                    .iter()
+                    .any(|c| matches!(c.kind, ChoiceKind::Shoot { .. }) && c.geometric > 0.0)
+            );
+        }
     }
 }
