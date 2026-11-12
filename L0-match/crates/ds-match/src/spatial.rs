@@ -104,7 +104,7 @@ pub struct SpatialState {
     block: crate::balance::BlockBalance,
     /// Each outfield player's place in the block: `(depth, width)` in
     /// thousandths, from the formation (0 = defensive line / left).
-    roles: BTreeMap<PlayerId, (i32, i32)>,
+    roles: BTreeMap<PlayerId, crate::shape::Role>,
     /// The pitch, in centimetres: `(length, width)`.
     pitch_cm: (i32, i32),
     /// Whether the home side has the ball (set by the match each tick).
@@ -114,28 +114,11 @@ pub struct SpatialState {
     carry_target: Option<(i32, i32)>,
     /// The agent carrying the ball, if any.
     carrier: Option<PlayerId>,
-    /// The formation slot of each agent, in centimetres. The default
-    /// (`GRID_4_4_2`, mirrored) is a placeholder: L2 replaces it (MD-09).
-    slots: BTreeMap<PlayerId, (i32, i32)>,
     /// The goalkeeper of each team: `(home, away)`. A fact of the
     /// formation, populated at construction (OI-81-step-move). The keeper
     /// moves with `resolve_movement` like every agent; only his target
     /// differs.
     goalkeepers: (PlayerId, PlayerId),
-}
-
-/// Each outfield player's place in the block, `(depth, width)` in
-/// thousandths, read from the 4-4-2 grid: depth 0 for the defenders, 500
-/// for the midfielders, 1000 for the forwards; width from the grid's y.
-fn roles(home: &Squad, away: &Squad) -> BTreeMap<PlayerId, (i32, i32)> {
-    let mut out = BTreeMap::new();
-    for squad in [home, away] {
-        for (i, player) in squad.players.iter().enumerate().skip(1) {
-            let (px, py) = GRID_4_4_2[i.min(10)];
-            out.insert(player.id, (((px - 25) * 1000 / 50).clamp(0, 1000), py * 10));
-        }
-    }
-    out
 }
 
 /// ~45 cm shoulder half-width; two agents closer than 2R are pushed apart.
@@ -149,26 +132,6 @@ const GK_LINE_OFFSET_CM: i32 = 200;
 /// formation slot. A named type keeps the borrow simple and the signature
 /// readable (clippy: complex type).
 type Work = (PlayerId, (i32, i32), (i32, i32));
-
-/// The 4-4-2 grid, as `(x percent, y percent)` per slot.
-///
-/// Slot order: GK, LB, CB, CB, RB, LM, CM, CM, RM, ST, ST. It matches
-/// `Squad.players` **by index**. The formation parser is deferred (D3).
-/// Since `SIM_VERSION` 42 it gives each player his role in the block
-/// (`roles`); the kick-off and the movement read the block, not the grid.
-const GRID_4_4_2: [(i32, i32); 11] = [
-    (5, 50),
-    (25, 15),
-    (25, 38),
-    (25, 62),
-    (25, 85),
-    (50, 15),
-    (50, 38),
-    (50, 62),
-    (50, 85),
-    (75, 38),
-    (75, 62),
-];
 
 impl SpatialState {
     /// Builds the initial spatial state from a pitch and two squads.
@@ -187,12 +150,13 @@ impl SpatialState {
         let length = i32::from(pitch.length_m) * 100;
         let width = i32::from(pitch.width_m) * 100;
         let mut agents = BTreeMap::new();
+        // The goalkeepers start on their lines; the outfield players are
+        // placed in their block for the kick-off below.
         for (i, player) in home.players.iter().enumerate() {
-            let (px, py) = GRID_4_4_2[i];
             let position = if i == 0 {
                 (GK_LINE_OFFSET_CM, width / 2)
             } else {
-                (length * px / 100, width * py / 100)
+                (length / 2, width / 2)
             };
             agents.insert(
                 player.id,
@@ -205,11 +169,10 @@ impl SpatialState {
             );
         }
         for (i, player) in away.players.iter().enumerate() {
-            let (px, py) = GRID_4_4_2[i];
             let position = if i == 0 {
                 (length - GK_LINE_OFFSET_CM, width / 2)
             } else {
-                (length - length * px / 100, width * py / 100)
+                (length / 2, width / 2)
             };
             agents.insert(
                 player.id,
@@ -221,15 +184,6 @@ impl SpatialState {
                 },
             );
         }
-        let mut slots: BTreeMap<PlayerId, (i32, i32)> = BTreeMap::new();
-        for (i, player) in home.players.iter().enumerate() {
-            let (px, py) = GRID_4_4_2[i];
-            slots.insert(player.id, (length * px / 100, width * py / 100));
-        }
-        for (i, player) in away.players.iter().enumerate() {
-            let (px, py) = GRID_4_4_2[i];
-            slots.insert(player.id, (length - length * px / 100, width * py / 100));
-        }
         let mut s = Self {
             agents,
             ball: BallState::Loose,
@@ -237,12 +191,11 @@ impl SpatialState {
             ball_velocity: (0, 0, 0),
             ball_physics: crate::balance::BallBalance::load(),
             block: crate::balance::BlockBalance::load(),
-            roles: roles(home, away),
+            roles: crate::shape::roles(home, away),
             pitch_cm: (length, width),
             home_in_possession: true,
             carry_target: None,
             carrier: None,
-            slots,
             goalkeepers: (home.players[0].id, away.players[0].id),
         };
         // Kick-off positions (Law 8, OI-98): each side in its own half, in
@@ -281,44 +234,15 @@ impl SpatialState {
         in_possession: bool,
         own_half: bool,
     ) -> Option<(i32, i32)> {
-        let (rx, ry) = *self.roles.get(&id)?;
-        let (length, width) = self.pitch_cm;
-        let blk = &self.block;
-        let home = crate::perception::team_of(id) == 0;
-        let (depth, span, behind, line_max) = if in_possession {
-            (
-                blk.depth_in_possession_cm,
-                blk.width_in_possession_cm.min(width),
-                blk.line_behind_ball_in_possession_cm,
-                blk.line_max_in_possession_cm,
-            )
-        } else {
-            (
-                blk.depth_out_of_possession_cm,
-                blk.width_out_of_possession_cm.min(width),
-                blk.line_behind_ball_out_of_possession_cm,
-                blk.line_max_out_of_possession_cm,
-            )
+        let role = *self.roles.get(&id)?;
+        let situation = crate::shape::Situation {
+            ball,
+            in_possession,
+            home: crate::perception::team_of(id) == 0,
+            pitch: self.pitch_cm,
+            kick_off: own_half,
         };
-        // Distances along the side's own attacking direction (u = 0 at its
-        // own goal line).
-        let u_ball = if home { ball.0 } else { length - ball.0 };
-        let line = if own_half {
-            // The kick-off: the whole block in its own half, the forwards
-            // just behind the halfway line.
-            (length / 2 - 100 - depth).max(blk.line_min_cm)
-        } else {
-            (u_ball - behind).clamp(blk.line_min_cm, line_max.max(blk.line_min_cm))
-        };
-        let mut u = (line + depth * rx / 1000).min(length - 300);
-        if own_half {
-            u = u.min(length / 2 - 100);
-        }
-        let shift = (ball.1 - width / 2) * blk.ball_side_shift_milli / 1000;
-        let cy = (width / 2 + shift).clamp(span / 2, width - span / 2);
-        let y = (cy + span * (ry - 500) / 1000).clamp(100, width - 100);
-        let x = if home { u } else { length - u };
-        Some((x, y))
+        Some(crate::shape::place(role, situation, &self.block))
     }
 
     /// The state of one agent, or `None` if the id is not on the pitch.
@@ -484,12 +408,6 @@ impl SpatialState {
         }
     }
 
-    /// The formation slot of an agent, or `None` if not on the pitch.
-    #[must_use]
-    pub fn slot(&self, id: PlayerId) -> Option<(i32, i32)> {
-        self.slots.get(&id).copied()
-    }
-
     /// Moves every agent one tick toward its target (MD-09, MD-10, MD-12).
     ///
     /// Target: the formation slot, translated by a declared fraction of the
@@ -513,7 +431,7 @@ impl SpatialState {
     /// computation (a keeper who runs after the ball is not a keeper).
     ///
     /// Deterministic: no RNG (S1). The variation comes from the inputs
-    /// (positions, ball, slots), not from a die.
+    /// (positions, ball, the block), not from a die.
     #[allow(clippy::too_many_arguments)]
     #[allow(clippy::too_many_lines)]
     pub fn move_agents(
@@ -528,16 +446,13 @@ impl SpatialState {
     ) {
         let ball = self.ball();
 
-        // Snapshot: agents and slots in deterministic (BTreeMap) order.
+        // Snapshot: agents in deterministic (BTreeMap) order.
         // Same operations as the direct version, no per-pair map lookup.
         // F.3-b3: anchored agents (goalkeepers) are skipped.
         let mut work: Vec<Work> = self
-            .slots
+            .agents
             .iter()
-            .filter_map(|(id, slot)| {
-                let a = self.agents.get(id)?;
-                Some((*id, a.position, *slot))
-            })
+            .map(|(id, a)| (*id, a.position, a.position))
             .collect();
 
         // Who goes for the ball (VISION §3): when someone has it, the

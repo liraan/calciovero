@@ -253,7 +253,6 @@ pub fn build_choice(
 
     let mut candidates = Vec::new();
     let mut freedoms = BTreeMap::new();
-    let mut shot_distance: Option<i64> = None;
 
     let Some(pos) = scene.positions.get(&attacker).copied() else {
         return (
@@ -273,7 +272,6 @@ pub fn build_choice(
 
     let goal_dist = distance_squared(pos, goal).isqrt();
     if goal_dist < SHOOT_RANGE_CM {
-        shot_distance = Some(goal_dist);
         // geometric: 1.0 at the goal line, 0.0 at the shoot range edge.
         // ADR-040: geometric = salience, not probability. distance_factor
         // (decreasing linearly with distance) times goal_cone (the visible
@@ -308,7 +306,6 @@ pub fn build_choice(
             });
         }
     }
-    let _ = shot_distance;
 
     let opponent_positions: Vec<(i32, i32)> = opponents
         .iter()

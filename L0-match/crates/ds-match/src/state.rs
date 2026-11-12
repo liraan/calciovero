@@ -211,27 +211,20 @@ fn scene_from(
     }
 }
 
-/// The agent chooses geometrically, from what it sees (MD-43). No die in
-/// The heading (degrees, 0 = north = +y, clockwise) that points from
-/// `from` toward `to`. Integer, deterministic, no trig in the simulation
-/// path (D2). Used to turn the carrier toward the ball before deciding:
-/// a player looks at what he is about to play.
-#[must_use]
-fn heading_from_to(from: (i32, i32), to: (i32, i32)) -> u16 {
-    let dx = to.0 - from.0;
-    let dy = to.1 - from.1;
-    let mut best = 0_u16;
-    let mut best_dot = i64::MIN;
-    for i in 0..36_u16 {
-        let h = i * 10;
-        let (hx, hy) = crate::perception::heading_vector(h);
-        let dot = i64::from(dx) * i64::from(hx) + i64::from(dy) * i64::from(hy);
-        if dot > best_dot {
-            best_dot = dot;
-            best = h;
-        }
+/// The rules' name for a side.
+const fn side_of(p: Possession) -> crate::rules::Side {
+    match p {
+        Possession::Home => crate::rules::Side::Home,
+        Possession::Away => crate::rules::Side::Away,
     }
-    best
+}
+
+/// The pitch in centimetres, `(length, width)`.
+fn pitch_cm(ctx: &MatchContext<'_>) -> (i32, i32) {
+    (
+        i32::from(ctx.match_.pitch.length_m) * 100,
+        i32::from(ctx.match_.pitch.width_m) * 100,
+    )
 }
 
 impl MatchState {
@@ -448,14 +441,12 @@ impl MatchState {
         self.latencies
             .insert(attacker, tick.saturating_add(latency.ticks));
 
-        if let Some(a) = self.spatial.agent(attacker) {
-            let h = heading_from_to(a.position, goal);
-            if let Some(am) = self.spatial.agent_mut(attacker) {
-                am.heading = h;
-            }
-        }
-        if let Some(a) = self.spatial.agent(attacker) {
-            let h = heading_from_to(a.position, goal);
+        // A player looks at what he is about to play: he turns to the goal.
+        if let Some(h) = self
+            .spatial
+            .agent(attacker)
+            .and_then(|a| crate::perception::heading_towards(a.position, goal))
+        {
             if let Some(am) = self.spatial.agent_mut(attacker) {
                 am.heading = h;
             }
@@ -733,112 +724,69 @@ impl MatchState {
         };
     }
 
-    /// The ball out of play gets a restart (Laws 15, 16, 17), in its
-    /// minimal form: over a touchline, a throw-in for the side that did not
-    /// play it last, where it went out; over a goal line, a goal kick if the
-    /// attacking side played it last, a corner if the defending side did.
-    /// The taker is the nearest player of the restarting side, and the ball
-    /// is his. "Played it last" is read as the side in possession: an
-    /// approximation, declared. Before, a ball that left the pitch
-    /// elsewhere than into the goal stayed out for the rest of the match
-    /// (OI-97). `Removed-by: OI-48` (the rules module: rule as data,
-    /// application as code).
+    /// The ball out of play gets a restart (Laws 15-17, `crate::rules`):
+    /// the rule decides who restarts, from where and how; the engine
+    /// applies it. Before, a ball that left the pitch elsewhere than into
+    /// the goal stayed out for the rest of the match (OI-97).
     fn restart_if_out(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
-        let length = i32::from(ctx.match_.pitch.length_m) * 100;
-        let width = i32::from(ctx.match_.pitch.width_m) * 100;
-        let (x, y, _) = self.spatial.ball_3d();
-        if self.spatial.ball_state() == crate::spatial::BallState::Possessed
-            || ((0..=length).contains(&x) && (0..=width).contains(&y))
-        {
+        if self.spatial.ball_state() == crate::spatial::BallState::Possessed {
             return;
         }
-        let last = self.possession;
-        let other = Self::other(last);
-        let (side, spot, corner) = if (0..=width).contains(&y) {
-            // Over a goal line: whose goal line is it?
-            let home_goal_line = x < 0;
-            let defending = if home_goal_line {
-                Possession::Home
-            } else {
-                Possession::Away
-            };
-            let line_x = if home_goal_line { 0 } else { length };
-            if last == defending {
-                // The defenders played it last: a corner for the attackers.
-                let cy = if y < width / 2 { 0 } else { width };
-                (Self::other(defending), (line_x, cy), true)
-            } else {
-                // The attackers played it last: a goal kick (5.5 m area).
-                let gx = if home_goal_line { 550 } else { length - 550 };
-                (defending, (gx, width / 2), false)
-            }
-        } else {
-            // Throw-in, where the ball crossed the touchline.
-            (
-                other,
-                (x.clamp(100, length - 100), y.clamp(0, width)),
-                false,
-            )
-        };
-        self.pending = None;
-        let squad = match side {
-            Possession::Home => &ctx.match_.home,
-            Possession::Away => &ctx.match_.away,
-        };
-        let Some(taker) = nearest_in_squad(&self.spatial, squad, spot) else {
+        let (x, y, _) = self.spatial.ball_3d();
+        let Some(restart) =
+            crate::rules::out_of_play((x, y), side_of(self.possession), pitch_cm(ctx))
+        else {
             return;
         };
-        self.spatial.set_position(taker, spot);
-        self.spatial
-            .set_ball_in_flight((spot.0, spot.1, 0), (0, 0, 0));
-        self.spatial.advance_ball();
-        self.spatial.set_carrier(Some(taker));
-        self.possession = side;
-        if corner {
-            self.emit_event(
-                ctx,
-                tick,
-                Some(ActorId::Player(taker)),
-                EventType::Corner,
-                serde_json::json!({ "x": spot.0, "y": spot.1 }),
-            );
+        if let Some(taker) = self.apply_restart(ctx, restart) {
+            if restart.kind == crate::rules::RestartKind::Corner {
+                self.emit_event(
+                    ctx,
+                    tick,
+                    Some(ActorId::Player(taker)),
+                    EventType::Corner,
+                    serde_json::json!({ "x": restart.spot.0, "y": restart.spot.1 }),
+                );
+            }
         }
     }
 
-    /// The kick-off (Law 8): a player of the side that kicks off stands on
-    /// the ball, and it is his. The home side kicks off the first half, the
+    /// The kick-off (Law 8): the home side kicks off the first half, the
     /// away side the second. Before, nobody was on the ball and nobody saw
-    /// it (every agent starts looking the same way), so the match began
-    /// only because the nearest player could kick a ball he was not
-    /// touching (OI-97).
+    /// it, so the match began only because the nearest player could kick a
+    /// ball he was not touching (OI-97).
     pub fn kick_off(&mut self, ctx: &MatchContext<'_>, half: Half) {
         let side = match half {
-            Half::First => Possession::Home,
-            Half::Second => Possession::Away,
+            Half::First => crate::rules::Side::Home,
+            Half::Second => crate::rules::Side::Away,
         };
-        self.kick_off_by(ctx, side);
+        let _ = self.apply_restart(ctx, crate::rules::kick_off(side, pitch_cm(ctx)));
     }
 
-    /// A kick-off by `side` from the centre spot (Law 8): at the start of a
-    /// half, and after a goal by the side that conceded it.
-    fn kick_off_by(&mut self, ctx: &MatchContext<'_>, side: Possession) {
-        let squad = match side {
-            Possession::Home => &ctx.match_.home,
-            Possession::Away => &ctx.match_.away,
+    /// Applies a restart: the nearest player of the restarting side goes to
+    /// the spot, the ball is placed at rest at his feet, and it is his.
+    /// Returns the taker.
+    fn apply_restart(
+        &mut self,
+        ctx: &MatchContext<'_>,
+        restart: crate::rules::Restart,
+    ) -> Option<PlayerId> {
+        let squad = match restart.side {
+            crate::rules::Side::Home => &ctx.match_.home,
+            crate::rules::Side::Away => &ctx.match_.away,
         };
-        let ball = (
-            i32::from(ctx.match_.pitch.length_m) * 50,
-            i32::from(ctx.match_.pitch.width_m) * 50,
-        );
-        let Some(taker) = nearest_in_squad(&self.spatial, squad, ball) else {
-            return;
-        };
-        self.spatial.set_position(taker, ball);
+        let taker = nearest_in_squad(&self.spatial, squad, restart.spot)?;
+        self.pending = None;
+        self.spatial.set_position(taker, restart.spot);
         self.spatial
-            .set_ball_in_flight((ball.0, ball.1, 0), (0, 0, 0));
+            .set_ball_in_flight((restart.spot.0, restart.spot.1, 0), (0, 0, 0));
         self.spatial.advance_ball();
         self.spatial.set_carrier(Some(taker));
-        self.possession = side;
+        self.possession = match restart.side {
+            crate::rules::Side::Home => Possession::Home,
+            crate::rules::Side::Away => Possession::Away,
+        };
+        Some(taker)
     }
 
     /// What the pitch looks like after `tick` (the tick record,
@@ -1222,7 +1170,10 @@ impl MatchState {
         self.possession = defending;
         // Law 8: after a goal, the side that conceded kicks off. Before, the
         // ball stayed in the net for the rest of the match (OI-97).
-        self.kick_off_by(ctx, defending);
+        let _ = self.apply_restart(
+            ctx,
+            crate::rules::kick_off(side_of(defending), pitch_cm(ctx)),
+        );
     }
 
     fn emit_event(

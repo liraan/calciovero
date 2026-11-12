@@ -24,4 +24,9 @@ its code, together. It depends only on `doctrine/`.
 | `ds-orchestrator` | the decision: which actor, when, with which scene; the contact | core, model, db, calculator |
 | `ds-match` | the engine: the tick, the ball, the effect, the events, the save | all of the above |
 
-`ds-match` has more than one reason to change, declared (OI-94).
+`ds-match` has more than one reason to change, declared (OI-94). Inside
+it, the parts a volunteer can work on alone are pure modules, data in and
+a result out: `rules` (the restarts: who, where, how), `shape` (the team
+block: where a player stands without instructions), `record` (what the
+pitch looks like at a tick), `perception` (what a player sees). Their
+numbers are in `balance/`.
