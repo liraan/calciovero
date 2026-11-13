@@ -31,11 +31,61 @@
 
 use std::collections::BTreeMap;
 
+use ds_core::geometry::distance_squared;
 use ds_core::ids::PlayerId;
 use ds_model::{Pitch, Squad};
 
 /// The height a ball in the air is met at, cm: a player's head.
 const HEAD_HEIGHT_CM: i32 = 180;
+
+/// A carrier's touch (plan L0-CLOSE 11): where he played the ball from,
+/// which way, how hard, and when he meets it again.
+#[derive(Debug, Clone, Copy)]
+struct Touch {
+    /// Where the ball left his foot, cm.
+    from: (f64, f64),
+    /// The direction he played it, a unit vector.
+    dir: (f64, f64),
+    /// Its speed off his foot, cm/tick.
+    speed: f64,
+    /// The tick of the touch.
+    at: u64,
+    /// Ticks until he meets it again, at his pace.
+    period: f64,
+}
+
+// Compared bit for bit: the values are computed, never NaN.
+impl PartialEq for Touch {
+    fn eq(&self, o: &Self) -> bool {
+        let bits =
+            |t: &Self| [t.from.0, t.from.1, t.dir.0, t.dir.1, t.speed, t.period].map(f64::to_bits);
+        bits(self) == bits(o) && self.at == o.at
+    }
+}
+impl Eq for Touch {}
+
+/// The speed a touch needs to be met again after `period` ticks.
+///
+/// The ball, slowed by the ground (it keeps `keep` of its speed each
+/// tick), is met by a carrier running at `pace` (plan L0-CLOSE 11): it rolls
+/// `u (1 - keep^t) / (1 - keep)`, he runs `pace t`; they meet at `period`.
+#[must_use]
+pub fn touch_speed(pace: f64, period: f64, keep: f64) -> f64 {
+    let lost = 1.0 - keep.powf(period);
+    if lost <= f64::EPSILON {
+        return pace;
+    }
+    pace * period * (1.0 - keep) / lost
+}
+
+/// How far a touch of speed `speed` has rolled after `t` ticks.
+#[must_use]
+pub fn rolled(speed: f64, t: f64, keep: f64) -> f64 {
+    if keep >= 1.0 {
+        return speed * t;
+    }
+    speed * (1.0 - keep.powf(t)) / (1.0 - keep)
+}
 
 /// A player's position, velocity, heading and gaze on the pitch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,6 +176,9 @@ pub struct SpatialState {
     carry_target: Option<(i32, i32)>,
     /// The agent carrying the ball, if any.
     carrier: Option<PlayerId>,
+    /// The carrier's last touch (plan L0-CLOSE 11): between two touches
+    /// the ball rolls on its own. `None`: the ball is at his feet.
+    touch: Option<Touch>,
     /// The goalkeeper of each team: `(home, away)`. A fact of the
     /// formation, populated at construction (OI-81-step-move). The keeper
     /// moves with `resolve_movement` like every agent; only his target
@@ -208,6 +261,7 @@ impl SpatialState {
             pitch_cm: (length, width),
             home_in_possession: true,
             carry_target: None,
+            touch: None,
             acts: BTreeMap::new(),
             act_targets: BTreeMap::new(),
             off_pitch: BTreeMap::new(),
@@ -497,6 +551,7 @@ impl SpatialState {
     pub const fn set_carrier(&mut self, carrier: Option<PlayerId>) {
         self.carrier = carrier;
         self.carry_target = None;
+        self.touch = None;
         if carrier.is_some() {
             self.ball = BallState::Possessed;
             self.ball_velocity = (0, 0, 0);
@@ -511,19 +566,89 @@ impl SpatialState {
         self.carry_target = target;
     }
 
-    /// The ball is at the carrier's feet: it goes where he goes. A no-op
-    /// if nobody carries it.
-    pub fn follow_carrier(&mut self) {
+    /// The carrier plays the ball ahead and meets it again (plan L0-CLOSE
+    /// 11): at each touch he pushes it where he chose to take it, weighed to come back
+    /// to his foot after `period_of(carrier, pace)` ticks; between touches
+    /// it rolls on its own, slowed by the ground. Standing, or with the ball
+    /// in his hands (`hold`), it is at his feet. If he has not reached it
+    /// when the touch is due (he turned, he was held up) it rolls on until
+    /// he does. A no-op if nobody carries it.
+    pub fn follow_carrier(
+        &mut self,
+        tick: u64,
+        hold: bool,
+        mut period_of: impl FnMut(PlayerId, f64) -> f64,
+    ) {
         if !matches!(self.ball, BallState::Possessed) {
             return;
         }
-        if let Some(pos) = self
+        let Some((carrier, agent)) = self
             .carrier
-            .and_then(|c| self.agents.get(&c))
-            .map(|a| a.position)
-        {
-            self.ball_position = (pos.0, pos.1, 0);
+            .and_then(|c| self.agents.get(&c).map(|a| (c, *a)))
+        else {
+            return;
+        };
+        let pos = agent.position;
+        let keep = f64::from(self.ball_physics.ground_friction_milli) / 1000.0;
+        #[allow(clippy::cast_precision_loss)]
+        let since = |touch: &Touch| tick.saturating_sub(touch.at) as f64;
+        let reached = distance_squared(pos, (self.ball_position.0, self.ball_position.1))
+            <= i64::from(BODY_RADIUS_CM).pow(2);
+        let due = self.touch.as_ref().is_none_or(|tc| since(tc) >= tc.period);
+        if hold {
+            self.touch = None;
+        } else if due && (reached || self.touch.is_none()) {
+            // He plays it where he chose to take it, at the pace he runs
+            // that way; holding it, he keeps it at his feet.
+            let (vx, vy) = (f64::from(agent.velocity.0), f64::from(agent.velocity.1));
+            let dir = self.carry_target.and_then(|to| {
+                let (dx, dy) = (f64::from(to.0 - pos.0), f64::from(to.1 - pos.1));
+                let len = dx.hypot(dy);
+                (len >= 1.0).then(|| (dx / len, dy / len))
+            });
+            let pace = dir.map_or(0.0, |d| vx.mul_add(d.0, vy * d.1));
+            self.touch = match dir {
+                Some(dir) if pace >= 1.0 => {
+                    let period = period_of(carrier, pace).max(1.0);
+                    Some(Touch {
+                        from: (f64::from(pos.0), f64::from(pos.1)),
+                        dir,
+                        speed: touch_speed(pace, period, keep),
+                        at: tick,
+                        period,
+                    })
+                }
+                _ => None,
+            };
         }
+        let at = self.touch.as_ref().map_or(pos, |tc| {
+            let d = rolled(tc.speed, since(tc), keep);
+            #[allow(clippy::cast_possible_truncation)]
+            (
+                tc.dir.0.mul_add(d, tc.from.0).round() as i32,
+                tc.dir.1.mul_add(d, tc.from.1).round() as i32,
+            )
+        });
+        self.ball_position = (at.0, at.1, 0);
+    }
+
+    /// Whether the carrier can play the ball now: it is at his foot, not
+    /// rolling ahead between two touches (plan L0-CLOSE 11).
+    #[must_use]
+    pub fn ball_at_feet(&self) -> bool {
+        self.carrier
+            .and_then(|c| self.agents.get(&c))
+            .is_some_and(|a| {
+                distance_squared(a.position, (self.ball_position.0, self.ball_position.1))
+                    <= i64::from(BODY_RADIUS_CM).pow(2)
+            })
+    }
+
+    /// Whether the carried ball is rolling ahead of him, out of his
+    /// reach until the next touch.
+    #[must_use]
+    pub fn ball_ahead(&self) -> bool {
+        matches!(self.ball, BallState::Possessed) && self.touch.is_some() && !self.ball_at_feet()
     }
 
     /// Moves every agent one tick toward its target (MD-09, MD-10, MD-12).
@@ -658,6 +783,11 @@ impl SpatialState {
             keeper_targets.push((gk, (tx, ty)));
         }
         let drop = self.drop_point(HEAD_HEIGHT_CM);
+        #[allow(clippy::cast_precision_loss)]
+        let overdue = self
+            .touch
+            .as_ref()
+            .is_some_and(|tc| tick.saturating_sub(tc.at) as f64 >= tc.period);
         for entry in &mut work {
             let act = self.acts.get(&entry.0).copied();
             let to_the_ball = matches!(
@@ -671,7 +801,13 @@ impl SpatialState {
             let target = if Some(entry.0) == self.carrier {
                 // The carrier holds the ball where he is, or carries it
                 // where he chose (IDEA-DESIGN-010); the keeper too.
-                self.carry_target.unwrap_or(entry.1)
+                // A ball rolling past the moment he meant to meet it
+                // (he turned, he was held up): he goes to it.
+                if overdue {
+                    ball
+                } else {
+                    self.carry_target.unwrap_or(entry.1)
+                }
             } else if to_the_ball {
                 // A high ball is met where it comes down (head height),
                 // not chased where it is.
@@ -933,6 +1069,21 @@ impl SpatialState {
 
 #[cfg(test)]
 mod tests {
+    /// The touch (P1, plan L0-CLOSE 11): weighed to come back to his foot
+    /// after the period at his pace, ahead of him in between.
+    #[test]
+    fn a_touch_comes_back_to_his_foot() {
+        let keep = 0.957;
+        let (pace, period) = (80.0, 15.0);
+        let u = super::touch_speed(pace, period, keep);
+        assert!(pace.mul_add(-period, super::rolled(u, period, keep)).abs() < 1e-6);
+        let half = period / 2.0;
+        assert!(
+            super::rolled(u, half, keep) > pace * half,
+            "ahead of him in between"
+        );
+    }
+
     use super::*;
     use ds_core::ids::SquadId;
     use ds_model::{PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId};

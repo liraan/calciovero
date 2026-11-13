@@ -53,6 +53,11 @@ pub struct MovementBalance {
     pub with_ball_share_min: f64,
     /// The share of his sprint the best dribbler keeps with the ball.
     pub with_ball_share_max: f64,
+    /// The most steps between two touches: the worst dribbler at full
+    /// speed (plan L0-CLOSE 11, the touch).
+    pub touch_steps_max: f64,
+    /// Running cadence, steps a second.
+    pub step_hz: f64,
     /// A player taking up his place gets there in about this many ticks.
     pub reposition_ticks: f64,
     /// The share of the needed pace the least generous player gives.
@@ -82,6 +87,8 @@ struct MovementBalanceRaw {
     turn_share_max: f64,
     with_ball_share_min: f64,
     with_ball_share_max: f64,
+    touch_steps_max: f64,
+    step_hz: f64,
     reposition_ticks: f64,
     work_rate_floor: f64,
     weight_ref_kg: f64,
@@ -113,6 +120,8 @@ impl MovementBalance {
             turn_share_max: raw.turn_share_max,
             with_ball_share_min: raw.with_ball_share_min,
             with_ball_share_max: raw.with_ball_share_max,
+            touch_steps_max: raw.touch_steps_max,
+            step_hz: raw.step_hz,
             reposition_ticks: raw.reposition_ticks,
             work_rate_floor: raw.work_rate_floor,
             weight_ref_kg: raw.weight_ref_kg,
@@ -121,6 +130,18 @@ impl MovementBalance {
             fatigue_floor: raw.fatigue_floor,
             formula,
         }
+    }
+
+    /// Ticks between two touches of a carrier running at `pace` cm/tick
+    /// with `dribbling` (plan L0-CLOSE 11): `1 + (touch_steps_max - 1) x
+    /// pace / top_speed_max x (1 - dribbling)` steps, at `step_hz`.
+    #[must_use]
+    pub fn touch_period_ticks(&self, pace: f64, dribbling: f64) -> f64 {
+        let share = (pace / self.top_speed_max_cm_per_tick.max(1.0)).clamp(0.0, 1.0);
+        let steps =
+            ((self.touch_steps_max - 1.0) * share).mul_add(1.0 - dribbling.clamp(0.0, 1.0), 1.0);
+        // Ten ticks a second (MD-18).
+        steps * 10.0 / self.step_hz.max(0.1)
     }
 
     /// The movement formula, built once in `load()`.
@@ -166,6 +187,26 @@ impl MovementBalance {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The touch, twin test (ADR-051, plan L0-CLOSE 11): the same run, the
+    /// better dribbler touches the ball more often; walking, everyone
+    /// touches it every step; at full speed the worst touches it every
+    /// `touch_steps_max` steps.
+    #[test]
+    fn the_better_dribbler_touches_the_ball_more_often() {
+        let b = MovementBalance::load();
+        let full = b.top_speed_max_cm_per_tick;
+        let step = 10.0 / b.step_hz;
+        assert!(b.touch_period_ticks(full, 0.9) < b.touch_period_ticks(full, 0.3));
+        assert!((b.touch_period_ticks(0.0, 0.0) - step).abs() < 1e-9);
+        assert!(
+            b.touch_steps_max
+                .mul_add(-step, b.touch_period_ticks(full, 0.0))
+                .abs()
+                < 1e-9
+        );
+        assert!(b.touch_period_ticks(full, 0.5) > b.touch_period_ticks(full / 2.0, 0.5));
+    }
 
     #[test]
     fn embedded_movement_balance_is_valid() {

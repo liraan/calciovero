@@ -37,6 +37,9 @@ pub struct DuelContext {
     /// the man if he beats him, and what the opponents would have where
     /// he loses it.
     pub stakes: (f64, f64, f64),
+    /// The ball is at the carrier's foot (plan L0-CLOSE 11). `false`: it
+    /// rolls ahead of him between two touches, and he cannot answer.
+    pub carrier_on_ball: bool,
 }
 
 /// The context of a shot resolution.

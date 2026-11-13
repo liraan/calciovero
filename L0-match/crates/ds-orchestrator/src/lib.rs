@@ -236,6 +236,9 @@ impl GroundTruth {
                     attacker.technical.first_touch,
                     attacker.technical.dribbling,
                 );
+                // Between two touches the ball is not at his foot: the
+                // defender plays it with nobody to answer (plan L0-CLOSE 11).
+                let c = if ctx.carrier_on_ball { c } else { 0.0 };
                 b.contact(d, c).map_or((true, true), |won| (!won, false))
             }
             DuelType::Aerial | DuelType::WithGoalkeeper => {
@@ -779,6 +782,17 @@ impl GroundTruth {
         (t.horizon_max_cm - t.horizon_min_cm).mul_add(a, t.horizon_min_cm)
     }
 
+    /// How many ticks pass between two touches of a carrier running at
+    /// `speed_cm_per_tick` (plan L0-CLOSE 11, the touch): every step when
+    /// he walks or dribbles at his best, every `touch_steps_max` steps for
+    /// the worst dribbler at full speed (`balance/movement.json`).
+    #[must_use]
+    pub fn touch_period_ticks(&mut self, player: PlayerId, speed_cm_per_tick: f64) -> f64 {
+        let dribbling = f64::from(self.latents_for(player).technical.dribbling);
+        self.movement_balance
+            .touch_period_ticks(speed_cm_per_tick, dribbling)
+    }
+
     /// The miss a player expects of his strike from how he is moving and
     /// how tired he is, radians (plan L0-CLOSE 11): the engine's own causes
     /// (on the run, tired), as well as he reads them (ADR-052: he misjudges
@@ -1074,7 +1088,20 @@ mod tests {
             from_behind: false,
             approach_cm_per_tick: 0,
             stakes: (1.0, 1.0, 1.0),
+            carrier_on_ball: true,
         }
+    }
+
+    /// Between two touches (P1, plan L0-CLOSE 11): with the ball rolling
+    /// ahead of the carrier the defender who reaches it wins it.
+    #[test]
+    fn a_ball_between_two_touches_is_the_defenders() {
+        let mut gt = GroundTruth::new(42, MatchId::new(1, 0));
+        let ahead = DuelContext {
+            carrier_on_ball: false,
+            ..ctx_duel()
+        };
+        assert_eq!(gt.resolve_duel(&ahead).winner, ahead.defender);
     }
 
     #[test]

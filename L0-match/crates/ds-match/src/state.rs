@@ -826,7 +826,10 @@ impl MatchState {
             &self.scan_balance,
             &self.keeper_balance,
         );
-        self.spatial.follow_carrier();
+        let hold = self.in_hands.is_some() || self.restart_pass.is_some();
+        let hidden = &mut *ctx.hidden;
+        self.spatial
+            .follow_carrier(tick, hold, |p, pace| hidden.touch_period_ticks(p, pace));
         self.tire_players(ctx);
         self.meet_ball_in_air(ctx, tick);
         self.control_loose_ball(ctx, tick);
@@ -873,6 +876,11 @@ impl MatchState {
         }
         let due_at = self.latencies.get(&attacker).copied().unwrap_or(0);
         if tick < due_at {
+            return;
+        }
+        // He plays the ball when it is at his foot: between two touches it
+        // rolls ahead of him, and he meets it first (plan L0-CLOSE 11).
+        if !self.spatial.ball_at_feet() {
             return;
         }
 
@@ -1282,6 +1290,7 @@ impl MatchState {
                 from_behind: false,
                 approach_cm_per_tick: 0,
                 stakes: (1.0, 1.0, 1.0),
+                carrier_on_ball: true,
             };
             let outcome = ctx.hidden.resolve_duel(&ctx_duel);
             let fact = crate::fact::Fact::Contact {
@@ -2106,6 +2115,7 @@ impl MatchState {
             from_behind,
             approach_cm_per_tick: approach,
             stakes,
+            carrier_on_ball: self.spatial.ball_at_feet(),
         });
         self.emit_contact(ctx, tick, carrier, challenger, &outcome);
         let down = if tackle == ds_calculator::duel::TackleKind::Slide {
@@ -2404,7 +2414,11 @@ impl MatchState {
     /// applies it. Before, a ball that left the pitch elsewhere than into
     /// the goal stayed out for the rest of the match (OI-97).
     fn restart_if_out(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
-        if self.spatial.ball_state() == crate::spatial::BallState::Possessed {
+        // A carried ball goes out only when it rolls ahead of him, between
+        // two touches (plan L0-CLOSE 11): at his feet it is where he is.
+        if self.spatial.ball_state() == crate::spatial::BallState::Possessed
+            && !self.spatial.ball_ahead()
+        {
             return;
         }
         let (x, y, _) = self.spatial.ball_3d();
