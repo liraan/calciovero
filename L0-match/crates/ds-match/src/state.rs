@@ -915,6 +915,7 @@ impl MatchState {
                 attacker,
                 defender,
                 duel_type: ds_orchestrator::DuelType::Ground,
+                tackle: ds_calculator::duel::TackleKind::Standing,
             };
             let outcome = ctx.hidden.resolve_duel(&ctx_duel);
             let fact = crate::fact::Fact::Contact {
@@ -1261,6 +1262,9 @@ impl MatchState {
             .filter(|p| p.shot.is_none())
             .and_then(|p| p.receiver);
         let duel = ctx.hidden.duel_balance();
+        // Within a slide's reach he may go in; how is chosen at the contact
+        // (ADR-042, amended).
+        let slide_reach = i64::from(duel.reach_cm) * i64::from(duel.slide_reach_milli) / 1000;
         let off = ctx.hidden.offball_balance();
         let (length, width) = pitch_cm(ctx);
         for (squad, other, home) in [
@@ -1343,7 +1347,7 @@ impl MatchState {
                             distance_cm: d,
                             rank: rank(c),
                         }),
-                    carrier_in_reach: to_carrier.is_some_and(|d| d <= i64::from(duel.reach_cm)),
+                    carrier_in_reach: to_carrier.is_some_and(|d| d <= slide_reach),
                     with_mate: carrier_mate.map(|c| view.mate_ball(me, c, off.mark_radius_cm)),
                     to_mark: carrier_pos.and_then(|_| view.man_to_mark(me)).map(|m| {
                         ds_orchestrator::Target {
@@ -1379,21 +1383,41 @@ impl MatchState {
         let ball = self.spatial.ball();
         let duel = ctx.hidden.duel_balance();
         let reach = i64::from(duel.reach_cm);
+        let slide_reach = reach * i64::from(duel.slide_reach_milli) / 1000;
         let (_, opponents) = self.squads(ctx);
         let keeper = opponents.players.first().map(|p| p.id);
         let Some(challenger) = opponents.players.iter().map(|p| p.id).find(|id| {
             self.spatial.act(*id) == Some(ds_orchestrator::OffBallAct::Challenge)
                 && self.challenges.get(id).is_none_or(|t| tick >= *t)
-                && self
-                    .spatial
-                    .agent(*id)
-                    .is_some_and(|a| distance_squared(a.position, ball) <= reach * reach)
+                && self.spatial.agent(*id).is_some_and(|a| {
+                    distance_squared(a.position, ball) <= slide_reach * slide_reach
+                })
         }) else {
             return;
+        };
+        let in_reach = self
+            .spatial
+            .agent(challenger)
+            .is_some_and(|a| distance_squared(a.position, ball) <= reach * reach);
+        // How he goes in is his choice (ADR-042 §2, amended); the keeper
+        // goes in on his feet, inside his area (ADR-049).
+        let tackle = if Some(challenger) == keeper {
+            if !in_reach {
+                return;
+            }
+            ds_calculator::duel::TackleKind::Standing
+        } else {
+            ctx.hidden.choose_tackle(challenger, in_reach)
         };
         // One attempt per choice: then he keeps pressing until he chooses again.
         self.spatial
             .set_act(challenger, ds_orchestrator::OffBallAct::Press);
+        if tackle == ds_calculator::duel::TackleKind::Jockey {
+            // He stays in front and waits: no contact this time.
+            self.challenges
+                .insert(challenger, tick + duel.retry_ticks / 2);
+            return;
+        }
         let outcome = ctx.hidden.resolve_duel(&ds_orchestrator::DuelContext {
             attacker: carrier,
             defender: challenger,
@@ -1402,7 +1426,57 @@ impl MatchState {
             } else {
                 ds_orchestrator::DuelType::Ground
             },
+            tackle,
         });
+        self.emit_contact(ctx, tick, carrier, challenger, &outcome);
+        let down = if tackle == ds_calculator::duel::TackleKind::Slide {
+            duel.slide_recovery_ticks
+        } else {
+            duel.retry_ticks
+        };
+        if outcome.loose {
+            // Neither has it: the ball runs from the contact, away from the
+            // defender, for whoever gets there (ADR-042, amended).
+            let from = self.spatial.agent(challenger).map_or(ball, |a| a.position);
+            let (dx, dy) = (f64::from(ball.0 - from.0), f64::from(ball.1 - from.1));
+            let len = dx.hypot(dy).max(1.0);
+            let sp = f64::from(duel.loose_speed_cm_per_tick);
+            #[allow(clippy::cast_possible_truncation)]
+            let v = ((dx / len * sp) as i16, (dy / len * sp) as i16, 0);
+            self.spatial.set_carrier(None);
+            self.spatial.set_ball_in_flight((ball.0, ball.1, 0), v);
+            self.challenges.insert(challenger, tick + down);
+        } else if outcome.winner == challenger {
+            self.flip_possession();
+            self.spatial.set_carrier(Some(challenger));
+            self.challenges.insert(carrier, tick + duel.retry_ticks);
+        } else {
+            // Beaten, he needs time to recover before he can try again; a
+            // slide that missed leaves him on the ground longer.
+            self.challenges.insert(challenger, tick + down);
+        }
+    }
+
+    /// The contact's events: a `Duel`, and a `Tackle` when the defender wins
+    /// it; a loose ball is a duel nobody won (`loose: true`).
+    fn emit_contact(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        carrier: PlayerId,
+        challenger: PlayerId,
+        outcome: &ds_orchestrator::DuelOutcome,
+    ) {
+        if outcome.loose {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(carrier)),
+                EventType::Duel,
+                serde_json::json!({ "winner_slot": carrier.slot(), "loose": true, "against": challenger.slot() }),
+            );
+            return;
+        }
         let fact = crate::fact::Fact::Contact {
             attacker: carrier,
             defender: challenger,
@@ -1410,14 +1484,6 @@ impl MatchState {
         };
         for c in crate::fact::classify(&fact) {
             self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
-        }
-        if outcome.winner == challenger {
-            self.flip_possession();
-            self.spatial.set_carrier(Some(challenger));
-            self.challenges.insert(carrier, tick + duel.retry_ticks);
-        } else {
-            // Beaten, he needs time to recover before he can try again.
-            self.challenges.insert(challenger, tick + duel.retry_ticks);
         }
     }
 

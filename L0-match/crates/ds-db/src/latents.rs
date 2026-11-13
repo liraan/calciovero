@@ -42,8 +42,7 @@ pub struct PlayerLatents {
     pub physical: PhysicalLatents,
     /// Technical performances (L0.11 §7.2).
     pub technical: TechnicalLatents,
-    /// Psychological traits (L0.11 §7.3), all modulators.
-    #[allow(dead_code)] // no consumer yet: the family is empty (D3)
+    /// Psychological traits (L0.11 §7.3).
     pub psychological: PsychologicalLatents,
     /// Cognitive traits (L0.11 §7.4).
     pub cognitive: CognitiveLatents,
@@ -66,6 +65,12 @@ pub struct PhysicalLatents {
     /// by the save (the keeper's reaction time, ADR-051); the interception
     /// is its next consumer.
     pub reactivity: f32,
+    /// Maximal force: the strength of the body in a contact (ADR-042,
+    /// consumed by the duel).
+    pub maximal_force: f32,
+    /// Body control: balance and coordination in a contact (ADR-042,
+    /// consumed by the duel).
+    pub body_control: f32,
 }
 
 /// Technical performances (L0.11 §7.2).
@@ -100,11 +105,14 @@ pub struct TechnicalLatents {
 
 /// Psychological traits (L0.11 §7.3), all modulators.
 ///
-/// Empty: the first trait (consistency) arrives with the sampling the
-/// calculator needs §4.7, which does not exist yet (D3).
+/// The first disposition enters with its first consumer, the duel
+/// (ADR-042, ADR-051).
 #[derive(Debug, Clone, Copy)]
-#[allow(dead_code)] // no consumer yet: the trait arrives with the sampling (D3)
-pub struct PsychologicalLatents {}
+pub struct PsychologicalLatents {
+    /// Aggressiveness: how readily he goes into a contact, and how hard
+    /// (consumed by the defender's choice of how to go in).
+    pub aggressiveness: f32,
+}
 
 /// Cognitive traits (L0.11 §7.4).
 ///
@@ -135,6 +143,8 @@ impl PlayerLatents {
                 max_speed: unit_from_key(world_seed, player, "max_speed"),
                 injury_proneness: unit_from_key(world_seed, player, "injury_proneness"),
                 reactivity: unit_from_key(world_seed, player, "reactivity"),
+                maximal_force: unit_from_key(world_seed, player, "maximal_force"),
+                body_control: unit_from_key(world_seed, player, "body_control"),
             },
             technical: TechnicalLatents {
                 finishing: unit_from_key(world_seed, player, "finishing"),
@@ -147,7 +157,9 @@ impl PlayerLatents {
                 left_foot: unit_from_key(world_seed, player, "left_foot"),
                 right_foot: unit_from_key(world_seed, player, "right_foot"),
             },
-            psychological: PsychologicalLatents {},
+            psychological: PsychologicalLatents {
+                aggressiveness: unit_from_key(world_seed, player, "aggressiveness"),
+            },
             cognitive: CognitiveLatents {
                 game_reading: unit_from_key(world_seed, player, "game_reading"),
                 decision_making: unit_from_key(world_seed, player, "decision_making"),

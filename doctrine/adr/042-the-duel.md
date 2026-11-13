@@ -1,6 +1,6 @@
 # ADR-042 — The duel: read, choose, contact, band. The last die goes.
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-09
 - **Supersedes:** —
 - **Superseded by:** —
@@ -122,4 +122,4 @@ The filters (partita vera, luna) judge the model, not the architecture. This ADR
   3. **The foul's facts, and Law 12 (§4).** A contact is a foul when the defender reaches the man before the ball, or arrives off balance, or from behind; these are geometric facts (who touches first, the approach angle, the approach speed), not a die and not an opinion. The rules module (the referee, objective) reads the facts and applies Law 12: a **careless** foul is a direct free kick; a **reckless** one (a slide from behind, a high approach speed) is a free kick and a **yellow card**; one with **excessive force** is a **red card**; a foul that **denies an obvious goal-scoring opportunity** (the attacker going towards goal, the offence near the box, no other defender between him and the goal) is a red card, and a foul that **stops a promising attack** is a yellow card; inside the penalty area the free kick is a **penalty**. A second yellow is a red; a sent-off player leaves the pitch. Advantage (Law 12): when the side that suffered the foul keeps the ball with a promising attack, play goes on and the card is still given at the next stoppage.
   4. **The roots (ADR-051).** The characteristics the contact reads enter with it, from `CHARACTERISTICS-AND-ABILITIES.md`: `maximal_force` and `body_control` (physical), `dribbling` (technical), `aggressiveness` and `emotional_control` (psychological: how readily he goes in, and whether he keeps control when provoked or losing). Twin tests: the stronger shielder keeps the ball more, the better tackler wins it more, the more aggressive defender fouls more; and it shows in the 2D.
   5. **Order of the implementation**, after acceptance: (a) the four outcomes and the defender's three ways of going in, with the new characteristics; (b) the foul's facts and Law 12: free kick, penalty, cards, sending off, advantage; (c) the carrier's answer (shield, dribble). Each a normal change (`SIM_VERSION`, golden, P1, twin tests). The aerial duel (heading) follows with the family "in the air".
-
+- **2026-11-13 — accepted** by the maintainer, with the amendment above ("si inizia e approvo l'adr"). The implementation follows the amendment's order (5).

@@ -26,6 +26,8 @@ pub struct DuelContext {
     pub defender: PlayerId,
     /// The type of duel.
     pub duel_type: DuelType,
+    /// How the defender went in (ADR-042 §2, amended).
+    pub tackle: ds_calculator::duel::TackleKind,
 }
 
 /// The context of a shot resolution.

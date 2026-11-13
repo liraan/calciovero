@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 61).
+engine (updated at `SIM_VERSION` 63).
 
 **How to read the state.**
 
@@ -72,7 +72,7 @@ with their first consumer (ADR-051 §4).
 |---|---|---|---|
 | Hold the place | where, how strictly | game reading, *discipline* | ◐ the choice ✓ (ADR-049); the place is the block rule (`balance/block.json`) |
 | Press | whether, how hard | game reading; *aggressiveness*, *work rate* | ◐ the choice reads proximity, rank and game reading |
-| Challenge, tackle | whether, win or lose | tackling, explosive force vs first touch | ◐ ✓ roots; the same two players give the same result in every scene |
+| Challenge, tackle | whether, how, win, lose, loose | tackling, explosive force, maximal force, body control, aggressiveness vs first touch, explosive force, maximal force, body control | ◐ since 63 (ADR-042): standing, slide or jockey by his choice; won, kept or loose by the bodies; the foul (Law 12) is next; the approach angle is not read yet |
 | Intercept | reach on the line | game reading, reactivity, sprint | ◐ since 55 his reach for a passing ball reads reactivity; the 2 m radius at launch for an unseen opponent remains; going to cut out a pass is not his choice yet |
 | Block a shot or pass | reach | reactivity, *courage* | ◐ since 58 a shot is blocked by an outfield defender it passes within reach of (reactivity), below his height; it rebounds loose; passes are not blocked yet; stepping into the line is not his choice yet |
 | Mark | whom, how close | game reading, *concentration*, *discipline* | ◐ since 55: the nearest defender who reads the game marks the nearest other opponent, goal-side; concentration and discipline ✗ |

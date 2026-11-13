@@ -89,6 +89,8 @@ impl Profiles {
                 max_speed: value("max_speed", "family:physical"),
                 injury_proneness: value("injury_proneness", "family:physical"),
                 reactivity: value("reactivity", "family:physical"),
+                maximal_force: value("maximal_force", "family:physical"),
+                body_control: value("body_control", "family:physical"),
             },
             technical: TechnicalLatents {
                 finishing: value("finishing", "family:technical"),
@@ -101,7 +103,9 @@ impl Profiles {
                 left_foot,
                 right_foot,
             },
-            psychological: PsychologicalLatents {},
+            psychological: PsychologicalLatents {
+                aggressiveness: value("aggressiveness", "family:psychological"),
+            },
             cognitive: CognitiveLatents {
                 game_reading: value("game_reading", "family:cognitive"),
                 decision_making: value("decision_making", "family:cognitive"),

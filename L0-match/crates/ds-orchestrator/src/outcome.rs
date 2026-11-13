@@ -8,6 +8,9 @@ pub struct DuelOutcome {
     pub ball_retained: bool,
     /// The foul committed, if any.
     pub foul_committed: Option<()>,
+    /// Neither controls it: the ball comes loose from the contact
+    /// (ADR-042, amended). `winner` is then the carrier.
+    pub loose: bool,
 }
 
 /// The outcome of a shot.

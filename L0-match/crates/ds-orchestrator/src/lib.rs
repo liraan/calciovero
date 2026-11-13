@@ -184,19 +184,29 @@ impl GroundTruth {
         };
 
         // ADR-042 §5: no die. The ground contact is deterministic, with the
-        // weights of `balance/duel.json`; ties to the carrier.
-        let attacker_wins = match ctx.duel_type {
+        // weights of `balance/duel.json`: the bodies (maximal force, body
+        // control, explosive force), the defender's tackling and the
+        // carrier's touch; a slide adds force. Four outcomes (amended
+        // 2026-11-13): won, kept, or loose in between; the foul is step (b).
+        let (attacker_wins, loose) = match ctx.duel_type {
             DuelType::Ground => {
                 let b = &self.duel_balance;
-                b.carrier_force(
-                    attacker.technical.first_touch,
-                    attacker.physical.explosive_force,
-                ) >= b.defender_force(
+                let body = |l: &ds_db::PlayerLatents| ds_calculator::duel::DuelBody {
+                    explosive: l.physical.explosive_force,
+                    maximal_force: l.physical.maximal_force,
+                    body_control: l.physical.body_control,
+                };
+                let d = b.defender_force(
+                    &body(&defender),
                     defender.technical.tackling,
-                    defender.physical.explosive_force,
-                )
+                    ctx.tackle == ds_calculator::duel::TackleKind::Slide,
+                );
+                let c = b.carrier_force(&body(&attacker), attacker.technical.first_touch);
+                b.contact(d, c).map_or((true, true), |won| (!won, false))
             }
-            DuelType::Aerial | DuelType::WithGoalkeeper => attacker_score >= defender_score,
+            DuelType::Aerial | DuelType::WithGoalkeeper => {
+                (attacker_score >= defender_score, false)
+            }
         };
         let winner = if attacker_wins {
             ctx.attacker
@@ -206,8 +216,9 @@ impl GroundTruth {
 
         let outcome = DuelOutcome {
             winner,
-            ball_retained: attacker_wins,
+            ball_retained: attacker_wins && !loose,
             foul_committed: None,
+            loose,
         };
 
         self.observations.push(ObservationEvent::Duel {
@@ -361,6 +372,23 @@ impl GroundTruth {
             on_target,
         });
         outcome
+    }
+
+    /// How `defender` goes into a challenge (ADR-042 §2, amended): standing,
+    /// slide or jockey, from his tackling, aggressiveness and reading.
+    #[must_use]
+    pub fn choose_tackle(
+        &mut self,
+        defender: PlayerId,
+        in_standing_reach: bool,
+    ) -> ds_calculator::duel::TackleKind {
+        let l = self.latents_for(defender);
+        self.duel_balance.choose(
+            l.technical.tackling,
+            l.psychological.aggressiveness,
+            l.cognitive.game_reading,
+            in_standing_reach,
+        )
     }
 
     /// The off-ball choice's declared parameters (`balance/offball.json`).
@@ -775,6 +803,7 @@ mod tests {
             attacker: PlayerId::new(1, 0),
             defender: PlayerId::new(2, 0),
             duel_type: DuelType::Ground,
+            tackle: ds_calculator::duel::TackleKind::Standing,
         }
     }
 
