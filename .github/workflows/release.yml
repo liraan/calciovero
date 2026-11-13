@@ -1,0 +1,95 @@
+# Release — builds the binaries and publishes a GitHub release when a tag
+# `v*` is pushed (the maintainer asks for the release; an agent tags only
+# when asked, context/RULES.md C1).
+#
+# Three platforms, the ones ADR-038 keeps open on the desktop: Linux
+# x86_64, Windows x86_64, macOS arm64. Each archive holds the GUI
+# (`ds-gui`, ADR-055), the CLI (`ds-demo`), the README and the licences.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+            ext: ""
+          - os: windows-latest
+            target: windows-x86_64
+            ext: ".exe"
+          - os: macos-latest
+            target: macos-arm64
+            ext: ""
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release -p ds-gui -p ds-demo
+
+      - name: Package
+        shell: bash
+        run: |
+          name="calcio-vero-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          mkdir "$name"
+          cp "target/release/ds-gui${{ matrix.ext }}" "target/release/ds-demo${{ matrix.ext }}" "$name/"
+          cp README.md LICENSE.md LICENSE-MIT LICENSE-APACHE LICENSE-ASSETS "$name/"
+          if [ "${{ matrix.ext }}" = ".exe" ]; then
+            7z a "$name.zip" "$name" > /dev/null
+            echo "ASSET=$name.zip" >> "$GITHUB_ENV"
+          else
+            tar czf "$name.tar.gz" "$name"
+            echo "ASSET=$name.tar.gz" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: ${{ env.ASSET }}
+
+  release:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Notes
+        shell: bash
+        run: |
+          {
+            echo "Calcio Vero ${GITHUB_REF_NAME}."
+            echo
+            echo "Run \`ds-gui\` for the window (the friendly on a 2D pitch), \`ds-demo --help\` for the command line."
+            echo "On Linux the GUI needs an X11 or Wayland desktop; on macOS the binary is not signed (right click, Open)."
+            echo
+            echo "What changed in the engine: \`L0-match/CHANGELOG-SIM.md\`."
+          } > notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Calcio Vero ${{ github.ref_name }}
+          body_path: notes.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: dist/*

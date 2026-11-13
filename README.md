@@ -31,9 +31,9 @@
 
 <div align="center">
 
-<img src="assets/demo-2d.gif" alt="The 2D debug view: twenty-two players and the ball on a text pitch, a goal at the 89th minute" width="600">
+<img src="assets/demo-gui.gif" alt="The GUI: twenty-two players and the ball on a 2D pitch, the commentary beside it, a goal at the 4th minute" width="800">
 
-*The 2D debug view, seed 53: the last minutes of a match and the winning goal. Home players are `A`-`K`, away `a`-`k`, the ball is `*`.*
+*The GUI ([ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)), seed 42, from 2' to 8' at sixteen times real speed: the home goal at the 4th minute lights up the commentary. Home players are `A`-`K` in red, away `a`-`k` in blue, the goalkeepers in their own colour, the ring is the man on the ball. The terminal view is still there: [`assets/demo-2d.gif`](assets/demo-2d.gif).*
 
 </div>
 
