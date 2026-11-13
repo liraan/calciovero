@@ -16,6 +16,7 @@ This is the best place to start if you know football and not Rust.
 | `keeper.json` | **the goalkeeper's position**: how far he comes off his line as the ball approaches, and how far he steps up when his side has the ball |
 | `kick.json` | **the kick**: how fast a shot leaves, how precise a kick is (shooting, the foot, power, pressure), how a pass is weighed to reach the receiver |
 | `save.json` | **the save**: how fast a keeper reacts, how far and how fast he dives, how hard a ball is to hold, how far a parry sends it |
+| `thought.json` | **the player's thought** (ADR-052): what keeping the ball is worth against a goal, the goal's width; the chance a position gives is computed from the shot and the save |
 | `laws.json` | **the referee is the Laws**: when a foul is reckless (yellow) or excessive (red), what denies an obvious chance, the penalty area and mark |
 | `duel.json` | **the tackle**: how close a defender must be to challenge, how often, and how much tackling counts against keeping the ball |
 | `carry.json` | **running with the ball**: how far a carrier goes before choosing again, and where he stops near the goal |

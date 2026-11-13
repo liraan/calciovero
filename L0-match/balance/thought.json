@@ -1,0 +1,7 @@
+{
+  "goal_width_cm": 732,
+  "possession_value": 0.02,
+  "forecast_step_cm": 100,
+  "_note": "The player's thought (ADR-052). Two of football's own values and one resolution, nothing per kind of option. goal_width_cm is Law 1. possession_value is what keeping the ball is worth against a goal (1.0): a side with the ball has a chance to score that a side without it has not; declared, to be derived at L3 from the engine's own matches. The chance a position gives is derived from the engine's own shot and save (kick.json, save.json) for an average shooter and keeper: the width of the goal the keeper cannot reach in the time the ball takes, against the spread of the shot's error. The forecast of who reaches a ball first samples its path every forecast_step_cm.",
+  "_source": "Law 1 for the goal width. possession_value and forecast_step_cm: declared, arbitrary until L3; the chance a position gives is not a number of this file: it is computed from the shot and the save."
+}

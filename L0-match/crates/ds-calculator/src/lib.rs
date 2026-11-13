@@ -38,6 +38,7 @@ pub mod obstacle;
 pub mod offball;
 pub mod save;
 pub mod shot_choice;
+pub mod thought;
 
 use std::collections::BTreeSet;
 

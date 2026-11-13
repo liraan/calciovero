@@ -1,6 +1,6 @@
 # ADR-052 — Every player thinks: the choice is his own imagined football
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-13
 - **Supersedes:** —
 - **Amends:** ADR-040 (salience as hand-weighted terms per kind of option), ADR-050 (progression as a separate term), ADR-049 (the off-ball weights); keeps ADR-047 (recognition) and ADR-035 (no dice)
@@ -50,3 +50,5 @@ Measured on the engine at `SIM_VERSION` 66: no choice is a die, but every option
 - **Utility from a fixed table of positions (an external xG/xT grid).** Rejected as the source: the measure is derived from the engine's own geometry and Laws, so that what a player believes and what the match does are the same football.
 
 ## Dated notes
+
+- **2026-11-13 — accepted** by the maintainer ("approvo, poi se ci sarà qualcosa da limare limeremo"). The implementation follows the order of the Consequences, (a) first.

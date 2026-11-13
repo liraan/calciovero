@@ -1,0 +1,262 @@
+//! The player's thought (ADR-052): what he forecasts, and how he judges it.
+//!
+//! **One responsibility:** two pure functions the choice is built on.
+//! *Who reaches a ball first*, along its path, from the players the actor
+//! perceives and the speeds he believes they have; and *the chance a
+//! position gives*, derived from the engine's own shot and save, not from
+//! a table. No die (ADR-035), no weight per kind of option.
+
+use serde::Deserialize;
+
+use crate::kick::KickBalance;
+use crate::save::SaveBalance;
+
+const THOUGHT_JSON: &str = include_str!("../../../balance/thought.json");
+
+/// The thought's declared values (`balance/thought.json`).
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct ThoughtBalance {
+    /// The goal's width, cm (Law 1).
+    pub goal_width_cm: i32,
+    /// What keeping the ball is worth, against a goal (1.0).
+    pub possession_value: f64,
+    /// The forecast samples a ball's path every this many cm.
+    pub forecast_step_cm: i32,
+}
+
+impl ThoughtBalance {
+    /// Loads the embedded values.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the embedded JSON is invalid; `embedded_thought_is_valid`
+    /// catches it at test time.
+    #[must_use]
+    pub fn load() -> Self {
+        serde_json::from_str(THOUGHT_JSON).expect("embedded thought file is valid JSON")
+    }
+}
+
+/// A player as the actor imagines him: where he is, how fast he believes
+/// he runs (cm/tick), how long before he moves (ticks), and his side.
+#[derive(Debug, Clone, Copy)]
+pub struct Imagined {
+    /// Where he is, cm.
+    pub at: (i32, i32),
+    /// The speed the actor believes he has, cm/tick.
+    pub speed: f64,
+    /// How long before he moves, ticks.
+    pub reaction: f64,
+    /// Whether he is on the actor's side.
+    pub mate: bool,
+}
+
+/// Who reaches a ball first, and where.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Forecast {
+    /// Index of the player in the list, or `None` if nobody reaches it
+    /// before it stops.
+    pub first: Option<usize>,
+    /// Where he takes it, cm.
+    pub at: (i32, i32),
+    /// The ticks he has to spare there against the nearest player of the
+    /// other side (positive: he gets there first by that much).
+    pub margin: f64,
+}
+
+/// Ticks for a ground ball leaving at `v0` (cm/tick) to cover `d` cm with
+/// a friction that keeps `keep` of its speed per tick; `None` if it stops
+/// before.
+#[must_use]
+pub fn ball_ticks(d: f64, v0: f64, keep: f64) -> Option<f64> {
+    if d <= 0.0 {
+        return Some(0.0);
+    }
+    if v0 <= 0.0 {
+        return None;
+    }
+    if keep >= 1.0 {
+        return Some(d / v0);
+    }
+    let reach = v0 / (1.0 - keep);
+    if d >= reach {
+        return None;
+    }
+    Some((1.0 - d / reach).log(keep))
+}
+
+/// Who reaches the ball first along its path (ADR-052 §2).
+///
+/// The ball leaves `from` towards `to` at `v0` and keeps `keep` of its
+/// speed per tick (`keep` = 1 for a ball in the air until it lands at
+/// `to`); each imagined player runs straight at a point of the path. The
+/// first player to be at a point before the ball takes it there.
+#[must_use]
+pub fn who_first(
+    from: (i32, i32),
+    to: (i32, i32),
+    (v0, keep): (f64, f64),
+    players: &[Imagined],
+    step_cm: i32,
+) -> Forecast {
+    let (dx, dy) = (f64::from(to.0 - from.0), f64::from(to.1 - from.1));
+    let len = dx.hypot(dy);
+    let step = f64::from(step_cm.max(1));
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let samples = (len / step).ceil() as usize;
+    let mut last = (from, None);
+    for k in 0..=samples {
+        #[allow(clippy::cast_precision_loss)]
+        let d = (k as f64 * step).min(len);
+        let Some(tb) = ball_ticks(d, v0, keep) else {
+            break;
+        };
+        let t = if len > 0.0 { d / len } else { 0.0 };
+        #[allow(clippy::cast_possible_truncation)]
+        let point = (
+            from.0 + (dx * t).round() as i32,
+            from.1 + (dy * t).round() as i32,
+        );
+        let arrival = |p: &Imagined| {
+            let run = f64::from(p.at.0 - point.0).hypot(f64::from(p.at.1 - point.1));
+            p.reaction + run / p.speed.max(1.0)
+        };
+        let mut best: Option<(usize, f64)> = None;
+        for (i, p) in players.iter().enumerate() {
+            let a = arrival(p);
+            if a <= tb && best.is_none_or(|(_, b)| a < b) {
+                best = Some((i, a));
+            }
+        }
+        if let Some((i, a)) = best {
+            let mate = players[i].mate;
+            let other = players
+                .iter()
+                .filter(|p| p.mate != mate)
+                .map(arrival)
+                .fold(f64::INFINITY, f64::min);
+            return Forecast {
+                first: Some(i),
+                at: point,
+                margin: other - a,
+            };
+        }
+        last = (point, None);
+    }
+    Forecast {
+        first: last.1,
+        at: last.0,
+        margin: 0.0,
+    }
+}
+
+/// The chance a position gives (ADR-052 §3), in `[0, 1]`.
+///
+/// Derived from the engine's own shot and save, for an average shooter and
+/// keeper: the width of the goal the keeper cannot reach in the time the
+/// ball takes, against the spread of the shot's error, scaled by how much
+/// of the goal he sees.
+#[must_use]
+pub fn chance(
+    distance_cm: f64,
+    goal_cone: f64,
+    kick: &KickBalance,
+    save: &SaveBalance,
+    t: &ThoughtBalance,
+) -> f64 {
+    let speed = kick.speed(0.85, 0.5).max(1.0);
+    let flight = distance_cm / speed;
+    let reach = save.reach_cm(95.0, 0.5, 0.5, flight);
+    let half = f64::from(t.goal_width_cm) / 2.0;
+    let open = (half - reach).max(0.0);
+    let spread = distance_cm * kick.error_rad(0.5, 0.75, 0.85, 0.0);
+    let hit = if open + spread > 0.0 {
+        open / (open + spread)
+    } else {
+        0.0
+    };
+    (hit * goal_cone.clamp(0.0, 1.0)).clamp(0.0, 1.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn me(at: (i32, i32), mate: bool) -> Imagined {
+        Imagined {
+            at,
+            speed: 60.0,
+            reaction: 2.0,
+            mate,
+        }
+    }
+
+    #[test]
+    fn embedded_thought_is_valid() {
+        let t = ThoughtBalance::load();
+        assert_eq!(t.goal_width_cm, 732);
+        assert!(t.possession_value > 0.0 && t.possession_value < 1.0);
+    }
+
+    /// A ground ball slows down and stops: far enough, it never arrives.
+    #[test]
+    fn a_ball_on_the_grass_stops() {
+        assert!(ball_ticks(1000.0, 150.0, 0.957).is_some());
+        assert!(ball_ticks(10_000.0, 150.0, 0.957).is_none());
+    }
+
+    /// A free teammate on the line takes the pass; an opponent standing on
+    /// the line in between cuts it out (P1, ADR-052 §2).
+    #[test]
+    fn the_nearest_to_the_path_takes_it() {
+        let mate = me((3000, 0), true);
+        let free = who_first((0, 0), (3000, 0), (150.0, 0.957), &[mate], 100);
+        assert_eq!(free.first, Some(0));
+        let cut = who_first(
+            (0, 0),
+            (3000, 0),
+            (150.0, 0.957),
+            &[mate, me((1500, 100), false)],
+            100,
+        );
+        assert_eq!(cut.first, Some(1));
+    }
+
+    /// Twin test (ADR-051 §3): the same opponent, imagined faster by a
+    /// reader who knows him, reaches a pass the other imagined lost.
+    #[test]
+    fn a_faster_opponent_reaches_more() {
+        let mate = me((3000, 0), true);
+        let slow = Imagined {
+            speed: 20.0,
+            ..me((1500, 900), false)
+        };
+        let fast = Imagined {
+            speed: 90.0,
+            ..slow
+        };
+        let a = who_first((0, 0), (3000, 0), (150.0, 0.957), &[mate, slow], 100);
+        let b = who_first((0, 0), (3000, 0), (150.0, 0.957), &[mate, fast], 100);
+        assert_eq!(a.first, Some(0));
+        assert_eq!(b.first, Some(1));
+    }
+
+    /// The chance a position gives falls with the distance and with the
+    /// angle, and is derived, not tabled (P1, ADR-052 §3).
+    #[test]
+    fn closer_and_central_is_a_better_chance() {
+        let (k, s, t) = (
+            KickBalance::load(),
+            SaveBalance::load(),
+            ThoughtBalance::load(),
+        );
+        let spot = chance(1100.0, 0.6, &k, &s, &t);
+        let far = chance(2500.0, 0.28, &k, &s, &t);
+        let tight = chance(1100.0, 0.15, &k, &s, &t);
+        assert!(
+            spot > far && spot > tight,
+            "spot {spot}, far {far}, tight {tight}"
+        );
+        assert!(far >= 0.0);
+    }
+}
