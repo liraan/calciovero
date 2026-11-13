@@ -99,6 +99,7 @@ impl Profiles {
                 tackling: value("tackling", "family:technical"),
                 aerial: value("aerial", "family:physical"),
                 heading: value("heading", "family:technical"),
+                dribbling: value("dribbling", "family:technical"),
                 goalkeeping: value("goalkeeping", "family:technical"),
                 set_pieces: value("set_pieces", "family:technical"),
                 left_foot,

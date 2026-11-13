@@ -57,8 +57,8 @@ with their first consumer (ADR-051 §4).
 |---|---|---|---|
 | Receive, control | clean or loose, the touch's length | first touch, foot, *body control* | ✓ since 55 he goes to meet the pass, takes it within his reach (reactivity), controls it by first touch, freedom and distance, and decides after his own time; foot ✗ |
 | Carry | speed with the ball, direction | *dribbling*, run | ◐ since 54 an option with its own salience (room ahead, what it brings); speed is the run's; step length constant; direction is a rule (to goal, or to the open pitch when blocked); dribbling ✗ |
-| Dribble past a man | beat or lose | *dribbling*, acceleration, *joint mobility*, *body control* | — |
-| Shield | keep the ball under a challenge | *maximal force*, *body control*, weight | — (the carrier's side of the duel reads first touch) |
+| Dribble past a man | beat or lose | dribbling, explosive force, *joint mobility*, body control | ✓ since 72: when a defender goes in, the carrier may take him on, by what he imagines (ADR-052); won, the man is left behind (`beaten_ticks`), a `Dribble`; joint mobility ✗ |
+| Shield | keep the ball under a challenge | maximal force, body control, first touch, *weight* | ✓ since 72: the carrier's other answer to a challenge, surer for the strong and balanced; weight ✗ |
 | Short pass | choice, speed, precision | passing, foot, vision, game reading, risk | ✓ since 52: choice; weighed to arrive rolling (`kick.json`), capped by his kick; drift and overhit from passing and the foot |
 | Long pass, switch, through ball | same, with height | passing, foot, explosive force, game reading | — one kind of pass only |
 | Cross | same | passing, foot | — |

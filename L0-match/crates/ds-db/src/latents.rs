@@ -91,6 +91,9 @@ pub struct TechnicalLatents {
     /// Heading: the technique of the header (ADR-042, the aerial duel;
     /// consumed with the jump, the height and the strength).
     pub heading: f32,
+    /// Dribbling: taking a man on with the ball (ADR-042 step c, the
+    /// carrier's answer; consumed with explosive force and body control).
+    pub dribbling: f32,
     /// Goalkeeping, consumed by the save.
     pub goalkeeping: f32,
     /// Prototype composite (free kicks, penalties, corners, throw-ins):
@@ -159,6 +162,7 @@ impl PlayerLatents {
                 tackling: unit_from_key(world_seed, player, "tackling"),
                 aerial: unit_from_key(world_seed, player, "aerial"),
                 heading: unit_from_key(world_seed, player, "heading"),
+                dribbling: unit_from_key(world_seed, player, "dribbling"),
                 goalkeeping: unit_from_key(world_seed, player, "goalkeeping"),
                 set_pieces: unit_from_key(world_seed, player, "set_pieces"),
                 left_foot: unit_from_key(world_seed, player, "left_foot"),

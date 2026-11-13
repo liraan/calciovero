@@ -994,6 +994,7 @@ impl MatchState {
                 tackle: ds_calculator::duel::TackleKind::Standing,
                 from_behind: false,
                 approach_cm_per_tick: 0,
+                stakes: (1.0, 1.0, 1.0),
             };
             let outcome = ctx.hidden.resolve_duel(&ctx_duel);
             let fact = crate::fact::Fact::Contact {
@@ -1688,25 +1689,8 @@ impl MatchState {
             .spatial
             .agent(challenger)
             .is_some_and(|a| distance_squared(a.position, ball) <= reach * reach);
-        // How he goes in is his choice (ADR-042 §2, amended); the keeper
-        // goes in on his feet, inside his area (ADR-049).
-        let tackle = if Some(challenger) == keeper {
-            if !in_reach {
-                return;
-            }
-            ds_calculator::duel::TackleKind::Standing
-        } else {
-            // In his own penalty area he is careful (a foul is a penalty).
-            let defending_home = !ctx.match_.home.players.iter().any(|p| p.id == carrier);
-            let in_area = in_keeper_box(
-                ball,
-                defending_home,
-                pitch_cm(ctx),
-                &ctx.hidden.offball_balance(),
-            );
-            let booked = self.cautioned.contains(&challenger);
-            ctx.hidden
-                .choose_tackle(challenger, (in_reach, in_area, booked))
+        let Some(tackle) = self.how_he_goes_in(ctx, (carrier, challenger), keeper, in_reach) else {
+            return;
         };
         // One attempt per choice: then he keeps pressing until he chooses again.
         self.spatial
@@ -1718,6 +1702,7 @@ impl MatchState {
             return;
         }
         let (from_behind, approach) = self.challenge_geometry(ctx, carrier, challenger, ball);
+        let stakes = Self::duel_stakes(ctx, carrier, ball);
         let outcome = ctx.hidden.resolve_duel(&ds_orchestrator::DuelContext {
             attacker: carrier,
             defender: challenger,
@@ -1729,6 +1714,7 @@ impl MatchState {
             tackle,
             from_behind,
             approach_cm_per_tick: approach,
+            stakes,
         });
         self.emit_contact(ctx, tick, carrier, challenger, &outcome);
         let down = if tackle == ds_calculator::duel::TackleKind::Slide {
@@ -1760,10 +1746,91 @@ impl MatchState {
             self.flip_possession();
             self.spatial.set_carrier(Some(challenger));
             self.challenges.insert(carrier, tick + duel.retry_ticks);
+        } else if outcome.answer == Some(ds_calculator::duel::CarrierAnswer::TakeOn) {
+            self.beaten_by_dribble(
+                ctx,
+                tick,
+                (carrier, challenger),
+                down.max(duel.beaten_ticks),
+            );
         } else {
             // Beaten, he needs time to recover before he can try again; a
             // slide that missed leaves him on the ground longer.
             self.challenges.insert(challenger, tick + down);
+        }
+    }
+
+    /// Taken on and beaten (ADR-042 step c): the man is left behind for
+    /// `down` ticks, and the dribble is an event.
+    fn beaten_by_dribble(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        (carrier, challenger): (PlayerId, PlayerId),
+        down: u64,
+    ) {
+        self.challenges.insert(challenger, tick + down);
+        self.spatial
+            .set_act(challenger, ds_orchestrator::OffBallAct::Hold);
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(carrier)),
+            EventType::Dribble,
+            serde_json::json!({ "past": challenger.slot() }),
+        );
+    }
+
+    /// What the carrier imagines is at stake in a challenge (ADR-052 §3):
+    /// the space he keeps, the space a few metres past the man towards
+    /// the goal he attacks, and what the opponents would have where he is.
+    fn duel_stakes(ctx: &MatchContext<'_>, carrier: PlayerId, ball: (i32, i32)) -> (f64, f64, f64) {
+        let (length, width) = pitch_cm(ctx);
+        let home = ctx.match_.home.players.iter().any(|p| p.id == carrier);
+        let (goal, other) = if home {
+            ((length, width / 2), (0, width / 2))
+        } else {
+            ((0, width / 2), (length, width / 2))
+        };
+        let forward = if home { 1 } else { -1 };
+        let past = ((ball.0 + forward * 400).clamp(0, length), ball.1);
+        (
+            ds_orchestrator::read::space_value(ball, goal, other),
+            ds_orchestrator::read::space_value(past, goal, other),
+            ds_orchestrator::read::space_value(ball, other, goal),
+        )
+    }
+
+    /// How the challenger goes in: his choice (ADR-042 §2, amended); the
+    /// keeper goes in on his feet, inside his area (ADR-049). `None`: the
+    /// keeper is not within reach.
+    fn how_he_goes_in(
+        &self,
+        ctx: &mut MatchContext<'_>,
+        (carrier, challenger): (PlayerId, PlayerId),
+        keeper: Option<PlayerId>,
+        in_reach: bool,
+    ) -> Option<ds_calculator::duel::TackleKind> {
+        let ball = self.spatial.ball();
+        // How he goes in is his choice (ADR-042 §2, amended); the keeper
+        // goes in on his feet, inside his area (ADR-049).
+        if Some(challenger) == keeper {
+            return in_reach.then_some(ds_calculator::duel::TackleKind::Standing);
+        }
+        {
+            // In his own penalty area he is careful (a foul is a penalty).
+            let defending_home = !ctx.match_.home.players.iter().any(|p| p.id == carrier);
+            let in_area = in_keeper_box(
+                ball,
+                defending_home,
+                pitch_cm(ctx),
+                &ctx.hidden.offball_balance(),
+            );
+            let booked = self.cautioned.contains(&challenger);
+            Some(
+                ctx.hidden
+                    .choose_tackle(challenger, (in_reach, in_area, booked)),
+            )
         }
     }
 

@@ -11,6 +11,8 @@ pub struct DuelOutcome {
     /// Neither controls it: the ball comes loose from the contact
     /// (ADR-042, amended). `winner` is then the carrier.
     pub loose: bool,
+    /// How the carrier answered a ground challenge (ADR-042 step c).
+    pub answer: Option<ds_calculator::duel::CarrierAnswer>,
 }
 
 /// The outcome of a shot.

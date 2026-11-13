@@ -32,6 +32,11 @@ pub struct DuelContext {
     pub from_behind: bool,
     /// His speed when he arrived, cm/tick.
     pub approach_cm_per_tick: i32,
+    /// What the carrier imagines is at stake (ADR-052 §3), in units of
+    /// keeping the ball: the space he keeps if he shields, the space past
+    /// the man if he beats him, and what the opponents would have where
+    /// he loses it.
+    pub stakes: (f64, f64, f64),
 }
 
 /// The context of a shot resolution.

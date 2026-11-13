@@ -2,20 +2,20 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `62052fe` - "docs(foundations): every actor has his three planes (4.1)"
+**Last commit verified:** `a9255ad` - "chore(context): rename process/ to context/ and keep only what is live"
 
 ## Dove siamo (2026-11-13)
 
-- **Motore L0, `SIM_VERSION` 71.** Ogni giocatore sceglie con il suo pensiero (ADR-052): immagina le opzioni (chi arriva prima, la qualità dello spazio raggiunto, cosa si perde) e le giudica con una sola misura; nessun peso per tipo di opzione, nessun dado (ADR-035). Ogni gesto ha le sue radici nelle caratteristiche ed è riconoscibile (ADR-051, catalogo `L0-match/design/ACTIONS.md`).
-- **Fatto in L0-CLOSE** (`plans/L0-CLOSE.md`): la difesa pensa (68), l'attacco senza palla pensa (69), spazzata, pallonetto e altro palo (70), il gioco aereo (71). Prima: portiere che legge e si tuffa, tiro con forza e piede, contrasto in tre forme con quattro esiti (ADR-042), le Leggi (fuorigioco, falli, cartellini, vantaggio, rigore), palla fuori e ripartenze.
-- **Misura 30 seed (42-71), per partita:** gol 1,7, tiri 64 (troppi), parate 42, angoli 11. Le statistiche si tarano alla fine del piano, con il maintainer (passo 10): *"non preoccuparti delle statistiche in questa fase"*.
+- **Motore L0, `SIM_VERSION` 72.** Ogni giocatore sceglie con il suo pensiero (ADR-052): immagina le opzioni (chi arriva prima, la qualità dello spazio raggiunto, cosa si perde) e le giudica con una sola misura; nessun peso per tipo di opzione, nessun dado (ADR-035). Ogni gesto ha le sue radici nelle caratteristiche ed è riconoscibile (ADR-051, catalogo `L0-match/design/ACTIONS.md`).
+- **Fatto in L0-CLOSE** (`plans/L0-CLOSE.md`): la difesa pensa (68), l'attacco senza palla pensa (69), spazzata, pallonetto e altro palo (70), il gioco aereo (71), il portatore che protegge palla o punta l'uomo, con la nuova `dribbling` (72). Prima: portiere che legge e si tuffa, tiro con forza e piede, contrasto in tre forme con quattro esiti (ADR-042), le Leggi (fuorigioco, falli, cartellini, vantaggio, rigore), palla fuori e ripartenze.
+- **Misura 30 seed (42-71), per partita:** gol 1,8, tiri 70 (troppi), parate 46, angoli 12, dribbling riusciti 20, contrasti vinti 5 (pochi). Le statistiche si tarano alla fine del piano, con il maintainer (passo 10): *"non preoccuparti delle statistiche in questa fase"*.
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Plan
 
 | Pr. | # | Cosa | Dipende da | Prima azione |
 |---|---|---|---|---|
-| [next] | L0-CLOSE | **Chiudere L0 prima di L1** (maintainer, 2026-11-13). Dieci passi in `plans/L0-CLOSE.md`, 1-4 fatti. | ADR-051, ADR-052, ADR-042 | Passo 5, il portatore risponde (ADR-042 c): proteggere palla e dribblare, con la radice `dribbling` e i test gemelli. |
+| [next] | L0-CLOSE | **Chiudere L0 prima di L1** (maintainer, 2026-11-13). Dieci passi in `plans/L0-CLOSE.md`, 1-5 fatti. | ADR-051, ADR-052, ADR-042 | Passo 6, la fatica: si consuma con la corsa e gli sprint, radice `endurance`, recupero parziale all'intervallo (OI-70). |
 | [open] | 10 | **L1, il mondo** (`L1-world/`). Si apre solo dopo L0 chiuso. | L0-CLOSE | Scrivere `L1-world/00-overview.md` (L1.04) prima di L1.05. |
 | [deferred] | 11 | **Ruleset GitHub (fase 2).** Disattivo; si riattiva quando c'è un secondo revisore, il progetto esce, o un agente riceve un token di scrittura. | — | Rileggere `RULES.md` §C quando una delle tre condizioni si presenta. |
 

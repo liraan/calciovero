@@ -486,3 +486,13 @@ fn a_ball_in_the_air_can_be_headed() {
     });
     assert!(headed, "no header in ten matches");
 }
+
+/// ADR-042 step c (P1): the carrier answers a challenge, and a man taken
+/// on can be beaten. Before `SIM_VERSION` 72 no `Dribble` was ever emitted.
+#[test]
+fn a_carrier_can_take_his_man_on() {
+    assert!(
+        in_some_match(ds_stats::EventType::Dribble),
+        "no dribble in ten matches"
+    );
+}

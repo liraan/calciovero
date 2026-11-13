@@ -20,6 +20,17 @@ pub enum TackleKind {
     Jockey,
 }
 
+/// How the carrier answers a challenge (ADR-042 step c, plan L0-CLOSE
+/// step 5): his choice, as the defender's way in is the defender's.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CarrierAnswer {
+    /// He puts his body between the ball and the man: he keeps it more
+    /// often, and stays where he is.
+    Shield,
+    /// He takes the man on: if he beats him, the man is left behind.
+    TakeOn,
+}
+
 /// The ground duel's parameters.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct DuelBalance {
@@ -54,6 +65,22 @@ pub struct DuelBalance {
     pub slide_bonus_milli: i32,
     /// A slide that does not win the ball keeps him down this long, ticks.
     pub slide_recovery_ticks: u64,
+    /// What shielding adds to the carrier's force, per unit of maximal
+    /// force, thousandths.
+    pub shield_force_milli: i32,
+    /// What shielding adds, per unit of body control, thousandths.
+    pub shield_body_milli: i32,
+    /// Weight of dribbling when he takes the man on, thousandths.
+    pub dribble_dribbling_milli: i32,
+    /// Weight of explosive force when he takes the man on, thousandths.
+    pub dribble_explosive_milli: i32,
+    /// Weight of body control when he takes the man on, thousandths.
+    pub dribble_body_milli: i32,
+    /// A defender beaten by a dribble is out of the play this long, ticks.
+    pub beaten_ticks: u64,
+    /// A force this far above the defender he imagines makes him sure,
+    /// thousandths.
+    pub answer_trust_milli: i32,
     /// The salience of a standing tackle, thousandths.
     pub standing_salience_milli: i32,
     /// The salience of a slide, thousandths.
@@ -154,6 +181,53 @@ impl DuelBalance {
                 ),
             ),
         )
+    }
+
+    /// The carrier's force for the answer he chose: shielding adds his
+    /// strength and balance to keeping the ball; taking the man on reads
+    /// his dribbling, his burst and his balance.
+    #[must_use]
+    pub fn answer_force(
+        &self,
+        answer: CarrierAnswer,
+        d: &DuelBody,
+        first_touch: f32,
+        dribbling: f32,
+    ) -> f32 {
+        match answer {
+            CarrierAnswer::Shield => milli(self.shield_force_milli).mul_add(
+                d.maximal_force,
+                milli(self.shield_body_milli)
+                    .mul_add(d.body_control, self.carrier_force(d, first_touch)),
+            ),
+            CarrierAnswer::TakeOn => milli(self.dribble_dribbling_milli).mul_add(
+                dribbling,
+                milli(self.dribble_explosive_milli)
+                    .mul_add(d.explosive, milli(self.dribble_body_milli) * d.body_control),
+            ),
+        }
+    }
+
+    /// How sure the carrier is to come out of the contact with the ball
+    /// (ADR-052 §2): his own force, which he knows, against the defender
+    /// he imagines, an average one standing (he does not read the man's
+    /// legs), in `[0, 1]`.
+    #[must_use]
+    pub fn answer_confidence(
+        &self,
+        answer: CarrierAnswer,
+        d: &DuelBody,
+        first_touch: f32,
+        dribbling: f32,
+    ) -> f32 {
+        let average = DuelBody {
+            explosive: 0.5,
+            maximal_force: 0.5,
+            body_control: 0.5,
+        };
+        let margin = self.answer_force(answer, d, first_touch, dribbling)
+            - self.defender_force(&average, 0.5, false);
+        (0.5 + margin / (2.0 * milli(self.answer_trust_milli).max(0.001))).clamp(0.0, 1.0)
     }
 
     /// A player's force in an aerial duel (ADR-042): heading, the jump, his
@@ -268,13 +342,43 @@ fn milli(v: i32) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{DuelBalance, DuelBody, TackleKind};
+    use super::{CarrierAnswer, DuelBalance, DuelBody, TackleKind};
 
     const AVERAGE: DuelBody = DuelBody {
         explosive: 0.5,
         maximal_force: 0.5,
         body_control: 0.5,
     };
+
+    /// Twin test (ADR-051 §3): two carriers identical but for dribbling;
+    /// the better dribbler beats the man the other loses the ball to.
+    #[test]
+    fn the_dribbler_twin_beats_his_man() {
+        let b = DuelBalance::load();
+        let defender = b.defender_force(&AVERAGE, 0.5, false);
+        let good = b.answer_force(CarrierAnswer::TakeOn, &AVERAGE, 0.5, 0.9);
+        let poor = b.answer_force(CarrierAnswer::TakeOn, &AVERAGE, 0.5, 0.2);
+        assert_eq!(b.contact(defender, good), Some(false));
+        assert_eq!(b.contact(defender, poor), Some(true));
+    }
+
+    /// Twin test: two carriers identical but for strength; shielding,
+    /// the strong one keeps the ball and is surer of it.
+    #[test]
+    fn the_strong_twin_shields_the_ball() {
+        let b = DuelBalance::load();
+        let strong = DuelBody {
+            maximal_force: 0.9,
+            ..AVERAGE
+        };
+        let weak = DuelBody {
+            maximal_force: 0.1,
+            ..AVERAGE
+        };
+        let s = b.answer_confidence(CarrierAnswer::Shield, &strong, 0.5, 0.5);
+        let w = b.answer_confidence(CarrierAnswer::Shield, &weak, 0.5, 0.5);
+        assert!(s > w + 0.2, "strong {s} weak {w}");
+    }
 
     #[test]
     fn embedded_duel_is_valid() {

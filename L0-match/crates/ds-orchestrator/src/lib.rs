@@ -188,6 +188,7 @@ impl GroundTruth {
         // control, explosive force), the defender's tackling and the
         // carrier's touch; a slide adds force. Four outcomes (amended
         // 2026-11-13): won, kept, or loose in between; the foul is step (b).
+        let mut answer = None;
         let (attacker_wins, loose) = match ctx.duel_type {
             DuelType::Ground => {
                 let b = &self.duel_balance;
@@ -201,7 +202,37 @@ impl GroundTruth {
                     defender.technical.tackling,
                     ctx.tackle == ds_calculator::duel::TackleKind::Slide,
                 );
-                let c = b.carrier_force(&body(&attacker), attacker.technical.first_touch);
+                // The carrier answers (ADR-042 step c): he shields or takes
+                // the man on, by what he imagines each gives (ADR-052).
+                let (keep, past, lost) = ctx.stakes;
+                let worth = |a: ds_calculator::duel::CarrierAnswer, gain: f64| {
+                    let sure = b.answer_confidence(
+                        a,
+                        &body(&attacker),
+                        attacker.technical.first_touch,
+                        attacker.technical.dribbling,
+                    );
+                    ds_calculator::thought::ThoughtBalance::expected(
+                        f64::from(sure),
+                        gain,
+                        lost,
+                        f64::from(attacker.cognitive.risk_management),
+                    )
+                };
+                let a = if worth(ds_calculator::duel::CarrierAnswer::TakeOn, past)
+                    > worth(ds_calculator::duel::CarrierAnswer::Shield, keep)
+                {
+                    ds_calculator::duel::CarrierAnswer::TakeOn
+                } else {
+                    ds_calculator::duel::CarrierAnswer::Shield
+                };
+                answer = Some(a);
+                let c = b.answer_force(
+                    a,
+                    &body(&attacker),
+                    attacker.technical.first_touch,
+                    attacker.technical.dribbling,
+                );
                 b.contact(d, c).map_or((true, true), |won| (!won, false))
             }
             DuelType::Aerial | DuelType::WithGoalkeeper => {
@@ -235,6 +266,7 @@ impl GroundTruth {
             ball_retained: attacker_wins && !loose,
             foul_committed: foul.then_some(()),
             loose,
+            answer,
         };
 
         self.observations.push(ObservationEvent::Duel {
@@ -877,6 +909,7 @@ mod tests {
             tackle: ds_calculator::duel::TackleKind::Standing,
             from_behind: false,
             approach_cm_per_tick: 0,
+            stakes: (1.0, 1.0, 1.0),
         }
     }
 
