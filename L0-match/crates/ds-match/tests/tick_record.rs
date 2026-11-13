@@ -396,3 +396,18 @@ fn the_ball_is_mostly_at_someone_s_feet() {
         records.len()
     );
 }
+
+/// ADR-051, "block" (P1): a defender in the path of a shot, within his
+/// reach, blocks it. Before `SIM_VERSION` 58 no `Block` event was ever
+/// emitted: every shot reached the keeper or the line.
+#[test]
+fn a_defender_can_block_a_shot() {
+    let (result, _) = recorded();
+    let blocks = result
+        .events
+        .events()
+        .iter()
+        .filter(|e| e.event_type == ds_stats::EventType::Block)
+        .count();
+    assert!(blocks > 0, "no block in the match");
+}

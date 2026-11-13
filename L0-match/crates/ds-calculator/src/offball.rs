@@ -47,6 +47,10 @@ pub struct OffBallBalance {
     pub ball_reach_base_milli: i32,
     /// What full reactivity adds to it, thousandths.
     pub ball_reach_gain_milli: i32,
+    /// A shot above this height passes over a defender's block, cm.
+    pub block_height_cm: i32,
+    /// A blocked shot comes back at this share of its speed, thousandths.
+    pub block_rebound_milli: i32,
 }
 
 impl OffBallBalance {

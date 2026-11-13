@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 55).
+engine (updated at `SIM_VERSION` 58).
 
 **How to read the state.**
 
@@ -74,7 +74,7 @@ with their first consumer (ADR-051 §4).
 | Press | whether, how hard | game reading; *aggressiveness*, *work rate* | ◐ the choice reads proximity, rank and game reading |
 | Challenge, tackle | whether, win or lose | tackling, explosive force vs first touch | ◐ ✓ roots; the same two players give the same result in every scene |
 | Intercept | reach on the line | game reading, reactivity, sprint | ◐ since 55 his reach for a passing ball reads reactivity; the 2 m radius at launch for an unseen opponent remains; going to cut out a pass is not his choice yet |
-| Block a shot or pass | reach | *reactivity*, *courage* | — |
+| Block a shot or pass | reach | reactivity, *courage* | ◐ since 58 a shot is blocked by an outfield defender it passes within reach of (reactivity), below his height; it rebounds loose; passes are not blocked yet; stepping into the line is not his choice yet |
 | Mark | whom, how close | game reading, *concentration*, *discipline* | ◐ since 55: the nearest defender who reads the game marks the nearest other opponent, goal-side; concentration and discipline ✗ |
 | Cover, recovery run | when, where | game reading, *work rate*, run | — |
 | Offer for a pass | where, when | game reading, decision making | ◐ since 53: chosen when marked near the ball (game reading); he moves away from his marker; the free lane to the carrier is not read yet |

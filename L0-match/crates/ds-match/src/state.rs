@@ -921,6 +921,55 @@ impl MatchState {
     /// player once he is within `loose_control_radius_cm` of it, and his
     /// team has the possession. Before this the ball stayed loose until the
     /// next decision, and the match stood still around it (OI-97).
+    /// A shot on its way meets a defender (ADR-051, "block"): an outfield
+    /// opponent of the shooter whose reach for a passing ball (his
+    /// reactivity) it passes within, below his block height, blocks it.
+    /// The ball comes back loose; possession is the defenders', so out over
+    /// the goal line it is a corner.
+    fn block_shot(&mut self, ctx: &mut MatchContext<'_>, tick: u64, shooter: Option<PlayerId>) {
+        let Some(shooter) = shooter else { return };
+        let off = ctx.hidden.offball_balance();
+        let (bx, by, bz) = self.spatial.ball_3d();
+        if bz > off.block_height_cm {
+            return;
+        }
+        let m = ctx.match_;
+        let shooter_home = m.home.players.iter().any(|p| p.id == shooter);
+        let defenders = if shooter_home { &m.away } else { &m.home };
+        let keeper = defenders.players.first().map(|p| p.id);
+        let radius = self.reception_balance.loose_control_radius_cm;
+        let blocker = defenders
+            .players
+            .iter()
+            .map(|p| p.id)
+            .filter(|id| Some(*id) != keeper)
+            .find(|id| {
+                self.spatial.agent(*id).is_some_and(|a| {
+                    let reach = ctx.hidden.ball_reach_cm(*id, radius);
+                    distance_squared(a.position, (bx, by)) <= reach * reach
+                })
+            });
+        let Some(blocker) = blocker else { return };
+        let vel = self.spatial.ball_velocity();
+        let rebound = i32::from(i16::try_from(off.block_rebound_milli).unwrap_or(0));
+        let back = |c: i16| i16::try_from(-i32::from(c) * rebound / 1000).unwrap_or(0);
+        self.spatial
+            .deflect_ball((bx, by, bz), (back(vel.0), back(vel.1), 0));
+        self.pending = None;
+        self.possession = if shooter_home {
+            Possession::Away
+        } else {
+            Possession::Home
+        };
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(blocker)),
+            EventType::Block,
+            serde_json::json!({ "from": shooter.slot(), "x": bx, "y": by }),
+        );
+    }
+
     fn control_loose_ball(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
         // On the ground: at rest, or rolling (a footballer controls a ball
         // that is still moving). A ball in the air is not his yet.
@@ -935,7 +984,11 @@ impl MatchState {
         // its receiver. A shot on its way is the keeper's.
         let pass = match &self.pending {
             Some(p) if p.shot.is_none() => Some((p.passer, p.freedom_cm, p.distance_cm)),
-            Some(_) => return,
+            Some(p) => {
+                let shooter = p.shot.as_ref().map(|s| s.attacker);
+                self.block_shot(ctx, tick, shooter);
+                return;
+            }
             None => None,
         };
         if !on_ground {
