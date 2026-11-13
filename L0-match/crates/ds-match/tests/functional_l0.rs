@@ -50,9 +50,11 @@ fn functional_l0_the_engine_emits_the_claimed_shape() {
             }
         }
         if e.event_type == EventType::Goal {
-            let key = (actor_slot.unwrap_or(u32::MAX), e.timestamp_minute);
+            // The ball may cross the line in the minute after the strike.
+            let slot = actor_slot.unwrap_or(u32::MAX);
+            let m = e.timestamp_minute;
             assert!(
-                saw_shot.contains(&key),
+                saw_shot.contains(&(slot, m)) || saw_shot.contains(&(slot, m.saturating_sub(1))),
                 "Goal at minute {} by slot {:?} without a Shot at the same minute",
                 e.timestamp_minute,
                 actor_slot

@@ -318,9 +318,20 @@ mod tests {
                 .flat_map(|l| l.chars().skip(2).take(cols))
                 .filter(char::is_ascii_alphabetic)
                 .count();
-            let ball_on_a_player = t.record.ball.state != BallState::Possessed
-                && cells.contains(&view.cell((t.record.ball.position.0, t.record.ball.position.1)));
-            assert_eq!(drawn + usize::from(ball_on_a_player), cells.len(), "\n{f}");
+            let ball_cell = view.cell((t.record.ball.position.0, t.record.ball.position.1));
+            let ball_drawn = t.record.ball.state != BallState::Possessed;
+            let ball_on_a_player = ball_drawn && cells.contains(&ball_cell);
+            // A ball in the air is drawn `o`, a letter: off a player's cell
+            // it adds one to the count.
+            let ball_is_a_letter = ball_drawn
+                && !ball_on_a_player
+                && t.record.ball.state == BallState::InFlight
+                && t.record.ball.position.2 > AIR_CM;
+            assert_eq!(
+                drawn + usize::from(ball_on_a_player) - usize::from(ball_is_a_letter),
+                cells.len(),
+                "\n{f}"
+            );
         }
     }
 

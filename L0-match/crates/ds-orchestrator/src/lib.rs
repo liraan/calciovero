@@ -477,6 +477,20 @@ impl GroundTruth {
             ctx.to.2,
         );
         let dir = Self::direction_3d(ctx.from, aim);
+        if let Some(gravity) = ctx.lofted {
+            // In the air: no grass slows it, so he gives it the speed to
+            // land at the receiver after `loft_ticks_per_10m` per ten metres
+            // of flight, and the lift to stay up that long.
+            let flight = (distance / 1000.0 * k.loft_ticks_per_10m).max(1.0);
+            let horizontal = (distance * (1.0 + error) / flight).min(max);
+            #[allow(clippy::cast_possible_truncation)]
+            let v = Self::velocity(dir, horizontal.round() as i16);
+            #[allow(clippy::cast_possible_truncation)]
+            let lift = (f64::from(gravity) * flight / 2.0).round() as i16;
+            return PassOutcome {
+                initial_velocity: (v.0, v.1, lift),
+            };
+        }
         #[allow(clippy::cast_possible_truncation)]
         let initial_velocity = Self::velocity(dir, speed.round() as i16);
         PassOutcome { initial_velocity }

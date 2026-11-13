@@ -185,7 +185,11 @@ pub(crate) enum ChosenAction {
     /// has (cm, distance to the nearest opponent). The freedom is computed
     /// once in `choose_action` and carried to the reception, not recomputed
     /// (D7, one source of truth).
-    Pass { receiver: PlayerId, freedom_cm: i64 },
+    Pass {
+        receiver: PlayerId,
+        freedom_cm: i64,
+        lofted: bool,
+    },
     /// Shoot at the opponent goal.
     Shoot {
         aim_y: f64,
@@ -690,7 +694,8 @@ impl MatchState {
         let (chosen_kind, freedoms) =
             ds_orchestrator::Actor::new(attacker).decide(&scene, ctx.hidden, tick);
         let chosen = match chosen_kind {
-            ds_orchestrator::ChoiceKind::Pass(receiver) => {
+            ds_orchestrator::ChoiceKind::Pass(receiver)
+            | ds_orchestrator::ChoiceKind::Loft(receiver) => {
                 let freedom_cm = freedoms
                     .get(&receiver)
                     .copied()
@@ -698,6 +703,7 @@ impl MatchState {
                 ChosenAction::Pass {
                     receiver,
                     freedom_cm,
+                    lofted: matches!(chosen_kind, ds_orchestrator::ChoiceKind::Loft(_)),
                 }
             }
             ds_orchestrator::ChoiceKind::Shoot {
@@ -759,6 +765,7 @@ impl MatchState {
         if let ChosenAction::Pass {
             receiver,
             freedom_cm,
+            lofted,
         } = chosen
         {
             let from = match self.spatial.agent(attacker) {
@@ -782,8 +789,12 @@ impl MatchState {
                     i32::from(ctx.match_.pitch.length_m) * 50,
                     i32::from(ctx.match_.pitch.width_m) * 50,
                 ),
+                lofted: lofted.then(|| self.spatial.gravity_cm_per_tick2()),
             };
             let outcome = ctx.hidden.resolve_pass(&ctx_pass, &params);
+            if lofted {
+                self.tell_cross(ctx, tick, attacker, (from.0, from.1), (to.0, to.1));
+            }
             // MD-25/F.4-c: carrier released at launch, ball flies, pending
             // resolves the possession (MD-37).
             self.spatial.set_carrier(None);
@@ -797,8 +808,12 @@ impl MatchState {
                 .copied()
                 .filter(|o| !seen.contains(o))
                 .collect();
-            let interceptor =
-                find_interceptor(&self.spatial, &unseen, (from.0, from.1), (to.0, to.1));
+            // A lofted ball goes over the line: nobody on it cuts it out.
+            let interceptor = if lofted {
+                None
+            } else {
+                find_interceptor(&self.spatial, &unseen, (from.0, from.1), (to.0, to.1))
+            };
             let expected = if interceptor.is_some() {
                 Self::other(self.possession)
             } else {
@@ -952,6 +967,34 @@ impl MatchState {
     /// player once he is within `loose_control_radius_cm` of it, and his
     /// team has the possession. Before this the ball stayed loose until the
     /// next decision, and the match stood still around it (OI-97).
+    /// A lofted pass from a wide position into the opponents' penalty area
+    /// is a cross (ADR-051): it is told as one.
+    fn tell_cross(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        crosser: PlayerId,
+        from: (i32, i32),
+        to: (i32, i32),
+    ) {
+        let (length, width) = pitch_cm(ctx);
+        let home = ctx.match_.home.players.iter().any(|p| p.id == crosser);
+        let laws = self.laws;
+        let goal_x = if home { length } else { 0 };
+        let wide = (from.1 - width / 2).abs() > laws.penalty_area_half_width_cm;
+        let into_area = (goal_x - to.0).abs() <= laws.penalty_area_depth_cm
+            && (to.1 - width / 2).abs() <= laws.penalty_area_half_width_cm;
+        if wide && into_area {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(crosser)),
+                EventType::Cross,
+                serde_json::json!({ "x": from.0, "y": from.1 }),
+            );
+        }
+    }
+
     /// The carrier clears the ball (ADR-051, "clear"): his strongest kick,
     /// lifted, towards a point up the pitch on his side's wing; to no
     /// one. Out over a touchline it is a throw-in for the opponents.

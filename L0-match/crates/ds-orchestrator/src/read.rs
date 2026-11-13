@@ -443,6 +443,20 @@ fn pass_candidates(
             risk,
             visibility: lq,
         });
+        // The lofted pass goes over the line, so the lane does not count,
+        // and it reaches farther; it is less precise and harder to control
+        // (`loft_salience`). A teammate too far for a ground pass may be
+        // found in the air (ADR-051, the long ball, the switch, the cross).
+        let d = distance_squared(pos, tpos).isqrt();
+        if d >= balance.loft_min_cm {
+            let reach = (1.0 - (d as f64 / balance.loft_max_cm.max(1) as f64)).max(0.0);
+            candidates.push(ChoiceCandidate {
+                kind: ChoiceKind::Loft(*id),
+                geometric: balance.loft_salience * freedom_norm * reach.sqrt() * brings,
+                risk,
+                visibility: 1.0,
+            });
+        }
         freedoms.insert(*id, freedom);
     }
     (candidates, freedoms)

@@ -85,6 +85,9 @@ pub struct PassContext {
     /// The centre of the pitch, cm: the passer's body is open to the play,
     /// and a pass that drifts drifts that way.
     pub pitch_centre: (i32, i32),
+    /// A lofted pass (over the opponents), and gravity for its flight,
+    /// cm/tick².
+    pub lofted: Option<i32>,
 }
 
 /// The context of a reception (REC): the receiver and the geometry of

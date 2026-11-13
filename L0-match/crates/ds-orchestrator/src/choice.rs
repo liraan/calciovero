@@ -26,6 +26,9 @@ use crate::GroundTruth;
 pub enum ChoiceKind {
     /// Pass to a teammate.
     Pass(PlayerId),
+    /// A lofted pass to a teammate, over the opponents: the long ball, the
+    /// switch, the cross (ADR-051, "the kick").
+    Loft(PlayerId),
     /// Shoot: the complete phrase of ADR-046 §1 and ADR-047.
     Shoot {
         /// Lateral component of the aim on the goal plane, cm (ADR-046 §1).
@@ -137,7 +140,7 @@ impl GroundTruth {
             let score = Calculator::apply(&formula, &mut custodian, &situation);
             scores.push(score);
             let tiebreak = match candidate.kind {
-                ChoiceKind::Pass(p) => p.slot(),
+                ChoiceKind::Pass(p) | ChoiceKind::Loft(p) => p.slot(),
                 ChoiceKind::Shoot { .. }
                 | ChoiceKind::Duel
                 | ChoiceKind::Advance

@@ -36,6 +36,8 @@ pub struct KickBalance {
     pub clear_length_cm: i32,
     /// A clearance's vertical speed, as a share of the horizontal one.
     pub clear_loft: f64,
+    /// A lofted pass's flight, ticks per ten metres.
+    pub loft_ticks_per_10m: f64,
 }
 
 impl KickBalance {
