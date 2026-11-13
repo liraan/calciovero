@@ -77,11 +77,14 @@ impl SaveBalance {
         if reach_cm <= 0.0 {
             return false;
         }
-        // The two causes add, each at its reference demanding perfect
-        // hands, as the two values are defined: a ball at the edge of his
-        // reach, or a ball at `catch_speed_ref` (2026-11-13). Before
-        // `SIM_VERSION` 76 they multiplied, and every save was held.
-        let difficulty = offset_cm / reach_cm + speed / self.catch_speed_ref_cm_per_tick.max(1.0);
+        // The two causes add, and together, at their references, they
+        // demand perfect hands, as `catch_speed_ref` is defined: a ball at
+        // that speed at the edge of his reach (2026-11-13; at 77-85 each
+        // alone demanded them, and no ball was ever held).
+        let difficulty = 0.5f64.mul_add(
+            offset_cm / reach_cm,
+            0.5 * speed / self.catch_speed_ref_cm_per_tick.max(1.0),
+        );
         f64::from(handling) >= difficulty
     }
 }
@@ -136,12 +139,15 @@ mod tests {
         assert!(b.held(0.3, 10.0, 200.0, 50.0));
     }
 
-    /// The two causes add (`SIM_VERSION` 76): a hard shot straight at him
-    /// is parried even by good hands, and so is a ball at full stretch.
+    /// The two causes add, and together at their references they demand
+    /// perfect hands (as `catch_speed_ref` is defined): a ball at that speed
+    /// at the edge of his reach is parried by all but perfect hands; a hard
+    /// shot at the body is held by good hands, parried by poor ones.
     #[test]
-    fn a_hard_shot_or_a_full_stretch_is_parried() {
+    fn the_hard_ball_at_full_stretch_is_parried() {
         let b = SaveBalance::load();
-        assert!(!b.held(0.9, 10.0, 200.0, 300.0));
-        assert!(!b.held(0.9, 190.0, 200.0, 120.0));
+        assert!(!b.held(0.99, 200.0, 200.0, b.catch_speed_ref_cm_per_tick));
+        assert!(b.held(0.9, 10.0, 200.0, 300.0));
+        assert!(!b.held(0.3, 10.0, 200.0, 300.0));
     }
 }

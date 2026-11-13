@@ -38,7 +38,7 @@ with their first consumer (ADR-051 §4).
 | Act | Quantities | Roots | Engine today |
 |---|---|---|---|
 | Run, sprint | top speed, acceleration | max speed, explosive force, weight; fatigue dims | ✓ `resolve_movement` (`balance/movement.json`); measured: speed follows `max_speed` |
-| Turn, change direction | time to turn, speed kept | *joint mobility*, body control, weight | ◐ since 78: he turns by braking (body control); the heading follows the velocity; joint mobility ✗ |
+| Turn, change direction | time to turn, speed kept | joint mobility, body control, weight | ✓ since 86: turning by more than 60 degrees he brakes with 60-100% of his braking by joint mobility |
 | Stop, decelerate | braking | body control | ✓ since 78: decel 3.5-6 m/s² by body control; he brakes to stop at his place |
 | Jump | height, timing | explosive force, height, *joint mobility* | ◐ since 71: in the aerial duel, height plus explosive force; timing and joint mobility ✗ |
 | Endure the 90 minutes | how fast fatigue rises, recovers | endurance | ✓ since 73: fatigue grows with the effort (speed squared) against endurance, recovers walking and at half-time (`balance/fatigue.json`); it dims acceleration and top speed; seen in the tick record; his thought still believes his pace fresh |

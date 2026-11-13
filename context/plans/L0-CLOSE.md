@@ -35,7 +35,7 @@ Gol ~2,7 · tiri ~25 · nello specchio ~9 · angoli ~10 · falli ~22 · gialli ~
 | 10b | **Il pensiero intero** (ADR-052 e) — fatto (81, 82) | visione (quanti e quanto lontano vede), anticipazione (quanto avanti immagina), creatività (le opzioni che pochi vedrebbero), concentrazione (l'appannatore che cala) |
 | 10c | **Senza palla** — fatto (83, 84) | la copertura e la corsa all'indietro, l'intercetto come scelta (entrare nella linea), il passaggio respinto, lo smarcamento che legge la linea libera; disciplina e generosità (work rate) |
 | 10d | **In porta** — in parte (85: le mani e il rinvio con le mani; aperti con la causa mancante: il piazzarsi al momento del tiro, la profondità letta, l'uscita sul passaggio) | la posizione letta (non una regola), pronto o no quando parte il tiro (concentrazione), l'uscita come scelta anche sul filtrante e sul cross, il rinvio con le mani e con i piedi |
-| 10e | **Il corpo** | girarsi (mobilità articolare), il tempo del salto |
+| 10e | **Il corpo** — girarsi fatto (86); il tempo del salto aperto | girarsi (mobilità articolare), il tempo del salto |
 | 10f | **L'allenatore in partita** | le sostituzioni |
 | 10g | **L'arbitro disegnato** | presente nella vista 2D, senza occlusione |
 

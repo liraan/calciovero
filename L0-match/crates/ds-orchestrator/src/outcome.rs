@@ -102,6 +102,8 @@ pub struct MovementOutcome {
     pub v_max: f64,
     /// The braking, in cm/tick² (body control).
     pub deceleration: f64,
+    /// The share of his braking he turns with (joint mobility).
+    pub turn_share: f64,
     /// A player taking up his place gets there in about this many ticks.
     pub reposition_ticks: f64,
     /// The share of his top speed he keeps with the ball (dribbling).

@@ -45,6 +45,10 @@ pub struct MovementBalance {
     pub decel_min_cm_per_tick2: f64,
     /// The braking of the most balanced professional, cm/tick².
     pub decel_max_cm_per_tick2: f64,
+    /// The share of his braking the stiffest player turns with.
+    pub turn_share_min: f64,
+    /// The share of his braking the most mobile player turns with.
+    pub turn_share_max: f64,
     /// The share of his sprint the worst dribbler keeps with the ball.
     pub with_ball_share_min: f64,
     /// The share of his sprint the best dribbler keeps with the ball.
@@ -74,6 +78,8 @@ struct MovementBalanceRaw {
     top_speed_max_cm_per_tick: f64,
     decel_min_cm_per_tick2: f64,
     decel_max_cm_per_tick2: f64,
+    turn_share_min: f64,
+    turn_share_max: f64,
     with_ball_share_min: f64,
     with_ball_share_max: f64,
     reposition_ticks: f64,
@@ -103,6 +109,8 @@ impl MovementBalance {
             top_speed_max_cm_per_tick: raw.top_speed_max_cm_per_tick,
             decel_min_cm_per_tick2: raw.decel_min_cm_per_tick2,
             decel_max_cm_per_tick2: raw.decel_max_cm_per_tick2,
+            turn_share_min: raw.turn_share_min,
+            turn_share_max: raw.turn_share_max,
             with_ball_share_min: raw.with_ball_share_min,
             with_ball_share_max: raw.with_ball_share_max,
             reposition_ticks: raw.reposition_ticks,

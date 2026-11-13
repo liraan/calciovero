@@ -845,6 +845,8 @@ impl GroundTruth {
             acceleration,
             v_max,
             deceleration,
+            turn_share: (balance.turn_share_max - balance.turn_share_min)
+                .mul_add(f64::from(latents.joint_mobility), balance.turn_share_min),
             reposition_ticks: balance.reposition_ticks,
             with_ball_share: (balance.with_ball_share_max - balance.with_ball_share_min)
                 .mul_add(f64::from(dribbling), balance.with_ball_share_min),
@@ -1470,6 +1472,24 @@ mod choice_filter_tests {
             "{thrown}"
         );
         assert!(pass(&mut g, false) > thrown, "the foot kicks it harder");
+    }
+
+    /// Twin test (plan L0-CLOSE 10e, joint mobility): the more mobile
+    /// player turns with more of his braking.
+    #[test]
+    fn the_mobile_player_turns_quicker() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (weak, strong) = ends(&mut g, |l| l.physical.joint_mobility);
+        let turn = |g: &mut GroundTruth, p: PlayerId| {
+            g.resolve_movement(&MovementContext {
+                player: p,
+                height_cm: 180.0,
+                weight_kg: 78.0,
+                fatigue: 0.0,
+            })
+            .turn_share
+        };
+        assert!(turn(&mut g, strong) > turn(&mut g, weak) + 0.25);
     }
 
     /// Twin test (plan L0-CLOSE 10c, work rate): the more generous player

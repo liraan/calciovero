@@ -92,6 +92,7 @@ impl Profiles {
                 maximal_force: value("maximal_force", "family:physical"),
                 body_control: value("body_control", "family:physical"),
                 endurance: value("endurance", "family:physical"),
+                joint_mobility: value("joint_mobility", "family:physical"),
             },
             technical: TechnicalLatents {
                 finishing: value("finishing", "family:technical"),

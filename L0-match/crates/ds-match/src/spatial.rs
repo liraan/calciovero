@@ -743,7 +743,16 @@ impl SpatialState {
             // acceleration, slowing down or turning by his braking.
             let (cx, cy) = (wx - v_prev.0, wy - v_prev.1);
             let change = cx.hypot(cy);
-            let limit = if wanted > v_prev.0.hypot(v_prev.1) {
+            let now = v_prev.0.hypot(v_prev.1);
+            // Turning by more than 60 degrees (plan L0-CLOSE 10e): he brakes
+            // and turns with the share of his braking his joint mobility
+            // gives him.
+            let turning = now > 0.0
+                && wanted > 0.0
+                && v_prev.0.mul_add(wx, v_prev.1 * wy) < 0.5 * now * wanted;
+            let limit = if turning {
+                decel * outcome.turn_share
+            } else if wanted > now {
                 accel
             } else {
                 decel
