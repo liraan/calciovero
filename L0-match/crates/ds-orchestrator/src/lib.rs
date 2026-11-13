@@ -777,7 +777,9 @@ impl GroundTruth {
         // (`PlayerLatents: Copy`), so the borrow ends at the end of this
         // line.
         let mut custodian = self.custodian(ctx.player);
-        let latents = self.latents_for(ctx.player).physical;
+        let all = self.latents_for(ctx.player);
+        let latents = all.physical;
+        let dribbling = all.technical.dribbling;
         let max_speed = latents.max_speed;
         let balance = &self.movement_balance;
         // v_max and stride are not terms of the acceleration formula: they
@@ -806,6 +808,8 @@ impl GroundTruth {
             v_max,
             deceleration,
             reposition_ticks: balance.reposition_ticks,
+            with_ball_share: (balance.with_ball_share_max - balance.with_ball_share_min)
+                .mul_add(f64::from(dribbling), balance.with_ball_share_min),
             stride,
         }
     }

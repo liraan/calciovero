@@ -291,39 +291,62 @@ fn brings(
         .max(balance.progression_floor)
 }
 
-/// The salience of carrying the ball (ADR-051, "carry"): the room in front
-/// of him towards the goal (the nearest opponent ahead, against
-/// `carry_room_ref_cm`), and what the carry brings (the same term as a
-/// pass, to the point he can reach).
-#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+/// The directions he may carry the ball in, as unit vectors (thousandths):
+/// towards the goal, and turned 35 and 70 degrees to either side, so that
+/// he may take it into the space beside a man (fixed rotations, no trig in
+/// the simulation path).
+fn carry_directions(pos: (i32, i32), goal: (i32, i32)) -> Vec<(f64, f64)> {
+    let (gx, gy) = (f64::from(goal.0 - pos.0), f64::from(goal.1 - pos.1));
+    let len = gx.hypot(gy).max(1.0);
+    let (ux, uy) = (gx / len, gy / len);
+    let rot = |c: f64, s: f64| (ux.mul_add(c, -(uy * s)), ux.mul_add(s, uy * c));
+    vec![
+        (ux, uy),
+        rot(0.8192, 0.5736),
+        rot(0.8192, -0.5736),
+        rot(0.3420, 0.9397),
+        rot(0.3420, -0.9397),
+    ]
+}
+
+/// What carrying the ball in direction `dir` is worth (ADR-052), and where
+/// it takes him: as far as the room the opponents ahead leave, at most
+/// `carry_room_ref_cm`, against who could get there first; within the
+/// pitch.
+#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)] // cm on a pitch
 fn carry_salience(
     pos: (i32, i32),
     (goal, own_goal): ((i32, i32), (i32, i32)),
+    dir: (f64, f64),
     opponents: &[(i32, i32)],
     risk_appetite: f64,
-    pressure: f64,
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
-) -> f64 {
-    let (gx, gy) = (i64::from(goal.0 - pos.0), i64::from(goal.1 - pos.1));
-    let reference = balance.carry_room_ref_cm.max(1);
+) -> (f64, (i32, i32)) {
+    let reference = balance.carry_room_ref_cm.max(1) as f64;
+    // The room: the nearest opponent in front of him in that direction
+    // (within 45 degrees of it).
     let room = opponents
         .iter()
-        .filter(|o| i64::from(o.0 - pos.0) * gx + i64::from(o.1 - pos.1) * gy > 0)
-        .map(|o| distance_squared(pos, *o).isqrt())
-        .min()
-        .unwrap_or(reference)
-        .min(reference);
-    let len = (gx * gx + gy * gy).isqrt().max(1);
-    let step = room.min(len);
+        .filter_map(|o| {
+            let (ox, oy) = (f64::from(o.0 - pos.0), f64::from(o.1 - pos.1));
+            let d = ox.hypot(oy);
+            let along = ox.mul_add(dir.0, oy * dir.1);
+            (along > std::f64::consts::FRAC_1_SQRT_2 * d).then_some(d)
+        })
+        .fold(reference, f64::min);
+    let goal_dist = f64::from(goal.0 - pos.0).hypot(f64::from(goal.1 - pos.1));
+    let step = room.min(goal_dist);
+    let (length, width) = ((goal.0 - own_goal.0).abs(), goal.1 * 2);
     let ahead = (
-        pos.0 + i32::try_from(gx * step / len).unwrap_or(0),
-        pos.1 + i32::try_from(gy * step / len).unwrap_or(0),
+        dir.0.mul_add(step, f64::from(pos.0)).round() as i32,
+        dir.1.mul_add(step, f64::from(pos.1)).round() as i32,
     );
-    let _ = (pressure, balance.carry_salience);
-    // ADR-052: he imagines carrying it to `ahead`, at the speed he runs
-    // with the ball, against the opponents who could get there first.
+    let ahead = (
+        ahead.0.clamp(0, length),
+        ahead.1.clamp(100, (width - 100).max(100)),
+    );
     let m = mind();
-    let mine = step as f64 / m.thought.believed_speed_cm_per_tick;
+    let mine = step / m.thought.believed_speed_cm_per_tick;
     let theirs = opponents
         .iter()
         .map(|o| {
@@ -334,7 +357,11 @@ fn carry_salience(
     let confidence = m.thought.confidence(theirs - mine);
     let gain = space_value(ahead, goal, own_goal);
     let loss = space_value(pos, own_goal, goal);
-    ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, risk_appetite).max(0.0)
+    (
+        ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, risk_appetite)
+            .max(0.0),
+        ahead,
+    )
 }
 
 /// The balances the player's thought reads (ADR-052), parsed once.
@@ -911,20 +938,30 @@ pub fn build_choice(
     // fallback when nothing was clear, and the carrier passed as soon as
     // he received).
     if scene.can_carry {
-        let carry = carry_salience(
-            pos,
-            (scene.goal, scene.own_goal),
-            &opponent_positions,
-            risk_appetite,
-            pressure,
-            balance,
-        );
-        candidates.extend((carry > 0.0).then_some(ChoiceCandidate {
-            kind: ChoiceKind::Advance,
-            geometric: carry,
-            risk: pressure,
-            visibility: 1.0,
-        }));
+        // The direction is his (plan L0-CLOSE 10a): to goal, or into the
+        // space on either side, each imagined as the carry towards goal is.
+        for (i, dir) in carry_directions(pos, scene.goal).into_iter().enumerate() {
+            let carry = carry_salience(
+                pos,
+                (scene.goal, scene.own_goal),
+                dir,
+                &opponent_positions,
+                risk_appetite,
+                balance,
+            );
+            if carry.0 > 0.0 {
+                candidates.push(ChoiceCandidate {
+                    kind: if i == 0 {
+                        ChoiceKind::Advance
+                    } else {
+                        ChoiceKind::Carry { to: carry.1 }
+                    },
+                    geometric: carry.0,
+                    risk: pressure,
+                    visibility: 1.0,
+                });
+            }
+        }
     }
     candidates.extend(clear_candidate(
         pos,
@@ -1069,6 +1106,33 @@ mod keeper_visibility_tests {
         });
         let at = through.expect("a through ball to the runner");
         assert!(at.0 >= 8000, "ahead of his run, not behind: {at:?}");
+    }
+
+    /// The direction of the carry is his (P1, plan L0-CLOSE 10a): with a
+    /// defender straight in front and room beside him, carrying it into
+    /// the space on the side is worth more than carrying it into the man.
+    #[test]
+    fn he_carries_it_into_the_space_beside_the_man() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let mut s = scene_with(None);
+        let defender = PlayerId::new(105, 0);
+        s.positions.insert(PlayerId::new(1, 0), (5000, 3400));
+        s.opponents.push(defender);
+        s.positions.insert(defender, (5600, 3400));
+        let (ctx, _) = build_choice(&s, Side::Right, 0.5, 0.04, &balance);
+        let straight = ctx
+            .candidates
+            .iter()
+            .filter(|c| c.kind == ChoiceKind::Advance)
+            .map(|c| c.geometric)
+            .fold(0.0, f64::max);
+        let aside = ctx
+            .candidates
+            .iter()
+            .filter(|c| matches!(c.kind, ChoiceKind::Carry { .. }))
+            .map(|c| c.geometric)
+            .fold(0.0, f64::max);
+        assert!(aside > straight, "aside {aside} straight {straight}");
     }
 
     /// A penalty is a shot (Law 14): nobody is ahead of the ball, so the

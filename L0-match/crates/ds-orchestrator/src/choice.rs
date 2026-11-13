@@ -54,6 +54,12 @@ pub enum ChoiceKind {
     /// Clear the ball: kick it long and high, away from his own goal, to
     /// no one (ADR-051, "clear").
     Clear,
+    /// Carry the ball towards this point, the direction he chose (plan
+    /// L0-CLOSE 10a): to goal, or into the space on either side.
+    Carry {
+        /// Where he takes it, cm.
+        to: (i32, i32),
+    },
 }
 
 /// The side of the body: which foot the actor prefers (ADR-047, forma (d)).
@@ -154,6 +160,7 @@ impl GroundTruth {
                 ChoiceKind::Shoot { .. }
                 | ChoiceKind::Duel
                 | ChoiceKind::Advance
+                | ChoiceKind::Carry { .. }
                 | ChoiceKind::Clear => ctx.actor.slot(),
             };
             tiebreaks.push(tiebreak);

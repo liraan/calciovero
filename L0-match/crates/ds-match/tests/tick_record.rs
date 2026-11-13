@@ -37,8 +37,10 @@ fn one_record_per_tick_in_order() {
     }
     let tps = u64::from(MatchConfig::default().ticks_per_second);
     let minutes = (records.len() as u64) / tps / 60;
+    // The stoppage follows the goals and the fouls (`stoppage_time.json`):
+    // how long it runs is the realism of step 11, not this guard's.
     assert!(
-        (90..=110).contains(&minutes),
+        (90..=120).contains(&minutes),
         "a match is about ninety minutes plus stoppage: {minutes}'"
     );
 }

@@ -206,6 +206,9 @@ pub(crate) enum ChosenAction {
     /// nothing clearer. No event, no ball flight; the tick's movement
     /// already advances the carrier each tick (ADR-040 note 2026-11-09).
     Advance,
+    /// Carry the ball towards this point, the direction he chose (plan
+    /// L0-CLOSE 10a).
+    Carry((i32, i32)),
     /// Clear the ball away (ADR-051).
     Clear,
 }
@@ -806,6 +809,7 @@ impl MatchState {
             },
             ds_orchestrator::ChoiceKind::Duel => ChosenAction::Duel,
             ds_orchestrator::ChoiceKind::Advance => ChosenAction::Advance,
+            ds_orchestrator::ChoiceKind::Carry { to } => ChosenAction::Carry(to),
             ds_orchestrator::ChoiceKind::Clear => ChosenAction::Clear,
         };
 
@@ -848,6 +852,18 @@ impl MatchState {
                     len
                 };
                 let step = d.min(room).max(0);
+                self.spatial
+                    .set_carry_target(Some((x + dx * step / len, y + dy * step / len)));
+            }
+        }
+        if let ChosenAction::Carry(to) = chosen {
+            // Into the space he chose, as far as his carry goes.
+            if let Some(a) = self.spatial.agent(attacker) {
+                let (x, y) = a.position;
+                let (dx, dy) = (to.0 - x, to.1 - y);
+                let len = (i64::from(dx).pow(2) + i64::from(dy).pow(2)).isqrt();
+                let len = i32::try_from(len).unwrap_or(1).max(1);
+                let step = self.carry_balance.carry_distance_cm.min(len);
                 self.spatial
                     .set_carry_target(Some((x + dx * step / len, y + dy * step / len)));
             }

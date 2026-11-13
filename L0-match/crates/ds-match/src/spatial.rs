@@ -689,7 +689,14 @@ impl SpatialState {
             let stride = outcome.stride;
             let accel = outcome.acceleration * stride;
             let decel = outcome.deceleration * stride;
-            let top = outcome.v_max * stride;
+            // With the ball he runs at the share his dribbling keeps.
+            let top = outcome.v_max
+                * stride
+                * if Some(entry.0) == self.carrier {
+                    outcome.with_ball_share
+                } else {
+                    1.0
+                };
             let (dx, dy) = (
                 f64::from(target.0 - entry.1.0),
                 f64::from(target.1 - entry.1.1),
