@@ -8,6 +8,9 @@ license.workspace = true
 repository.workspace = true
 description = "Demo CLI for PCFM: simulate a match and print the result"
 
+[lib]
+path = "src/lib.rs"
+
 [[bin]]
 name = "ds-demo"
 path = "src/main.rs"

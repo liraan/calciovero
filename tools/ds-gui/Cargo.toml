@@ -1,0 +1,28 @@
+[package]
+name = "ds-gui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Calcio Vero's desktop GUI (egui, ADR-055): the friendly match on a 2D pitch"
+
+[[bin]]
+name = "ds-gui"
+path = "src/main.rs"
+
+[dependencies]
+ds-core.workspace = true
+ds-model.workspace = true
+ds-stats.workspace = true
+ds-match.workspace = true
+ds-fixtures.workspace = true
+ds-demo = { path = "../ds-demo" }
+serde.workspace = true
+serde_json.workspace = true
+# ADR-055: pinned to the last version that keeps the workspace's Rust 1.85.
+eframe = "=0.32.3"
+
+[lints]
+workspace = true

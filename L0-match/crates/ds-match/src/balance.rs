@@ -234,6 +234,14 @@ pub struct LawsBalance {
     pub penalty_area_depth_cm: i32,
     /// The penalty area's half width, cm (Law 1).
     pub penalty_area_half_width_cm: i32,
+    /// The goal area's depth, cm (Law 1).
+    pub goal_area_depth_cm: i32,
+    /// The goal area's half width, cm (Law 1).
+    pub goal_area_half_width_cm: i32,
+    /// The centre circle's radius, cm (Law 1).
+    pub centre_circle_radius_cm: i32,
+    /// Half the distance between the posts, cm (Law 1).
+    pub goal_half_width_cm: i32,
 }
 
 impl LawsBalance {

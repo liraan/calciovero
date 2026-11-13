@@ -121,6 +121,7 @@ calciovero/
 │
 ├── tools/                   crates that are tools, not the simulation
 │   ├── ds-demo/             demonstrate a match (text, JSON, HTML)
+│   ├── ds-gui/              the desktop GUI (egui, ADR-055)
 │   ├── ds-fixtures/         the demo and test squads
 │   ├── ds-testkit/          the test contract (no dependency on any ds-* crate)
 │   └── ds-test-runner/      run the scenarios (`--check`)
@@ -282,7 +283,7 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 002 | Project name and scope | ✅ accepted | — |
 | 003 | Plane A enforcement | ✅ accepted | — (unblocked L0.04, L0.08, L0.10) |
 | 004 | Panic strategy at FFI | ✅ accepted | — |
-| 005 | Qt binding | ✅ accepted (amended by ADR-022) | — (unblocked L3-ui, pcfm-bridge; presentation primacy amended by ADR-022) |
+| 005 | Qt binding | ⛔ superseded by ADR-055 (amended by ADR-022) | — (unblocked L3-ui, pcfm-bridge; presentation primacy amended by ADR-022) |
 | 006 | License | ✅ accepted | — (unblocked LICENSE.md, every Cargo.toml) |
 | 007 | Canonical language | ✅ accepted | — (unblocked translations, language policy) |
 | 008 | Provider integration is external | ✅ accepted | — (reclassified L2-ingest as external tool) |
@@ -329,6 +330,7 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 052 | Every player thinks: the choice is his own imagined football | ✅ accepted | A player recognises his options, imagines what each would lead to from his own perception (the same physics and Laws, his limits by cause), and judges the outcomes with one measure (nearer to scoring, nearer to conceding); the cognitive characteristics (vision, game reading, anticipation, decision making, risk, creativity, concentration) are the quality of that thought. The per-option weights are removed; statistics are the test, not the target. Amends ADR-040, ADR-050, ADR-049. |
 | 053 | The ball is touched, not carried | ✅ accepted | The carrier plays the ball ahead and meets it again: the touch weighed by the ground friction to come back to his foot after a period from his speed and `dribbling`; between touches it rolls on its own, he plays it only at his foot, and a defender who reaches it then wins it with nobody to answer. Amends ADR-042. |
 | 054 | The shot is a spread, and the contact chooses where in it | ✅ accepted | The miss is a width (the engine's angle, its base from a measured source) and the contact, the phase of the shooter's stride when his foot meets the ball, chooses where in it the ball goes: late it runs away and rises, early it is pulled across and kept low. The shooter knows the width as he reads it, not the side. Amends ADR-046, ADR-051. |
+| 055 | The GUI is egui, behind the view model | ✅ accepted | Supersedes ADR-005: the GUI is `egui`/`eframe` in `tools/ds-gui`, pure Rust, built now beside the TUI (amends ADR-022 §1-2); it reads only the projection of Plane B (and C at L2) and sends back only the manager's choices (ADR-022 §3 unchanged); colours in `theme.json`; two families of screens, one per clock; the why on screen. |
 
 **Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048 (42). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
 

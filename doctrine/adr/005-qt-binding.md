@@ -1,9 +1,9 @@
 # ADR-005 — Qt Binding
 
-- **Status:** accepted
+- **Status:** superseded
 - **Date:** 2026-10-25
 - **Supersedes:** none
-- **Superseded by:** none
+- **Superseded by:** ADR-055
 - **Amended by:** ADR-022 (presentation primacy only)
 - **Blocks:** `L3-ui` (UI implementation), `pcfm-bridge` (FFI crate), `L0.04` (if UI affects match display)
 

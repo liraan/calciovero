@@ -11,6 +11,7 @@ members = [
     "L0-match/crates/ds-stats",
     "tools/ds-test-runner",
     "tools/ds-demo",
+    "tools/ds-gui",
     "tools/ds-fixtures",
     "tools/ds-testkit",   # ← NUOVO
     "L0-match/crates/ds-calculator",

@@ -282,7 +282,7 @@ scenario.
 | World system (ADR-013) | Accepted, not implemented | Save format, LOD, manifest |
 | 3D match engine | Planned | `crates/pcfm-match-3d/` |
 | TUI (primary, v1) | Planned | `crates/pcfm-tui/` (or `pcfm-demo` prototype first, per IDEA-INFRA-006) |
-| Qt UI (future GUI) | Planned | `crates/pcfm-bridge/`, `crates/pcfm-ui/` |
+| GUI (egui, ADR-055) | In progress | `tools/ds-gui/` |
 | Deterministic sim model (realistic xG, duels, …) | Prototype | `pcfm-hidden::resolve_*` |
 
 The current simulation (`pcfm-hidden::resolve_*`) is a **prototype**.

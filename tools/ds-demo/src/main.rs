@@ -11,10 +11,10 @@
 //! ```
 
 mod board;
-mod friendly;
-mod pitchview;
 mod render;
 mod viewmodel;
+
+use ds_demo::{friendly, pitchview};
 
 use std::process::ExitCode;
 

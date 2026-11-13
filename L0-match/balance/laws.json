@@ -5,6 +5,10 @@
   "penalty_spot_cm": 1100,
   "penalty_area_depth_cm": 1650,
   "penalty_area_half_width_cm": 2016,
+  "goal_area_depth_cm": 550,
+  "goal_area_half_width_cm": 916,
+  "centre_circle_radius_cm": 915,
+  "goal_half_width_cm": 366,
   "_note": "Law 12 applied objectively (the referee is the Laws, ADR-021 note 2026-11-13; ADR-042 step b). A foul is the fact of a contact (the duel's band); its sanction is read from the facts: a slide from behind at an approach speed of at least reckless_speed_milli of the reference speed is reckless (yellow card); a challenge on his feet is careless (no card); a slide from behind at excessive_speed_milli or more is excessive force (red card); a foul that denies an obvious goal-scoring opportunity (the carrier within dogso_distance_cm of the goal he attacks, no defender other than the offender, the keeper included, nearer to that goal than him) is a red card. Inside the penalty area the free kick is a penalty, taken from penalty_spot_cm off the goal line. A second yellow is a red; a red sends the player off. Advantage: when the side that suffered the foul keeps the ball in the opponents' half, play goes on (the card, if any, is shown at once).",
-  "_source": "Laws of the Game (IFAB): Law 1 for the penalty area (16.5 m deep, 40.32 m wide) and the penalty mark (11 m); Law 12 for careless, reckless and excessive force, the denial of an obvious goal-scoring opportunity and the advantage. The speed thresholds and dogso_distance_cm are arbitrary, declared, to be calibrated at L3 against real foul and card counts (about 20 fouls, 4 yellow cards and 0.1-0.2 red cards a match)."
+  "_source": "Laws of the Game (IFAB): Law 1 for the penalty area (16.5 m deep, 40.32 m wide) and the penalty mark (11 m); Law 12 for careless, reckless and excessive force, the denial of an obvious goal-scoring opportunity and the advantage. The speed thresholds and dogso_distance_cm are arbitrary, declared, to be calibrated at L3 against real foul and card counts (about 20 fouls, 4 yellow cards and 0.1-0.2 red cards a match). goal_area_depth_cm, goal_area_half_width_cm, centre_circle_radius_cm, goal_half_width_cm (2026-11-13, ADR-055, read by the GUI to draw the pitch): Law 1, the goal area 5.5 m deep and 18.32 m wide, the centre circle 9.15 m, the goal 7.32 m between the posts."
 }

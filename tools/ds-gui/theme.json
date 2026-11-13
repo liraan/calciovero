@@ -1,0 +1,19 @@
+{
+  "pitch": "#2f6b3a",
+  "pitch_stripe": "#2c6436",
+  "lines": "#e6eee8",
+  "home": "#c8453b",
+  "away": "#2f5db8",
+  "keeper_home": "#e0a43a",
+  "keeper_away": "#3aa7a0",
+  "player_text": "#ffffff",
+  "carrier_ring": "#ffffff",
+  "ball": "#ffffff",
+  "ball_shadow": "#00000070",
+  "referee": "#161616",
+  "critical": "#f2c14e",
+  "high": "#e6eee8",
+  "medium": "#b4bfb7",
+  "low": "#7f8c83",
+  "_note": "The GUI's colours (ADR-055, doctrine/00-foundations.md §5: no hardcoded colours). Hex, #rrggbb or #rrggbbaa. pitch and pitch_stripe the grass in bands; home and away the two sides, keeper_home and keeper_away their goalkeepers; carrier_ring around the man on the ball; ball_shadow under a ball in the air, farther from it the higher it is; critical, high, medium and low the commentary by the importance of the event."
+}

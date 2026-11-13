@@ -4,6 +4,7 @@
 - **Date:** 2026-10-29
 - **Supersedes:** — (amends ADR-005, presentation primacy only; ADR-005 remains in force for the GUI)
 - **Superseded by:** —
+- **Amended by:** ADR-055 (§1-2: the GUI is built now, with egui; §3 unchanged)
 - **Blocks:** IDEA-INFRA-006 (TUI renderer prototype), IDEA-PRES-001 (TUI-first presentation, when it becomes code)
 - **Depends on:** ADR-019 (match engine contract), ADR-003 (Plane A enforcement)
 

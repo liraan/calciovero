@@ -177,7 +177,8 @@ pub fn referee_at(ball: (i32, i32), (length, width): (i32, i32)) -> (i32, i32) {
 }
 
 /// The marker of a player: `A`-`K` home, `a`-`k` away, by squad slot.
-fn marker(id: PlayerId) -> char {
+#[must_use]
+pub fn marker(id: PlayerId) -> char {
     let slot = id.slot();
     let n = u8::try_from(slot % 100).unwrap_or(25).min(25);
     if slot >= 100 {

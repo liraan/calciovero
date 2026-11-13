@@ -1,5 +1,6 @@
-//! The friendly you can play (plan L0-CLOSE step 9): the manager (the
-//! home side) chooses his eleven from the squad and the bench, and his
+//! The friendly you can play (plan L0-CLOSE step 9).
+//!
+//! The manager (the home side) chooses his eleven from the squad and the bench, and his
 //! intention (how high the team defends, how wide it plays); he watches the
 //! match, saves it, reloads it, and reads *why* he conceded.
 //!

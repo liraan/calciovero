@@ -8,7 +8,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-394_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-402_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -110,7 +110,7 @@ What exists today:
 - a **friendly you can play** from the command line: choose your eleven
   from the squad and the bench, how high you defend and how wide you play,
   your substitutions, save the match, reload it, and read why you conceded each goal;
-- **394 tests** and a health check that runs on every commit.
+- **402 tests** and a health check that runs on every commit.
 
 What does not exist yet: changing the plan during the match, the season, the
 career, the transfer market. And the match is not calibrated yet: today it
@@ -207,7 +207,13 @@ Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
     cd calciovero
     cargo run --release --bin ds-demo -- --seed 42 --tui
 
-That is the 2D debug view: the twenty-two (`A`-`K` home, `a`-`k` away)
+Or open the window (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): choose seed, block and width, watch the match on a 2D pitch with the commentary, click an event to go back to it, and read why you conceded.
+
+    cargo run --release -p ds-gui
+
+![The GUI](tools/ds-gui/screenshot.png)
+
+The command above is the 2D debug view in the terminal: the twenty-two (`A`-`K` home, `a`-`k` away)
 and the ball on a text pitch, with the events as they happen. It works
 in Git Bash too. Add `--speed 60` to go faster, `--step` to advance with
 Enter, `--frame 30` to print the pitch at the 30th minute. It is a debug

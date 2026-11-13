@@ -374,7 +374,7 @@ Translations. Italian is the first planned translation, in `locales/it/`. *(plan
 | **RSTP** | FIFA Regulations on the Status and Transfer of Players |
 | **DoD** | Definition of Done |
 | **ADR** | Architecture Decision Record |
-| **FFI** | Foreign Function Interface (Rust ↔ C++ for Qt) |
+| **FFI** | Foreign Function Interface (Rust ↔ another language; none in use since ADR-055) |
 | **UB** | Undefined Behaviour |
 | **MSRV** | Minimum Supported Rust Version |
 | **SIM_VERSION** | The version identifier of the simulation behaviour |
