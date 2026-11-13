@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 54).
+engine (updated at `SIM_VERSION` 55).
 
 **How to read the state.**
 
@@ -55,7 +55,7 @@ with their first consumer (ADR-051 §4).
 
 | Act | Quantities | Roots | Engine today |
 |---|---|---|---|
-| Receive, control | clean or loose, the touch's length | first touch, foot, *body control* | ✓ since 52 where the pass reaches him: first touch, freedom, distance; a heavy touch runs on; foot ✗ |
+| Receive, control | clean or loose, the touch's length | first touch, foot, *body control* | ✓ since 55 he goes to meet the pass, takes it within his reach (reactivity), controls it by first touch, freedom and distance, and decides after his own time; foot ✗ |
 | Carry | speed with the ball, direction | *dribbling*, run | ◐ since 54 an option with its own salience (room ahead, what it brings); speed is the run's; step length constant; direction is a rule (to goal, or to the open pitch when blocked); dribbling ✗ |
 | Dribble past a man | beat or lose | *dribbling*, acceleration, *joint mobility*, *body control* | — |
 | Shield | keep the ball under a challenge | *maximal force*, *body control*, weight | — (the carrier's side of the duel reads first touch) |
@@ -73,9 +73,9 @@ with their first consumer (ADR-051 §4).
 | Hold the place | where, how strictly | game reading, *discipline* | ◐ the choice ✓ (ADR-049); the place is the block rule (`balance/block.json`) |
 | Press | whether, how hard | game reading; *aggressiveness*, *work rate* | ◐ the choice reads proximity, rank and game reading |
 | Challenge, tackle | whether, win or lose | tackling, explosive force vs first touch | ◐ ✓ roots; the same two players give the same result in every scene |
-| Intercept | reach on the line | game reading, *reactivity*, sprint | ✗ a fixed 2 m radius at launch, and since 52 the control radius where the pass reaches him |
+| Intercept | reach on the line | game reading, reactivity, sprint | ◐ since 55 his reach for a passing ball reads reactivity; the 2 m radius at launch for an unseen opponent remains; going to cut out a pass is not his choice yet |
 | Block a shot or pass | reach | *reactivity*, *courage* | — |
-| Mark | whom, how close | game reading, *concentration*, *discipline* | — |
+| Mark | whom, how close | game reading, *concentration*, *discipline* | ◐ since 55: the nearest defender who reads the game marks the nearest other opponent, goal-side; concentration and discipline ✗ |
 | Cover, recovery run | when, where | game reading, *work rate*, run | — |
 | Offer for a pass | where, when | game reading, decision making | ◐ since 53: chosen when marked near the ball (game reading); he moves away from his marker; the free lane to the carrier is not read yet |
 | Run in behind | when | game reading, sprint | ◐ since 53: chosen ahead of the ball near the last defender's line with room behind (max speed, game reading); he stops on the line (no offside law yet, issue #13); the through ball is not a pass kind yet |

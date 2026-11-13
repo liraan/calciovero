@@ -248,10 +248,18 @@ struct TeamView {
     their_goal_x: i32,
     last_line: Option<i32>,
     opponents: Vec<(i32, i32)>,
+    /// Their outfield players other than the carrier: the men to mark.
+    men: Vec<(i32, i32)>,
 }
 
 impl TeamView {
-    fn new(spatial: &SpatialState, other: &ds_model::Squad, home: bool, length: i32) -> Self {
+    fn new(
+        spatial: &SpatialState,
+        other: &ds_model::Squad,
+        home: bool,
+        length: i32,
+        carrier: Option<PlayerId>,
+    ) -> Self {
         let forward = if home { 1 } else { -1 };
         let their_keeper = other.players.first().map(|p| p.id);
         let last_line = other
@@ -268,16 +276,33 @@ impl TeamView {
             .filter_map(|q| spatial.agent(q.id))
             .map(|a| a.position)
             .collect();
+        let men = other
+            .players
+            .iter()
+            .filter(|q| Some(q.id) != their_keeper && Some(q.id) != carrier)
+            .filter_map(|q| spatial.agent(q.id))
+            .map(|a| a.position)
+            .collect();
         Self {
             forward,
             their_goal_x: if home { length } else { 0 },
             last_line,
             opponents,
+            men,
         }
     }
 
     fn marker(&self, me: (i32, i32)) -> Option<(i32, i32)> {
         self.opponents
+            .iter()
+            .copied()
+            .min_by_key(|o| distance_squared(*o, me))
+    }
+
+    /// The man a defender at `me` would mark: the nearest of their outfield
+    /// players other than the carrier.
+    fn man_to_mark(&self, me: (i32, i32)) -> Option<(i32, i32)> {
+        self.men
             .iter()
             .copied()
             .min_by_key(|o| distance_squared(*o, me))
@@ -333,6 +358,19 @@ impl TeamView {
                     (l - self.forward * off.onside_margin_cm).clamp(0, length),
                     me.1,
                 )
+            }),
+            ds_orchestrator::OffBallAct::Mark => self.man_to_mark(me).map(|m| {
+                // Goal-side of him: between him and the goal we defend.
+                let own_goal = (length - self.their_goal_x, width / 2);
+                let (dx, dy) = (f64::from(own_goal.0 - m.0), f64::from(own_goal.1 - m.1));
+                let len = dx.hypot(dy).max(1.0);
+                let gap = f64::from(off.mark_gap_cm);
+                #[allow(clippy::cast_possible_truncation)]
+                let t = (
+                    (m.0 + (dx / len * gap) as i32).clamp(0, length),
+                    (m.1 + (dy / len * gap) as i32).clamp(0, width),
+                );
+                t
             }),
             _ => None,
         }
@@ -716,6 +754,10 @@ impl MatchState {
                 to,
                 receiver_freedom_cm: freedom_cm,
                 ground_friction_milli: self.spatial.ground_friction_milli(),
+                pitch_centre: (
+                    i32::from(ctx.match_.pitch.length_m) * 50,
+                    i32::from(ctx.match_.pitch.width_m) * 50,
+                ),
             };
             let outcome = ctx.hidden.resolve_pass(&ctx_pass, &params);
             // MD-25/F.4-c: carrier released at launch, ball flies, pending
@@ -791,6 +833,10 @@ impl MatchState {
                 aim_y,
                 power,
                 contact_height,
+                momentum_y: self
+                    .spatial
+                    .agent(attacker)
+                    .map_or(0, |a| i32::from(a.velocity.1)),
             };
             let outcome = ctx.hidden.resolve_shot(&ctx_shot);
             // F.3-b3: carrier released, ball flies. Goal (or Save) is
@@ -895,20 +941,37 @@ impl MatchState {
         if !on_ground {
             return;
         }
+        // The nearest player who reaches it, each with his own reach (his
+        // reactivity, ADR-051); one whose touch just failed needs a moment.
         let ball = self.spatial.ball();
-        let Some(id) = crate::perception::nearest_to_point(&self.spatial, ball) else {
+        let radius = self.reception_balance.loose_control_radius_cm;
+        let players: Vec<PlayerId> = ctx
+            .match_
+            .home
+            .players
+            .iter()
+            .chain(ctx.match_.away.players.iter())
+            .map(|p| p.id)
+            .collect();
+        let mut best: Option<(i64, PlayerId)> = None;
+        let passer = pass.and_then(|(by, _, _)| by);
+        for who in players {
+            // Nobody receives his own pass.
+            if Some(who) == passer || self.challenges.get(&who).is_some_and(|t| tick < *t) {
+                continue;
+            }
+            let Some(pos) = self.spatial.agent(who).map(|a| a.position) else {
+                continue;
+            };
+            let d = distance_squared(pos, ball);
+            let reach = ctx.hidden.ball_reach_cm(who, radius);
+            if d <= reach * reach && best.is_none_or(|(bd, _)| d < bd) {
+                best = Some((d, who));
+            }
+        }
+        let Some((_, id)) = best else {
             return;
         };
-        if self.challenges.get(&id).is_some_and(|t| tick < *t) {
-            return; // his touch just failed: he needs a moment
-        }
-        let Some(pos) = self.spatial.agent(id).map(|a| a.position) else {
-            return;
-        };
-        let r = i64::from(self.reception_balance.loose_control_radius_cm);
-        if distance_squared(pos, ball) > r * r {
-            return;
-        }
         let home = |who: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == who);
         if let Some((Some(by), freedom, distance)) = pass {
             self.pending = None;
@@ -957,6 +1020,15 @@ impl MatchState {
         } else {
             Possession::Away
         };
+        // He has just controlled it: he decides after his own time, read
+        // in his scene (ADR-044 §6), not on the tick he receives it.
+        let opponents = if home(id) {
+            &ctx.match_.away
+        } else {
+            &ctx.match_.home
+        };
+        let wait = self.decision_time(ctx, id, opponents);
+        self.latencies.insert(id, tick.saturating_add(wait));
     }
 
     /// Every player without the ball chooses his own act when his latency
@@ -966,7 +1038,16 @@ impl MatchState {
     fn decide_off_ball(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
         let ball = self.spatial.ball();
         let carrier = self.spatial.carrier();
+        // A ball nobody has, at rest or rolling, is anyone's to go for. A
+        // pass on its way is its receiver's to meet (ADR-051, receive); an
+        // opponent cuts it out only if it passes within his reach. A shot
+        // on its way is nobody's.
         let ball_loose = carrier.is_none() && self.pending.is_none();
+        let meets_pass = self
+            .pending
+            .as_ref()
+            .filter(|p| p.shot.is_none())
+            .and_then(|p| p.receiver);
         let duel = ctx.hidden.duel_balance();
         let off = ctx.hidden.offball_balance();
         let (length, width) = pitch_cm(ctx);
@@ -982,7 +1063,7 @@ impl MatchState {
                 .filter(|c| squad.players.iter().any(|p| p.id == *c))
                 .and_then(|c| self.spatial.agent(c))
                 .map(|a| a.position);
-            let view = TeamView::new(&self.spatial, other, home, length);
+            let view = TeamView::new(&self.spatial, other, home, length, carrier);
             let carrier_pos = carrier_opponent
                 .and_then(|c| self.spatial.agent(c))
                 .map(|a| a.position);
@@ -999,8 +1080,12 @@ impl MatchState {
                     && carrier_pos.is_some_and(|c| {
                         distance_squared(me, c) <= i64::from(duel.reach_cm).pow(2)
                     });
+                // A pass played to him changes his scene too: he goes to
+                // meet it at once, unless he already is.
+                let called = meets_pass == Some(id)
+                    && self.spatial.act(id) != Some(ds_orchestrator::OffBallAct::GoToBall);
                 if Some(id) == carrier
-                    || (!arrived && self.offball_due.get(&id).is_some_and(|t| tick < *t))
+                    || (!arrived && !called && self.offball_due.get(&id).is_some_and(|t| tick < *t))
                 {
                     continue;
                 }
@@ -1027,14 +1112,18 @@ impl MatchState {
                     actor: id,
                     place: if keeper {
                         ds_orchestrator::Place::Keeper {
-                            ball_in_area: ball_in_own_box,
+                            // A pass meant for him is his to meet, wherever
+                            // it comes from.
+                            ball_in_area: ball_in_own_box || meets_pass == Some(id),
                         }
                     } else {
                         ds_orchestrator::Place::Outfield
                     },
-                    loose_ball: (ball_loose && sees_ball).then(|| ds_orchestrator::Target {
-                        distance_cm: distance_squared(me, ball).isqrt(),
-                        rank: rank(ball),
+                    loose_ball: ((ball_loose && sees_ball) || meets_pass == Some(id)).then(|| {
+                        ds_orchestrator::Target {
+                            distance_cm: distance_squared(me, ball).isqrt(),
+                            rank: rank(ball),
+                        }
                     }),
                     carrier: carrier_pos
                         .zip(to_carrier)
@@ -1044,23 +1133,20 @@ impl MatchState {
                         }),
                     carrier_in_reach: to_carrier.is_some_and(|d| d <= i64::from(duel.reach_cm)),
                     with_mate: carrier_mate.map(|c| view.mate_ball(me, c, off.mark_radius_cm)),
+                    to_mark: carrier_pos.and_then(|_| view.man_to_mark(me)).map(|m| {
+                        ds_orchestrator::Target {
+                            distance_cm: distance_squared(me, m).isqrt(),
+                            rank: rank(m),
+                        }
+                    }),
                 };
                 let act = ctx.hidden.choose_off_ball(&scene);
                 self.spatial.set_act(id, act);
                 if let Some(t) = view.act_target(act, me, &off, (length, width)) {
                     self.spatial.set_act_target(id, t);
                 }
-                let opponents: Vec<PlayerId> = other.players.iter().map(|q| q.id).collect();
-                let (crowding, nearest_threat) = self.latency_scene(id, &opponents);
-                let latency = ctx
-                    .hidden
-                    .resolve_latency(&ds_orchestrator::LatencyContext {
-                        player: id,
-                        crowding,
-                        nearest_threat,
-                    });
-                self.offball_due
-                    .insert(id, tick.saturating_add(latency.ticks));
+                let wait = self.decision_time(ctx, id, other);
+                self.offball_due.insert(id, tick.saturating_add(wait));
             }
         }
     }
@@ -1299,6 +1385,25 @@ impl MatchState {
     /// so that `0.0` means at the actor's feet and `1.0` means at
     /// `THREAT_RADIUS_CM` or beyond. Both are geometric and deterministic;
     /// no die, no latent.
+    /// How long `id` takes to choose again, in ticks, read in his scene
+    /// against `opponents` (ADR-044 §6).
+    fn decision_time(
+        &self,
+        ctx: &mut MatchContext<'_>,
+        id: PlayerId,
+        opponents: &ds_model::Squad,
+    ) -> u64 {
+        let ids: Vec<PlayerId> = opponents.players.iter().map(|q| q.id).collect();
+        let (crowding, nearest_threat) = self.latency_scene(id, &ids);
+        ctx.hidden
+            .resolve_latency(&ds_orchestrator::LatencyContext {
+                player: id,
+                crowding,
+                nearest_threat,
+            })
+            .ticks
+    }
+
     fn latency_scene(&self, actor: PlayerId, opponents: &[PlayerId]) -> (f64, f64) {
         let Some(actor_pos) = self.spatial.agent(actor).map(|a| a.position) else {
             return (0.0, 0.0);
@@ -1601,7 +1706,10 @@ impl MatchState {
         self.spatial.set_carrier(None);
 
         if !inside {
-            self.possession = defending;
+            // Wide or over: the shooter touched it last, so it is a goal
+            // kick when it leaves the pitch (Law 16). Before `SIM_VERSION`
+            // 55 the possession went to the defenders here, and the rule
+            // read their touch: a corner for every wide shot.
             return;
         }
 

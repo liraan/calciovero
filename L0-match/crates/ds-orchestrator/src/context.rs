@@ -52,6 +52,9 @@ pub struct ShotContext {
     /// actor's choice, not the engine's. `0.0` in the first cantiere
     /// (`Removed-by: ADR-046 §5`, the lob needs the flight's time).
     pub contact_height: f64,
+    /// The shooter's lateral speed when he strikes (cm/tick, across the
+    /// pitch): a body moving one way drags the ball that way.
+    pub momentum_y: i32,
 }
 
 /// The context of a pass resolution.
@@ -70,6 +73,9 @@ pub struct PassContext {
     /// The ball's ground friction, thousandths per tick: the passer weighs
     /// the pass so that it reaches the receiver still rolling.
     pub ground_friction_milli: i32,
+    /// The centre of the pitch, cm: the passer's body is open to the play,
+    /// and a pass that drifts drifts that way.
+    pub pitch_centre: (i32, i32),
 }
 
 /// The context of a reception (REC): the receiver and the geometry of

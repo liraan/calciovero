@@ -335,9 +335,13 @@ fn shot_candidates(
         // cantiere (`Removed-by: ADR-046 §5`, the lob needs the flight's
         // time).
         let aim_edge_cm = (GOAL_WIDTH_CM as f64) * 0.5 * balance.aim_edge_fraction;
+        // His foot's side, as he faces the goal he attacks: facing +x his
+        // right is -y. Before `SIM_VERSION` 55 the side was absolute (+y
+        // for a right foot), so the two teams aimed at mirrored sides.
+        let facing: f64 = if goal.0 >= pos.0 { 1.0 } else { -1.0 };
         let side_sign: f64 = match preferred_foot {
-            Side::Right => 1.0,
-            Side::Left => -1.0,
+            Side::Right => -facing,
+            Side::Left => facing,
         };
         let aim_y = side_sign.mul_add(aim_edge_cm, f64::from(goal.1));
         let shot_visibility = keeper_visibility(scene, pos, goal, side_sign, goal_cone(pos, goal));
@@ -566,7 +570,8 @@ mod keeper_visibility_tests {
     #[test]
     fn the_keeper_hides_the_shot_he_covers_and_only_that_shot() {
         let visible = shot_visibility(&scene_with(None));
-        let covered = shot_visibility(&scene_with(Some(3400 + 300)));
+        // A right foot facing +x aims at -y (his right), since 55.
+        let covered = shot_visibility(&scene_with(Some(3400 - 300)));
         let far = shot_visibility(&scene_with(Some(1000)));
         assert!(
             covered < 0.1,

@@ -288,10 +288,23 @@ impl GroundTruth {
         let base_dy = (ctx.aim_y - f64::from(ctx.to.1)) as i32;
         #[allow(clippy::cast_possible_truncation)]
         let lateral_abs = (distance * error) as i32;
-        // The side of the miss: a declared placeholder (the cause, the
-        // body's angle to the ball, is not read yet): towards the far side
-        // from where he stands.
-        let deviation_sign: i32 = if ctx.from.1 < ctx.to.1 { 1 } else { -1 };
+        // The side of the miss: the way his body is moving when he strikes
+        // (a body moving one way drags the ball that way); standing still,
+        // to the side of the foot he kicks with, the side he aimed at (the
+        // ball runs away from the post he chose). Both are read in his own
+        // frame, so the two teams miss alike. Before `SIM_VERSION` 55 it
+        // came from where he stood, and with the foot's absolute side it
+        // made one team shoot wide.
+        let deviation_sign: i32 = match ctx.momentum_y.signum() {
+            0 => {
+                if base_dy >= 0 {
+                    1
+                } else {
+                    -1
+                }
+            }
+            s => s,
+        };
         let dy = base_dy + deviation_sign * lateral_abs;
         // A miscued strike rises: the vertical share of the error lifts the
         // ball above the height he aimed at.
@@ -387,14 +400,19 @@ impl GroundTruth {
             0.0,
         );
         let speed = (weighed * (1.0 + error)).min(max);
-        // The drift: across the line, by the error; to the outside (a
-        // declared placeholder: the body's angle is not read yet).
-        let drift = distance * error;
+        // The drift: across the line, by the error, towards the centre of
+        // the pitch (his body is open to the play; a declared placeholder,
+        // the body's angle is not read yet). Before `SIM_VERSION` 55 it was
+        // always to the left of the line: a passer on his own goal line
+        // kicked it out every time, and seed 48 played 1,495 corners.
         let (ux, uy) = if distance > 0.0 {
             (dx / distance, dy / distance)
         } else {
             (1.0, 0.0)
         };
+        let to_centre = f64::from(ctx.pitch_centre.1 - ctx.to.1)
+            .mul_add(ux, f64::from(ctx.pitch_centre.0 - ctx.to.0) * -uy);
+        let drift = distance * error * if to_centre >= 0.0 { 1.0 } else { -1.0 };
         #[allow(clippy::cast_possible_truncation)]
         let aim = (
             ctx.to.0 + (-uy * drift) as i32,

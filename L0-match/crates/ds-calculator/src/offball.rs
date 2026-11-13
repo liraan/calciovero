@@ -36,6 +36,17 @@ pub struct OffBallBalance {
     pub run_room_ref_cm: i32,
     /// How far short of the last defender's line the runner stops, cm.
     pub onside_margin_cm: i32,
+    /// The salience of marking an opponent, thousandths.
+    pub mark_salience_milli: i32,
+    /// The distance to an opponent at which marking him halves, cm.
+    pub mark_zone_cm: i32,
+    /// How far goal-side of his man a marker stands, cm.
+    pub mark_gap_cm: i32,
+    /// A player with no reactivity reaches this share of the control
+    /// radius, thousandths.
+    pub ball_reach_base_milli: i32,
+    /// What full reactivity adds to it, thousandths.
+    pub ball_reach_gain_milli: i32,
 }
 
 impl OffBallBalance {
@@ -48,6 +59,19 @@ impl OffBallBalance {
     #[must_use]
     pub fn load() -> Self {
         serde_json::from_str(OFFBALL_JSON).expect("embedded offball file is valid JSON")
+    }
+
+    /// How far from his feet a player reaches a ball passing by, cm, from
+    /// the control radius and his reactivity.
+    #[must_use]
+    pub fn ball_reach_cm(&self, radius_cm: i32, reactivity: f32) -> i64 {
+        let share = f64::from(self.ball_reach_gain_milli).mul_add(
+            f64::from(reactivity.clamp(0.0, 1.0)),
+            f64::from(self.ball_reach_base_milli),
+        ) / 1000.0;
+        #[allow(clippy::cast_possible_truncation)]
+        let reach = (f64::from(radius_cm) * share).round() as i64;
+        reach
     }
 
     /// The salience of a run in behind: near the last defender's line,
@@ -71,6 +95,14 @@ mod tests {
     fn embedded_offball_is_valid() {
         let b = super::OffBallBalance::load();
         assert!(b.proximity_ref_cm > 0 && b.hold_salience_milli > 0);
+    }
+
+    /// Twin test (ADR-051 §3): the reactive twin gets a foot to a ball
+    /// that passes half a metre farther away.
+    #[test]
+    fn the_reactive_twin_reaches_the_ball_farther() {
+        let b = super::OffBallBalance::load();
+        assert!(b.ball_reach_cm(100, 0.9) >= b.ball_reach_cm(100, 0.2) + 50);
     }
 
     /// Twin test (ADR-051 §3): two forwards identical but for pace, in the

@@ -24,6 +24,8 @@ pub enum OffBallAct {
     /// With a teammate on the ball: attack the space behind the last
     /// defender, as far as the line.
     Run,
+    /// With an opponent on the ball: mark a man, goal-side of him.
+    Mark,
 }
 
 /// A target the player perceives: how far it is, and how many teammates
@@ -77,9 +79,20 @@ pub struct OffBallScene {
     pub carrier_in_reach: bool,
     /// If a teammate has the ball: what he sees of it.
     pub with_mate: Option<MateBall>,
+    /// If an opponent has the ball: the nearest other opponent, to mark.
+    pub to_mark: Option<Target>,
 }
 
 impl crate::GroundTruth {
+    /// How far from his feet `player` reaches a ball passing by, cm
+    /// (ADR-051, receive and intercept): the control radius, by his
+    /// reactivity.
+    #[must_use]
+    pub fn ball_reach_cm(&mut self, player: PlayerId, radius_cm: i32) -> i64 {
+        let reactivity = self.latents_for(player).physical.reactivity;
+        self.offball_balance().ball_reach_cm(radius_cm, reactivity)
+    }
+
     /// The player's off-ball act (ADR-049): the most salient of hold, press,
     /// challenge and go to the ball. Ties go to holding his place.
     #[must_use]
@@ -131,6 +144,14 @@ impl crate::GroundTruth {
                 );
             }
         }
+        if let (Some(t), false) = (s.to_mark, keeper) {
+            #[allow(clippy::cast_precision_loss)]
+            let near = 1.0 / (1.0 + t.distance_cm.max(0) as f64 / f64::from(b.mark_zone_cm.max(1)));
+            offer(
+                milli(b.mark_salience_milli) * near * rank(t.rank) * 0.5f64.mul_add(reading, 0.5),
+                OffBallAct::Mark,
+            );
+        }
         if let (Some(m), false) = (s.with_mate, keeper) {
             let half = 0.5f64;
             if m.marked {
@@ -166,6 +187,7 @@ mod tests {
             carrier: None,
             carrier_in_reach: false,
             with_mate: None,
+            to_mark: None,
         }
     }
 
@@ -256,6 +278,23 @@ mod tests {
         };
         assert!(runs(3000) > 0, "with room, somebody runs");
         assert_eq!(runs(100), 0, "with no room, nobody runs");
+    }
+
+    /// With an opponent on the ball, the defender nearest to another
+    /// opponent marks him; one with two teammates closer holds (P1,
+    /// ADR-051).
+    #[test]
+    fn the_nearest_marks_the_man() {
+        let near = OffBallScene {
+            to_mark: at(300, 0),
+            ..scene()
+        };
+        assert_eq!(choose(&near), OffBallAct::Mark);
+        let third = OffBallScene {
+            to_mark: at(300, 2),
+            ..scene()
+        };
+        assert_eq!(choose(&third), OffBallAct::Hold);
     }
 
     /// The goalkeeper does not press, and comes out only inside his area.

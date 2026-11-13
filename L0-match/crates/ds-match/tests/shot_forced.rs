@@ -28,6 +28,7 @@ const fn ctx_at(from_y: i32, difficulty: i32) -> ShotContext {
         aim_y: 3400.0,
         power: 0.35,
         contact_height: 0.0,
+        momentum_y: 0,
     }
 }
 
@@ -40,6 +41,7 @@ const fn ctx_contact(from_y: i32, difficulty: i32, contact_height: f64) -> ShotC
         aim_y: 3400.0,
         power: 0.35,
         contact_height,
+        momentum_y: 0,
     }
 }
 

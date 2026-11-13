@@ -581,7 +581,11 @@ impl SpatialState {
             } else if to_the_ball {
                 ball
             } else if let (
-                Some(ds_orchestrator::OffBallAct::Offer | ds_orchestrator::OffBallAct::Run),
+                Some(
+                    ds_orchestrator::OffBallAct::Offer
+                    | ds_orchestrator::OffBallAct::Run
+                    | ds_orchestrator::OffBallAct::Mark,
+                ),
                 Some(t),
             ) = (act, self.act_targets.get(&entry.0))
             {
