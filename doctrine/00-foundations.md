@@ -1,8 +1,8 @@
 ---
 title: "Module 00 — Foundations"
-version: "4.0"
+version: "4.1"
 status: "ratified"
-last_updated: "2026-11-10"
+last_updated: "2026-11-13"
 supersedes: "Prompt Master v7 (archived)"
 depends_on: []
 referenced_by: ["all modules"]
@@ -140,6 +140,15 @@ The single most important architectural rule. Violating it introduces systemic b
 - ❌ Plane A → UI directly (no truth leakage)
 - ❌ Ratings using Plane A (circularity)
 - ❌ Statistical models reading latents (they must use observed only)
+
+### Every actor has his three planes (amended 2026-11-13, the maintainer)
+
+The three planes are not only the layers of the data: they are how every actor of the game knows the world, at every scale (VISION §4). The **truth** (A) is the same for all; what each actor **observes** (B) is what reaches him from where he stands; what he **believes** (C) is his own estimate, with how sure he is. The striker believes the defender runs at a certain speed; the shooter sees the keeper off his line; the coach estimates his players; the scout a boy seen three times; the board the coach. Every error of an estimate has a cause (a limit of perception, of reading, of time), never a die (ADR-035). So the player's thought of ADR-052 and the manager's scouting are the same doctrine.
+
+Two rules follow:
+
+- **The states of the moment have visible signs.** Fatigue, morale and concentration are Plane A, but each must show in Plane B (he runs less, he misplaces the easy pass, he hides): otherwise the manager cannot understand them, and the cycle *understand, then act* (VISION §6) breaks.
+- **One actor's Plane C does not leak into another's.** The manager sees what his striker does, never what his striker believes; a player's beliefs are not a channel for the hidden numbers to reach the screen.
 
 ## 4. Determinism
 
