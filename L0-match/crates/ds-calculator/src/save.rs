@@ -28,6 +28,10 @@ pub struct SaveBalance {
     pub parry_rebound_milli: i32,
     /// Beyond this share of his reach he only tips the ball, thousandths.
     pub tip_share_milli: i32,
+    /// His reach before any dive, as a share of his height.
+    pub standing_reach_share: f64,
+    /// The keeper a shooter imagines, cm.
+    pub reference_keeper_height_cm: f64,
 }
 
 impl SaveBalance {

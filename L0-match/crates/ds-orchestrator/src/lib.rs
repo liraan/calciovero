@@ -390,6 +390,47 @@ impl GroundTruth {
         outcome
     }
 
+    /// How high `player` reaches for a ball in the air, cm: his height and
+    /// his jump (`explosive_force`), plus his arms if he is a keeper in his
+    /// area (ADR-042, the aerial duel).
+    #[must_use]
+    pub fn aerial_reach_cm(&mut self, player: PlayerId, height_cm: f64, hands: bool) -> f64 {
+        let l = self.latents_for(player);
+        let b = self.duel_balance;
+        let jump = f64::from(l.physical.explosive_force) * f64::from(b.jump_ref_cm);
+        let arms = if hands {
+            f64::from(b.hands_reach_cm)
+        } else {
+            0.0
+        };
+        height_cm + jump + arms
+    }
+
+    /// The winner of an aerial duel among `contenders` (id, height cm, the
+    /// keeper's hands): heading, the jump, strength and height (ADR-042).
+    /// Ties go to the first listed.
+    #[must_use]
+    pub fn resolve_aerial(&mut self, contenders: &[(PlayerId, f64, bool)]) -> Option<PlayerId> {
+        let b = self.duel_balance;
+        let mut best: Option<(f32, PlayerId)> = None;
+        for (id, height, hands) in contenders {
+            let l = self.latents_for(*id);
+            let mut f = b.aerial_force(
+                l.technical.heading,
+                l.physical.explosive_force,
+                l.physical.maximal_force,
+                *height,
+            );
+            if *hands {
+                f += f32::from(i16::try_from(b.keeper_hands_bonus_milli).unwrap_or(0)) / 1000.0;
+            }
+            if best.is_none_or(|(bf, _)| f > bf) {
+                best = Some((f, *id));
+            }
+        }
+        best.map(|(_, id)| id)
+    }
+
     /// How `defender` goes into a challenge (ADR-042 §2, amended): standing,
     /// slide or jockey, from his tackling, aggressiveness and reading.
     #[must_use]

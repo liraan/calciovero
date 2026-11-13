@@ -80,6 +80,22 @@ pub struct DuelBalance {
     /// A player already cautioned multiplies the slide's salience by this,
     /// thousandths.
     pub booked_slide_caution_milli: i32,
+    /// The jump of the most explosive player, cm.
+    pub jump_ref_cm: i32,
+    /// What a keeper's arms add to his reach in his area, cm.
+    pub hands_reach_cm: i32,
+    /// A header leaves at this speed, cm/tick.
+    pub header_speed_cm_per_tick: i32,
+    /// Weight of heading in an aerial duel, thousandths.
+    pub aerial_heading_milli: i32,
+    /// Weight of the jump, thousandths.
+    pub aerial_jump_milli: i32,
+    /// Weight of maximal force, thousandths.
+    pub aerial_force_milli: i32,
+    /// Weight of the height (190 cm is full), thousandths.
+    pub aerial_height_milli: i32,
+    /// What a keeper's hands add in his area, thousandths.
+    pub keeper_hands_bonus_milli: i32,
 }
 
 /// The facts of a challenge the foul's band reads (ADR-042 §4).
@@ -136,6 +152,22 @@ impl DuelBalance {
                     d.maximal_force,
                     milli(self.carrier_body_milli) * d.body_control,
                 ),
+            ),
+        )
+    }
+
+    /// A player's force in an aerial duel (ADR-042): heading, the jump, his
+    /// strength and his height.
+    #[must_use]
+    pub fn aerial_force(&self, heading: f32, explosive: f32, maximal: f32, height_cm: f64) -> f32 {
+        #[allow(clippy::cast_possible_truncation)]
+        let tall = ((height_cm - 160.0) / 30.0).clamp(0.0, 1.0) as f32;
+        milli(self.aerial_heading_milli).mul_add(
+            heading,
+            milli(self.aerial_jump_milli).mul_add(
+                explosive,
+                milli(self.aerial_force_milli)
+                    .mul_add(maximal, milli(self.aerial_height_milli) * tall),
             ),
         )
     }
@@ -280,6 +312,15 @@ mod tests {
             Some(false)
         );
         assert_eq!(b.contact(defender, b.carrier_force(&weak, 0.6)), Some(true));
+    }
+
+    /// Twin test (ADR-051 §3): two players identical but for heading; the
+    /// better header wins the ball in the air.
+    #[test]
+    fn the_better_header_wins_in_the_air() {
+        let b = DuelBalance::load();
+        assert!(b.aerial_force(0.9, 0.5, 0.5, 185.0) > b.aerial_force(0.3, 0.5, 0.5, 185.0));
+        assert!(b.aerial_force(0.5, 0.5, 0.5, 195.0) > b.aerial_force(0.5, 0.5, 0.5, 170.0));
     }
 
     /// Two forces close together: the ball comes loose (P1, ADR-042).

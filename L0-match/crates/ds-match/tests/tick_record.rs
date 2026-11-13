@@ -471,3 +471,18 @@ fn the_restarts_are_told() {
         .count();
     assert!(told > 0, "no throw-in nor goal kick told");
 }
+
+/// In the air (P1, plan L0-CLOSE step 4): a ball in the air can be headed.
+/// Before `SIM_VERSION` 71 nobody could touch it until it landed.
+#[test]
+fn a_ball_in_the_air_can_be_headed() {
+    let headed = (42..52u64).any(|seed| {
+        let m = match_fixture(seed).expect("fixture");
+        simulate_from_seed(&m, seed, MatchConfig::default())
+            .events
+            .events()
+            .iter()
+            .any(|e| e.fields.get("header").is_some() || e.fields.get("aerial").is_some())
+    });
+    assert!(headed, "no header in ten matches");
+}

@@ -214,7 +214,8 @@ pub fn chance(
     let share = meet / distance_cm.max(1.0);
     let speed = kick.speed(0.85, 0.5).max(1.0);
     let flight = meet / speed;
-    let reach = save.reach_cm(95.0, 0.5, 0.5, flight);
+    let standing = save.reference_keeper_height_cm * save.standing_reach_share;
+    let reach = save.reach_cm(standing, 0.5, 0.5, flight);
     // `keeper_shift_cm`: how far the keeper leans towards the post aimed at
     // (negative: away from it), at his depth.
     let half = f64::from(t.goal_width_cm) / 2.0 * share;

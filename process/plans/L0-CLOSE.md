@@ -18,8 +18,8 @@ Gol ~2,7 · tiri ~25 · nello specchio ~9 · angoli ~10 · falli ~22 · gialli ~
 | 1 | **La difesa pensa** (ADR-052 d) | ogni difensore sceglie l'atto che toglie più pericolo: chiudere sul portatore, marcare l'uomo, tenere lo spazio della struttura; il pericolo è la qualità dell'occasione per gli avversari | gol e tiri tornano verso il reale senza pesi per atto | **fatto** (68) |
 | 2 | **L'attacco senza palla pensa** | smarcarsi e attaccare la profondità valgono lo spazio che aprono (linee, mezzi spazi, ampiezza), non un peso | i pesi `offer`/`run` spariscono, la manovra resta | **fatto** (69) |
 | 3 | **Spazzata, pallonetto, altro palo** | la spazzata, il pallonetto (sul portiere fuori dai pali) e il tiro sull'altro palo giudicati con la stessa misura | via `clear_salience` e `other_side_factor` | **fatto** (70) |
-| 4 | **In aria** | il colpo di testa sul cross e sul lancio (in area è un tiro, dietro è un rinvio), il duello aereo, il portiere che esce sul cross; radici `heading`, salto | i cross diventano occasioni e angoli | prossimo |
-| 5 | **Il portatore risponde** (ADR-042 c) | proteggere palla, dribblare; radice `dribbling` | dribbling e protezione riconoscibili (gemelli) | |
+| 4 | **In aria** | il colpo di testa sul cross e sul lancio (in area è un tiro, dietro è un rinvio), il duello aereo, il portiere che esce sul cross; radici `heading`, salto | i cross diventano occasioni e angoli | **fatto** (71) |
+| 5 | **Il portatore risponde** (ADR-042 c) | proteggere palla, dribblare; radice `dribbling` | dribbling e protezione riconoscibili (gemelli) | prossimo |
 | 6 | **La fatica** | si consuma con la corsa e gli sprint, rallenta e attenua, recupera in parte all'intervallo; radice `endurance` | il secondo tempo si riconosce | |
 | 7 | **Palle inattive vere** | chi batte lo sceglie la squadra (il miglior calciatore vicino), punizione e rigore calciati come tiri, angolo come cross | i calci piazzati producono occasioni | |
 | 8 | **Test di repertorio** | ogni gesto del catalogo compare almeno una volta nei 30 seed | test verde, ogni assenza spiegata | |

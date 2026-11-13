@@ -631,6 +631,7 @@ impl MatchState {
             &self.keeper_balance,
         );
         self.spatial.follow_carrier();
+        self.meet_ball_in_air(ctx, tick);
         self.control_loose_ball(ctx, tick);
         self.challenge_carrier(ctx, tick);
         self.update_coverage(ctx, tick);
@@ -732,9 +733,9 @@ impl MatchState {
                 let stop = i64::from(self.carry_balance.carry_stop_from_goal_cm) + 100;
                 d > stop * stop
             });
-        let keeper_reach_cm = gk
-            .and_then(|g| self.bodies.get(&g))
-            .map_or(0.0, |b| b.height_cm / 2.0);
+        let keeper_reach_cm = gk.and_then(|g| self.bodies.get(&g)).map_or(0.0, |b| {
+            b.height_cm * ctx.hidden.save_balance().standing_reach_share
+        });
         let own_goal = (i32::from(ctx.match_.pitch.length_m) * 100 - goal.0, goal.1);
         let scene = scene_from(
             &self.spatial,
@@ -1046,6 +1047,178 @@ impl MatchState {
                 EventType::Cross,
                 serde_json::json!({ "x": from.0, "y": from.1 }),
             );
+        }
+    }
+
+    /// Who meets a ball in the air at `(bx, by, bz)`: within his reach for
+    /// a passing ball, and high enough (height, jump, a keeper's arms).
+    fn aerial_contenders(
+        &self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        (bx, by, bz): (i32, i32, i32),
+    ) -> Vec<(PlayerId, f64, bool)> {
+        let (length, width) = pitch_cm(ctx);
+        let radius = self.reception_balance.loose_control_radius_cm;
+        let off = ctx.hidden.offball_balance();
+        let passer = self.pending.as_ref().and_then(|p| p.passer);
+        let m = ctx.match_;
+        let mut contenders: Vec<(PlayerId, f64, bool)> = Vec::new();
+        for (squad, home) in [(&m.home, true), (&m.away, false)] {
+            let keeper = squad.players.first().map(|p| p.id);
+            for p in &squad.players {
+                if Some(p.id) == passer || self.challenges.get(&p.id).is_some_and(|t| tick < *t) {
+                    continue;
+                }
+                let Some(a) = self.spatial.agent(p.id).map(|a| a.position) else {
+                    continue;
+                };
+                let reach = ctx.hidden.ball_reach_cm(p.id, radius);
+                if distance_squared(a, (bx, by)) > reach * reach {
+                    continue;
+                }
+                let height = self.bodies.get(&p.id).map_or(180.0, |b| b.height_cm);
+                let hands =
+                    Some(p.id) == keeper && in_keeper_box((bx, by), home, (length, width), &off);
+                if ctx.hidden.aerial_reach_cm(p.id, height, hands) >= f64::from(bz) {
+                    contenders.push((p.id, height, hands));
+                }
+            }
+        }
+        contenders
+    }
+
+    /// A header at goal (plan L0-CLOSE step 4): a shot, from the head.
+    fn header_at_goal(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        winner: PlayerId,
+        (bx, by, bz): (i32, i32, i32),
+        goal: (i32, i32),
+        speed: f64,
+    ) {
+        let home = ctx.match_.home.players.iter().any(|p| p.id == winner);
+        let (dx, dy) = (f64::from(goal.0 - bx), f64::from(goal.1 - by));
+        let len = dx.hypot(dy).max(1.0);
+        #[allow(clippy::cast_possible_truncation)]
+        let v = ((dx / len * speed) as i16, (dy / len * speed) as i16, 10);
+        self.spatial.deflect_ball((bx, by, bz), v);
+        self.pending = Some(Pending {
+            due_tick: tick + FLIGHT_TICKS,
+            outcome: Self::other(self.possession),
+            interceptor: None,
+            passer: None,
+            receiver: None,
+            freedom_cm: None,
+            distance_cm: None,
+            shot: Some(ShotPending {
+                attacker: winner,
+                struck: tick,
+                from: (bx, by, bz),
+            }),
+        });
+        if home {
+            self.shots.0 += 1;
+        } else {
+            self.shots.1 += 1;
+        }
+        let fact = crate::fact::Fact::Trajectory {
+            actor: winner,
+            kind: crate::fact::TrajectoryKind::Shot {
+                on_target: true,
+                from: (bx, by, bz),
+                to: (goal.0, goal.1, 100),
+                initial_velocity: v,
+                shot_type: ds_orchestrator::ShotType::Normal,
+            },
+        };
+        for c in crate::fact::classify(&fact) {
+            self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
+        }
+    }
+
+    /// A ball in the air meets the players it passes within reach of (plan
+    /// L0-CLOSE step 4, ADR-042): horizontally their reach for a passing
+    /// ball, in height their height and jump (a keeper in his area adds his
+    /// arms). Two or more: an aerial duel. The winner heads it at goal in
+    /// the opponents' area, away from his goal in his own half, down to his
+    /// feet elsewhere; a keeper in his area catches it. A shot on its way
+    /// is not met here (it is the keeper's, or a block).
+    fn meet_ball_in_air(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        if self.spatial.ball_state() != crate::spatial::BallState::InFlight {
+            return;
+        }
+        if self.pending.as_ref().is_some_and(|p| p.shot.is_some()) {
+            return;
+        }
+        let (bx, by, bz) = self.spatial.ball_3d();
+        if bz < 100 {
+            return; // at the feet: the ground control takes it
+        }
+        let (length, width) = pitch_cm(ctx);
+        let contenders = self.aerial_contenders(ctx, tick, (bx, by, bz));
+        let m = ctx.match_;
+        let Some(winner) = ctx.hidden.resolve_aerial(&contenders) else {
+            return;
+        };
+        let home = m.home.players.iter().any(|p| p.id == winner);
+        if contenders.len() > 1 {
+            let against = contenders
+                .iter()
+                .find(|c| c.0 != winner)
+                .map_or(0, |c| c.0.slot());
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(winner)),
+                EventType::Duel,
+                serde_json::json!({ "winner_slot": winner.slot(), "aerial": true, "against": against }),
+            );
+        }
+        self.pending = None;
+        self.offside_at_pass.clear();
+        self.possession = if home {
+            Possession::Home
+        } else {
+            Possession::Away
+        };
+        let hands = contenders.iter().any(|c| c.0 == winner && c.2);
+        let goal = (if home { length } else { 0 }, width / 2);
+        let own = (length - goal.0, goal.1);
+        let speed = f64::from(ctx.hidden.duel_balance().header_speed_cm_per_tick);
+        let depth = |g: (i32, i32)| (g.0 - bx).abs();
+        let laws = self.laws;
+        let in_their_area = depth(goal) <= laws.penalty_area_depth_cm
+            && (by - goal.1).abs() <= laws.penalty_area_half_width_cm;
+        if hands {
+            // The keeper claims it.
+            self.spatial.set_carrier(Some(winner));
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(winner)),
+                EventType::Save,
+                serde_json::json!({ "x": bx, "y": by, "z": bz, "held": true, "claim": true }),
+            );
+        } else if in_their_area {
+            self.header_at_goal(ctx, tick, winner, (bx, by, bz), goal, speed);
+        } else if depth(own) < length / 2 {
+            // A header away from his goal: up and out.
+            let forward = if own.0 == 0 { 1.0 } else { -1.0 };
+            #[allow(clippy::cast_possible_truncation)]
+            let v = ((forward * speed) as i16, 0, (speed * 0.3) as i16);
+            self.spatial.deflect_ball((bx, by, bz), v);
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(winner)),
+                EventType::Clearance,
+                serde_json::json!({ "x": bx, "y": by, "header": true }),
+            );
+        } else {
+            // Down to his feet.
+            self.spatial.set_carrier(Some(winner));
         }
     }
 
@@ -2157,7 +2330,8 @@ impl MatchState {
         // line he narrows the angle and has less time (the line from the
         // strike to the crossing, cut at his depth). The distance is from
         // the centre of his body, across and up.
-        let reach_cm = self.bodies.get(&gk).map_or(0.0, |b| b.height_cm / 2.0);
+        let share = ctx.hidden.save_balance().standing_reach_share;
+        let reach_cm = self.bodies.get(&gk).map_or(0.0, |b| b.height_cm * share);
         let v = self.spatial.ball_velocity();
         let speed = f64::from(v.0).hypot(f64::from(v.1)).hypot(f64::from(v.2));
         #[allow(clippy::cast_precision_loss)] // ticks of one match: far below 2^52
