@@ -79,9 +79,20 @@ impl Actor {
         let risk_appetite = hidden
             .custodian(self.player)
             .value(ds_calculator::Characteristic::RiskManagement);
+        // His own miss, which he knows (ADR-052): the base of the kick's
+        // error angle for his finishing and his better foot.
+        let own_error = {
+            let mut custodian = hidden.custodian(self.player);
+            let finishing = custodian.value(ds_calculator::Characteristic::Finishing);
+            let foot = custodian
+                .value(ds_calculator::Characteristic::LeftFoot)
+                .max(custodian.value(ds_calculator::Characteristic::RightFoot));
+            let skill = finishing.clamp(0.0, 1.0) * 0.5f64.mul_add(foot.clamp(0.0, 1.0), 0.5);
+            hidden.kick_balance().error_ref_rad * (1.0 - skill)
+        };
         let balance = hidden.shot_choice_balance();
         let (ctx, freedoms) =
-            crate::read::build_choice(scene, preferred_foot, risk_appetite, balance);
+            crate::read::build_choice(scene, preferred_foot, risk_appetite, own_error, balance);
         (hidden.resolve_choice(&ctx).chosen, freedoms)
     }
 }

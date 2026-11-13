@@ -107,8 +107,8 @@ The variation comes from the situation, never from a die. Twin tests: the better
 
 | Act | Quantities | Roots | Engine today |
 |---|---|---|---|
-| Kick-off, throw-in, goal kick, corner | who takes it, where it goes | role, passing, *set pieces* split | ✗ the taker is placed by the rules, the ball plays on as an open pass |
-| Free kick, penalty | — | *shooting*, foot, composure | — (no fouls yet) |
+| Kick-off, throw-in, goal kick, corner | who takes it, where it goes | role, passing, set pieces | ✓ since 74: the keeper takes his goal kick, the best deliverer near the ball the corner, the nearest the throw-in; the opponents 9.15 m away; the ball is then the taker's choice, unchallenged until he plays it |
+| Free kick, penalty | who takes it, shot or pass | finishing, set pieces, foot, *composure* | ✓ since 74: the best kicker near the ball takes it; a penalty is only a shot, everyone else outside the area and behind the mark (Law 14), the shooter aiming inside the post by the miss he expects of himself; composure ✗ |
 
 ---
 

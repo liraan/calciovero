@@ -238,6 +238,7 @@ fn scene_from(
         keeper,
         keeper_reach_cm,
         can_carry,
+        penalty_kick: false,
     }
 }
 
@@ -716,7 +717,11 @@ impl MatchState {
                 am.heading = h;
             }
         }
-        let gk = opponents.iter().find(|p| p.slot() == 0).copied();
+        // Their keeper is the first of their squad (the formation's fact,
+        // as in `SpatialState::goalkeepers`). Before `SIM_VERSION` 74 this
+        // was `slot() == 0`, true only of the home keeper: a home shooter
+        // never saw the away keeper as a keeper.
+        let gk = opponents.first().copied();
         // Room to carry: farther from the goal than the edge of the box,
         // and not blocked. A carrier who has not got anywhere since his last
         // decision is blocked (an opponent in his way) and plays the ball
@@ -738,7 +743,7 @@ impl MatchState {
             b.height_cm * ctx.hidden.save_balance().standing_reach_share
         });
         let own_goal = (i32::from(ctx.match_.pitch.length_m) * 100 - goal.0, goal.1);
-        let scene = scene_from(
+        let mut scene = scene_from(
             &self.spatial,
             attacker,
             (goal, own_goal),
@@ -747,6 +752,7 @@ impl MatchState {
             (gk, keeper_reach_cm),
             can_carry,
         );
+        scene.penalty_kick = self.restart_pass == Some(crate::rules::RestartKind::Penalty);
         let (chosen_kind, freedoms) =
             ds_orchestrator::Actor::new(attacker).decide(&scene, ctx.hidden, tick);
         let chosen = match chosen_kind {
@@ -778,6 +784,8 @@ impl MatchState {
 
         // Only the restart's first pass is free of offside: any other play
         // by the taker ends it.
+        // A dead ball is kicked unchallenged: nobody presses it (Laws 13-14).
+        let dead_ball = self.restart_pass.is_some();
         if !matches!(chosen, ChosenAction::Pass { .. }) {
             self.restart_pass = None;
         }
@@ -909,9 +917,14 @@ impl MatchState {
                 Possession::Away => (0, 3400, 244),
             };
             // Difficulty: min distance to an opponent, scaled. Arbitrary,
-            // declared: 0 cm -> 100 (max pressure), 1500 cm -> 0.
+            // declared: 0 cm -> 100 (max pressure), 1500 cm -> 0. Their
+            // keeper on his line does not press the kicker (before
+            // `SIM_VERSION` 74 he did, and a penalty was a kick under
+            // pressure).
             let difficulty = opponents
                 .iter()
+                .skip(1)
+                .filter(|_| !dead_ball)
                 .filter_map(|o| {
                     self.spatial
                         .agent(*o)
@@ -1668,7 +1681,9 @@ impl MatchState {
         let Some(carrier) = self.spatial.carrier() else {
             return;
         };
-        if self.pending.is_some() {
+        // A dead ball is not challenged (Laws 13-17): until the taker
+        // plays it, the restart is his.
+        if self.pending.is_some() || self.restart_pass.is_some() {
             return;
         }
         let ball = self.spatial.ball();
@@ -2061,7 +2076,7 @@ impl MatchState {
     /// away side the second. Before, nobody was on the ball and nobody saw
     /// it, so the match began only because the nearest player could kick a
     /// ball he was not touching (OI-97).
-    pub fn kick_off(&mut self, ctx: &MatchContext<'_>, half: Half) {
+    pub fn kick_off(&mut self, ctx: &mut MatchContext<'_>, half: Half) {
         if half == Half::Second {
             // The half-time rest (plan L0-CLOSE step 6).
             let f = ctx.hidden.fatigue_balance();
@@ -2081,14 +2096,10 @@ impl MatchState {
     /// Returns the taker.
     fn apply_restart(
         &mut self,
-        ctx: &MatchContext<'_>,
+        ctx: &mut MatchContext<'_>,
         restart: crate::rules::Restart,
     ) -> Option<PlayerId> {
-        let squad = match restart.side {
-            crate::rules::Side::Home => &ctx.match_.home,
-            crate::rules::Side::Away => &ctx.match_.away,
-        };
-        let taker = nearest_in_squad(&self.spatial, squad, restart.spot)?;
+        let taker = self.restart_taker(ctx, &restart)?;
         self.pending = None;
         self.offside_at_pass.clear();
         self.restart_pass = Some(restart.kind);
@@ -2101,7 +2112,154 @@ impl MatchState {
             crate::rules::Side::Home => Possession::Home,
             crate::rules::Side::Away => Possession::Away,
         };
+        self.clear_the_spot(ctx, &restart, taker);
+        if restart.kind == crate::rules::RestartKind::Penalty {
+            // He kicks before anyone can come back into the area (Law 14:
+            // they stay out until the ball is kicked).
+            self.latencies.remove(&taker);
+        }
         Some(taker)
+    }
+
+    /// Who takes a restart (plan L0-CLOSE step 7): the keeper takes his goal
+    /// kick; a corner, a free kick or a penalty goes to the best kicker of
+    /// that ball among the outfield players within `TAKER_RADIUS_CM`; the
+    /// others to the nearest.
+    fn restart_taker(
+        &self,
+        ctx: &mut MatchContext<'_>,
+        restart: &crate::rules::Restart,
+    ) -> Option<PlayerId> {
+        const TAKER_RADIUS_CM: i64 = 3000;
+        use crate::rules::RestartKind;
+        let squad = match restart.side {
+            crate::rules::Side::Home => &ctx.match_.home,
+            crate::rules::Side::Away => &ctx.match_.away,
+        };
+        let nearest = nearest_in_squad(&self.spatial, squad, restart.spot);
+        let keeper = squad
+            .players
+            .first()
+            .map(|p| p.id)
+            .filter(|id| self.spatial.agent(*id).is_some());
+        match restart.kind {
+            RestartKind::GoalKick => keeper.or(nearest),
+            RestartKind::Corner | RestartKind::FreeKick | RestartKind::Penalty => {
+                let mut near: Vec<(i64, PlayerId)> = squad
+                    .players
+                    .iter()
+                    .skip(1)
+                    .filter_map(|p| {
+                        self.spatial
+                            .agent(p.id)
+                            .map(|a| (distance_squared(a.position, restart.spot), p.id))
+                    })
+                    .filter(|(d, _)| *d <= TAKER_RADIUS_CM * TAKER_RADIUS_CM)
+                    .collect();
+                near.sort_by(|x, y| x.0.cmp(&y.0).then(x.1.slot().cmp(&y.1.slot())));
+                let ids: Vec<PlayerId> = near.into_iter().map(|(_, id)| id).collect();
+                ctx.hidden
+                    .set_piece_taker(&ids, restart.kind == RestartKind::Penalty)
+                    .or(nearest)
+            }
+            RestartKind::KickOff | RestartKind::ThrowIn => nearest,
+        }
+    }
+
+    /// The distances of the Laws (Laws 13-14), applied to the players: at
+    /// a free kick or a corner the opponents stand at least 9.15 m from the
+    /// ball; at a penalty everyone but the taker and the defending keeper
+    /// leaves the penalty area, and the keeper stands on his line between
+    /// the posts.
+    fn clear_the_spot(
+        &mut self,
+        ctx: &MatchContext<'_>,
+        restart: &crate::rules::Restart,
+        taker: PlayerId,
+    ) {
+        const DISTANCE_CM: i64 = 915;
+        use crate::rules::RestartKind;
+        let (length, width) = pitch_cm(ctx);
+        let restarting_home = restart.side == crate::rules::Side::Home;
+        let ids: Vec<(PlayerId, bool)> = ctx
+            .match_
+            .home
+            .players
+            .iter()
+            .map(|p| (p.id, true))
+            .chain(ctx.match_.away.players.iter().map(|p| (p.id, false)))
+            .collect();
+        match restart.kind {
+            RestartKind::FreeKick | RestartKind::Corner => {
+                for (id, home) in ids {
+                    if home == restarting_home {
+                        continue;
+                    }
+                    let Some(p) = self.spatial.agent(id).map(|a| a.position) else {
+                        continue;
+                    };
+                    let d2 = distance_squared(p, restart.spot);
+                    if d2 >= DISTANCE_CM * DISTANCE_CM {
+                        continue;
+                    }
+                    // Back along the line from the ball, or towards his
+                    // goal if he stands on it.
+                    let (dx, dy) = (
+                        i64::from(p.0 - restart.spot.0),
+                        i64::from(p.1 - restart.spot.1),
+                    );
+                    let len = d2.isqrt();
+                    let (ux, uy) = if len == 0 {
+                        (if home { -1 } else { 1 }, 0)
+                    } else {
+                        (dx, dy)
+                    };
+                    let l = if len == 0 { 1 } else { len };
+                    let to = (
+                        i32::try_from(i64::from(restart.spot.0) + ux * DISTANCE_CM / l)
+                            .unwrap_or(restart.spot.0)
+                            .clamp(0, length),
+                        i32::try_from(i64::from(restart.spot.1) + uy * DISTANCE_CM / l)
+                            .unwrap_or(restart.spot.1)
+                            .clamp(0, width),
+                    );
+                    self.spatial.set_position(id, to);
+                }
+            }
+            RestartKind::Penalty => {
+                // The goal the penalty is kicked at.
+                let goal_x = if restarting_home { length } else { 0 };
+                // Outside the area and 9.15 m behind the mark.
+                let back = self
+                    .laws
+                    .penalty_area_depth_cm
+                    .max(self.laws.penalty_spot_cm + 915)
+                    + 100;
+                let edge = if restarting_home { length - back } else { back };
+                let defending_keeper = if restarting_home {
+                    ctx.match_.away.players.first().map(|p| p.id)
+                } else {
+                    ctx.match_.home.players.first().map(|p| p.id)
+                };
+                for (id, _) in ids {
+                    if id == taker {
+                        continue;
+                    }
+                    if Some(id) == defending_keeper {
+                        self.spatial.set_position(id, (goal_x, width / 2));
+                        continue;
+                    }
+                    let Some(p) = self.spatial.agent(id).map(|a| a.position) else {
+                        continue;
+                    };
+                    let inside = (p.0 - goal_x).abs() < (edge - goal_x).abs();
+                    if inside {
+                        self.spatial.set_position(id, (edge, p.1));
+                    }
+                }
+            }
+            RestartKind::KickOff | RestartKind::ThrowIn | RestartKind::GoalKick => {}
+        }
     }
 
     /// What the pitch looks like after `tick` (the tick record,
@@ -2740,6 +2898,7 @@ mod tests {
             &scene,
             ds_orchestrator::Side::Right,
             0.5,
+            0.04,
             &balance,
         );
         let pass_target_seen = ctx

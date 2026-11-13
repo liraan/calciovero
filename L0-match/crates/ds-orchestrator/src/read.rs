@@ -50,6 +50,9 @@ pub struct PerceivedScene {
     /// a player stopped at the edge of the box does not hold the ball
     /// forever (OI-97).
     pub can_carry: bool,
+    /// He is taking a penalty: the Laws (Law 14) let him only kick the
+    /// ball forward at the goal, every other player behind the mark.
+    pub penalty_kick: bool,
 }
 
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
@@ -58,6 +61,8 @@ pub const PASS_FREEDOM_CM: i64 = 300;
 /// Regulatory goal width, cm (7.32 m, Laws of the Game, Law 1). A real
 /// fact of football, not a model choice.
 const GOAL_WIDTH_CM: i64 = 732;
+/// The ball's radius, cm (Law 2: a circumference of 68-70 cm).
+const BALL_RADIUS_CM: f64 = 11.0;
 
 /// Pass distance below this: the pass is not plausible, cm.
 const PASS_MIN_CM: i64 = 500;
@@ -432,7 +437,7 @@ fn sure(players: &[ds_calculator::thought::Imagined], f: &ds_calculator::thought
 fn shot_candidates(
     scene: &PerceivedScene,
     pos: (i32, i32),
-    preferred_foot: Side,
+    (preferred_foot, own_error): (Side, f64),
     risk_appetite: f64,
     pressure: f64,
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
@@ -500,19 +505,21 @@ fn shot_candidates(
             Side::Left => facing,
         };
         for side in [side_sign, -side_sign] {
-            let aim_y = side.mul_add(aim_edge_cm, f64::from(goal.1));
-            // How far the keeper leans towards this post, at his depth.
-            let shift = keeper_at.map_or(0.0, |k| side * f64::from(k.1 - goal.1));
-            let chance = ds_calculator::thought::chance(
-                (goal_dist as f64, off, shift),
-                goal_cone(pos, goal),
-                &m.kick,
-                &m.save,
-                &m.thought,
-            );
-            let geom = worth_of(chance);
-            let shot_visibility = keeper_visibility(scene, pos, goal, side, goal_cone(pos, goal));
             for power in [balance.power_strong, balance.power_placed] {
+                let edge = aim_inside(goal_dist as f64, own_error, power, aim_edge_cm);
+                let aim_y = side.mul_add(edge, f64::from(goal.1));
+                // How far the keeper leans towards this post, at his depth.
+                let shift = keeper_at.map_or(0.0, |k| side * f64::from(k.1 - goal.1));
+                let chance = ds_calculator::thought::chance(
+                    (goal_dist as f64, off, shift),
+                    goal_cone(pos, goal),
+                    &m.kick,
+                    &m.save,
+                    &m.thought,
+                );
+                let geom = worth_of(chance);
+                let shot_visibility =
+                    keeper_visibility(scene, pos, goal, side, goal_cone(pos, goal));
                 candidates.push(ChoiceCandidate {
                     kind: ChoiceKind::Shoot {
                         aim_y,
@@ -546,6 +553,18 @@ fn shot_candidates(
         }
     }
     candidates
+}
+
+/// Where he aims across the goal, from its centre, cm (ADR-052, he knows
+/// his own foot): inside the post by the miss he expects of himself at
+/// this distance and power, so a poor finisher aims nearer the middle;
+/// never nearer the post than `aim_edge_cm`, never nearer the middle than
+/// a quarter of it.
+fn aim_inside(goal_dist_cm: f64, own_error: f64, power: f64, aim_edge_cm: f64) -> f64 {
+    let expected_miss = goal_dist_cm * own_error * mind().kick.error_power_gain.mul_add(power, 0.5);
+    #[allow(clippy::cast_precision_loss)] // 732 cm
+    let half = GOAL_WIDTH_CM as f64 * 0.5;
+    aim_edge_cm.min((half - expected_miss - BALL_RADIUS_CM).max(aim_edge_cm * 0.25))
 }
 
 /// ADR-051, "clear": near his own goal and under pressure he may kick the
@@ -742,6 +761,7 @@ pub fn build_choice(
     scene: &PerceivedScene,
     preferred_foot: Side,
     risk_appetite: f64,
+    own_error: f64,
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
 ) -> (ChoiceContext, BTreeMap<PlayerId, i64>) {
     let attacker = scene.actor;
@@ -770,11 +790,22 @@ pub fn build_choice(
     candidates.extend(shot_candidates(
         scene,
         pos,
-        preferred_foot,
+        (preferred_foot, own_error),
         risk_appetite,
         pressure,
         balance,
     ));
+    if scene.penalty_kick && !candidates.is_empty() {
+        // A penalty is a shot (Law 14): nobody is ahead of the ball.
+        return (
+            ChoiceContext {
+                actor: attacker,
+                can_carry: false,
+                candidates,
+            },
+            freedoms,
+        );
+    }
 
     let opponent_positions: Vec<(i32, i32)> = opponents
         .iter()
@@ -890,12 +921,13 @@ mod keeper_visibility_tests {
             keeper: keeper_y.map(|_| keeper),
             keeper_reach_cm: 90.0,
             can_carry: true,
+            penalty_kick: false,
         }
     }
 
     fn shot_visibility(scene: &PerceivedScene) -> f64 {
         let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
-        let (ctx, _) = build_choice(scene, Side::Right, 0.5, &balance);
+        let (ctx, _) = build_choice(scene, Side::Right, 0.5, 0.04, &balance);
         ctx.candidates
             .iter()
             .find(|c| matches!(c.kind, ChoiceKind::Shoot { .. }))
@@ -903,12 +935,61 @@ mod keeper_visibility_tests {
             .expect("a shoot candidate")
     }
 
+    /// Twin test (ADR-052, he knows his own foot): two shooters identical
+    /// but for the miss they expect of themselves; the poorer one aims
+    /// nearer the middle, the better one nearer the post.
+    #[test]
+    fn the_poor_finisher_aims_nearer_the_middle() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let widest = |own_error: f64| {
+            let (ctx, _) = build_choice(
+                &scene_with(Some(3400)),
+                Side::Right,
+                0.5,
+                own_error,
+                &balance,
+            );
+            ctx.candidates
+                .iter()
+                .filter_map(|c| match c.kind {
+                    ChoiceKind::Shoot {
+                        aim_y,
+                        contact_height,
+                        ..
+                    } if contact_height < 0.5 => Some((aim_y - 3400.0).abs()),
+                    _ => None,
+                })
+                .fold(f64::MAX, f64::min)
+        };
+        let (good, poor) = (widest(0.005), widest(0.06));
+        assert!(poor + 50.0 < good, "poor {poor} good {good}");
+    }
+
+    /// A penalty is a shot (Law 14): nobody is ahead of the ball, so the
+    /// taker has no pass and no carry.
+    #[test]
+    fn a_penalty_is_only_a_shot() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let mut s = scene_with(Some(3400));
+        s.positions.insert(PlayerId::new(1, 0), (9400, 3400));
+        s.teammates.push(PlayerId::new(2, 0));
+        s.positions.insert(PlayerId::new(2, 0), (9000, 3000));
+        s.penalty_kick = true;
+        let (ctx, _) = build_choice(&s, Side::Right, 0.5, 0.04, &balance);
+        assert!(!ctx.candidates.is_empty());
+        assert!(
+            ctx.candidates
+                .iter()
+                .all(|c| matches!(c.kind, ChoiceKind::Shoot { .. }))
+        );
+    }
+
     /// Both posts are offered (P1, ADR-046 §1): before `SIM_VERSION` 60
     /// only the side of his foot existed, and he shot at the keeper.
     #[test]
     fn the_shooter_can_aim_at_either_post() {
         let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
-        let (ctx, _) = build_choice(&scene_with(None), Side::Right, 0.5, &balance);
+        let (ctx, _) = build_choice(&scene_with(None), Side::Right, 0.5, 0.04, &balance);
         let aims: Vec<f64> = ctx
             .candidates
             .iter()
@@ -962,12 +1043,13 @@ mod keeper_visibility_tests {
                 keeper: None,
                 keeper_reach_cm: 0.0,
                 can_carry: true,
+                penalty_kick: false,
             }
         }
 
         fn carry_salience_of(s: &PerceivedScene) -> f64 {
             let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
-            let (ctx, _) = build_choice(s, Side::Right, 0.5, &b);
+            let (ctx, _) = build_choice(s, Side::Right, 0.5, 0.04, &b);
             ctx.candidates
                 .iter()
                 .filter(|c| c.kind == ChoiceKind::Advance)
@@ -988,7 +1070,7 @@ mod keeper_visibility_tests {
 
         fn pass_salience(s: &PerceivedScene, appetite: f64) -> f64 {
             let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
-            let (ctx, _) = build_choice(s, Side::Right, appetite, &b);
+            let (ctx, _) = build_choice(s, Side::Right, appetite, 0.04, &b);
             ctx.candidates
                 .iter()
                 .find(|c| matches!(c.kind, ChoiceKind::Pass(_)))
@@ -1019,7 +1101,7 @@ mod keeper_visibility_tests {
             let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
             let mut s = scene((0, 0), None);
             s.positions.insert(s.actor, (10500 - 3000, 3400));
-            let (ctx, _) = build_choice(&s, Side::Right, 0.5, &b);
+            let (ctx, _) = build_choice(&s, Side::Right, 0.5, 0.04, &b);
             assert!(
                 ctx.candidates
                     .iter()

@@ -337,10 +337,16 @@ impl GroundTruth {
         // kicks with (the side he aims at), the power and the pressure: the
         // same player misses by more from farther away. No die (ADR-035).
         let k = self.kick_balance;
-        let foot = if ctx.aim_y >= f64::from(ctx.to.1) {
-            shooter.technical.right_foot
-        } else {
+        // The foot that kicks to the side he aims at, in his own frame:
+        // facing the goal, to his right he kicks with the right foot. Before
+        // `SIM_VERSION` 74 the side was read on the pitch, so one team used
+        // the other foot.
+        let facing_plus_x = ctx.to.0 >= ctx.from.0;
+        let to_his_left = (ctx.aim_y >= f64::from(ctx.to.1)) == facing_plus_x;
+        let foot = if to_his_left {
             shooter.technical.left_foot
+        } else {
+            shooter.technical.right_foot
         };
         let pressure = f64::from(ctx.difficulty.clamp(0, 100)) / 100.0;
         let error = k.error_rad(shooter.technical.finishing, foot, ctx.power, pressure);
@@ -682,6 +688,28 @@ impl GroundTruth {
     #[must_use]
     pub const fn kick_balance(&self) -> ds_calculator::kick::KickBalance {
         self.kick_balance
+    }
+
+    /// The set-piece taker his teammates send (plan L0-CLOSE step 7): of
+    /// `candidates`, the one who kicks this ball best, as a team knows its
+    /// players from training: a penalty to the best finisher at a dead
+    /// ball, a corner or a free kick to the best deliverer. Ties to the
+    /// first, so the nearer one (the caller orders by distance).
+    #[must_use]
+    pub fn set_piece_taker(&mut self, candidates: &[PlayerId], penalty: bool) -> Option<PlayerId> {
+        let mut best: Option<(f32, PlayerId)> = None;
+        for id in candidates {
+            let t = self.latents_for(*id).technical;
+            let quality = if penalty {
+                t.finishing.mul_add(0.5, t.set_pieces * 0.5)
+            } else {
+                t.passing.mul_add(0.5, t.set_pieces * 0.5)
+            };
+            if best.is_none_or(|(q, _)| quality > q) {
+                best = Some((quality, *id));
+            }
+        }
+        best.map(|(_, id)| id)
     }
 
     /// Fatigue's declared parameters (`balance/fatigue.json`).

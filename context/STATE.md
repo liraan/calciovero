@@ -2,20 +2,20 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `6dec89c` - "feat(duel): the carrier shields or takes his man on -- plan L0-CLOSE 5"
+**Last commit verified:** `8ac2139` - "feat(fatigue): the players tire, the half-time rests them -- plan L0-CLOSE 6"
 
 ## Dove siamo (2026-11-13)
 
-- **Motore L0, `SIM_VERSION` 73.** Ogni giocatore sceglie con il suo pensiero (ADR-052): immagina le opzioni (chi arriva prima, la qualità dello spazio raggiunto, cosa si perde) e le giudica con una sola misura; nessun peso per tipo di opzione, nessun dado (ADR-035). Ogni gesto ha le sue radici nelle caratteristiche ed è riconoscibile (ADR-051, catalogo `L0-match/design/ACTIONS.md`).
-- **Fatto in L0-CLOSE** (`plans/L0-CLOSE.md`): la difesa pensa (68), l'attacco senza palla pensa (69), spazzata, pallonetto e altro palo (70), il gioco aereo (71), il portatore che protegge palla o punta l'uomo, con la nuova `dribbling` (72), la fatica che cresce con lo sforzo contro la nuova `endurance` e appanna accelerazione e velocità (73). Prima: portiere che legge e si tuffa, tiro con forza e piede, contrasto in tre forme con quattro esiti (ADR-042), le Leggi (fuorigioco, falli, cartellini, vantaggio, rigore), palla fuori e ripartenze.
-- **Misura 30 seed (42-71), per partita:** gol 1,6, tiri 66 (troppi), parate 44, angoli 11, dribbling riusciti 19, contrasti vinti 6 (pochi). Le statistiche si tarano alla fine del piano, con il maintainer (passo 10): *"non preoccuparti delle statistiche in questa fase"*.
+- **Motore L0, `SIM_VERSION` 74.** Ogni giocatore sceglie con il suo pensiero (ADR-052): immagina le opzioni (chi arriva prima, la qualità dello spazio raggiunto, cosa si perde) e le giudica con una sola misura; nessun peso per tipo di opzione, nessun dado (ADR-035). Ogni gesto ha le sue radici nelle caratteristiche ed è riconoscibile (ADR-051, catalogo `L0-match/design/ACTIONS.md`).
+- **Fatto in L0-CLOSE** (`plans/L0-CLOSE.md`): la difesa pensa (68), l'attacco senza palla pensa (69), spazzata, pallonetto e altro palo (70), il gioco aereo (71), il portatore che protegge palla o punta l'uomo, con la nuova `dribbling` (72), la fatica che cresce con lo sforzo contro la nuova `endurance` e appanna accelerazione e velocità (73), le palle inattive vere (chi batte lo sceglie la squadra, le distanze delle Leggi, il rigore solo tiro) e tre bug trovati per strada, tra cui il portiere avversario che la squadra di casa non riconosceva (74). Prima: portiere che legge e si tuffa, tiro con forza e piede, contrasto in tre forme con quattro esiti (ADR-042), le Leggi (fuorigioco, falli, cartellini, vantaggio, rigore), palla fuori e ripartenze.
+- **Misura 30 seed (42-71), per partita:** gol 2,6 (1,3 casa, 1,3 trasferta), tiri 100 (troppi), parate 63, angoli 20, punizioni 14, dribbling riusciti 17, contrasti vinti 5 (pochi), passaggi 1.394.
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Plan
 
 | Pr. | # | Cosa | Dipende da | Prima azione |
 |---|---|---|---|---|
-| [next] | L0-CLOSE | **Chiudere L0 prima di L1** (maintainer, 2026-11-13). Dieci passi in `plans/L0-CLOSE.md`, 1-6 fatti. | ADR-051, ADR-052, ADR-042 | Passo 7, palle inattive vere: chi batte lo sceglie la squadra, punizione e rigore calciati come tiri, angolo come cross. |
+| [next] | L0-CLOSE | **Chiudere L0 prima di L1** (maintainer, 2026-11-13). Dieci passi in `plans/L0-CLOSE.md`, 1-7 fatti. | ADR-051, ADR-052, ADR-042 | Passo 8, test di repertorio: ogni gesto del catalogo compare almeno una volta nei 30 seed, ogni assenza spiegata. |
 | [open] | 10 | **L1, il mondo** (`L1-world/`). Si apre solo dopo L0 chiuso. | L0-CLOSE | Scrivere `L1-world/00-overview.md` (L1.04) prima di L1.05. |
 | [deferred] | 11 | **Ruleset GitHub (fase 2).** Disattivo; si riattiva quando c'è un secondo revisore, il progetto esce, o un agente riceve un token di scrittura. | — | Rileggere `RULES.md` §C quando una delle tre condizioni si presenta. |
 
