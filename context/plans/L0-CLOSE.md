@@ -25,7 +25,7 @@ Gol ~2,7 · tiri ~25 · nello specchio ~9 · angoli ~10 · falli ~22 · gialli ~
 | 8 | **Test di repertorio** | ogni gesto del catalogo compare almeno una volta nei 30 seed | test verde, ogni assenza spiegata | **fatto** (76) |
 | 9 | **L'amichevole giocabile** | da riga di comando: scegli gli undici e l'intenzione (blocco alto/medio/basso, ampiezza), guardi la partita, salvi, ricarichi, e alla fine leggi *perché* hai subito gol | il maintainer gioca un'amichevole | **fatto** (prima forma: da giocare) |
 | 10 | **Il motore completo** (maintainer, 2026-11-13: *"prima completa il motore, poi il realismo; i numeri sempre derivati dalle abilità, mai inventati"*) | ogni gesto del catalogo con la sua forma piena, nelle famiglie qui sotto (10a-10g); nessuna statistica guardata | ogni riga di `ACTIONS.md` ✓, il test di repertorio senza assenze dichiarate | prossimo |
-| 11 | **Il realismo derivato** | solo ora: 30 seed contro il reale, e per ogni distanza la causa nelle abilità dei giocatori, mai un numero aggiustato (ADR-052 nota) | il maintainer gioca e approva, L0 chiuso | |
+| 11 | **Il realismo derivato** — in corso (87: il tiro in corsa, di traverso, stanco: in porta 95% → 64%) | solo ora: 30 seed contro il reale, e per ogni distanza la causa nelle abilità dei giocatori, mai un numero aggiustato (ADR-052 nota) | il maintainer gioca e approva, L0 chiuso | |
 
 ### Passo 10, le famiglie che mancano (da `ACTIONS.md`)
 

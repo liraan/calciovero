@@ -350,7 +350,31 @@ impl GroundTruth {
             shooter.technical.right_foot
         };
         let pressure = f64::from(ctx.difficulty.clamp(0, 100)) / 100.0;
-        let error = k.error_rad(shooter.technical.finishing, foot, ctx.power, pressure);
+        // On the run (plan L0-CLOSE 11): the faster he runs when he strikes
+        // it, the less clean the contact, the less so the better his body
+        // control.
+        // Across his body (plan L0-CLOSE 11): striking it away from where he
+        // runs is harder, as much more as the angle (its sine) and his run.
+        // Fatigue dims his technique (VISION §3, the dimmer, by the same
+        // share it dims his acceleration, ADR-030).
+        let run = (ctx.run_cm_per_tick / k.run_speed_ref_cm_per_tick.max(1.0)).min(1.0);
+        #[allow(clippy::cast_possible_truncation)]
+        let tired = self
+            .movement_balance
+            .fatigue_coefficient
+            .mul_add(-ctx.fatigue.clamp(0.0, 1.0), 1.0)
+            .max(self.movement_balance.fatigue_floor) as f32;
+        let clean = k.error_rad(
+            shooter.technical.finishing * tired,
+            foot * tired,
+            ctx.power,
+            pressure,
+        );
+        let on_the_run = k.run_error_rad
+            * run
+            * (1.0 + ctx.across.clamp(0.0, 1.0))
+            * (1.0 - f64::from(shooter.physical.body_control));
+        let error = clean + on_the_run;
         let distance = f64::from(ctx.to.0 - ctx.from.0).hypot(ctx.aim_y - f64::from(ctx.from.1));
         #[allow(clippy::cast_possible_truncation)]
         let base_dy = (ctx.aim_y - f64::from(ctx.to.1)) as i32;

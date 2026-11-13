@@ -1197,6 +1197,20 @@ impl MatchState {
                     .agent(attacker)
                     .map_or(0, |a| i32::from(a.velocity.1)),
                 gravity_cm_per_tick2: self.spatial.gravity_cm_per_tick2(),
+                run_cm_per_tick: self.spatial.agent(attacker).map_or(0.0, |a| {
+                    f64::from(a.velocity.0).hypot(f64::from(a.velocity.1))
+                }),
+                across: self.spatial.agent(attacker).map_or(0.0, |a| {
+                    let (vx, vy) = (f64::from(a.velocity.0), f64::from(a.velocity.1));
+                    let (sx, sy) = (f64::from(to.0 - from.0), aim_y - f64::from(from.1));
+                    let (v, s) = (vx.hypot(vy), sx.hypot(sy));
+                    if v < 1.0 || s < 1.0 {
+                        0.0
+                    } else {
+                        (vx.mul_add(sy, -(vy * sx)) / (v * s)).abs()
+                    }
+                }),
+                fatigue: self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
             };
             let outcome = ctx.hidden.resolve_shot(&ctx_shot);
             // F.3-b3: carrier released, ball flies. Goal (or Save) is

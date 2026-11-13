@@ -69,6 +69,14 @@ pub struct ShotContext {
     /// Gravity, cm/tick² (`ball.json`): the shooter strikes the ball so
     /// that it reaches the height he aims at.
     pub gravity_cm_per_tick2: i32,
+    /// How fast he is running when he strikes it, cm/tick (plan L0-CLOSE
+    /// 11: a shot on the run is less clean).
+    pub run_cm_per_tick: f64,
+    /// How far his run turns from the shot's direction, as the sine of the
+    /// angle, 0-1 (plan L0-CLOSE 11: across his body is harder).
+    pub across: f64,
+    /// His fatigue, 0-1: it dims his technique (VISION §3).
+    pub fatigue: f64,
 }
 
 /// The context of a pass resolution.

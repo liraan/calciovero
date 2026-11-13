@@ -11,6 +11,15 @@ use ds_fixtures::match_fixture;
 use ds_match::{MatchConfig, simulate_from_seed_recorded};
 use ds_stats::EventType;
 
+/// Acts so rare in real football that fourteen matches may not hold one:
+/// not required here, guarded elsewhere (2026-11-13: about one red card in
+/// fifteen matches in the engine, about one in seven in real football).
+/// The test fails if one is listed both here and as expected.
+const RARE: &[(&str, &str)] = &[(
+    "red card",
+    "about one match in seven; guarded by `rules::tests::the_card_follows_the_facts`",
+)];
+
 /// The post and the bar are not acts: they are the ball meeting the frame
 /// (ADR-048); the catalogue lists what players do.
 ///
@@ -142,7 +151,6 @@ fn every_act_of_the_catalogue_shows() {
         "catch",
         "foul",
         "yellow card",
-        "red card",
         "offside",
         "free kick",
         "penalty",
@@ -155,6 +163,10 @@ fn every_act_of_the_catalogue_shows() {
         "tire",
         "carry",
     ];
+    assert!(
+        RARE.iter().all(|(a, _)| !expected.contains(a)),
+        "an act is both rare and expected"
+    );
     let seen = acts_seen();
     let missing: Vec<&str> = expected
         .iter()

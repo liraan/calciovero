@@ -29,6 +29,9 @@ const fn ctx_at(from_y: i32, difficulty: i32) -> ShotContext {
         power: 0.35,
         contact_height: 0.0,
         momentum_y: 0,
+        run_cm_per_tick: 0.0,
+        across: 0.0,
+        fatigue: 0.0,
         gravity_cm_per_tick2: 10,
     }
 }
@@ -43,6 +46,9 @@ const fn ctx_contact(from_y: i32, difficulty: i32, contact_height: f64) -> ShotC
         power: 0.35,
         contact_height,
         momentum_y: 0,
+        run_cm_per_tick: 0.0,
+        across: 0.0,
+        fatigue: 0.0,
         gravity_cm_per_tick2: 10,
     }
 }
@@ -122,4 +128,31 @@ fn resolve_shot_pressure_widens_the_deviation() {
         (low.to.1 - 3400).abs(),
         (high.to.1 - 3400).abs()
     );
+}
+
+/// On the run, across the body, tired (P1, plan L0-CLOSE 11): the same
+/// shooter, the same aim; struck at a run it misses by more than standing
+/// still, across his body by more again, and tired by more than fresh.
+#[test]
+fn a_shot_on_the_run_is_less_clean() {
+    let miss = |ctx: ShotContext| {
+        let shot = GroundTruth::new(42, MatchId::new(1, 0)).resolve_shot(&ctx);
+        (shot.to.1 - 3400).abs()
+    };
+    let still = ctx_at(3400, 0);
+    let running = ShotContext {
+        run_cm_per_tick: 80.0,
+        ..still
+    };
+    let across = ShotContext {
+        across: 1.0,
+        ..running
+    };
+    let tired = ShotContext {
+        fatigue: 1.0,
+        ..still
+    };
+    assert!(miss(running) > miss(still), "on the run");
+    assert!(miss(across) > miss(running), "across the body");
+    assert!(miss(tired) > miss(still), "tired");
 }
