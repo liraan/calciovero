@@ -47,6 +47,11 @@ pub struct ShotChoiceBalance {
     /// The room in front (to the nearest opponent ahead) that is full room
     /// for a carry, cm.
     pub carry_room_ref_cm: i64,
+    /// The salience of clearing the ball at full pressure on his own goal
+    /// line (ADR-051).
+    pub clear_salience: f64,
+    /// Within this distance of his own goal a defender may clear, cm.
+    pub clear_zone_cm: i64,
 }
 
 impl ShotChoiceBalance {

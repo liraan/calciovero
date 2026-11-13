@@ -32,6 +32,10 @@ pub struct KickBalance {
     pub aim_high_cm: i32,
     /// Speed a weighed pass still has when it reaches the receiver, cm/tick.
     pub pass_arrive_cm_per_tick: f64,
+    /// How far up the pitch a clearance is aimed, cm.
+    pub clear_length_cm: i32,
+    /// A clearance's vertical speed, as a share of the horizontal one.
+    pub clear_loft: f64,
 }
 
 impl KickBalance {

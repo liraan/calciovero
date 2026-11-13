@@ -188,6 +188,8 @@ pub(crate) enum ChosenAction {
     /// nothing clearer. No event, no ball flight; the tick's movement
     /// already advances the carrier each tick (ADR-040 note 2026-11-09).
     Advance,
+    /// Clear the ball away (ADR-051).
+    Clear,
 }
 
 /// Builds the `PerceivedScene` from the engine's spatial state.
@@ -199,7 +201,7 @@ pub(crate) enum ChosenAction {
 fn scene_from(
     spatial: &SpatialState,
     attacker: PlayerId,
-    goal: (i32, i32),
+    (goal, own_goal): ((i32, i32), (i32, i32)),
     teammates: Vec<PlayerId>,
     opponents: Vec<PlayerId>,
     (keeper, keeper_reach_cm): (Option<PlayerId>, f64),
@@ -217,6 +219,7 @@ fn scene_from(
         opponents,
         positions,
         goal,
+        own_goal,
         keeper,
         keeper_reach_cm,
         can_carry,
@@ -660,10 +663,11 @@ impl MatchState {
         let keeper_reach_cm = gk
             .and_then(|g| self.bodies.get(&g))
             .map_or(0.0, |b| b.height_cm / 2.0);
+        let own_goal = (i32::from(ctx.match_.pitch.length_m) * 100 - goal.0, goal.1);
         let scene = scene_from(
             &self.spatial,
             attacker,
-            goal,
+            (goal, own_goal),
             teammates,
             opponents.clone(),
             (gk, keeper_reach_cm),
@@ -693,6 +697,7 @@ impl MatchState {
             },
             ds_orchestrator::ChoiceKind::Duel => ChosenAction::Duel,
             ds_orchestrator::ChoiceKind::Advance => ChosenAction::Advance,
+            ds_orchestrator::ChoiceKind::Clear => ChosenAction::Clear,
         };
 
         // The action belongs to the nearest agent; the ball follows.
@@ -888,6 +893,8 @@ impl MatchState {
         // defender is put in the carrier's scene, the branch becomes
         // reachable again. Removed-by: Plan E. Do not delete without
         // the migration: `resolve_duel` would lose its only caller.
+        } else if chosen == ChosenAction::Clear {
+            self.play_clearance(ctx, tick, attacker, own_goal);
         } else if chosen == ChosenAction::Duel {
             let ctx_duel = ds_orchestrator::DuelContext {
                 attacker,
@@ -921,6 +928,46 @@ impl MatchState {
     /// player once he is within `loose_control_radius_cm` of it, and his
     /// team has the possession. Before this the ball stayed loose until the
     /// next decision, and the match stood still around it (OI-97).
+    /// The carrier clears the ball (ADR-051, "clear"): his strongest kick,
+    /// lifted, towards a point up the pitch on his side's wing; to no
+    /// one. Out over a touchline it is a throw-in for the opponents.
+    fn play_clearance(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        kicker: PlayerId,
+        own_goal: (i32, i32),
+    ) {
+        let Some(from) = self.spatial.agent(kicker).map(|a| a.position) else {
+            return;
+        };
+        let (length, width) = pitch_cm(ctx);
+        let forward = if own_goal.0 == 0 { 1 } else { -1 };
+        let k = ctx.hidden.kick_balance();
+        let wing = if from.1 < width / 2 {
+            width / 10
+        } else {
+            width - width / 10
+        };
+        let to = (
+            (from.0 + forward * k.clear_length_cm).clamp(0, length),
+            wing,
+        );
+        let v = ctx
+            .hidden
+            .resolve_clearance(kicker, (from.0, from.1, 0), to);
+        self.spatial.set_carrier(None);
+        self.spatial.set_ball_in_flight((from.0, from.1, 0), v);
+        self.pending = None;
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(kicker)),
+            EventType::Clearance,
+            serde_json::json!({ "x": from.0, "y": from.1 }),
+        );
+    }
+
     /// A shot on its way meets a defender (ADR-051, "block"): an outfield
     /// opponent of the shooter whose reach for a passing ball (his
     /// reactivity) it passes within, below his block height, blocks it.
@@ -1933,7 +1980,7 @@ mod tests {
         let scene = scene_from(
             &s,
             attacker,
-            (10500, 3400),
+            ((10500, 3400), (0, 3400)),
             teammates.to_vec(),
             opponents.to_vec(),
             (None, 0.0),

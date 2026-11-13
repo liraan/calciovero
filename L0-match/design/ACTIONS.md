@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 58).
+engine (updated at `SIM_VERSION` 59).
 
 **How to read the state.**
 
@@ -64,7 +64,7 @@ with their first consumer (ADR-051 §4).
 | Cross | same | passing, foot | — |
 | Shoot | choice, direction, power, precision | *shooting* (`finishing` today), foot, explosive force, composure | ✓ since 52: speed from power and explosive force; the miss an angle from finishing, the foot, power and pressure; low or high by his choice; the miss's side is a declared placeholder; composure ✗ |
 | Head (attack) | reach, direction | *heading*, jump, courage | — |
-| Clear | distance, direction | passing, explosive force | — |
+| Clear | distance, direction | passing, explosive force | ◐ since 59 his choice near his own goal under pressure (pressure, distance, appetite); his strongest kick (explosive force), lifted, towards his wing; no error yet |
 
 ## 4. Without the ball
 

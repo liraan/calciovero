@@ -36,6 +36,8 @@ pub struct PerceivedScene {
     pub positions: BTreeMap<PlayerId, (i32, i32)>,
     /// The goal the actor attacks, in cm.
     pub goal: (i32, i32),
+    /// The goal he defends, cm.
+    pub own_goal: (i32, i32),
     /// The opponent goalkeeper, if he is in the scene (ADR-047 §3).
     pub keeper: Option<PlayerId>,
     /// The reach of the keeper, in cm (a visible fact: half his height).
@@ -361,6 +363,83 @@ fn shot_candidates(
     candidates
 }
 
+/// ADR-051, "clear": near his own goal and under pressure he may kick the
+/// ball away, more readily the more he is pressed, the nearer his goal and
+/// the less he likes risk.
+#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+fn clear_candidate(
+    pos: (i32, i32),
+    own_goal: (i32, i32),
+    risk_appetite: f64,
+    pressure: f64,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> Option<ChoiceCandidate> {
+    let own_dist = distance_squared(pos, own_goal).isqrt();
+    if own_dist >= balance.clear_zone_cm || pressure <= 0.0 {
+        return None;
+    }
+    let near = 1.0 - own_dist as f64 / balance.clear_zone_cm.max(1) as f64;
+    Some(ChoiceCandidate {
+        kind: ChoiceKind::Clear,
+        geometric: balance.clear_salience * pressure * near * (-0.5f64).mul_add(risk_appetite, 1.0),
+        risk: 0.0,
+        visibility: 1.0,
+    })
+}
+
+/// The pass candidates (ADR-040, ADR-050): every teammate free enough,
+/// read for his freedom, the lane, the distance and what the pass brings;
+/// and each receiver's freedom, carried to `resolve_pass`.
+#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+fn pass_candidates(
+    scene: &PerceivedScene,
+    pos: (i32, i32),
+    opponent_positions: &[(i32, i32)],
+    risk_appetite: f64,
+    pressure: f64,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> (Vec<ChoiceCandidate>, BTreeMap<PlayerId, i64>) {
+    let attacker = scene.actor;
+    let goal = scene.goal;
+    let teammates: &[PlayerId] = &scene.teammates;
+    let opponents: &[PlayerId] = &scene.opponents;
+    let mut candidates = Vec::new();
+    let mut freedoms = BTreeMap::new();
+    for id in teammates {
+        if *id == attacker {
+            continue;
+        }
+        let Some(tpos) = scene.positions.get(id).copied() else {
+            continue;
+        };
+        let freedom = opponents
+            .iter()
+            .filter_map(|o| scene.positions.get(o).copied())
+            .map(|opos| distance_squared(tpos, opos).isqrt())
+            .min()
+            .unwrap_or(i64::MAX);
+        if freedom < PASS_FREEDOM_CM {
+            continue;
+        }
+        // ADR-040: salience, not probability. freedom x line x distance.
+        let freedom_norm = (freedom as f64) / (freedom as f64 + PASS_FREEDOM_CM as f64);
+        let lq = line_quality(pos, tpos, opponent_positions);
+        let dp = distance_plausible(distance_squared(pos, tpos).isqrt());
+        let brings = brings(pos, tpos, goal, risk_appetite, pressure, balance);
+        let geom = freedom_norm * lq * dp * brings;
+        // risk: 1.0 at PASS_FREEDOM_CM, falling with freedom.
+        let risk = (PASS_FREEDOM_CM as f64) / (freedom as f64);
+        candidates.push(ChoiceCandidate {
+            kind: ChoiceKind::Pass(*id),
+            geometric: geom,
+            risk,
+            visibility: lq,
+        });
+        freedoms.insert(*id, freedom);
+    }
+    (candidates, freedoms)
+}
+
 /// Builds the choice context for `attacker` from the scene, and the
 /// freedom of each pass receiver (carried to `resolve_pass`).
 ///
@@ -392,8 +471,6 @@ pub fn build_choice(
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
 ) -> (ChoiceContext, BTreeMap<PlayerId, i64>) {
     let attacker = scene.actor;
-    let goal = scene.goal;
-    let teammates: &[PlayerId] = &scene.teammates;
     let opponents: &[PlayerId] = &scene.opponents;
 
     let mut candidates = Vec::new();
@@ -429,38 +506,16 @@ pub fn build_choice(
         .iter()
         .filter_map(|o| scene.positions.get(o).copied())
         .collect();
-    for id in teammates {
-        if *id == attacker {
-            continue;
-        }
-        let Some(tpos) = scene.positions.get(id).copied() else {
-            continue;
-        };
-        let freedom = opponents
-            .iter()
-            .filter_map(|o| scene.positions.get(o).copied())
-            .map(|opos| distance_squared(tpos, opos).isqrt())
-            .min()
-            .unwrap_or(i64::MAX);
-        if freedom < PASS_FREEDOM_CM {
-            continue;
-        }
-        // ADR-040: salience, not probability. freedom x line x distance.
-        let freedom_norm = (freedom as f64) / (freedom as f64 + PASS_FREEDOM_CM as f64);
-        let lq = line_quality(pos, tpos, &opponent_positions);
-        let dp = distance_plausible(distance_squared(pos, tpos).isqrt());
-        let brings = brings(pos, tpos, goal, risk_appetite, pressure, balance);
-        let geom = freedom_norm * lq * dp * brings;
-        // risk: 1.0 at PASS_FREEDOM_CM, falling with freedom.
-        let risk = (PASS_FREEDOM_CM as f64) / (freedom as f64);
-        candidates.push(ChoiceCandidate {
-            kind: ChoiceKind::Pass(*id),
-            geometric: geom,
-            risk,
-            visibility: lq,
-        });
-        freedoms.insert(*id, freedom);
-    }
+    let (passes, pass_freedoms) = pass_candidates(
+        scene,
+        pos,
+        &opponent_positions,
+        risk_appetite,
+        pressure,
+        balance,
+    );
+    candidates.extend(passes);
+    freedoms.extend(pass_freedoms);
 
     // ADR-051, "carry": with room in front he may carry the ball himself,
     // an option like the others (before `SIM_VERSION` 54 only the
@@ -469,21 +524,26 @@ pub fn build_choice(
     if scene.can_carry {
         let carry = carry_salience(
             pos,
-            goal,
+            scene.goal,
             &opponent_positions,
             risk_appetite,
             pressure,
             balance,
         );
-        if carry > 0.0 {
-            candidates.push(ChoiceCandidate {
-                kind: ChoiceKind::Advance,
-                geometric: carry,
-                risk: pressure,
-                visibility: 1.0,
-            });
-        }
+        candidates.extend((carry > 0.0).then_some(ChoiceCandidate {
+            kind: ChoiceKind::Advance,
+            geometric: carry,
+            risk: pressure,
+            visibility: 1.0,
+        }));
     }
+    candidates.extend(clear_candidate(
+        pos,
+        scene.own_goal,
+        risk_appetite,
+        pressure,
+        balance,
+    ));
     // Fallback: no candidate (no teammate with enough freedom, no shot in
     // range, no room): the clarity threshold in `resolve_choice` turns
     // this into `ChoiceKind::Advance` (ADR-040 note 2026-11-09).
@@ -551,6 +611,7 @@ mod keeper_visibility_tests {
             },
             positions,
             goal: (10500, 3400),
+            own_goal: (0, 3400),
             keeper: keeper_y.map(|_| keeper),
             keeper_reach_cm: 90.0,
             can_carry: true,
@@ -604,6 +665,7 @@ mod keeper_visibility_tests {
                 opponents: opponent.map_or_else(Vec::new, |_| vec![opp]),
                 positions,
                 goal: (10500, 3400),
+                own_goal: (0, 3400),
                 keeper: None,
                 keeper_reach_cm: 0.0,
                 can_carry: true,

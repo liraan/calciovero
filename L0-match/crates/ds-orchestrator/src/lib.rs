@@ -507,6 +507,31 @@ impl GroundTruth {
         outcome
     }
 
+    /// A clearance (ADR-051, "clear"): his strongest kick, lifted, from
+    /// `from` towards `to` on the ground. Returns the initial velocity.
+    #[must_use]
+    pub fn resolve_clearance(
+        &mut self,
+        kicker: PlayerId,
+        from: (i32, i32, i32),
+        to: (i32, i32),
+    ) -> (i16, i16, i16) {
+        let k = self.kick_balance;
+        let explosive = self.latents_for(kicker).physical.explosive_force;
+        let speed = k.speed(1.0, explosive);
+        let dir = Self::direction_3d(from, (to.0, to.1, from.2));
+        #[allow(clippy::cast_possible_truncation)]
+        let (h, up) = (speed.round() as i16, (speed * k.clear_loft).round() as i16);
+        let v = Self::velocity(dir, h);
+        (v.0, v.1, up)
+    }
+
+    /// The kick's declared parameters (`balance/kick.json`).
+    #[must_use]
+    pub const fn kick_balance(&self) -> ds_calculator::kick::KickBalance {
+        self.kick_balance
+    }
+
     /// The save's declared parameters (`balance/save.json`).
     #[must_use]
     pub const fn save_balance(&self) -> ds_calculator::save::SaveBalance {

@@ -40,6 +40,9 @@ pub enum ChoiceKind {
     /// Carry the ball forward: the carrier's gesture when the scene
     /// shows nothing clearer (ADR-040 note 2026-11-09, IDEA-DESIGN-010).
     Advance,
+    /// Clear the ball: kick it long and high, away from his own goal, to
+    /// no one (ADR-051, "clear").
+    Clear,
 }
 
 /// The side of the body: which foot the actor prefers (ADR-047, forma (d)).
@@ -135,9 +138,10 @@ impl GroundTruth {
             scores.push(score);
             let tiebreak = match candidate.kind {
                 ChoiceKind::Pass(p) => p.slot(),
-                ChoiceKind::Shoot { .. } | ChoiceKind::Duel | ChoiceKind::Advance => {
-                    ctx.actor.slot()
-                }
+                ChoiceKind::Shoot { .. }
+                | ChoiceKind::Duel
+                | ChoiceKind::Advance
+                | ChoiceKind::Clear => ctx.actor.slot(),
             };
             tiebreaks.push(tiebreak);
         }

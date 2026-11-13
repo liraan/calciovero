@@ -411,3 +411,18 @@ fn a_defender_can_block_a_shot() {
         .count();
     assert!(blocks > 0, "no block in the match");
 }
+
+/// ADR-051, "clear" (P1): a defender pressed near his own goal may kick
+/// the ball away. Before `SIM_VERSION` 59 no `Clearance` event was ever
+/// emitted.
+#[test]
+fn a_pressed_defender_can_clear_the_ball() {
+    let (result, _) = recorded();
+    let clears = result
+        .events
+        .events()
+        .iter()
+        .filter(|e| e.event_type == ds_stats::EventType::Clearance)
+        .count();
+    assert!(clears > 0, "no clearance in the match");
+}
