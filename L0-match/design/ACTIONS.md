@@ -120,7 +120,7 @@ The variation comes from the situation, never from a die. Twin tests: the better
 |---|---|
 | Kick-off, throw-in, goal kick, corner (Laws 8, 15-17) | ✓ `rules.rs`, exact |
 | Goal (Law 10) | ✓ the ball over the line between the posts |
-| Offside (Law 11) | — (issue #13) |
+| Offside (Law 11) | ✓ since 62, exact: `rules::offside_position` at the pass, the offence when he plays the ball, a free kick |
 | Fouls (Law 12) | — the outcome of a contact; needs the duel's form (§4.1, ADR-042) |
 | Advantage | — |
 | Cards | — |

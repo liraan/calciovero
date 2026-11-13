@@ -160,6 +160,12 @@ pub struct MatchState {
     challenges: BTreeMap<PlayerId, u64>,
     /// When each player without the ball chooses again (ADR-049).
     offball_due: BTreeMap<PlayerId, u64>,
+    /// Law 11: the passer's teammates in an offside position when the
+    /// ball was played; one who then plays it commits the offence.
+    offside_at_pass: BTreeSet<PlayerId>,
+    /// The restart that put the ball back in play, until its first pass:
+    /// there is no offside from a throw-in, a goal kick or a corner.
+    restart_pass: Option<crate::rules::RestartKind>,
     pending: Option<Pending>,
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
@@ -442,6 +448,8 @@ impl MatchState {
             last_decision: None,
             challenges: BTreeMap::new(),
             offball_due: BTreeMap::new(),
+            offside_at_pass: BTreeSet::new(),
+            restart_pass: None,
             bodies: {
                 let mut m = BTreeMap::new();
                 for p in match_.home.players.iter().chain(match_.away.players.iter()) {
@@ -700,6 +708,11 @@ impl MatchState {
             ds_orchestrator::ChoiceKind::Clear => ChosenAction::Clear,
         };
 
+        // Only the restart's first pass is free of offside: any other play
+        // by the taker ends it.
+        if !matches!(chosen, ChosenAction::Pass { .. }) {
+            self.restart_pass = None;
+        }
         // The action belongs to the nearest agent; the ball follows.
         self.spatial.set_carrier(Some(attacker));
         if chosen == ChosenAction::Advance {
@@ -790,6 +803,7 @@ impl MatchState {
                 let dy = i64::from(to.1 - from.1);
                 (dx * dx + dy * dy).isqrt()
             };
+            self.mark_offside_at_pass(ctx, attacker, from.0);
             self.pending = Some(Pending {
                 due_tick: tick + FLIGHT_TICKS,
                 outcome: expected,
@@ -969,6 +983,84 @@ impl MatchState {
         );
     }
 
+    /// Law 11: `offender` was in an offside position when the ball was
+    /// played, and now he plays it. A free kick to the defenders where he
+    /// is.
+    fn call_offside(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        offender: PlayerId,
+        offender_home: bool,
+        ball: (i32, i32),
+    ) {
+        self.offside_at_pass.clear();
+        let spot = self.spatial.agent(offender).map_or(ball, |a| a.position);
+        let side = if offender_home {
+            crate::rules::Side::Away
+        } else {
+            crate::rules::Side::Home
+        };
+        if let Some(taker) = self.apply_restart(ctx, crate::rules::free_kick(side, spot)) {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(taker)),
+                EventType::FreeKick,
+                serde_json::json!({ "reason": "offside", "offender": offender.slot(), "x": spot.0, "y": spot.1 }),
+            );
+        }
+    }
+
+    /// Law 11: when `passer` plays the ball from `ball_x`, which of his
+    /// teammates are in an offside position. Not from a throw-in, a goal
+    /// kick or a corner (the first pass after such a restart).
+    fn mark_offside_at_pass(&mut self, ctx: &MatchContext<'_>, passer: PlayerId, ball_x: i32) {
+        self.offside_at_pass.clear();
+        let restart = self.restart_pass.take();
+        if matches!(
+            restart,
+            Some(
+                crate::rules::RestartKind::ThrowIn
+                    | crate::rules::RestartKind::GoalKick
+                    | crate::rules::RestartKind::Corner
+            )
+        ) {
+            return;
+        }
+        let m = ctx.match_;
+        let home = m.home.players.iter().any(|p| p.id == passer);
+        let (mates, others) = if home {
+            (&m.home, &m.away)
+        } else {
+            (&m.away, &m.home)
+        };
+        let length = i32::from(m.pitch.length_m) * 100;
+        let goal_x = if home { length } else { 0 };
+        let opponents_x: Vec<i32> = others
+            .players
+            .iter()
+            .filter_map(|q| self.spatial.agent(q.id))
+            .map(|a| a.position.0)
+            .collect();
+        for q in &mates.players {
+            if q.id == passer {
+                continue;
+            }
+            if let Some(a) = self.spatial.agent(q.id) {
+                if crate::rules::offside_position(
+                    a.position.0,
+                    ball_x,
+                    &opponents_x,
+                    goal_x,
+                    length,
+                ) {
+                    self.offside_at_pass.insert(q.id);
+                }
+            }
+        }
+    }
+
     /// A shot on its way meets a defender (ADR-051, "block"): an outfield
     /// opponent of the shooter whose reach for a passing ball (his
     /// reactivity) it passes within, below his block height, blocks it.
@@ -1019,6 +1111,43 @@ impl MatchState {
         );
     }
 
+    /// The nearest player within his own reach of the ball (his
+    /// reactivity, ADR-051); one whose touch just failed needs a moment,
+    /// and nobody takes his own pass.
+    fn who_takes_the_ball(
+        &self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        passer: Option<PlayerId>,
+        ball: (i32, i32),
+    ) -> Option<PlayerId> {
+        let radius = self.reception_balance.loose_control_radius_cm;
+        let players: Vec<PlayerId> = ctx
+            .match_
+            .home
+            .players
+            .iter()
+            .chain(ctx.match_.away.players.iter())
+            .map(|p| p.id)
+            .collect();
+        let mut best: Option<(i64, PlayerId)> = None;
+        for who in players {
+            // Nobody receives his own pass.
+            if Some(who) == passer || self.challenges.get(&who).is_some_and(|t| tick < *t) {
+                continue;
+            }
+            let Some(pos) = self.spatial.agent(who).map(|a| a.position) else {
+                continue;
+            };
+            let d = distance_squared(pos, ball);
+            let reach = ctx.hidden.ball_reach_cm(who, radius);
+            if d <= reach * reach && best.is_none_or(|(bd, _)| d < bd) {
+                best = Some((d, who));
+            }
+        }
+        best.map(|(_, id)| id)
+    }
+
     fn control_loose_ball(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
         // On the ground: at rest, or rolling (a footballer controls a ball
         // that is still moving). A ball in the air is not his yet.
@@ -1046,37 +1175,18 @@ impl MatchState {
         // The nearest player who reaches it, each with his own reach (his
         // reactivity, ADR-051); one whose touch just failed needs a moment.
         let ball = self.spatial.ball();
-        let radius = self.reception_balance.loose_control_radius_cm;
-        let players: Vec<PlayerId> = ctx
-            .match_
-            .home
-            .players
-            .iter()
-            .chain(ctx.match_.away.players.iter())
-            .map(|p| p.id)
-            .collect();
-        let mut best: Option<(i64, PlayerId)> = None;
         let passer = pass.and_then(|(by, _, _)| by);
-        for who in players {
-            // Nobody receives his own pass.
-            if Some(who) == passer || self.challenges.get(&who).is_some_and(|t| tick < *t) {
-                continue;
-            }
-            let Some(pos) = self.spatial.agent(who).map(|a| a.position) else {
-                continue;
-            };
-            let d = distance_squared(pos, ball);
-            let reach = ctx.hidden.ball_reach_cm(who, radius);
-            if d <= reach * reach && best.is_none_or(|(bd, _)| d < bd) {
-                best = Some((d, who));
-            }
-        }
-        let Some((_, id)) = best else {
+        let Some(id) = self.who_takes_the_ball(ctx, tick, passer, ball) else {
             return;
         };
         let home = |who: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == who);
         if let Some((Some(by), freedom, distance)) = pass {
             self.pending = None;
+            if home(by) == home(id) && self.offside_at_pass.contains(&id) {
+                self.call_offside(ctx, tick, id, home(id), ball);
+                return;
+            }
+            self.offside_at_pass.clear();
             if home(by) == home(id) {
                 // A teammate receives: his first touch decides (REC).
                 let params = self.reception_balance.to_params();
@@ -1364,6 +1474,8 @@ impl MatchState {
         };
         let taker = nearest_in_squad(&self.spatial, squad, restart.spot)?;
         self.pending = None;
+        self.offside_at_pass.clear();
+        self.restart_pass = Some(restart.kind);
         self.spatial.set_position(taker, restart.spot);
         self.spatial
             .set_ball_in_flight((restart.spot.0, restart.spot.1, 0), (0, 0, 0));

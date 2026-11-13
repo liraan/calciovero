@@ -254,7 +254,13 @@ fn render_text(
         EventType::Foul => format!("Foul by {player} in the {minute}'"),
         EventType::Card => format!("Card for {player} in the {minute}'"),
         EventType::Corner => format!("Corner for {player} in the {minute}'"),
-        EventType::FreeKick => format!("Free kick for {player} in the {minute}'"),
+        EventType::FreeKick => {
+            if ev.fields.get("reason").and_then(serde_json::Value::as_str) == Some("offside") {
+                format!("Offside: free kick for {player} in the {minute}'")
+            } else {
+                format!("Free kick for {player} in the {minute}'")
+            }
+        }
         EventType::Penalty => format!("PENALTY! {player} in the {minute}'"),
         EventType::Substitution => format!("Substitution: {player} in the {minute}'"),
         EventType::Injury => format!("{player} is injured in the {minute}'"),
