@@ -20,6 +20,10 @@ pub struct KickBalance {
     pub speed_explosive_base: f64,
     /// Angular error of the worst kicker at medium power, radians.
     pub error_ref_rad: f64,
+    /// The speed of a keeper's throw, cm/tick.
+    pub throw_speed_cm_per_tick: f64,
+    /// The farthest a keeper throws, cm.
+    pub throw_max_cm: i32,
     /// The same for a pass to a teammate, radians: a pass is aimed at a
     /// man who comes to meet it, not at the corner of a goal.
     pub pass_error_ref_rad: f64,

@@ -93,6 +93,9 @@ pub struct PassContext {
     /// A lofted pass (over the opponents), and gravity for its flight,
     /// cm/tick².
     pub lofted: Option<i32>,
+    /// The keeper throws it from his hands (plan L0-CLOSE 10d): its
+    /// precision is his hands', its speed his arm's.
+    pub throw: bool,
 }
 
 /// The context of a reception (REC): the receiver and the geometry of

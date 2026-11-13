@@ -8,7 +8,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-382_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-383_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -110,7 +110,7 @@ What exists today:
 - a **friendly you can play** from the command line: choose your eleven
   from the squad and the bench, how high you defend and how wide you play,
   save the match, reload it, and read why you conceded each goal;
-- **382 tests** and a health check that runs on every commit.
+- **383 tests** and a health check that runs on every commit.
 
 What does not exist yet: substitutions during the match, the season, the
 career, the transfer market. And the match is not calibrated yet: today it
@@ -174,7 +174,7 @@ the player's characteristics; the full catalogue, act by act, is
 |---|---|
 | ✅ Dive: reaction, explosive force, height | ✅ Hold or parry |
 | ✅ Claim a ball in the air in his area | 🟡 Position: a rule (between ball and goal), not yet his reading |
-| 🟡 Come out: in his area only | ⬜ Get set, distribute with hands and feet |
+| 🟡 Come out: in his area only | 🟡 Distribute: throw from his hands ✅, get set ⬜ |
 
 **The Laws** (the referee is the Laws, applied objectively)
 

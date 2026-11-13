@@ -96,12 +96,12 @@ The variation comes from the situation, never from a die. Twin tests: the better
 | Act | Quantities | Roots | Engine today |
 |---|---|---|---|
 | Position (the angles) | where, relative to ball and goal | game reading, *concentration* | ✗ a rule (`balance/keeper.json`); since 51 always between the ball and the goal; game reading not read yet |
-| Get set | ready or not when the shot leaves | *reactivity*, *concentration* | — |
+| Get set | ready or not when the shot leaves | reactivity, concentration | — tried at 85 and declared open: the moment the shot is shaped, when a keeper plants his feet, does not exist yet |
 | Dive, stop the shot | reach in the time the ball takes | reactivity, explosive force, *joint mobility*, height | ✓ since 51: reaction time from reactivity, dive from explosive force, met where the ball passes him (`balance/save.json`); joint mobility not yet |
 | Catch or parry | held, parried, spilled | *handling* (`goalkeeping` today), *body control* | ✓ since 76: held when his hands reach the difficulty, the reach margin and the ball\'s speed added (before they multiplied and every ball was held); about 60% held; parried nearer him, tipped at the edge; no spill yet |
 | Come out | whether | decision making, *courage* | ◐ the choice exists (ADR-049), only inside his area |
 | Claim a cross | whether, win | decision making, jump, *handling* | ◐ since 71: the keeper in his area catches the ball in the air within his reach (arms); the choice to come is not his yet |
-| Distribute | hands, feet | passing, foot, vision | ◐ as an outfield pass |
+| Distribute | hands, feet | handling, passing, foot | ✓ since 85: from his hands he throws to a teammate within 35 m, its precision his hands'; farther he kicks it; nobody challenges a ball in his hands (Law 12) |
 
 ## 6. Restarts
 

@@ -525,7 +525,11 @@ impl GroundTruth {
         );
         let distance = dx.hypot(dy);
         let loss = 1.0 - f64::from(ctx.ground_friction_milli) / 1000.0;
-        let max = k.speed(1.0, passer.physical.explosive_force);
+        let max = if ctx.throw {
+            k.throw_speed_cm_per_tick
+        } else {
+            k.speed(1.0, passer.physical.explosive_force)
+        };
         let weighed = distance.mul_add(loss, k.pass_arrive_cm_per_tick);
         // The foot he kicks with: the receiver's side of him.
         let foot = if dy >= 0.0 {
@@ -533,8 +537,14 @@ impl GroundTruth {
         } else {
             passer.technical.right_foot
         };
+        // Thrown, with his hands (both of them); kicked, with his foot.
+        let (skill, foot) = if ctx.throw {
+            (passer.technical.goalkeeping, 1.0)
+        } else {
+            (passer.technical.passing, foot)
+        };
         let error = k.error_rad(
-            passer.technical.passing,
+            skill,
             foot,
             (weighed / k.speed_ref_cm_per_tick).min(1.0),
             0.0,
@@ -1113,7 +1123,7 @@ mod reception_tests {
     use super::*;
     use ds_core::ids::{MatchId, PlayerId};
 
-    fn params() -> ReceptionParams {
+    pub fn params() -> ReceptionParams {
         ReceptionParams {
             speed_base_cm_per_tick: 150,
             speed_passing_bonus_cm_per_tick: 150,
@@ -1428,6 +1438,38 @@ mod choice_filter_tests {
         let (wf, wt) = at(&mut g, weak, 1.0);
         let (sf, st) = at(&mut g, strong, 1.0);
         assert!(wt - wf > st - sf, "weak {wf}->{wt}, strong {sf}->{st}");
+    }
+
+    /// The keeper's throw (P1, plan L0-CLOSE 10d): from his hands the ball
+    /// leaves no faster than his arm throws it, where his foot would kick
+    /// a long ball harder.
+    #[test]
+    fn the_throw_leaves_at_the_arm_speed() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let pass = |g: &mut GroundTruth, throw: bool| {
+            let v = g
+                .resolve_pass(
+                    &PassContext {
+                        passer: PlayerId::new(0, 0),
+                        from: (500, 3400, 0),
+                        to: (4000, 3400, 0),
+                        receiver_freedom_cm: 800,
+                        ground_friction_milli: 957,
+                        pitch_centre: (5250, 3400),
+                        lofted: None,
+                        throw,
+                    },
+                    &crate::reception_tests::params(),
+                )
+                .initial_velocity;
+            f64::from(v.0).hypot(f64::from(v.1))
+        };
+        let thrown = pass(&mut g, true);
+        assert!(
+            thrown <= g.kick_balance().throw_speed_cm_per_tick + 1.0,
+            "{thrown}"
+        );
+        assert!(pass(&mut g, false) > thrown, "the foot kicks it harder");
     }
 
     /// Twin test (plan L0-CLOSE 10c, work rate): the more generous player

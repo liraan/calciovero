@@ -178,6 +178,9 @@ pub struct MatchState {
     /// change? No: the actor's pace is his own, persistent across possessions.
     /// A weak decider who wins the ball back carries his own delay with him.
     latencies: BTreeMap<PlayerId, u64>,
+    /// The keeper holding the ball in his hands (plan L0-CLOSE 10d): he
+    /// throws it, and nobody may challenge him for it (Law 12).
+    in_hands: Option<PlayerId>,
 }
 
 /// The action an agent chooses from its point of view (MD-01, MD-43).
@@ -649,6 +652,7 @@ impl MatchState {
             coverage: BTreeSet::new(),
             coverage_possession: Possession::Home,
             latencies: BTreeMap::new(),
+            in_hands: None,
         }
     }
 
@@ -928,6 +932,8 @@ impl MatchState {
         // by the taker ends it.
         // A dead ball is kicked unchallenged: nobody presses it (Laws 13-14).
         let dead_ball = self.restart_pass.is_some();
+        // The ball leaves the keeper's hands as he plays it.
+        let from_hands = self.in_hands.take() == Some(attacker);
         if !matches!(chosen, ChosenAction::Pass { .. }) {
             self.restart_pass = None;
         }
@@ -1002,10 +1008,17 @@ impl MatchState {
                 |p| (p.0, p.1, 0),
             );
             let params = self.reception_balance.to_params();
+            // From his hands the keeper throws it, if it is within his arm
+            // (plan L0-CLOSE 10d); farther he kicks it.
+            let throw = from_hands
+                && !lofted
+                && distance_squared((from.0, from.1), (to.0, to.1))
+                    <= i64::from(ctx.hidden.kick_balance().throw_max_cm).pow(2);
             let ctx_pass = ds_orchestrator::PassContext {
                 passer: attacker,
                 from,
                 to,
+                throw,
                 receiver_freedom_cm: freedom_cm,
                 ground_friction_milli: self.spatial.ground_friction_milli(),
                 pitch_centre: (
@@ -1393,6 +1406,7 @@ impl MatchState {
         if hands {
             // The keeper claims it.
             self.spatial.set_carrier(Some(winner));
+            self.in_hands = Some(winner);
             self.emit_event(
                 ctx,
                 tick,
@@ -1950,7 +1964,8 @@ impl MatchState {
         };
         // A dead ball is not challenged (Laws 13-17): until the taker
         // plays it, the restart is his.
-        if self.pending.is_some() || self.restart_pass.is_some() {
+        // Nor the ball in the keeper's hands (Law 12).
+        if self.pending.is_some() || self.restart_pass.is_some() || self.in_hands == Some(carrier) {
             return;
         }
         let ball = self.spatial.ball();
@@ -2884,6 +2899,7 @@ impl MatchState {
             if o.held {
                 // In his hands: the ball is his.
                 self.spatial.set_carrier(Some(gk));
+                self.in_hands = Some(gk);
             } else {
                 // Parried: nearer him, pushed back into play away from the
                 // centre of the goal; at the edge of his reach only tipped,
