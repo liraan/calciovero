@@ -393,7 +393,7 @@ pub fn space_value(p: (i32, i32), goal: (i32, i32), other: (i32, i32)) -> f64 {
     let d = distance_squared(p, goal).isqrt() as f64;
     let length = f64::from((goal.0 - other.0).abs());
     let chance = ds_calculator::thought::chance(
-        (d, keeper_off(d)),
+        (d, keeper_off(d), 0.0),
         goal_cone(p, goal),
         &m.kick,
         &m.save,
@@ -442,28 +442,18 @@ fn shot_candidates(
     let goal_dist = distance_squared(pos, goal).isqrt();
     let shoot_range = balance.shot_range_cm.max(1);
     if goal_dist < shoot_range {
-        // ADR-052: the chance this space gives, in units of keeping the
-        // ball; missed, the ball is theirs by our goal line.
+        // ADR-052: for each post, the chance this space gives with the
+        // keeper where he sees him (off his line he narrows the goal;
+        // leaning to a post he closes it), less the defenders who could
+        // reach the line of the shot; missed, the ball is theirs by our
+        // goal line. The risk is in the worth: none on top of it.
         let m = mind();
-        // The keeper as he sees him: how far off his line he stands.
-        let off = scene
-            .keeper
-            .and_then(|k| scene.positions.get(&k))
-            .map_or_else(
-                || keeper_off(goal_dist as f64),
-                |k| f64::from((k.0 - goal.0).abs()),
-            );
-        let chance = ds_calculator::thought::chance(
-            (goal_dist as f64, off),
-            goal_cone(pos, goal),
-            &m.kick,
-            &m.save,
-            &m.thought,
+        let keeper_at = scene.keeper.and_then(|k| scene.positions.get(&k)).copied();
+        let off = keeper_at.map_or_else(
+            || keeper_off(goal_dist as f64),
+            |k| f64::from((k.0 - goal.0).abs()),
         );
         let loss = space_value(goal, scene.own_goal, goal);
-        // A defender who reaches the line of the shot before the ball
-        // blocks it (ADR-052 §2: the same forecast as a pass, the keeper
-        // being already in the chance).
         let keeper = scene.keeper;
         let blockers: Vec<ds_calculator::thought::Imagined> = imagined(scene)
             .into_iter()
@@ -487,39 +477,40 @@ fn shot_candidates(
         } else {
             1.0
         };
-        let scores = clear * chance;
-        let geom = ((1.0 - scores) * loss)
-            .mul_add(-(1.5 - risk_appetite), scores / m.thought.possession_value)
-            .max(0.0);
+        let worth_of = |chance: f64| {
+            let scores = clear * chance;
+            ((1.0 - scores) * loss)
+                .mul_add(-(1.5 - risk_appetite), scores / m.thought.possession_value)
+                .max(0.0)
+        };
         let _ = (
             pressure,
+            balance.other_side_factor,
             shot_salience(pos, goal, risk_appetite, pressure, balance),
         );
-        // The risk is in the worth (ADR-052): none on top of it.
         let risk = 0.0;
-        // ADR-046 §1, ADR-047: the shot is a complete phrase. The side
-        // is the actor's preferred foot (a fact of the body, not a
-        // latent); the two powers are the two phrases from
-        // `L0-match/balance/shot_choice.json`. The contact height is 0.0 in this
-        // cantiere (`Removed-by: ADR-046 §5`, the lob needs the flight's
-        // time).
+        // ADR-046 §1, ADR-047: the shot is a complete phrase; both posts,
+        // the keeper hiding the side he covers (ADR-047 §3).
         let aim_edge_cm = (GOAL_WIDTH_CM as f64) * 0.5 * balance.aim_edge_fraction;
         // His foot's side, as he faces the goal he attacks: facing +x his
-        // right is -y. Before `SIM_VERSION` 55 the side was absolute (+y
-        // for a right foot), so the two teams aimed at mirrored sides.
+        // right is -y.
         let facing: f64 = if goal.0 >= pos.0 { 1.0 } else { -1.0 };
         let side_sign: f64 = match preferred_foot {
             Side::Right => -facing,
             Side::Left => facing,
         };
-        // Both sides of the goal (ADR-046 §1: two phrases per side): his
-        // foot's side, and the other one, less natural (`other_side_factor`)
-        // and kicked with the other foot (its precision is read at the
-        // strike). The keeper hides the side he covers (ADR-047 §3), so
-        // the shooter can pick the post away from him. Before `SIM_VERSION`
-        // 60 only his foot's side existed, and he shot at the keeper.
-        for (side, factor) in [(side_sign, 1.0), (-side_sign, balance.other_side_factor)] {
+        for side in [side_sign, -side_sign] {
             let aim_y = side.mul_add(aim_edge_cm, f64::from(goal.1));
+            // How far the keeper leans towards this post, at his depth.
+            let shift = keeper_at.map_or(0.0, |k| side * f64::from(k.1 - goal.1));
+            let chance = ds_calculator::thought::chance(
+                (goal_dist as f64, off, shift),
+                goal_cone(pos, goal),
+                &m.kick,
+                &m.save,
+                &m.thought,
+            );
+            let geom = worth_of(chance);
             let shot_visibility = keeper_visibility(scene, pos, goal, side, goal_cone(pos, goal));
             for power in [balance.power_strong, balance.power_placed] {
                 candidates.push(ChoiceCandidate {
@@ -528,11 +519,30 @@ fn shot_candidates(
                         power,
                         contact_height: 0.0,
                     },
-                    geometric: geom * factor,
+                    geometric: geom,
                     risk,
                     visibility: shot_visibility,
                 });
             }
+        }
+        // The lob (ADR-052): over a keeper off his line, soft and high.
+        let lob = ds_calculator::thought::lob_chance(
+            (goal_dist as f64, off),
+            balance.power_lob,
+            &m.kick,
+            &m.thought,
+        );
+        if lob > 0.0 {
+            candidates.push(ChoiceCandidate {
+                kind: ChoiceKind::Shoot {
+                    aim_y: f64::from(goal.1),
+                    power: balance.power_lob,
+                    contact_height: 1.0,
+                },
+                geometric: worth_of(lob),
+                risk,
+                visibility: 1.0,
+            });
         }
     }
     candidates
@@ -544,7 +554,7 @@ fn shot_candidates(
 #[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
 fn clear_candidate(
     pos: (i32, i32),
-    own_goal: (i32, i32),
+    (own_goal, goal): ((i32, i32), (i32, i32)),
     risk_appetite: f64,
     pressure: f64,
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
@@ -553,10 +563,34 @@ fn clear_candidate(
     if own_dist >= balance.clear_zone_cm || pressure <= 0.0 {
         return None;
     }
-    let near = 1.0 - own_dist as f64 / balance.clear_zone_cm.max(1) as f64;
+    // ADR-052: he imagines the ball where it lands, up the pitch on his
+    // wing, contested: it is worth what that space would give whoever gets
+    // it, against what the space where he stands would give the opponents
+    // if he loses it there (that is in the other options' worth).
+    let _ = balance.clear_salience;
+    let m = mind();
+    let forward = if own_goal.0 == 0 { 1 } else { -1 };
+    let width = own_goal.1 * 2;
+    let wing = if pos.1 < own_goal.1 {
+        width / 10
+    } else {
+        width - width / 10
+    };
+    let landing = (pos.0 + forward * m.kick.clear_length_cm, wing);
+    let gain = space_value(landing, goal, own_goal);
+    let loss = space_value(landing, own_goal, goal);
+    // What it takes away: the danger of losing the ball here, as much as he
+    // is pressed (the same danger a defender reads, ADR-052 §5).
+    let danger = pressure * space_value(pos, own_goal, goal);
     Some(ChoiceCandidate {
         kind: ChoiceKind::Clear,
-        geometric: balance.clear_salience * pressure * near * (-0.5f64).mul_add(risk_appetite, 1.0),
+        geometric: (ds_calculator::thought::ThoughtBalance::expected(
+            0.5,
+            gain,
+            loss,
+            risk_appetite,
+        ) + danger)
+            .max(0.0),
         risk: 0.0,
         visibility: 1.0,
     })
@@ -779,7 +813,7 @@ pub fn build_choice(
     }
     candidates.extend(clear_candidate(
         pos,
-        scene.own_goal,
+        (scene.own_goal, scene.goal),
         risk_appetite,
         pressure,
         balance,

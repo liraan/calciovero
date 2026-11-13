@@ -202,7 +202,7 @@ pub fn who_first(
 /// of the goal he sees.
 #[must_use]
 pub fn chance(
-    (distance_cm, keeper_off_cm): (f64, f64),
+    (distance_cm, keeper_off_cm, keeper_shift_cm): (f64, f64, f64),
     goal_cone: f64,
     kick: &KickBalance,
     save: &SaveBalance,
@@ -215,8 +215,10 @@ pub fn chance(
     let speed = kick.speed(0.85, 0.5).max(1.0);
     let flight = meet / speed;
     let reach = save.reach_cm(95.0, 0.5, 0.5, flight);
+    // `keeper_shift_cm`: how far the keeper leans towards the post aimed at
+    // (negative: away from it), at his depth.
     let half = f64::from(t.goal_width_cm) / 2.0 * share;
-    let open = (half - reach).max(0.0);
+    let open = (half - keeper_shift_cm - reach).max(0.0);
     let spread = meet * kick.error_rad(0.5, 0.75, 0.85, 0.0);
     let hit = if open + spread > 0.0 {
         open / (open + spread)
@@ -226,9 +228,53 @@ pub fn chance(
     (hit * goal_cone.clamp(0.0, 1.0)).clamp(0.0, 1.0)
 }
 
+/// The chance of a lob over a keeper off his line (ADR-052), in `[0, 1]`.
+///
+/// It goes in if he cannot get back before it comes down (his run back,
+/// at the speed the shooter believes, against the lob's slow flight) and
+/// if it falls inside the goal (the half width against the spread of a
+/// soft kick).
+#[must_use]
+pub fn lob_chance(
+    (distance_cm, keeper_off_cm): (f64, f64),
+    power: f64,
+    kick: &KickBalance,
+    t: &ThoughtBalance,
+) -> f64 {
+    let flight = distance_cm / kick.speed(power, 0.5).max(1.0);
+    let back = t.believed_reaction_ticks + keeper_off_cm / t.believed_speed_cm_per_tick.max(1.0);
+    let beaten = t.confidence(back - flight);
+    let half = f64::from(t.goal_width_cm) / 2.0;
+    let spread = distance_cm * kick.error_rad(0.5, 0.75, power, 0.0);
+    beaten * half / (half + spread)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A keeper far off his line can be lobbed; one on his line cannot
+    /// (P1, ADR-052).
+    #[test]
+    fn a_keeper_off_his_line_can_be_lobbed() {
+        let (k, t) = (KickBalance::load(), ThoughtBalance::load());
+        let far = lob_chance((2000.0, 1200.0), 0.2, &k, &t);
+        let home = lob_chance((2000.0, 100.0), 0.2, &k, &t);
+        assert!(far > 0.3 && home < 0.1, "far {far}, home {home}");
+    }
+
+    /// The keeper leaning to the post aimed at closes it (P1).
+    #[test]
+    fn the_far_post_from_the_keeper_is_better() {
+        let (k, s, t) = (
+            KickBalance::load(),
+            SaveBalance::load(),
+            ThoughtBalance::load(),
+        );
+        let open = chance((1600.0, 300.0, -80.0), 0.44, &k, &s, &t);
+        let closed = chance((1600.0, 300.0, 80.0), 0.44, &k, &s, &t);
+        assert!(open > closed, "open {open}, closed {closed}");
+    }
 
     fn me(at: (i32, i32), mate: bool) -> Imagined {
         Imagined {
@@ -309,11 +355,11 @@ mod tests {
             SaveBalance::load(),
             ThoughtBalance::load(),
         );
-        let spot = chance((1100.0, 0.0), 0.6, &k, &s, &t);
-        let far = chance((2500.0, 0.0), 0.28, &k, &s, &t);
-        let tight = chance((1100.0, 0.0), 0.15, &k, &s, &t);
+        let spot = chance((1100.0, 0.0, 0.0), 0.6, &k, &s, &t);
+        let far = chance((2500.0, 0.0, 0.0), 0.28, &k, &s, &t);
+        let tight = chance((1100.0, 0.0, 0.0), 0.15, &k, &s, &t);
         // A keeper off his line narrows the goal (P1).
-        assert!(chance((1100.0, 400.0), 0.6, &k, &s, &t) < spot);
+        assert!(chance((1100.0, 400.0, 0.0), 0.6, &k, &s, &t) < spot);
         assert!(
             spot > far && spot > tight,
             "spot {spot}, far {far}, tight {tight}"

@@ -54,6 +54,8 @@ pub struct ShotChoiceBalance {
     pub clear_zone_cm: i64,
     /// How much less natural a shot to the side of his other foot is.
     pub other_side_factor: f64,
+    /// The power of a lob, 0..1 (soft and high, ADR-052).
+    pub power_lob: f64,
     /// The salience of a lofted pass, against a ground one (ADR-051).
     pub loft_salience: f64,
     /// A lofted pass is an option from this distance, cm.
