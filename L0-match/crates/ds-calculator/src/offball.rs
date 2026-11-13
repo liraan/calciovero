@@ -34,6 +34,14 @@ pub struct OffBallBalance {
     pub mark_zone_cm: i32,
     /// How far goal-side of his man a marker stands, cm.
     pub mark_gap_cm: i32,
+    /// How far behind the presser, towards our goal, the cover stands, cm.
+    pub cover_depth_cm: i32,
+    /// How far in front of his man, towards the carrier, he steps into the
+    /// lane, cm.
+    pub lane_step_cm: i32,
+    /// How much the place he holds weighs for the least disciplined
+    /// player, thousandths of its danger.
+    pub discipline_floor_milli: i32,
     /// A player with no reactivity reaches this share of the control
     /// radius, thousandths.
     pub ball_reach_base_milli: i32,

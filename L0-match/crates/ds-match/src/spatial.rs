@@ -658,7 +658,9 @@ impl SpatialState {
                 Some(
                     ds_orchestrator::OffBallAct::Offer
                     | ds_orchestrator::OffBallAct::Run
-                    | ds_orchestrator::OffBallAct::Mark,
+                    | ds_orchestrator::OffBallAct::Mark
+                    | ds_orchestrator::OffBallAct::Cover
+                    | ds_orchestrator::OffBallAct::Intercept,
                 ),
                 Some(t),
             ) = (act, self.act_targets.get(&entry.0))
@@ -718,8 +720,9 @@ impl SpatialState {
             let in_time = if keeper {
                 top
             } else if defending {
+                // As much of it as his work rate gives (plan L0-CLOSE 10c).
                 let to_ball = f64::from(target.0 - ball.0).hypot(f64::from(target.1 - ball.1));
-                top * (dist / to_ball.max(1.0))
+                top * (dist / to_ball.max(1.0)) * outcome.work_share
             } else {
                 dist / outcome.reposition_ticks.max(1.0)
             };

@@ -807,6 +807,7 @@ impl GroundTruth {
         let all = self.latents_for(ctx.player);
         let latents = all.physical;
         let dribbling = all.technical.dribbling;
+        let work_rate = all.psychological.work_rate;
         let max_speed = latents.max_speed;
         let balance = &self.movement_balance;
         // v_max and stride are not terms of the acceleration formula: they
@@ -837,6 +838,8 @@ impl GroundTruth {
             reposition_ticks: balance.reposition_ticks,
             with_ball_share: (balance.with_ball_share_max - balance.with_ball_share_min)
                 .mul_add(f64::from(dribbling), balance.with_ball_share_min),
+            work_share: (1.0 - balance.work_rate_floor)
+                .mul_add(f64::from(work_rate), balance.work_rate_floor),
             stride,
         }
     }
@@ -1425,6 +1428,24 @@ mod choice_filter_tests {
         let (wf, wt) = at(&mut g, weak, 1.0);
         let (sf, st) = at(&mut g, strong, 1.0);
         assert!(wt - wf > st - sf, "weak {wf}->{wt}, strong {sf}->{st}");
+    }
+
+    /// Twin test (plan L0-CLOSE 10c, work rate): the more generous player
+    /// gives more of the pace his side needs without the ball.
+    #[test]
+    fn the_generous_player_runs_more_for_the_team() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (weak, strong) = ends(&mut g, |l| l.psychological.work_rate);
+        let share = |g: &mut GroundTruth, p: PlayerId| {
+            g.resolve_movement(&MovementContext {
+                player: p,
+                height_cm: 180.0,
+                weight_kg: 78.0,
+                fatigue: 0.0,
+            })
+            .work_share
+        };
+        assert!(share(&mut g, strong) > share(&mut g, weak) + 0.25);
     }
 
     /// Twin test (plan L0-CLOSE 10b, anticipation): the more anticipating

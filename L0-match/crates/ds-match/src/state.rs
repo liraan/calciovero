@@ -278,6 +278,10 @@ struct TeamView {
     opponents: Vec<(i32, i32)>,
     /// Their outfield players other than the carrier: the men to mark.
     men: Vec<(i32, i32)>,
+    /// Where their carrier is, if they have the ball.
+    carrier_at: Option<(i32, i32)>,
+    /// A teammate is pressing their carrier (plan L0-CLOSE 10c: the cover).
+    mate_pressing: bool,
 }
 
 impl TeamView {
@@ -317,7 +321,44 @@ impl TeamView {
             last_line,
             opponents,
             men,
+            carrier_at: carrier
+                .filter(|c| other.players.iter().any(|p| p.id == *c))
+                .and_then(|c| spatial.agent(c))
+                .map(|a| a.position),
+            mate_pressing: false,
         }
+    }
+
+    /// The point behind the teammate pressing their carrier, on the
+    /// carrier's line to our goal (plan L0-CLOSE 10c).
+    fn cover_point(
+        &self,
+        off: &ds_calculator::offball::OffBallBalance,
+        (length, width): (i32, i32),
+    ) -> Option<(i32, i32)> {
+        let c = self.carrier_at?;
+        let own_goal = (length - self.their_goal_x, width / 2);
+        Some(step_towards(
+            c,
+            own_goal,
+            off.cover_depth_cm,
+            (length, width),
+        ))
+    }
+
+    /// The point in the passing lane between their carrier and the man he
+    /// would mark, a step in front of the man (plan L0-CLOSE 10c).
+    fn lane_point(
+        &self,
+        me: (i32, i32),
+        off: &ds_calculator::offball::OffBallBalance,
+        (length, width): (i32, i32),
+    ) -> Option<(i32, i32)> {
+        let c = self.carrier_at?;
+        let m = self.man_to_mark(me)?;
+        let half = (distance_squared(c, m).isqrt() / 2).max(1);
+        let step = i32::try_from(i64::from(off.lane_step_cm).min(half)).unwrap_or(0);
+        Some(step_towards(m, c, step, (length, width)))
     }
 
     fn marker(&self, me: (i32, i32)) -> Option<(i32, i32)> {
@@ -345,10 +386,18 @@ impl TeamView {
         let into = self
             .marker(held)
             .map_or(0.0, |o| ds_orchestrator::read::soon(o, held));
+        let off = ds_calculator::offball::OffBallBalance::load();
+        let dist = |p: (i32, i32)| distance_squared(me, p).isqrt();
         ds_orchestrator::Threats {
             carrier: threat(carrier),
             man: self.man_to_mark(me).map_or(0.0, threat),
             held: threat(held) * into,
+            cover: self
+                .mate_pressing
+                .then(|| self.cover_point(&off, (length, width)))
+                .flatten()
+                .map(|p| (threat(p), dist(p))),
+            lane_cm: self.lane_point(me, &off, (length, width)).map(dist),
         }
     }
 
@@ -440,6 +489,8 @@ impl TeamView {
                     me.1,
                 )
             }),
+            ds_orchestrator::OffBallAct::Cover => self.cover_point(off, (length, width)),
+            ds_orchestrator::OffBallAct::Intercept => self.lane_point(me, off, (length, width)),
             ds_orchestrator::OffBallAct::Mark => self.man_to_mark(me).map(|m| {
                 // Goal-side of him: between him and the goal we defend.
                 let own_goal = (length - self.their_goal_x, width / 2);
@@ -480,6 +531,24 @@ const fn side_of(p: Possession) -> crate::rules::Side {
         Possession::Home => crate::rules::Side::Home,
         Possession::Away => crate::rules::Side::Away,
     }
+}
+
+/// The point `step` cm from `from` towards `to`, on the pitch.
+fn step_towards(
+    from: (i32, i32),
+    to: (i32, i32),
+    step: i32,
+    (length, width): (i32, i32),
+) -> (i32, i32) {
+    let (dx, dy) = (f64::from(to.0 - from.0), f64::from(to.1 - from.1));
+    let len = dx.hypot(dy).max(1.0);
+    let s = f64::from(step);
+    #[allow(clippy::cast_possible_truncation)]
+    let p = (
+        (from.0 + (dx / len * s) as i32).clamp(0, length),
+        (from.1 + (dy / len * s) as i32).clamp(0, width),
+    );
+    p
 }
 
 /// The pitch in centimetres, `(length, width)`.
@@ -1662,7 +1731,15 @@ impl MatchState {
                 .filter(|c| squad.players.iter().any(|p| p.id == *c))
                 .and_then(|c| self.spatial.agent(c))
                 .map(|a| a.position);
-            let view = TeamView::new(&self.spatial, other, home, length, carrier);
+            let mut view = TeamView::new(&self.spatial, other, home, length, carrier);
+            view.mate_pressing = squad.players.iter().any(|p| {
+                matches!(
+                    self.spatial.act(p.id),
+                    Some(
+                        ds_orchestrator::OffBallAct::Press | ds_orchestrator::OffBallAct::Challenge
+                    )
+                )
+            });
             let carrier_pos = carrier_opponent
                 .and_then(|c| self.spatial.agent(c))
                 .map(|a| a.position);

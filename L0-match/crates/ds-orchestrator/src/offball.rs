@@ -26,6 +26,13 @@ pub enum OffBallAct {
     Run,
     /// With an opponent on the ball: mark a man, goal-side of him.
     Mark,
+    /// With an opponent on the ball and a teammate pressing him: cover the
+    /// space behind the presser, on the carrier's line to our goal (plan
+    /// L0-CLOSE 10c).
+    Cover,
+    /// With an opponent on the ball: step into the passing lane between the
+    /// carrier and the man (plan L0-CLOSE 10c).
+    Intercept,
 }
 
 /// A target the player perceives: how far it is, and how many teammates
@@ -116,6 +123,11 @@ pub struct Threats {
     pub man: f64,
     /// The space he guards if he keeps his place in the structure.
     pub held: f64,
+    /// The space behind the teammate pressing the carrier, if one is, and
+    /// how far he is from covering it, cm (plan L0-CLOSE 10c).
+    pub cover: Option<(f64, i64)>,
+    /// How far he is from the passing lane to the man he would mark, cm.
+    pub lane_cm: Option<i64>,
 }
 
 impl crate::GroundTruth {
@@ -143,7 +155,13 @@ impl crate::GroundTruth {
             let run = d.max(0) as f64 / t.believed_speed_cm_per_tick.max(1.0);
             t.confidence(t.trust_ticks - run)
         };
-        let mut best = (th.held, OffBallAct::Hold);
+        // Discipline (plan L0-CLOSE 10c) colours how much the place he holds
+        // in the team's shape weighs for him (VISION §3: the psychology
+        // interprets).
+        let discipline = f64::from(l.psychological.discipline);
+        let floor = f64::from(self.offball_balance().discipline_floor_milli) / 1000.0;
+        let held = th.held * (1.0 - floor).mul_add(discipline, floor);
+        let mut best = (held, OffBallAct::Hold);
         let mut offer = |score: f64, act: OffBallAct| {
             if score > best.0 {
                 best = (score, act);
@@ -163,6 +181,19 @@ impl crate::GroundTruth {
                     th.man * in_time(m.distance_cm) * rank(m.rank),
                     OffBallAct::Mark,
                 );
+            }
+        }
+        if !keeper {
+            // Covering: if the presser is beaten (he cannot know: half),
+            // the carrier is into the space behind him.
+            if let Some((space, d)) = th.cover {
+                offer(0.5 * space * in_time(d), OffBallAct::Cover);
+            }
+            // In the lane he cuts out the ground pass to the man, not the
+            // ball over him (he cannot know which: half); goal-side he
+            // guards both.
+            if let Some(d) = th.lane_cm {
+                offer(0.5 * th.man * in_time(d), OffBallAct::Intercept);
             }
         }
         if s.carrier_in_reach && may_leave {
@@ -411,6 +442,83 @@ mod tests {
             ..scene()
         };
         assert_eq!(choose(&third), OffBallAct::Hold);
+    }
+
+    fn defending(th: Threats) -> OffBallScene {
+        OffBallScene {
+            carrier: at(2500, 1),
+            threats: Some(th),
+            ..scene()
+        }
+    }
+
+    const QUIET: Threats = Threats {
+        carrier: 1.0,
+        man: 0.0,
+        held: 0.2,
+        cover: None,
+        lane_cm: None,
+    };
+
+    /// With a teammate pressing the carrier, a defender near the space
+    /// behind him covers it (P1, plan L0-CLOSE 10c); with nobody pressing
+    /// there is nothing to cover.
+    #[test]
+    fn behind_the_presser_he_covers() {
+        let cover = defending(Threats {
+            cover: Some((4.0, 300)),
+            ..QUIET
+        });
+        assert_eq!(choose(&cover), OffBallAct::Cover);
+        assert_ne!(choose(&defending(QUIET)), OffBallAct::Cover);
+    }
+
+    /// Near the passing lane to a dangerous man and far from his back, he
+    /// steps into the lane (P1, plan L0-CLOSE 10c).
+    #[test]
+    fn near_the_lane_he_steps_into_it() {
+        let lane = OffBallScene {
+            to_mark: at(2500, 0),
+            ..defending(Threats {
+                man: 4.0,
+                lane_cm: Some(200),
+                ..QUIET
+            })
+        };
+        assert_eq!(choose(&lane), OffBallAct::Intercept);
+    }
+
+    /// Twin test (plan L0-CLOSE 10c, discipline): the same scene, the
+    /// carrier near and his place as dangerous; the most disciplined keeps
+    /// his place, the least leaves it to press.
+    #[test]
+    fn the_disciplined_player_keeps_his_place() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (mut weak, mut strong) = ((0u32, 1.0f32), (0u32, 0.0f32));
+        for slot in 1..=200u32 {
+            let d = g
+                .latents_for(PlayerId::new(slot, 0))
+                .psychological
+                .discipline;
+            if d < weak.1 {
+                weak = (slot, d);
+            }
+            if d > strong.1 {
+                strong = (slot, d);
+            }
+        }
+        let s = |slot: u32| OffBallScene {
+            actor: PlayerId::new(slot, 0),
+            carrier: at(400, 0),
+            threats: Some(Threats {
+                carrier: 1.0,
+                held: 1.0,
+                ..QUIET
+            }),
+            ..scene()
+        };
+        assert_eq!(g.choose_off_ball(&s(strong.0)), OffBallAct::Hold);
+        assert_eq!(g.choose_off_ball(&s(weak.0)), OffBallAct::Press);
     }
 
     /// The goalkeeper does not press, and comes out only inside his area.

@@ -117,6 +117,12 @@ pub struct PsychologicalLatents {
     /// Emotional control: whether he keeps control in a contact (consumed
     /// by the foul's band, ADR-042 §4).
     pub emotional_control: f32,
+    /// Work rate: how much of the running his side needs he gives without
+    /// the ball (plan L0-CLOSE 10c; consumed by his pace).
+    pub work_rate: f32,
+    /// Discipline: how strictly he keeps his place in the team's shape
+    /// (plan L0-CLOSE 10c; consumed by the defender's thought).
+    pub discipline: f32,
 }
 
 /// Cognitive traits (L0.11 §7.4).
@@ -178,6 +184,8 @@ impl PlayerLatents {
             psychological: PsychologicalLatents {
                 aggressiveness: unit_from_key(world_seed, player, "aggressiveness"),
                 emotional_control: unit_from_key(world_seed, player, "emotional_control"),
+                work_rate: unit_from_key(world_seed, player, "work_rate"),
+                discipline: unit_from_key(world_seed, player, "discipline"),
             },
             cognitive: CognitiveLatents {
                 game_reading: unit_from_key(world_seed, player, "game_reading"),

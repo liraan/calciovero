@@ -106,6 +106,8 @@ pub struct MovementOutcome {
     pub reposition_ticks: f64,
     /// The share of his top speed he keeps with the ball (dribbling).
     pub with_ball_share: f64,
+    /// The share of the needed pace he gives without the ball (work rate).
+    pub work_share: f64,
     /// The stride ratio: how much ground one unit of leg speed covers,
     /// relative to the reference height.
     pub stride: f64,
