@@ -124,7 +124,7 @@ The variation comes from the situation, never from a die. Twin tests: the better
 | Fouls (Law 12) | ✓ since 64: the contact's band (slide, from behind, speed, temper, technique); free kick, or a penalty in the area |
 | Advantage | ✓ since 64: kept ball in the opponents' half, outside the area |
 | Cards | ✓ since 64: reckless yellow, excessive force and denial of an obvious chance red, second yellow red; the sent-off player leaves the pitch |
-| The referee on the pitch | — not drawn yet |
+| The referee on the pitch | ✓ drawn in the 2D view (`ds-demo`): a projection that follows play on the diagonal, drawn under the players and the ball (no occlusion) |
 
 ## 7. The order of work (ADR-051 §5)
 

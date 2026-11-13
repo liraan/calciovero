@@ -37,7 +37,7 @@ Gol ~2,7 · tiri ~25 · nello specchio ~9 · angoli ~10 · falli ~22 · gialli ~
 | 10d | **In porta** — in parte (85: le mani e il rinvio con le mani; aperti con la causa mancante: il piazzarsi al momento del tiro, la profondità letta, l'uscita sul passaggio) | la posizione letta (non una regola), pronto o no quando parte il tiro (concentrazione), l'uscita come scelta anche sul filtrante e sul cross, il rinvio con le mani e con i piedi |
 | 10e | **Il corpo** — girarsi fatto (86); il tempo del salto aperto | girarsi (mobilità articolare), il tempo del salto |
 | 10f | **L'allenatore in partita** | le sostituzioni |
-| 10g | **L'arbitro disegnato** | presente nella vista 2D, senza occlusione |
+| 10g | **L'arbitro disegnato** — fatto | presente nella vista 2D, senza occlusione |
 
 
 ## Passo 11 — la misura (SIM_VERSION 76), da riprendere a motore completo

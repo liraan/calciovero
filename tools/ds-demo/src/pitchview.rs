@@ -69,6 +69,16 @@ impl PitchView {
         for row in &mut grid {
             row[mid] = ':';
         }
+        // The referee (ADR-021 note, plan L0-CLOSE 10g): the Laws, present
+        // but without occlusion. A projection for the view, not a body in
+        // the match: he follows play on the diagonal, as referees do, and is
+        // drawn first, so that a player or the ball covers him, never the
+        // other way round.
+        let (rc, rr) = self.cell(referee_at(
+            (r.ball.position.0, r.ball.position.1),
+            (self.length_cm, self.width_cm),
+        ));
+        grid[rr][rc] = 'R';
         for a in &r.agents {
             let (c, rw) = self.cell(a.position);
             grid[rw][c] = marker(a.id);
@@ -114,7 +124,7 @@ impl PitchView {
             out.push('\n');
         }
         let _ = writeln!(out, " +{border}+");
-        out.push_str(" home A-K  away a-k  ball * ground, o air\n");
+        out.push_str(" home A-K  away a-k  ball * ground, o air  R referee\n");
         for e in log.iter().rev().take(LOG_LINES).rev() {
             let _ = writeln!(out, "  {:>3}'  {}", e.minute, e.text);
         }
@@ -148,6 +158,22 @@ pub fn roster(m: &ds_model::Match) -> String {
         }
     }
     out
+}
+
+/// Where the referee stands, for the view (plan L0-CLOSE 10g): on the
+/// diagonal from near one corner of the pitch to the other, at the point
+/// nearest the ball, as the diagonal system of control puts him.
+#[must_use]
+pub fn referee_at(ball: (i32, i32), (length, width): (i32, i32)) -> (i32, i32) {
+    let (ax, ay) = (f64::from(length) * 0.15, f64::from(width) * 0.85);
+    let (bx, by) = (f64::from(length) * 0.85, f64::from(width) * 0.15);
+    let (dx, dy) = (bx - ax, by - ay);
+    let len2 = dx.mul_add(dx, dy * dy).max(1.0);
+    let t = ((f64::from(ball.0) - ax).mul_add(dx, (f64::from(ball.1) - ay) * dy) / len2)
+        .clamp(0.0, 1.0);
+    #[allow(clippy::cast_possible_truncation)]
+    let p = (t.mul_add(dx, ax) as i32, t.mul_add(dy, ay) as i32);
+    p
 }
 
 /// The marker of a player: `A`-`K` home, `a`-`k` away, by squad slot.
@@ -232,6 +258,18 @@ impl<'a> Iterator for Playback<'a> {
 
 #[cfg(test)]
 mod tests {
+    use super::referee_at;
+
+    /// The referee follows play on the diagonal (plan L0-CLOSE 10g): near
+    /// one corner when the ball is there, near the other at the other end.
+    #[test]
+    fn the_referee_follows_the_diagonal() {
+        let pitch = (10_500, 6_800);
+        let near = referee_at((1000, 6000), pitch);
+        let far = referee_at((9500, 800), pitch);
+        assert!(near.0 < 3000 && far.0 > 7500, "{near:?} {far:?}");
+    }
+
     use super::*;
     use ds_match::MatchConfig;
 
@@ -319,7 +357,8 @@ mod tests {
                 .skip(2)
                 .take(rows)
                 .flat_map(|l| l.chars().skip(2).take(cols))
-                .filter(char::is_ascii_alphabetic)
+                // The referee's R is not a player (no player is R).
+                .filter(|c| c.is_ascii_alphabetic() && *c != 'R')
                 .count();
             let ball_cell = view.cell((t.record.ball.position.0, t.record.ball.position.1));
             let ball_drawn = t.record.ball.state != BallState::Possessed;
