@@ -265,6 +265,7 @@ fn scene_from(
         soon: std::collections::BTreeMap::new(),
         shield_keep: 0.0,
         foresight: 1.0,
+        motion: std::collections::BTreeMap::new(),
     }
 }
 
@@ -1013,6 +1014,11 @@ impl MatchState {
             .collect();
         scene.shield_keep = ctx.hidden.shield_confidence(attacker);
         scene.foresight = ctx.hidden.foresight(attacker);
+        // How the players he sees are moving: he plays the pass into a run.
+        scene.motion = crate::perception::visible_to(&self.spatial, attacker)
+            .into_iter()
+            .filter_map(|id| self.spatial.agent(id).map(|a| (id, a.velocity)))
+            .collect();
         // The teammates he sees attacking the depth, and where they run to
         // (plan L0-CLOSE 10a: the through ball).
         let seen = crate::perception::visible_to(&self.spatial, attacker);
@@ -1134,16 +1140,31 @@ impl MatchState {
             at,
         } = chosen
         {
-            let from = match self.spatial.agent(attacker) {
-                Some(a) => (a.position.0, a.position.1, 0),
-                None => self.spatial.ball_3d(),
-            };
+            // From the ball, where it is at his foot (plan L0-CLOSE 11).
+            let (bx, by, _) = self.spatial.ball_3d();
+            let from = (bx, by, 0);
+            // A ground pass into the receiver's run, if the passer sees him
+            // running: the same point he imagined (`read::lead_point`).
+            let seen = crate::perception::visible_to(&self.spatial, attacker);
+            let k = ctx.hidden.kick_balance();
+            let keep = f64::from(self.spatial.ground_friction_milli()) / 1000.0;
             let to = at.map_or_else(
                 || {
                     self.spatial
                         .agent(receiver)
                         .map_or((from.0 + 2000, from.1, from.2), |a| {
-                            (a.position.0, a.position.1, 0)
+                            let run = if lofted || !seen.contains(&receiver) {
+                                (0, 0)
+                            } else {
+                                a.velocity
+                            };
+                            let p = ds_orchestrator::read::lead_point(
+                                (from.0, from.1),
+                                a.position,
+                                run,
+                                (keep, k.pass_arrive_cm_per_tick, k.speed(1.0, 0.5)),
+                            );
+                            (p.0, p.1, 0)
                         })
                 },
                 |p| (p.0, p.1, 0),
@@ -2026,16 +2047,33 @@ impl MatchState {
                     && carrier_pos.is_some_and(|c| {
                         distance_squared(me, c) <= i64::from(duel.reach_cm).pow(2)
                     });
+                let keeper = Some(id) == keeper_id;
+                // A ball in the air coming down for the other side: where it
+                // will come down, and whether it falls in his own area (the
+                // keeper reads the flight, not where the ball is now).
+                let against = air_drop.filter(|_| home != passing_home);
+                let drop_in_box =
+                    against.is_some_and(|d| in_keeper_box(d, home, (length, width), &off));
+                let contests = |rank0: bool| (keeper && drop_in_box) || (!keeper && rank0);
+                let rank_drop = against.map(|d| {
+                    let mine = distance_squared(me, d);
+                    squad
+                        .players
+                        .iter()
+                        .filter(|q| q.id != id && Some(q.id) != keeper_id)
+                        .filter_map(|q| self.spatial.agent(q.id))
+                        .all(|a| distance_squared(a.position, d) >= mine)
+                });
                 // A pass played to him changes his scene too: he goes to
-                // meet it at once, unless he already is.
-                let called = meets_pass == Some(id)
+                // meet it at once, unless he already is; so does a ball in
+                // the air he is the one to contest.
+                let called = (meets_pass == Some(id) || rank_drop.is_some_and(contests))
                     && self.spatial.act(id) != Some(ds_orchestrator::OffBallAct::GoToBall);
                 if Some(id) == carrier
                     || (!arrived && !called && self.offball_due.get(&id).is_some_and(|t| tick < *t))
                 {
                     continue;
                 }
-                let keeper = Some(id) == keeper_id;
                 // How many outfield teammates he sees closer than him.
                 let rank = |target: (i32, i32)| {
                     let mine = distance_squared(me, target);
@@ -2060,24 +2098,27 @@ impl MatchState {
                         ds_orchestrator::Place::Keeper {
                             // A pass meant for him is his to meet, wherever
                             // it comes from.
-                            ball_in_area: ball_in_own_box || meets_pass == Some(id),
+                            ball_in_area: ball_in_own_box || meets_pass == Some(id) || drop_in_box,
                         }
                     } else {
                         ds_orchestrator::Place::Outfield
                     },
-                    loose_ball: if let (Some(d), true) = (air_drop, home != passing_home) {
-                        (rank(d) == 0 && !keeper).then(|| ds_orchestrator::Target {
-                            distance_cm: distance_squared(me, d).isqrt(),
-                            rank: 0,
-                        })
-                    } else {
-                        ((ball_loose && sees_ball) || meets_pass == Some(id)).then(|| {
-                            ds_orchestrator::Target {
-                                distance_cm: distance_squared(me, ball).isqrt(),
-                                rank: rank(ball),
-                            }
-                        })
-                    },
+                    loose_ball: against.map_or_else(
+                        || {
+                            ((ball_loose && sees_ball) || meets_pass == Some(id)).then(|| {
+                                ds_orchestrator::Target {
+                                    distance_cm: distance_squared(me, ball).isqrt(),
+                                    rank: rank(ball),
+                                }
+                            })
+                        },
+                        |d| {
+                            contests(rank(d) == 0).then(|| ds_orchestrator::Target {
+                                distance_cm: distance_squared(me, d).isqrt(),
+                                rank: 0,
+                            })
+                        },
+                    ),
                     carrier: carrier_pos
                         .zip(to_carrier)
                         .map(|(c, d)| ds_orchestrator::Target {

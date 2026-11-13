@@ -74,6 +74,9 @@ pub struct PerceivedScene {
     /// reading (ADR-052: he misjudges them as poorly as he reads the game):
     /// what he sees now is sure, what he foresees is worth this much of it.
     pub foresight: f64,
+    /// How the players he sees are moving, cm/tick (plan L0-CLOSE 11): a
+    /// pass is played where the man will be, not where he is.
+    pub motion: BTreeMap<PlayerId, (i16, i16)>,
 }
 
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
@@ -805,6 +808,58 @@ fn clear_candidate(
     })
 }
 
+/// Where a ground pass meets a teammate running (plan L0-CLOSE 11).
+///
+/// The passer plays it into his run, where he will be when it arrives. The pass
+/// is weighed to arrive rolling at `arrive` cm/tick (ADR-052, the engine's
+/// own weighing), so it starts at `arrive + d (1 - keep)` and takes
+/// `ln(arrive / v0) / ln(keep)` ticks over `d`; standing, it is where he is.
+#[must_use]
+pub fn lead_point(
+    from: (i32, i32),
+    at: (i32, i32),
+    motion: (i16, i16),
+    (keep, arrive, strongest): (f64, f64, f64),
+) -> (i32, i32) {
+    if motion == (0, 0) || keep <= 0.0 || keep >= 1.0 || arrive <= 0.0 {
+        return at;
+    }
+    let mut to = at;
+    for _ in 0..3 {
+        #[allow(clippy::cast_precision_loss)]
+        let d = (distance_squared(from, to) as f64).sqrt();
+        let v0 = d.mul_add(1.0 - keep, arrive).min(strongest.max(arrive));
+        let ticks = (arrive / v0).log(keep);
+        #[allow(clippy::cast_possible_truncation)]
+        let ahead = |p: i32, v: i16| f64::from(v).mul_add(ticks, f64::from(p)).round() as i32;
+        to = (ahead(at.0, motion.0), ahead(at.1, motion.1));
+    }
+    to
+}
+
+/// Where he plays a ground pass to `id`, standing at `here`: into his run
+/// if he sees him running (`lead_point`).
+fn into_the_run(
+    scene: &PerceivedScene,
+    id: PlayerId,
+    from: (i32, i32),
+    here: (i32, i32),
+) -> (i32, i32) {
+    let k = &mind().kick;
+    scene.motion.get(&id).map_or(here, |v| {
+        lead_point(
+            from,
+            here,
+            *v,
+            (
+                scene.ground_keep,
+                k.pass_arrive_cm_per_tick,
+                k.speed(1.0, 0.5),
+            ),
+        )
+    })
+}
+
 /// The pass candidates (ADR-040, ADR-050): every teammate free enough,
 /// read for his freedom, the lane, the distance and what the pass brings;
 /// and each receiver's freedom, carried to `resolve_pass`.
@@ -829,9 +884,12 @@ fn pass_candidates(
         if *id == attacker {
             continue;
         }
-        let Some(tpos) = scene.positions.get(id).copied() else {
+        let Some(here) = scene.positions.get(id).copied() else {
             continue;
         };
+        // Into his run, if he sees him running (plan L0-CLOSE 11).
+        let m = mind();
+        let tpos = into_the_run(scene, *id, pos, here);
         let freedom = opponents
             .iter()
             .filter_map(|o| scene.positions.get(o).copied())
@@ -845,7 +903,6 @@ fn pass_candidates(
         let lq = line_quality(pos, tpos, opponent_positions);
         // ADR-052: he imagines the pass, weighed to arrive rolling, and who
         // reaches it first along its path; it is worth what it reaches.
-        let m = mind();
         let d = distance_squared(pos, tpos).isqrt() as f64;
         let v0 = d
             .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
@@ -1171,6 +1228,7 @@ mod keeper_visibility_tests {
             soon: BTreeMap::new(),
             shield_keep: 0.0,
             foresight: 1.0,
+            motion: BTreeMap::new(),
         }
     }
 
@@ -1319,6 +1377,20 @@ mod keeper_visibility_tests {
     mod brings_tests {
         use super::*;
 
+        /// The pass into the run (P1, plan L0-CLOSE 11): standing, it goes
+        /// where he is; running, ahead of him the way he runs, and farther
+        /// ahead the longer the pass takes.
+        #[test]
+        fn a_pass_is_played_into_the_run() {
+            let physics = (0.957, 60.0, 300.0);
+            let at = (6000, 3400);
+            assert_eq!(lead_point((5000, 3400), at, (0, 0), physics), at);
+            let near = lead_point((5000, 3400), at, (0, 60), physics);
+            let far = lead_point((2000, 3400), at, (0, 60), physics);
+            assert!(near.1 > at.1 && near.0 == at.0, "{near:?}");
+            assert!(far.1 > near.1, "{far:?} {near:?}");
+        }
+
         /// Waiting for the moment (P1, plan L0-CLOSE 11, ADR-056): with his
         /// teammate coming up into free space, he weighs keeping the ball;
         /// the surer his body, the more it is worth under the same
@@ -1376,6 +1448,7 @@ mod keeper_visibility_tests {
                 soon: BTreeMap::new(),
                 shield_keep: 0.0,
                 foresight: 1.0,
+                motion: BTreeMap::new(),
             }
         }
 
