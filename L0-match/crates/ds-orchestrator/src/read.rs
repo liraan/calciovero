@@ -373,10 +373,22 @@ fn keeper_off(d: f64) -> f64 {
     (1.0 - d / 3000.0).clamp(0.0, 1.0).mul_add(400.0, 200.0)
 }
 
+/// How sure he is that a player at `from` gets to `to` soon (within the
+/// trust of a forecast), running at the speed he believes.
+#[must_use]
+pub fn soon(from: (i32, i32), to: (i32, i32)) -> f64 {
+    let t = &mind().thought;
+    let run = f64::from(from.0 - to.0).hypot(f64::from(from.1 - to.1));
+    t.confidence(
+        t.trust_ticks - t.believed_reaction_ticks - run / t.believed_speed_cm_per_tick.max(1.0),
+    )
+}
+
 /// What a space is worth to the side attacking `goal` (ADR-052 §3), in
 /// units of keeping the ball, from the side defending `other`.
+#[must_use]
 #[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
-fn space_value(p: (i32, i32), goal: (i32, i32), other: (i32, i32)) -> f64 {
+pub fn space_value(p: (i32, i32), goal: (i32, i32), other: (i32, i32)) -> f64 {
     let m = mind();
     let d = distance_squared(p, goal).isqrt() as f64;
     let length = f64::from((goal.0 - other.0).abs());

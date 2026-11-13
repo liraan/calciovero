@@ -81,9 +81,82 @@ pub struct OffBallScene {
     pub with_mate: Option<MateBall>,
     /// If an opponent has the ball: the nearest other opponent, to mark.
     pub to_mark: Option<Target>,
+    /// If an opponent has the ball, what each danger is worth to them, in
+    /// units of keeping the ball (ADR-052): the carrier's space, the space
+    /// of the man to mark, the space he guards in the team's structure.
+    pub threats: Option<Threats>,
+}
+
+/// The dangers a defender reads (ADR-052 §5), each the value of a space to
+/// the opponents (`read::space_value`).
+#[derive(Debug, Clone, Copy)]
+pub struct Threats {
+    /// The carrier's space.
+    pub carrier: f64,
+    /// The space of the man he would mark.
+    pub man: f64,
+    /// The space he guards if he keeps his place in the structure.
+    pub held: f64,
 }
 
 impl crate::GroundTruth {
+    /// The defender's thought (ADR-052 §5): the act that takes away the
+    /// most danger. Pressing takes away the carrier's, if he gets there in
+    /// time; challenging it, as much as his tackle is good; marking takes
+    /// away the man's; holding keeps the space he guards closed. Another
+    /// teammate nearer to a danger takes it: the second reads whether to
+    /// double up.
+    fn defend(&mut self, s: &OffBallScene, th: &Threats, c: Target, reading: f64) -> OffBallAct {
+        let l = self.latents_for(s.actor);
+        let t = ds_calculator::thought::ThoughtBalance::load();
+        let keeper = matches!(s.place, Place::Keeper { .. });
+        let may_leave = match s.place {
+            Place::Outfield => true,
+            Place::Keeper { ball_in_area } => ball_in_area,
+        };
+        let rank = |r: u32| match r {
+            0 => 1.0,
+            1 => reading * 0.5,
+            _ => 0.0,
+        };
+        #[allow(clippy::cast_precision_loss)]
+        let in_time = |d: i64| {
+            let run = d.max(0) as f64 / t.believed_speed_cm_per_tick.max(1.0);
+            t.confidence(t.trust_ticks - run)
+        };
+        let mut best = (th.held, OffBallAct::Hold);
+        let mut offer = |score: f64, act: OffBallAct| {
+            if score > best.0 {
+                best = (score, act);
+            }
+        };
+        // In reach he no longer presses: he goes in, or he jockeys, which is
+        // a way of going in (ADR-042).
+        if !keeper && !s.carrier_in_reach {
+            offer(
+                th.carrier * in_time(c.distance_cm) * rank(c.rank),
+                OffBallAct::Press,
+            );
+        }
+        if !keeper {
+            if let Some(m) = s.to_mark {
+                offer(
+                    th.man * in_time(m.distance_cm) * rank(m.rank),
+                    OffBallAct::Mark,
+                );
+            }
+        }
+        if s.carrier_in_reach && may_leave {
+            let skill = if keeper {
+                l.technical.goalkeeping
+            } else {
+                l.technical.tackling
+            };
+            offer(th.carrier * f64::from(skill), OffBallAct::Challenge);
+        }
+        best.1
+    }
+
     /// How far from his feet `player` reaches a ball passing by, cm
     /// (ADR-051, receive and intercept): the control radius, by his
     /// reactivity.
@@ -116,6 +189,9 @@ impl crate::GroundTruth {
             Place::Outfield => true,
             Place::Keeper { ball_in_area } => ball_in_area,
         };
+        if let (Some(th), Some(c)) = (s.threats, s.carrier) {
+            return self.defend(s, &th, c, reading);
+        }
         let mut best = (milli(b.hold_salience_milli), OffBallAct::Hold);
         let mut offer = |score: f64, act: OffBallAct| {
             if score > best.0 {
@@ -188,6 +264,7 @@ mod tests {
             carrier_in_reach: false,
             with_mate: None,
             to_mark: None,
+            threats: None,
         }
     }
 

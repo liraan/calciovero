@@ -317,6 +317,31 @@ impl TeamView {
             .min_by_key(|o| distance_squared(*o, me))
     }
 
+    /// The dangers a defender at `me` reads (ADR-052 §5): the value to
+    /// them of the carrier's space, of the man he would mark, and of the
+    /// space he guards (`held`), as much as an opponent can get into it
+    /// soon. `home`: the defender's side.
+    fn threats(
+        &self,
+        carrier: (i32, i32),
+        me: (i32, i32),
+        held: (i32, i32),
+        home: bool,
+        (length, width): (i32, i32),
+    ) -> ds_orchestrator::Threats {
+        let ours = (if home { 0 } else { length }, width / 2);
+        let theirs = (length - ours.0, ours.1);
+        let threat = |p: (i32, i32)| ds_orchestrator::read::space_value(p, ours, theirs);
+        let into = self
+            .marker(held)
+            .map_or(0.0, |o| ds_orchestrator::read::soon(o, held));
+        ds_orchestrator::Threats {
+            carrier: threat(carrier),
+            man: self.man_to_mark(me).map_or(0.0, threat),
+            held: threat(held) * into,
+        }
+    }
+
     /// The man a defender at `me` would mark: the nearest of their outfield
     /// players other than the carrier.
     fn man_to_mark(&self, me: (i32, i32)) -> Option<(i32, i32)> {
@@ -1300,6 +1325,10 @@ impl MatchState {
     /// expires (ADR-049): hold his place, press, challenge, go to the ball.
     /// He reads his scene from where he stands; the engine only records the
     /// choice and applies it (`move_agents`, `challenge_carrier`).
+    // One pass over the twenty-two, the scene of each built in one place;
+    // the scene moves to its own type with the off-ball attack (plan
+    // L0-CLOSE step 2).
+    #[allow(clippy::too_many_lines)]
     fn decide_off_ball(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
         let ball = self.spatial.ball();
         let carrier = self.spatial.carrier();
@@ -1406,6 +1435,13 @@ impl MatchState {
                             distance_cm: distance_squared(me, m).isqrt(),
                             rank: rank(m),
                         }
+                    }),
+                    threats: carrier_pos.map(|c| {
+                        let held = self
+                            .spatial
+                            .block_target(id, ball, false, false)
+                            .unwrap_or(me);
+                        view.threats(c, me, held, home, (length, width))
                     }),
                 };
                 let act = ctx.hidden.choose_off_ball(&scene);

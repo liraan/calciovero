@@ -254,7 +254,7 @@ impl SpatialState {
     /// block shifts towards the ball's side; with the ball the side
     /// stretches, without it it compacts (`balance/block.json`). With
     /// `own_half` the player stays in his own half (the kick-off).
-    fn block_target(
+    pub(crate) fn block_target(
         &self,
         id: PlayerId,
         ball: (i32, i32),

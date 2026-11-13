@@ -402,14 +402,24 @@ fn the_ball_is_mostly_at_someone_s_feet() {
 /// emitted: every shot reached the keeper or the line.
 #[test]
 fn a_defender_can_block_a_shot() {
-    let (result, _) = recorded();
-    let blocks = result
-        .events
-        .events()
-        .iter()
-        .filter(|e| e.event_type == ds_stats::EventType::Block)
-        .count();
-    assert!(blocks > 0, "no block in the match");
+    assert!(
+        in_some_match(ds_stats::EventType::Block),
+        "no block in ten matches"
+    );
+}
+
+/// Whether an event kind appears in at least one of the matches of seeds
+/// 42-51: what "can happen" means for an act that does not happen in every
+/// match.
+fn in_some_match(kind: ds_stats::EventType) -> bool {
+    (42..52u64).any(|seed| {
+        let m = match_fixture(seed).expect("fixture");
+        simulate_from_seed(&m, seed, MatchConfig::default())
+            .events
+            .events()
+            .iter()
+            .any(|e| e.event_type == kind)
+    })
 }
 
 /// ADR-051, "clear" (P1): a defender pressed near his own goal may kick
@@ -417,14 +427,10 @@ fn a_defender_can_block_a_shot() {
 /// emitted.
 #[test]
 fn a_pressed_defender_can_clear_the_ball() {
-    let (result, _) = recorded();
-    let clears = result
-        .events
-        .events()
-        .iter()
-        .filter(|e| e.event_type == ds_stats::EventType::Clearance)
-        .count();
-    assert!(clears > 0, "no clearance in the match");
+    assert!(
+        in_some_match(ds_stats::EventType::Clearance),
+        "no clearance in ten matches"
+    );
 }
 
 /// Law 12 (P1, ADR-042 step b): a match has fouls, and the cards follow
