@@ -114,7 +114,8 @@ What exists today:
 
 What does not exist yet: substitutions during the match, the season, the
 career, the transfer market. And the match is not calibrated yet: today it
-has too many shots and too many goals. The order in which they arrive is public.
+has too many goals. The full list is below; the order in which things
+arrive is public.
 
 | Milestone | What you get |
 |---|---|
@@ -127,6 +128,76 @@ The second one is the longest. We will not skip it to ship faster: a
 match that does not read as football would make everything after it
 pointless. Each milestone goes faster with more people: see
 [Build it with us](#build-it-with-us).
+
+## What the engine does, and what is coming
+
+✅ done · 🟡 partly done · ⬜ to do. Every value an act reads comes from
+the player's characteristics; the full catalogue, act by act, is
+[`L0-match/design/ACTIONS.md`](L0-match/design/ACTIONS.md).
+
+**The body**
+
+| | |
+|---|---|
+| ✅ Run and sprint: a professional's top speed and acceleration, by his characteristics | ✅ Brake and stop, in a straight line |
+| ✅ The pace is his: flat out into a contest, in his own time into his place | ✅ Fatigue: grows with the effort, against endurance; half-time rests |
+| 🟡 Turn: by braking (joint mobility ⬜) | 🟡 Jump: in the aerial duel (timing ⬜) |
+
+**The mind** (every player thinks: he imagines his options and judges them, [ADR-052](doctrine/adr/052-every-player-thinks.md))
+
+| | |
+|---|---|
+| ✅ Perceives from where he stands, with a cone of sight | ✅ Vision: how often he looks around |
+| ✅ Game reading, decision making, risk management | ⬜ Anticipation, creativity, concentration |
+
+**With the ball**
+
+| | |
+|---|---|
+| ✅ Receive and control (first touch) | ✅ Short pass, lofted pass, cross, switch |
+| ✅ Through ball, into the space ahead of a run | ✅ Carry, in the direction he chooses, at the speed his dribbling allows |
+| ✅ Dribble past a man, or shield the ball | ✅ Shoot: power, foot, post, lob; aims inside the post by his own miss |
+| ✅ Header at goal | 🟡 Clear: no error yet |
+
+**Without the ball**
+
+| | |
+|---|---|
+| ✅ Press, challenge: standing, slide or jockey | ✅ Mark, offer for a pass, run in behind |
+| ✅ Hold the team's shape, high, mid or low block | ✅ Block a shot; aerial duel shoulder to shoulder |
+| 🟡 Intercept: by reach, not yet a choice | ⬜ Cover and recovery run as an act of its own |
+| ⬜ Block a pass | ⬜ Discipline and work rate |
+
+**In goal**
+
+| | |
+|---|---|
+| ✅ Dive: reaction, explosive force, height | ✅ Hold or parry |
+| ✅ Claim a ball in the air in his area | 🟡 Position: a rule (between ball and goal), not yet his reading |
+| 🟡 Come out: in his area only | ⬜ Get set, distribute with hands and feet |
+
+**The Laws** (the referee is the Laws, applied objectively)
+
+| | |
+|---|---|
+| ✅ Kick-off, throw-in, goal kick, corner | ✅ Offside |
+| ✅ Fouls, advantage, penalties, yellow and red cards | ✅ Free kicks and penalties, the taker chosen by the team, the distances |
+| ⬜ The referee drawn on the pitch | |
+
+**The manager**
+
+| | |
+|---|---|
+| ✅ Choose the eleven from squad and bench | ✅ The intention: block height and width |
+| ✅ Save, reload, replay the same match | ✅ Why you conceded each goal |
+| ⬜ Substitutions during the match | ⬜ Instructions during the match |
+
+**Then** (after the match engine is complete, [VISION](doctrine/VISION.md))
+
+| | |
+|---|---|
+| ⬜ The match calibrated on real football, derived from the players | ⬜ A season: fixtures and standings |
+| ⬜ A career: scouting, the market, the academy | ⬜ The radio commentary |
 
 ## Try the engine today
 

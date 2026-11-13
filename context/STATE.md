@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `d970958` - "feat(carry): the direction and the speed are his -- plan L0-CLOSE 10a"
+**Last commit verified:** `edeb556` - "feat(thought): vision, how often he looks around -- plan L0-CLOSE 10b"
 
 ## Dove siamo (2026-11-13)
 
