@@ -55,6 +55,9 @@ pub struct ShotContext {
     /// The shooter's lateral speed when he strikes (cm/tick, across the
     /// pitch): a body moving one way drags the ball that way.
     pub momentum_y: i32,
+    /// Gravity, cm/tick² (`ball.json`): the shooter strikes the ball so
+    /// that it reaches the height he aims at.
+    pub gravity_cm_per_tick2: i32,
 }
 
 /// The context of a pass resolution.

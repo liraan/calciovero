@@ -842,6 +842,7 @@ impl MatchState {
                     .spatial
                     .agent(attacker)
                     .map_or(0, |a| i32::from(a.velocity.1)),
+                gravity_cm_per_tick2: self.spatial.gravity_cm_per_tick2(),
             };
             let outcome = ctx.hidden.resolve_shot(&ctx_shot);
             // F.3-b3: carrier released, ball flies. Goal (or Save) is

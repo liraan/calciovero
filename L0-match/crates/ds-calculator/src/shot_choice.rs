@@ -52,6 +52,8 @@ pub struct ShotChoiceBalance {
     pub clear_salience: f64,
     /// Within this distance of his own goal a defender may clear, cm.
     pub clear_zone_cm: i64,
+    /// How much less natural a shot to the side of his other foot is.
+    pub other_side_factor: f64,
 }
 
 impl ShotChoiceBalance {

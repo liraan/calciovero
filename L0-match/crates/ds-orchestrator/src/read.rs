@@ -345,19 +345,27 @@ fn shot_candidates(
             Side::Right => -facing,
             Side::Left => facing,
         };
-        let aim_y = side_sign.mul_add(aim_edge_cm, f64::from(goal.1));
-        let shot_visibility = keeper_visibility(scene, pos, goal, side_sign, goal_cone(pos, goal));
-        for power in [balance.power_strong, balance.power_placed] {
-            candidates.push(ChoiceCandidate {
-                kind: ChoiceKind::Shoot {
-                    aim_y,
-                    power,
-                    contact_height: 0.0,
-                },
-                geometric: geom,
-                risk,
-                visibility: shot_visibility,
-            });
+        // Both sides of the goal (ADR-046 §1: two phrases per side): his
+        // foot's side, and the other one, less natural (`other_side_factor`)
+        // and kicked with the other foot (its precision is read at the
+        // strike). The keeper hides the side he covers (ADR-047 §3), so
+        // the shooter can pick the post away from him. Before `SIM_VERSION`
+        // 60 only his foot's side existed, and he shot at the keeper.
+        for (side, factor) in [(side_sign, 1.0), (-side_sign, balance.other_side_factor)] {
+            let aim_y = side.mul_add(aim_edge_cm, f64::from(goal.1));
+            let shot_visibility = keeper_visibility(scene, pos, goal, side, goal_cone(pos, goal));
+            for power in [balance.power_strong, balance.power_placed] {
+                candidates.push(ChoiceCandidate {
+                    kind: ChoiceKind::Shoot {
+                        aim_y,
+                        power,
+                        contact_height: 0.0,
+                    },
+                    geometric: geom * factor,
+                    risk,
+                    visibility: shot_visibility,
+                });
+            }
         }
     }
     candidates
@@ -626,6 +634,23 @@ mod keeper_visibility_tests {
             .find(|c| matches!(c.kind, ChoiceKind::Shoot { .. }))
             .map(|c| c.visibility)
             .expect("a shoot candidate")
+    }
+
+    /// Both posts are offered (P1, ADR-046 §1): before `SIM_VERSION` 60
+    /// only the side of his foot existed, and he shot at the keeper.
+    #[test]
+    fn the_shooter_can_aim_at_either_post() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let (ctx, _) = build_choice(&scene_with(None), Side::Right, 0.5, &balance);
+        let aims: Vec<f64> = ctx
+            .candidates
+            .iter()
+            .filter_map(|c| match c.kind {
+                ChoiceKind::Shoot { aim_y, .. } => Some(aim_y),
+                _ => None,
+            })
+            .collect();
+        assert!(aims.iter().any(|y| *y > 3400.0) && aims.iter().any(|y| *y < 3400.0));
     }
 
     #[test]

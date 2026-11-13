@@ -336,7 +336,20 @@ impl GroundTruth {
         let dir = Self::direction_3d(ctx.from, to);
         #[allow(clippy::cast_possible_truncation)]
         let speed = k.speed(ctx.power, shooter.physical.explosive_force).round() as i16;
-        let initial_velocity = Self::velocity(dir, speed);
+        let mut initial_velocity = Self::velocity(dir, speed);
+        // He strikes it so that it reaches the height he aims at: gravity
+        // pulls it down for the whole flight, so it leaves rising by half
+        // of what gravity takes away. Before `SIM_VERSION` 60 the aim
+        // ignored gravity: a low shot hit the grass at once and rolled to
+        // the keeper at half its speed.
+        let horizontal = f64::from(initial_velocity.0).hypot(f64::from(initial_velocity.1));
+        if horizontal > 0.0 {
+            let flight =
+                f64::from(to.0 - ctx.from.0).hypot(f64::from(to.1 - ctx.from.1)) / horizontal;
+            #[allow(clippy::cast_possible_truncation)]
+            let lift = (f64::from(ctx.gravity_cm_per_tick2) * flight / 2.0).round() as i16;
+            initial_velocity.2 = initial_velocity.2.saturating_add(lift);
+        }
         let outcome = ShotOutcome {
             to,
             on_target,

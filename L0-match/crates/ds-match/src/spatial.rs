@@ -338,6 +338,12 @@ impl SpatialState {
         self.ball_velocity
     }
 
+    /// Gravity, cm/tick² (`ball.json`).
+    #[must_use]
+    pub fn gravity_cm_per_tick2(&self) -> i32 {
+        i32::from(self.ball_physics.gravity_cm_per_tick2)
+    }
+
     /// The ball's ground friction, thousandths per tick: what a passer
     /// knows of the pitch when he weighs a pass.
     #[must_use]
