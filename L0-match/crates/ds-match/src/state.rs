@@ -223,6 +223,122 @@ fn scene_from(
     }
 }
 
+/// Whether the ball is inside the penalty area of the home (`home`) or
+/// away side's goal (Law 1, `offball.json`).
+const fn in_keeper_box(
+    ball: (i32, i32),
+    home: bool,
+    (length, width): (i32, i32),
+    off: &ds_calculator::offball::OffBallBalance,
+) -> bool {
+    let depth = off.keeper_box_depth_cm;
+    let in_depth = if home {
+        ball.0 <= depth
+    } else {
+        ball.0 >= length - depth
+    };
+    in_depth && (ball.1 - width / 2).abs() <= off.keeper_box_half_width_cm
+}
+
+/// What a side sees of its opponents when it has the ball (ADR-051, the
+/// family "without the ball"): the line of their last outfield defender,
+/// the goal it attacks, where they stand.
+struct TeamView {
+    forward: i32,
+    their_goal_x: i32,
+    last_line: Option<i32>,
+    opponents: Vec<(i32, i32)>,
+}
+
+impl TeamView {
+    fn new(spatial: &SpatialState, other: &ds_model::Squad, home: bool, length: i32) -> Self {
+        let forward = if home { 1 } else { -1 };
+        let their_keeper = other.players.first().map(|p| p.id);
+        let last_line = other
+            .players
+            .iter()
+            .filter(|q| Some(q.id) != their_keeper)
+            .filter_map(|q| spatial.agent(q.id))
+            .map(|a| a.position.0 * forward)
+            .max()
+            .map(|u| u * forward);
+        let opponents = other
+            .players
+            .iter()
+            .filter_map(|q| spatial.agent(q.id))
+            .map(|a| a.position)
+            .collect();
+        Self {
+            forward,
+            their_goal_x: if home { length } else { 0 },
+            last_line,
+            opponents,
+        }
+    }
+
+    fn marker(&self, me: (i32, i32)) -> Option<(i32, i32)> {
+        self.opponents
+            .iter()
+            .copied()
+            .min_by_key(|o| distance_squared(*o, me))
+    }
+
+    /// What a player at `me` sees of his teammate's ball at `c`.
+    fn mate_ball(
+        &self,
+        me: (i32, i32),
+        c: (i32, i32),
+        mark_radius_cm: i32,
+    ) -> ds_orchestrator::MateBall {
+        let ahead = (me.0 - c.0) * self.forward > 0;
+        ds_orchestrator::MateBall {
+            to_carrier_cm: distance_squared(me, c).isqrt(),
+            marked: self
+                .marker(me)
+                .is_some_and(|o| distance_squared(o, me) <= i64::from(mark_radius_cm).pow(2)),
+            to_line_cm: self
+                .last_line
+                .map(|l| i64::from((l - me.0) * self.forward))
+                .filter(|d| ahead && *d >= 0),
+            room_cm: self
+                .last_line
+                .map_or(0, |l| i64::from((self.their_goal_x - l).abs())),
+        }
+    }
+
+    /// Where a player who chose to offer or to run goes: away from his
+    /// marker to offer; to the last defender's line, just short of it, to
+    /// run.
+    fn act_target(
+        &self,
+        act: ds_orchestrator::OffBallAct,
+        me: (i32, i32),
+        off: &ds_calculator::offball::OffBallBalance,
+        (length, width): (i32, i32),
+    ) -> Option<(i32, i32)> {
+        match act {
+            ds_orchestrator::OffBallAct::Offer => self.marker(me).map(|o| {
+                let (dx, dy) = (f64::from(me.0 - o.0), f64::from(me.1 - o.1));
+                let len = dx.hypot(dy).max(1.0);
+                let step = f64::from(off.offer_step_cm);
+                #[allow(clippy::cast_possible_truncation)]
+                let t = (
+                    (me.0 + (dx / len * step) as i32).clamp(0, length),
+                    (me.1 + (dy / len * step) as i32).clamp(0, width),
+                );
+                t
+            }),
+            ds_orchestrator::OffBallAct::Run => self.last_line.map(|l| {
+                (
+                    (l - self.forward * off.onside_margin_cm).clamp(0, length),
+                    me.1,
+                )
+            }),
+            _ => None,
+        }
+    }
+}
+
 /// Where a straight shot from `from` to `cross` (on the goal plane) passes
 /// the depth `x` of the keeper, and the share of the flight it has done
 /// there. A keeper behind the strike or beyond the plane meets it at the
@@ -859,6 +975,14 @@ impl MatchState {
             (&ctx.match_.away, &ctx.match_.home, false),
         ] {
             let carrier_opponent = carrier.filter(|c| other.players.iter().any(|p| p.id == *c));
+            // With a teammate on the ball (ADR-051, "without the ball"):
+            // the carrier, the opponents' last outfield defender's line and
+            // the goal this side attacks.
+            let carrier_mate = carrier
+                .filter(|c| squad.players.iter().any(|p| p.id == *c))
+                .and_then(|c| self.spatial.agent(c))
+                .map(|a| a.position);
+            let view = TeamView::new(&self.spatial, other, home, length);
             let carrier_pos = carrier_opponent
                 .and_then(|c| self.spatial.agent(c))
                 .map(|a| a.position);
@@ -896,15 +1020,7 @@ impl MatchState {
                     .unwrap_or(u32::MAX)
                 };
                 let to_carrier = carrier_pos.map(|c| distance_squared(me, c).isqrt());
-                let ball_in_own_box = {
-                    let depth = off.keeper_box_depth_cm;
-                    let in_depth = if home {
-                        ball.0 <= depth
-                    } else {
-                        ball.0 >= length - depth
-                    };
-                    in_depth && (ball.1 - width / 2).abs() <= off.keeper_box_half_width_cm
-                };
+                let ball_in_own_box = in_keeper_box(ball, home, (length, width), &off);
                 let sees_ball =
                     crate::perception::perceived_ball(&self.spatial, id, ball).is_some();
                 let scene = ds_orchestrator::OffBallScene {
@@ -927,9 +1043,13 @@ impl MatchState {
                             rank: rank(c),
                         }),
                     carrier_in_reach: to_carrier.is_some_and(|d| d <= i64::from(duel.reach_cm)),
+                    with_mate: carrier_mate.map(|c| view.mate_ball(me, c, off.mark_radius_cm)),
                 };
                 let act = ctx.hidden.choose_off_ball(&scene);
                 self.spatial.set_act(id, act);
+                if let Some(t) = view.act_target(act, me, &off, (length, width)) {
+                    self.spatial.set_act_target(id, t);
+                }
                 let opponents: Vec<PlayerId> = other.players.iter().map(|q| q.id).collect();
                 let (crowding, nearest_threat) = self.latency_scene(id, &opponents);
                 let latency = ctx

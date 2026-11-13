@@ -19,6 +19,11 @@ pub enum OffBallAct {
     Challenge,
     /// Run to a loose ball (for the goalkeeper: come out for it).
     GoToBall,
+    /// With a teammate on the ball: get free of his marker to receive.
+    Offer,
+    /// With a teammate on the ball: attack the space behind the last
+    /// defender, as far as the line.
+    Run,
 }
 
 /// A target the player perceives: how far it is, and how many teammates
@@ -29,6 +34,20 @@ pub struct Target {
     pub distance_cm: i64,
     /// How many teammates he sees closer.
     pub rank: u32,
+}
+
+/// What a player sees when a teammate has the ball.
+#[derive(Debug, Clone, Copy)]
+pub struct MateBall {
+    /// His distance to the carrier, cm.
+    pub to_carrier_cm: i64,
+    /// Whether an opponent marks him (within the mark radius).
+    pub marked: bool,
+    /// If he is ahead of the ball and not beyond the last defender: his
+    /// distance to that defender's line, cm.
+    pub to_line_cm: Option<i64>,
+    /// The room behind the last defender, to the goal line, cm.
+    pub room_cm: i64,
 }
 
 /// The player's place in the team, for the choice.
@@ -56,6 +75,8 @@ pub struct OffBallScene {
     pub carrier: Option<Target>,
     /// Whether the carrier is within the duel's reach.
     pub carrier_in_reach: bool,
+    /// If a teammate has the ball: what he sees of it.
+    pub with_mate: Option<MateBall>,
 }
 
 impl crate::GroundTruth {
@@ -110,6 +131,23 @@ impl crate::GroundTruth {
                 );
             }
         }
+        if let (Some(m), false) = (s.with_mate, keeper) {
+            let half = 0.5f64;
+            if m.marked {
+                offer(
+                    milli(b.offer_salience_milli)
+                        * proximity(m.to_carrier_cm)
+                        * half.mul_add(reading, half),
+                    OffBallAct::Offer,
+                );
+            }
+            if let Some(d) = m.to_line_cm {
+                offer(
+                    b.run(d, m.room_cm, l.physical.max_speed, l.cognitive.game_reading),
+                    OffBallAct::Run,
+                );
+            }
+        }
         best.1
     }
 }
@@ -127,6 +165,7 @@ mod tests {
             loose_ball: None,
             carrier: None,
             carrier_in_reach: false,
+            with_mate: None,
         }
     }
 
@@ -170,6 +209,53 @@ mod tests {
             ..scene()
         };
         assert_eq!(choose(&far), OffBallAct::Hold);
+    }
+
+    #[allow(clippy::unnecessary_wraps)] // the scene's field is an option
+    fn mate(marked: bool, to_line_cm: Option<i64>, room_cm: i64) -> Option<MateBall> {
+        Some(MateBall {
+            to_carrier_cm: 1000,
+            marked,
+            to_line_cm,
+            room_cm,
+        })
+    }
+
+    /// With a teammate on the ball, a marked player near him gets free; a
+    /// free one far from the play holds (P1, ADR-051).
+    #[test]
+    fn a_marked_player_near_the_ball_offers() {
+        let marked = OffBallScene {
+            with_mate: mate(true, None, 0),
+            ..scene()
+        };
+        assert_eq!(choose(&marked), OffBallAct::Offer);
+        let free = OffBallScene {
+            with_mate: mate(false, None, 0),
+            ..scene()
+        };
+        assert_eq!(choose(&free), OffBallAct::Hold);
+    }
+
+    /// Ahead of the ball, near the last defender, with room behind him,
+    /// some players attack the space (those with pace, the twin test is in
+    /// `ds-calculator::offball`); with no room nobody does (P1, ADR-051).
+    #[test]
+    fn with_room_behind_the_line_some_run() {
+        let runs = |room_cm| {
+            (1..=10)
+                .filter(|slot| {
+                    let s = OffBallScene {
+                        actor: PlayerId::new(*slot, 0),
+                        with_mate: mate(false, Some(300), room_cm),
+                        ..scene()
+                    };
+                    choose(&s) == OffBallAct::Run
+                })
+                .count()
+        };
+        assert!(runs(3000) > 0, "with room, somebody runs");
+        assert_eq!(runs(100), 0, "with no room, nobody runs");
     }
 
     /// The goalkeeper does not press, and comes out only inside his area.

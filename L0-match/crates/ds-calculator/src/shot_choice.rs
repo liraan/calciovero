@@ -39,6 +39,9 @@ pub struct ShotChoiceBalance {
     pub progression_floor: f64,
     /// An opponent within this distance presses the carrier, cm (ADR-050).
     pub pressure_radius_cm: i64,
+    /// The goal's visible width from the penalty spot (the sine of the
+    /// angle): a goal seen this well is a whole goal (ADR-051).
+    pub shot_cone_ref: f64,
 }
 
 impl ShotChoiceBalance {

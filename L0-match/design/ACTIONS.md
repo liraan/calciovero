@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 52).
+engine (updated at `SIM_VERSION` 53).
 
 **How to read the state.**
 
@@ -77,8 +77,8 @@ with their first consumer (ADR-051 §4).
 | Block a shot or pass | reach | *reactivity*, *courage* | — |
 | Mark | whom, how close | game reading, *concentration*, *discipline* | — |
 | Cover, recovery run | when, where | game reading, *work rate*, run | — |
-| Offer for a pass | where, when | game reading, decision making | — |
-| Run in behind | when | game reading, sprint | — |
+| Offer for a pass | where, when | game reading, decision making | ◐ since 53: chosen when marked near the ball (game reading); he moves away from his marker; the free lane to the carrier is not read yet |
+| Run in behind | when | game reading, sprint | ◐ since 53: chosen ahead of the ball near the last defender's line with room behind (max speed, game reading); he stops on the line (no offside law yet, issue #13); the through ball is not a pass kind yet |
 | Aerial duel (defend) | win or lose | *heading*, jump, *maximal force* | — |
 
 ### 4.1 The duel: the target form (maintainer, 2026-11-12)

@@ -255,6 +255,27 @@ fn brings(
         .max(balance.progression_floor)
 }
 
+/// The shot's salience (ADR-040, ADR-050, ADR-051): high in the box and
+/// small but never zero from distance; the goal as it looks from here,
+/// against how it looks from the penalty spot (a goal seen as well as
+/// from the spot is a whole goal); and what it brings, the end of the
+/// same intention as a forward pass, read with the same appetite and
+/// pressure.
+#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+fn shot_salience(
+    pos: (i32, i32),
+    goal: (i32, i32),
+    risk_appetite: f64,
+    pressure: f64,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> f64 {
+    let goal_dist = distance_squared(pos, goal).isqrt();
+    let rel = (goal_dist as f64) / (balance.shot_distance_ref_cm.max(1) as f64);
+    let distance_factor = 1.0 / rel.mul_add(rel, 1.0);
+    let cone = (goal_cone(pos, goal) / balance.shot_cone_ref.max(1e-6)).min(1.0);
+    distance_factor * cone * brings(pos, goal, goal, risk_appetite, pressure, balance)
+}
+
 /// Builds the choice context for `attacker` from the scene, and the
 /// freedom of each pass receiver (carried to `resolve_pass`).
 ///
@@ -309,17 +330,11 @@ pub fn build_choice(
         );
     };
 
+    let pressure = pressure_on(pos, scene, balance);
     let goal_dist = distance_squared(pos, goal).isqrt();
     let shoot_range = balance.shot_range_cm.max(1);
     if goal_dist < shoot_range {
-        // geometric: 1.0 at the goal line, 0.0 at the shoot range edge.
-        // ADR-040: geometric = salience, not probability. distance_factor
-        // (decreasing linearly with distance) times goal_cone (the visible
-        // angular width of the goal mouth from the shooter, no trig).
-        // ADR-050: high in the box, small but never zero from distance.
-        let rel = (goal_dist as f64) / (balance.shot_distance_ref_cm.max(1) as f64);
-        let distance_factor = 1.0 / rel.mul_add(rel, 1.0);
-        let geom = distance_factor * goal_cone(pos, goal);
+        let geom = shot_salience(pos, goal, risk_appetite, pressure, balance);
         // risk: 0.0 at the goal line, 1.0 at the shoot range edge.
         let risk = (goal_dist as f64) / (shoot_range as f64);
         // ADR-046 §1, ADR-047: the shot is a complete phrase. The side
@@ -348,8 +363,6 @@ pub fn build_choice(
             });
         }
     }
-
-    let pressure = pressure_on(pos, scene, balance);
 
     let opponent_positions: Vec<(i32, i32)> = opponents
         .iter()

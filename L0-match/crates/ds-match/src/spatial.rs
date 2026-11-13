@@ -111,6 +111,8 @@ pub struct SpatialState {
     home_in_possession: bool,
     /// Each player's off-ball act, as he chose it (ADR-049).
     acts: BTreeMap<PlayerId, ds_orchestrator::OffBallAct>,
+    /// Where a player who chose to offer or to run is going (ADR-051).
+    act_targets: BTreeMap<PlayerId, (i32, i32)>,
     /// Where the carrier is taking the ball, if he chose to carry it
     /// (IDEA-DESIGN-010: carrying is a choice). `None`: he holds it.
     carry_target: Option<(i32, i32)>,
@@ -198,6 +200,7 @@ impl SpatialState {
             home_in_possession: true,
             carry_target: None,
             acts: BTreeMap::new(),
+            act_targets: BTreeMap::new(),
             carrier: None,
             goalkeepers: (home.players[0].id, away.players[0].id),
         };
@@ -220,6 +223,12 @@ impl SpatialState {
     /// A player's off-ball act, as he chose it (ADR-049).
     pub fn set_act(&mut self, id: PlayerId, act: ds_orchestrator::OffBallAct) {
         self.acts.insert(id, act);
+        self.act_targets.remove(&id);
+    }
+
+    /// Where a player who chose to offer or to run is going.
+    pub fn set_act_target(&mut self, id: PlayerId, target: (i32, i32)) {
+        self.act_targets.insert(id, target);
     }
 
     /// A player's off-ball act, if he has chosen one.
@@ -571,6 +580,12 @@ impl SpatialState {
                 self.carry_target.unwrap_or(entry.1)
             } else if to_the_ball {
                 ball
+            } else if let (
+                Some(ds_orchestrator::OffBallAct::Offer | ds_orchestrator::OffBallAct::Run),
+                Some(t),
+            ) = (act, self.act_targets.get(&entry.0))
+            {
+                *t
             } else if let Some((_, kt)) = keeper_targets.iter().find(|(g, _)| *g == entry.0) {
                 *kt
             } else {
