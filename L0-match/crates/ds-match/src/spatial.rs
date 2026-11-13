@@ -329,6 +329,13 @@ impl SpatialState {
         self.ball_velocity
     }
 
+    /// The ball's ground friction, thousandths per tick: what a passer
+    /// knows of the pitch when he weighs a pass.
+    #[must_use]
+    pub const fn ground_friction_milli(&self) -> i32 {
+        self.ball_physics.ground_friction_milli
+    }
+
     /// Deflects the ball in flight (ADR-048 §1): the ball is put back at the
     /// impact point and keeps flying with the reflected velocity. The
     /// tick's integration may have carried the ball past the obstacle; the

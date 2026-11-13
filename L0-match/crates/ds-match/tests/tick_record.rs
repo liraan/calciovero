@@ -376,3 +376,23 @@ fn the_keeper_stays_between_the_ball_and_his_goal() {
         "the keeper stood beyond the ball in {beyond} of {checked} ticks"
     );
 }
+
+/// A pass is received where it reaches a player (P1, ADR-051 "receive").
+/// Before `SIM_VERSION` 52 nobody could touch a pass for a fixed 1.5 s: a
+/// weighed pass rolled past its receiver and the ball was "in flight" in
+/// 98% of the ticks of seed 42, played by players who never had it (at
+/// someone's feet: 2% of the ticks before, 18% after; the rest is mostly
+/// passes travelling, about twice as many as in a real match).
+#[test]
+fn the_ball_is_mostly_at_someone_s_feet() {
+    let (_, records) = recorded();
+    let possessed = records
+        .iter()
+        .filter(|r| r.ball.state == ds_match::BallState::Possessed)
+        .count();
+    assert!(
+        possessed * 10 >= records.len(),
+        "the ball is at someone's feet in {possessed} of {} ticks",
+        records.len()
+    );
+}

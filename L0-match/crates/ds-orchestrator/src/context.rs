@@ -67,6 +67,9 @@ pub struct PassContext {
     /// opponent), computed once in `choose_action` and carried here
     /// (D7, one source of truth).
     pub receiver_freedom_cm: i64,
+    /// The ball's ground friction, thousandths per tick: the passer weighs
+    /// the pass so that it reaches the receiver still rolling.
+    pub ground_friction_milli: i32,
 }
 
 /// The context of a reception (REC): the receiver and the geometry of

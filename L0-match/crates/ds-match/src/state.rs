@@ -402,7 +402,7 @@ impl MatchState {
             &self.keeper_balance,
         );
         self.spatial.follow_carrier();
-        self.control_loose_ball(ctx);
+        self.control_loose_ball(ctx, tick);
         self.challenge_carrier(ctx, tick);
         self.update_coverage(ctx, tick);
         match self.possession {
@@ -599,6 +599,7 @@ impl MatchState {
                 from,
                 to,
                 receiver_freedom_cm: freedom_cm,
+                ground_friction_milli: self.spatial.ground_friction_milli(),
             };
             let outcome = ctx.hidden.resolve_pass(&ctx_pass, &params);
             // MD-25/F.4-c: carrier released at launch, ball flies, pending
@@ -758,7 +759,7 @@ impl MatchState {
     /// player once he is within `loose_control_radius_cm` of it, and his
     /// team has the possession. Before this the ball stayed loose until the
     /// next decision, and the match stood still around it (OI-97).
-    fn control_loose_ball(&mut self, ctx: &MatchContext<'_>) {
+    fn control_loose_ball(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
         // On the ground: at rest, or rolling (a footballer controls a ball
         // that is still moving). A ball in the air is not his yet.
         let on_ground = match self.spatial.ball_state() {
@@ -766,13 +767,25 @@ impl MatchState {
             crate::spatial::BallState::InFlight => self.spatial.ball_3d().2 == 0,
             crate::spatial::BallState::Possessed => false,
         };
-        if self.pending.is_some() || !on_ground {
+        // A pass on its way can be received where it reaches a player
+        // (ADR-051, "receive"): before `SIM_VERSION` 52 nobody could touch
+        // it until a fixed 1.5 s had passed, and a weighed pass rolled past
+        // its receiver. A shot on its way is the keeper's.
+        let pass = match &self.pending {
+            Some(p) if p.shot.is_none() => Some((p.passer, p.freedom_cm, p.distance_cm)),
+            Some(_) => return,
+            None => None,
+        };
+        if !on_ground {
             return;
         }
         let ball = self.spatial.ball();
         let Some(id) = crate::perception::nearest_to_point(&self.spatial, ball) else {
             return;
         };
+        if self.challenges.get(&id).is_some_and(|t| tick < *t) {
+            return; // his touch just failed: he needs a moment
+        }
         let Some(pos) = self.spatial.agent(id).map(|a| a.position) else {
             return;
         };
@@ -780,8 +793,50 @@ impl MatchState {
         if distance_squared(pos, ball) > r * r {
             return;
         }
+        let home = |who: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == who);
+        if let Some((Some(by), freedom, distance)) = pass {
+            self.pending = None;
+            if home(by) == home(id) {
+                // A teammate receives: his first touch decides (REC).
+                let params = self.reception_balance.to_params();
+                let rec = ctx.hidden.resolve_reception(
+                    &ds_orchestrator::ReceptionContext {
+                        receiver: id,
+                        distance_cm: distance.unwrap_or(0),
+                        freedom_cm: freedom.unwrap_or(params.freedom_ref_cm),
+                    },
+                    &params,
+                );
+                let fact = crate::fact::Fact::Trajectory {
+                    actor: by,
+                    kind: crate::fact::TrajectoryKind::Pass {
+                        success: rec.controlled,
+                    },
+                };
+                for c in crate::fact::classify(&fact) {
+                    self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
+                }
+                if !rec.controlled {
+                    // A heavy touch: the ball runs on, slower, for whoever.
+                    let v = self.spatial.ball_velocity();
+                    self.spatial
+                        .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
+                    let retry = ctx.hidden.duel_balance().retry_ticks;
+                    self.challenges.insert(id, tick + retry);
+                    return;
+                }
+            } else {
+                self.emit_event(
+                    ctx,
+                    tick,
+                    Some(ActorId::Player(id)),
+                    EventType::Interception,
+                    serde_json::json!({ "from": by.slot(), "to": id.slot() }),
+                );
+            }
+        }
         self.spatial.set_carrier(Some(id));
-        self.possession = if ctx.match_.home.players.iter().any(|p| p.id == id) {
+        self.possession = if home(id) {
             Possession::Home
         } else {
             Possession::Away
@@ -1736,7 +1791,7 @@ mod control_tests {
         let mut hidden = GroundTruth::new(42, m.id);
         let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
-        let ctx = MatchContext {
+        let mut ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
             rng: &mut rng,
@@ -1753,13 +1808,13 @@ mod control_tests {
             .set_ball_in_flight((at.0 + 300, at.1, 0), (0, 0, 0));
         s.spatial.advance_ball();
         assert_eq!(s.spatial.ball_state(), crate::spatial::BallState::Loose);
-        s.control_loose_ball(&ctx);
+        s.control_loose_ball(&mut ctx, 0);
         assert_eq!(s.spatial.carrier(), None, "out of reach");
         // At his feet: his.
         s.spatial
             .set_ball_in_flight((at.0 + 50, at.1, 0), (0, 0, 0));
         s.spatial.advance_ball();
-        s.control_loose_ball(&ctx);
+        s.control_loose_ball(&mut ctx, 0);
         assert_eq!(s.spatial.carrier(), Some(away));
         assert_eq!(s.possession, Possession::Away);
     }

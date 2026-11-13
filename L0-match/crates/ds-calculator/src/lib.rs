@@ -31,6 +31,7 @@
 
 pub mod choice;
 pub mod duel;
+pub mod kick;
 pub mod latency;
 pub mod movement;
 pub mod obstacle;

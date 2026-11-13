@@ -71,6 +71,7 @@ pub struct GroundTruth {
     choice_balance: ds_calculator::choice::ChoiceBalance,
     shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance,
     save_balance: ds_calculator::save::SaveBalance,
+    kick_balance: ds_calculator::kick::KickBalance,
 }
 
 impl GroundTruth {
@@ -92,6 +93,7 @@ impl GroundTruth {
             choice_balance: ds_calculator::choice::ChoiceBalance::load(),
             shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance::load(),
             save_balance: ds_calculator::save::SaveBalance::load(),
+            kick_balance: ds_calculator::kick::KickBalance::load(),
         }
     }
 
@@ -252,18 +254,6 @@ impl GroundTruth {
             i16::try_from(dz * 1000 / len).unwrap_or(0),
         )
     }
-    /// Flight speed from whether the shot was on target (MD-19: power is
-    /// a function of the outcome, not a die).
-    const fn speed_from_on_target(on_target: bool) -> i16 {
-        if on_target { 300 } else { 150 }
-    }
-    /// Flight speed from the passer's passing and the reception params
-    fn speed_from_passing(passing: f32, params: &ReceptionParams) -> i16 {
-        #[allow(clippy::cast_possible_truncation)]
-        let bonus = (f64::from(passing) * f64::from(params.speed_passing_bonus_cm_per_tick)) as i32;
-        let speed = params.speed_base_cm_per_tick + bonus;
-        i16::try_from(speed.clamp(0, i32::from(i16::MAX))).unwrap_or(i16::MAX)
-    }
 
     /// Resolves a shot.
     ///
@@ -280,39 +270,38 @@ impl GroundTruth {
     pub fn resolve_shot(&mut self, ctx: &ShotContext) -> ShotOutcome {
         let shooter = self.latents_for(ctx.shooter);
 
-        // Magnitude: the miss radius is a function of the finisher's
-        // `finishing` (skill) and of the pressure. The skill half is the
-        // same as before; the pressure half keeps the previous scale
-        // (`difficulty * 2`). ADR-035: no die.
-        let spread_base = (1.0 - f64::from(shooter.technical.finishing)) * 400.0;
-        let spread_diff = f64::from(ctx.difficulty) * 2.0;
-        let spread = spread_base + spread_diff;
-
-        // Lateral side: PLACEHOLDER, the cause is NOT read here. A real
-        // shooter's direction depends on the foot (ADR-031), the point of
-        // Direction: the actor's choice (ADR-046 §1, ADR-047). `aim_y` is
-        // the lateral component of the aim on the goal plane, in cm; the
-        // arrival is `to.1 + dy`, with `dy` the direction plus the band's
-        // deviation. The old `lateral_sign` (from position) is gone as a
-        // direction; it stays only as the band's declared placeholder.
+        // ADR-051, the family "the kick". The direction is the actor's
+        // (ADR-046 §1, ADR-047): `aim_y` across, his contact choice for the
+        // height. The miss is an angle, from his shooting, the foot he
+        // kicks with (the side he aims at), the power and the pressure: the
+        // same player misses by more from farther away. No die (ADR-035).
+        let k = self.kick_balance;
+        let foot = if ctx.aim_y >= f64::from(ctx.to.1) {
+            shooter.technical.right_foot
+        } else {
+            shooter.technical.left_foot
+        };
+        let pressure = f64::from(ctx.difficulty.clamp(0, 100)) / 100.0;
+        let error = k.error_rad(shooter.technical.finishing, foot, ctx.power, pressure);
+        let distance = f64::from(ctx.to.0 - ctx.from.0).hypot(ctx.aim_y - f64::from(ctx.from.1));
         #[allow(clippy::cast_possible_truncation)]
         let base_dy = (ctx.aim_y - f64::from(ctx.to.1)) as i32;
-        // Band: `spread` from finishing + difficulty, the deviation of the
-        // contact (ADR-039 step 4). The direction is the actor's; the
-        // deviation is his too, carried by the characteristic.
         #[allow(clippy::cast_possible_truncation)]
-        let lateral_abs = (spread / 4.0) as i32;
+        let lateral_abs = (distance * error) as i32;
+        // The side of the miss: a declared placeholder (the cause, the
+        // body's angle to the ball, is not read yet): towards the far side
+        // from where he stands.
         let deviation_sign: i32 = if ctx.from.1 < ctx.to.1 { 1 } else { -1 };
         let dy = base_dy + deviation_sign * lateral_abs;
-
-        // Vertical: the actor's `contact_height` (0.0 low, 1.0 high) picks
-        // the side; the band adds the deviation. `difficulty` no longer
-        // decides the direction; it stays in `spread`.
+        // A miscued strike rises: the vertical share of the error lifts the
+        // ball above the height he aimed at.
         #[allow(clippy::cast_possible_truncation)]
-        let vertical_abs = ((spread / 4.0) * 0.5) as i32;
-        let vertical_sign: i32 = if ctx.contact_height > 0.5 { 1 } else { -1 };
-        let dz = vertical_sign * vertical_abs;
-        let to = (ctx.to.0, ctx.to.1 + dy, ctx.to.2 + dz);
+        let dz = (distance * error * k.vertical_share) as i32;
+        let to = (
+            ctx.to.0,
+            ctx.to.1 + dy,
+            k.aim_height_cm(ctx.contact_height) + dz,
+        );
 
         // on_target: geometric, arrival inside the goal mouth. Derived,
         // not a field of the die (unchanged).
@@ -332,7 +321,8 @@ impl GroundTruth {
         };
 
         let dir = Self::direction_3d(ctx.from, to);
-        let speed = Self::speed_from_on_target(on_target);
+        #[allow(clippy::cast_possible_truncation)]
+        let speed = k.speed(ctx.power, shooter.physical.explosive_force).round() as i16;
         let initial_velocity = Self::velocity(dir, speed);
         let outcome = ShotOutcome {
             to,
@@ -362,14 +352,58 @@ impl GroundTruth {
     /// Resolves a pass: flight velocity only, no die (ADR-035, REC).
     ///
     /// `complete` no longer exists in the outcome: whether the pass
-    /// completes is decided at landing by `resolve_reception`. The
-    /// velocity is a function of the passer's `passing` (MD-19).
+    /// completes is decided at landing by `resolve_reception`.
+    ///
+    /// ADR-051, the family "the kick": the passer **weighs** the pass, so
+    /// that it reaches the receiver still rolling at `pass_arrive`
+    /// (`balance/kick.json`), within what his leg can give; his passing
+    /// and the foot he kicks with decide how far the pass drifts from the
+    /// line and how much he overhits it. Before `SIM_VERSION` 52 every pass
+    /// left at the same speed, whatever the distance: a short pass ran
+    /// past the receiver and out of play (about 150 corners a match).
     #[must_use]
     pub fn resolve_pass(&mut self, ctx: &PassContext, params: &ReceptionParams) -> PassOutcome {
+        let _ = params;
         let passer = self.latents_for(ctx.passer);
-        let speed = Self::speed_from_passing(passer.technical.passing, params);
-        let dir = Self::direction_3d(ctx.from, ctx.to);
-        let initial_velocity = Self::velocity(dir, speed);
+        let k = self.kick_balance;
+        let (dx, dy) = (
+            f64::from(ctx.to.0 - ctx.from.0),
+            f64::from(ctx.to.1 - ctx.from.1),
+        );
+        let distance = dx.hypot(dy);
+        let loss = 1.0 - f64::from(ctx.ground_friction_milli) / 1000.0;
+        let max = k.speed(1.0, passer.physical.explosive_force);
+        let weighed = distance.mul_add(loss, k.pass_arrive_cm_per_tick);
+        // The foot he kicks with: the receiver's side of him.
+        let foot = if dy >= 0.0 {
+            passer.technical.left_foot
+        } else {
+            passer.technical.right_foot
+        };
+        let error = k.error_rad(
+            passer.technical.passing,
+            foot,
+            (weighed / k.speed_ref_cm_per_tick).min(1.0),
+            0.0,
+        );
+        let speed = (weighed * (1.0 + error)).min(max);
+        // The drift: across the line, by the error; to the outside (a
+        // declared placeholder: the body's angle is not read yet).
+        let drift = distance * error;
+        let (ux, uy) = if distance > 0.0 {
+            (dx / distance, dy / distance)
+        } else {
+            (1.0, 0.0)
+        };
+        #[allow(clippy::cast_possible_truncation)]
+        let aim = (
+            ctx.to.0 + (-uy * drift) as i32,
+            ctx.to.1 + (ux * drift) as i32,
+            ctx.to.2,
+        );
+        let dir = Self::direction_3d(ctx.from, aim);
+        #[allow(clippy::cast_possible_truncation)]
+        let initial_velocity = Self::velocity(dir, speed.round() as i16);
         PassOutcome { initial_velocity }
     }
 

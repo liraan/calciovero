@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 51).
+engine (updated at `SIM_VERSION` 52).
 
 **How to read the state.**
 
@@ -55,14 +55,14 @@ with their first consumer (ADR-051 §4).
 
 | Act | Quantities | Roots | Engine today |
 |---|---|---|---|
-| Receive, control | clean or loose, the touch's length | first touch, foot, *body control* | ✓ reception reads first touch; foot ✗ |
+| Receive, control | clean or loose, the touch's length | first touch, foot, *body control* | ✓ since 52 where the pass reaches him: first touch, freedom, distance; a heavy touch runs on; foot ✗ |
 | Carry | speed with the ball, direction | *dribbling*, run | ◐ speed is the run's; step length constant; direction is a rule (to goal, or to the open pitch when blocked) |
 | Dribble past a man | beat or lose | *dribbling*, acceleration, *joint mobility*, *body control* | — |
 | Shield | keep the ball under a challenge | *maximal force*, *body control*, weight | — (the carrier's side of the duel reads first touch) |
-| Short pass | choice, speed, precision | passing, foot, vision, game reading, risk | ◐ choice ✓, speed from passing ✓, precision and foot ✗ |
+| Short pass | choice, speed, precision | passing, foot, vision, game reading, risk | ✓ since 52: choice; weighed to arrive rolling (`kick.json`), capped by his kick; drift and overhit from passing and the foot |
 | Long pass, switch, through ball | same, with height | passing, foot, explosive force, game reading | — one kind of pass only |
 | Cross | same | passing, foot | — |
-| Shoot | choice, direction, power, precision | *shooting* (`finishing` today), foot, explosive force, composure | ◐ choice and direction ✓, deviation from finishing ✓; **speed ✗ fixed** (30 or 15 m/s, set by whether it is on target); power chosen but unread; foot ✗ |
+| Shoot | choice, direction, power, precision | *shooting* (`finishing` today), foot, explosive force, composure | ✓ since 52: speed from power and explosive force; the miss an angle from finishing, the foot, power and pressure; low or high by his choice; the miss's side is a declared placeholder; composure ✗ |
 | Head (attack) | reach, direction | *heading*, jump, courage | — |
 | Clear | distance, direction | passing, explosive force | — |
 
@@ -73,7 +73,7 @@ with their first consumer (ADR-051 §4).
 | Hold the place | where, how strictly | game reading, *discipline* | ◐ the choice ✓ (ADR-049); the place is the block rule (`balance/block.json`) |
 | Press | whether, how hard | game reading; *aggressiveness*, *work rate* | ◐ the choice reads proximity, rank and game reading |
 | Challenge, tackle | whether, win or lose | tackling, explosive force vs first touch | ◐ ✓ roots; the same two players give the same result in every scene |
-| Intercept | reach on the line | game reading, *reactivity*, sprint | ✗ fixed 2 m radius |
+| Intercept | reach on the line | game reading, *reactivity*, sprint | ✗ a fixed 2 m radius at launch, and since 52 the control radius where the pass reaches him |
 | Block a shot or pass | reach | *reactivity*, *courage* | — |
 | Mark | whom, how close | game reading, *concentration*, *discipline* | — |
 | Cover, recovery run | when, where | game reading, *work rate*, run | — |

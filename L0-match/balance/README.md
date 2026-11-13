@@ -14,6 +14,7 @@ This is the best place to start if you know football and not Rust.
 | `profiles.json` | **who the players are**: for each role (goalkeeper, centre back, full back, central and wide midfielder, striker) the mean and spread of every hidden characteristic and of height and weight |
 | `block.json` | **the team's shape without instructions**: how deep and wide the block is with and without the ball, how high the defensive line goes, how much it shifts to the ball's side |
 | `keeper.json` | **the goalkeeper's position**: how far he comes off his line as the ball approaches, and how far he steps up when his side has the ball |
+| `kick.json` | **the kick**: how fast a shot leaves, how precise a kick is (shooting, the foot, power, pressure), how a pass is weighed to reach the receiver |
 | `save.json` | **the save**: how fast a keeper reacts, how far and how fast he dives, how hard a ball is to hold, how far a parry sends it |
 | `duel.json` | **the tackle**: how close a defender must be to challenge, how often, and how much tackling counts against keeping the ball |
 | `carry.json` | **running with the ball**: how far a carrier goes before choosing again, and where he stops near the goal |
