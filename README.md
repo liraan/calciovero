@@ -8,7 +8,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-364_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-366_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -107,7 +107,7 @@ What exists today:
   positions himself, posts and crossbar that deflect the ball;
 - a **2D debug view** in the terminal that replays a match tick by tick,
   and a text board and an HTML page with the result;
-- **364 tests** and a health check that runs on every commit.
+- **366 tests** and a health check that runs on every commit.
 
 What does not exist yet: a pitch view you can watch, the rules of the
 game (throw-ins, offside, fouls), fatigue, the season, the career, the

@@ -63,6 +63,8 @@ pub const PASS_FREEDOM_CM: i64 = 300;
 const GOAL_WIDTH_CM: i64 = 732;
 /// The ball's radius, cm (Law 2: a circumference of 68-70 cm).
 const BALL_RADIUS_CM: f64 = 11.0;
+/// The post's radius, cm (Law 1: posts and bar at most 12 cm wide).
+const POST_RADIUS_CM: f64 = 6.0;
 
 /// Pass distance below this: the pass is not plausible, cm.
 const PASS_MIN_CM: i64 = 500;
@@ -244,6 +246,27 @@ fn pressure_on(
         })
 }
 
+/// How much the nearest outfield opponent hurries his kick, in `[0, 1]`:
+/// the same the engine applies to the kick (`kick_pressure_radius_cm`).
+#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+fn kick_pressure(
+    pos: (i32, i32),
+    scene: &PerceivedScene,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> f64 {
+    scene
+        .opponents
+        .iter()
+        .filter(|o| Some(**o) != scene.keeper)
+        .filter_map(|o| scene.positions.get(o).copied())
+        .map(|opos| distance_squared(pos, opos).isqrt())
+        .min()
+        .map_or(0.0, |d| {
+            let r = balance.kick_pressure_radius_cm.max(1);
+            (1.0 - (d as f64) / (r as f64)).clamp(0.0, 1.0)
+        })
+}
+
 /// What a pass brings (ADR-050): its progression in [-1, 1] (nearer to the
 /// goal is positive), weighed by the carrier's appetite for risk, less
 /// under pressure. A pass back stays a real option (the floor).
@@ -263,27 +286,6 @@ fn brings(
     weight
         .mul_add(progression, 1.0)
         .max(balance.progression_floor)
-}
-
-/// The shot's salience (ADR-040, ADR-050, ADR-051): high in the box and
-/// small but never zero from distance; the goal as it looks from here,
-/// against how it looks from the penalty spot (a goal seen as well as
-/// from the spot is a whole goal); and what it brings, the end of the
-/// same intention as a forward pass, read with the same appetite and
-/// pressure.
-#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
-fn shot_salience(
-    pos: (i32, i32),
-    goal: (i32, i32),
-    risk_appetite: f64,
-    pressure: f64,
-    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
-) -> f64 {
-    let goal_dist = distance_squared(pos, goal).isqrt();
-    let rel = (goal_dist as f64) / (balance.shot_distance_ref_cm.max(1) as f64);
-    let distance_factor = 1.0 / rel.mul_add(rel, 1.0);
-    let cone = (goal_cone(pos, goal) / balance.shot_cone_ref.max(1e-6)).min(1.0);
-    distance_factor * cone * brings(pos, goal, goal, risk_appetite, pressure, balance)
 }
 
 /// The salience of carrying the ball (ADR-051, "carry"): the room in front
@@ -439,7 +441,6 @@ fn shot_candidates(
     pos: (i32, i32),
     (preferred_foot, own_error): (Side, f64),
     risk_appetite: f64,
-    pressure: f64,
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
 ) -> Vec<ChoiceCandidate> {
     let goal = scene.goal;
@@ -453,6 +454,7 @@ fn shot_candidates(
         // reach the line of the shot; missed, the ball is theirs by our
         // goal line. The risk is in the worth: none on top of it.
         let m = mind();
+        let hurry = kick_pressure(pos, scene, balance);
         let keeper_at = scene.keeper.and_then(|k| scene.positions.get(&k)).copied();
         let off = keeper_at.map_or_else(
             || keeper_off(goal_dist as f64),
@@ -488,11 +490,6 @@ fn shot_candidates(
                 .mul_add(-(1.5 - risk_appetite), scores / m.thought.possession_value)
                 .max(0.0)
         };
-        let _ = (
-            pressure,
-            balance.other_side_factor,
-            shot_salience(pos, goal, risk_appetite, pressure, balance),
-        );
         let risk = 0.0;
         // ADR-046 §1, ADR-047: the shot is a complete phrase; both posts,
         // the keeper hiding the side he covers (ADR-047 §3).
@@ -506,7 +503,7 @@ fn shot_candidates(
         };
         for side in [side_sign, -side_sign] {
             for power in [balance.power_strong, balance.power_placed] {
-                let edge = aim_inside(goal_dist as f64, own_error, power, aim_edge_cm);
+                let edge = aim_inside(goal_dist as f64, (own_error, hurry), power, aim_edge_cm);
                 let aim_y = side.mul_add(edge, f64::from(goal.1));
                 // How far the keeper leans towards this post, at his depth.
                 let shift = keeper_at.map_or(0.0, |k| side * f64::from(k.1 - goal.1));
@@ -560,11 +557,28 @@ fn shot_candidates(
 /// this distance and power, so a poor finisher aims nearer the middle;
 /// never nearer the post than `aim_edge_cm`, never nearer the middle than
 /// a quarter of it.
-fn aim_inside(goal_dist_cm: f64, own_error: f64, power: f64, aim_edge_cm: f64) -> f64 {
-    let expected_miss = goal_dist_cm * own_error * mind().kick.error_power_gain.mul_add(power, 0.5);
+fn aim_inside(
+    goal_dist_cm: f64,
+    (own_error, pressure): (f64, f64),
+    power: f64,
+    aim_edge_cm: f64,
+) -> f64 {
+    // The same angle the engine gives his kick: his own error, widened by
+    // the power, and the pressure he feels.
+    let k = &mind().kick;
+    let angle = (own_error * k.error_power_gain.mul_add(power, 0.5))
+        .mul_add(1.0, k.error_pressure_rad * pressure.clamp(0.0, 1.0));
+    let expected_miss = goal_dist_cm * angle;
     #[allow(clippy::cast_precision_loss)] // 732 cm
     let half = GOAL_WIDTH_CM as f64 * 0.5;
-    aim_edge_cm.min((half - expected_miss - BALL_RADIUS_CM).max(aim_edge_cm * 0.25))
+    // He does not know his miss to the centimetre: he keeps half as much
+    // again, and the ball and the post, between it and the post (before
+    // `SIM_VERSION` 76 his miss landed exactly on the post).
+    aim_edge_cm.min(
+        1.5f64
+            .mul_add(-expected_miss, half - BALL_RADIUS_CM - POST_RADIUS_CM)
+            .max(aim_edge_cm * 0.25),
+    )
 }
 
 /// ADR-051, "clear": near his own goal and under pressure he may kick the
@@ -792,7 +806,6 @@ pub fn build_choice(
         pos,
         (preferred_foot, own_error),
         risk_appetite,
-        pressure,
         balance,
     ));
     if scene.penalty_kick && !candidates.is_empty() {

@@ -916,8 +916,9 @@ impl MatchState {
                 Possession::Home => (i32::from(ctx.match_.pitch.length_m) * 100, 3400, 244),
                 Possession::Away => (0, 3400, 244),
             };
-            // Difficulty: min distance to an opponent, scaled. Arbitrary,
-            // declared: 0 cm -> 100 (max pressure), 1500 cm -> 0. Their
+            // Difficulty: the pressure on the kick, the same the shooter
+            // reckons with (`shot_choice.json` `kick_pressure_radius_cm`):
+            // 0 cm -> 100, the radius -> 0. Their
             // keeper on his line does not press the kicker (before
             // `SIM_VERSION` 74 he did, and a penalty was a kick under
             // pressure).
@@ -932,7 +933,12 @@ impl MatchState {
                 })
                 .min()
                 .map_or(0, |d| {
-                    i32::try_from(((1500 - d).max(0) * 100) / 1500).unwrap_or(0)
+                    let r = ctx
+                        .hidden
+                        .shot_choice_balance()
+                        .kick_pressure_radius_cm
+                        .max(1);
+                    i32::try_from(((r - d).max(0) * 100) / r).unwrap_or(0)
                 });
             let ctx_shot = ds_orchestrator::ShotContext {
                 shooter: attacker,
@@ -1145,7 +1151,7 @@ impl MatchState {
                 from: (bx, by, bz),
                 to: (goal.0, goal.1, 100),
                 initial_velocity: v,
-                shot_type: ds_orchestrator::ShotType::Normal,
+                shot_type: ds_orchestrator::ShotType::Header,
             },
         };
         for c in crate::fact::classify(&fact) {
@@ -1553,6 +1559,15 @@ impl MatchState {
         // opponent cuts it out only if it passes within his reach. A shot
         // on its way is nobody's.
         let ball_loose = carrier.is_none() && self.pending.is_none();
+        // A pass in the air is contested (ADR-042, in the air): the
+        // opponent nearest where it comes down goes to meet it, as the
+        // receiver does.
+        let air_drop = self
+            .pending
+            .as_ref()
+            .filter(|p| p.shot.is_none())
+            .and_then(|_| self.spatial.drop_point(180));
+        let passing_home = self.possession == Possession::Home;
         let meets_pass = self
             .pending
             .as_ref()
@@ -1632,12 +1647,19 @@ impl MatchState {
                     } else {
                         ds_orchestrator::Place::Outfield
                     },
-                    loose_ball: ((ball_loose && sees_ball) || meets_pass == Some(id)).then(|| {
-                        ds_orchestrator::Target {
-                            distance_cm: distance_squared(me, ball).isqrt(),
-                            rank: rank(ball),
-                        }
-                    }),
+                    loose_ball: if let (Some(d), true) = (air_drop, home != passing_home) {
+                        (rank(d) == 0 && !keeper).then(|| ds_orchestrator::Target {
+                            distance_cm: distance_squared(me, d).isqrt(),
+                            rank: 0,
+                        })
+                    } else {
+                        ((ball_loose && sees_ball) || meets_pass == Some(id)).then(|| {
+                            ds_orchestrator::Target {
+                                distance_cm: distance_squared(me, ball).isqrt(),
+                                rank: rank(ball),
+                            }
+                        })
+                    },
                     carrier: carrier_pos
                         .zip(to_carrier)
                         .map(|(c, d)| ds_orchestrator::Target {

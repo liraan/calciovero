@@ -34,6 +34,9 @@ use std::collections::BTreeMap;
 use ds_core::ids::PlayerId;
 use ds_model::{Pitch, Squad};
 
+/// The height a ball in the air is met at, cm: a player's head.
+const HEAD_HEIGHT_CM: i32 = 180;
+
 /// A player's position, velocity, heading and gaze on the pitch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AgentState {
@@ -368,6 +371,39 @@ impl SpatialState {
         }
     }
 
+    /// Where a ball in the air comes down to `height_cm`, by the same
+    /// physics `advance_ball` applies (gravity, air friction): where a
+    /// player who reads it goes to meet it. `None` if it is not in the air
+    /// above that height.
+    #[must_use]
+    pub fn drop_point(&self, height_cm: i32) -> Option<(i32, i32)> {
+        let BallState::InFlight = self.ball else {
+            return None;
+        };
+        let (mut x, mut y, mut z) = self.ball_position;
+        if z <= height_cm {
+            return None;
+        }
+        let (mut vx, mut vy, mut vz) = (
+            i32::from(self.ball_velocity.0),
+            i32::from(self.ball_velocity.1),
+            i32::from(self.ball_velocity.2),
+        );
+        let p = self.ball_physics;
+        for _ in 0..200 {
+            vz -= i32::from(p.gravity_cm_per_tick2);
+            vx = vx * p.air_friction_milli / 1000;
+            vy = vy * p.air_friction_milli / 1000;
+            x += vx;
+            y += vy;
+            z += vz;
+            if z <= height_cm && vz < 0 {
+                return Some((x, y));
+            }
+        }
+        Some((x, y))
+    }
+
     /// Advances the ball one tick if it is in flight (MD-17/18).
     ///
     /// Applies gravity to `vz`, gravity to `z`, friction to the horizontal
@@ -574,6 +610,7 @@ impl SpatialState {
             let ty = (y_target.round() as i32).clamp(0, pitch_width_cm);
             keeper_targets.push((gk, (tx, ty)));
         }
+        let drop = self.drop_point(HEAD_HEIGHT_CM);
         for entry in &mut work {
             let act = self.acts.get(&entry.0).copied();
             let to_the_ball = matches!(
@@ -589,7 +626,13 @@ impl SpatialState {
                 // where he chose (IDEA-DESIGN-010); the keeper too.
                 self.carry_target.unwrap_or(entry.1)
             } else if to_the_ball {
-                ball
+                // A high ball is met where it comes down (head height),
+                // not chased where it is.
+                if act == Some(ds_orchestrator::OffBallAct::GoToBall) {
+                    drop.unwrap_or(ball)
+                } else {
+                    ball
+                }
             } else if let (
                 Some(
                     ds_orchestrator::OffBallAct::Offer

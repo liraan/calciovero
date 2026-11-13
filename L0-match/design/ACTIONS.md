@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 64).
+engine (updated at `SIM_VERSION` 76; the repertoire test, `ds-match/tests/repertoire.rs`, checks that every act shows).
 
 **How to read the state.**
 
@@ -40,7 +40,7 @@ with their first consumer (ADR-051 §4).
 | Run, sprint | top speed, acceleration | max speed, explosive force, weight; fatigue dims | ✓ `resolve_movement` (`balance/movement.json`); measured: speed follows `max_speed` |
 | Turn, change direction | time to turn, speed kept | *joint mobility*, *body control*, weight | — the heading changes instantly for everyone |
 | Stop, decelerate | braking | explosive force, *body control* | — |
-| Jump | height, timing | explosive force, height, *joint mobility* | — |
+| Jump | height, timing | explosive force, height, *joint mobility* | ◐ since 71: in the aerial duel, height plus explosive force; timing and joint mobility ✗ |
 | Endure the 90 minutes | how fast fatigue rises, recovers | endurance | ✓ since 73: fatigue grows with the effort (speed squared) against endurance, recovers walking and at half-time (`balance/fatigue.json`); it dims acceleration and top speed; seen in the tick record; his thought still believes his pace fresh |
 
 ## 2. The eyes and the mind
@@ -63,7 +63,7 @@ with their first consumer (ADR-051 §4).
 | Long pass, switch, through ball | same, with height | passing, foot, explosive force, game reading | — one kind of pass only |
 | Cross | same | passing, foot | — |
 | Shoot | choice, direction, power, precision | *shooting* (`finishing` today), foot, explosive force, composure | ✓ since 52: speed from power and explosive force; the miss an angle from finishing, the foot, power and pressure; low or high by his choice, struck to reach that height (gravity); either post, the keeper hiding the side he covers (60); the miss's side from his body's momentum, standing from his foot's side (placeholder); composure ✗ |
-| Head (attack) | reach, direction | *heading*, jump, courage | — |
+| Head (attack) | reach, direction | heading, jump, *courage* | ✓ since 71: in the opponents' area the winner of the ball in the air heads at goal (shot type `header`, 76); courage ✗ |
 | Clear | distance, direction | passing, explosive force | ◐ since 59 his choice near his own goal under pressure (pressure, distance, appetite); his strongest kick (explosive force), lifted, towards his wing; no error yet |
 
 ## 4. Without the ball
@@ -79,7 +79,7 @@ with their first consumer (ADR-051 §4).
 | Cover, recovery run | when, where | game reading, *work rate*, run | — |
 | Offer for a pass | where, when | game reading, decision making | ◐ since 53: chosen when marked near the ball (game reading); he moves away from his marker; the free lane to the carrier is not read yet |
 | Run in behind | when | game reading, sprint | ◐ since 53: chosen ahead of the ball near the last defender's line with room behind (max speed, game reading); he stops on the line (no offside law yet, issue #13); the through ball is not a pass kind yet |
-| Aerial duel (defend) | win or lose | *heading*, jump, *maximal force* | — |
+| Aerial duel (defend) | win or lose | heading, jump, maximal force, height | ✓ since 71; since 76 a pass in the air is contested by the opponent nearest where it comes down, and players meet a high ball at its drop point; about 3 a match (real: many more, step 10) |
 
 ### 4.1 The duel: the target form (maintainer, 2026-11-12)
 
@@ -98,9 +98,9 @@ The variation comes from the situation, never from a die. Twin tests: the better
 | Position (the angles) | where, relative to ball and goal | game reading, *concentration* | ✗ a rule (`balance/keeper.json`); since 51 always between the ball and the goal; game reading not read yet |
 | Get set | ready or not when the shot leaves | *reactivity*, *concentration* | — |
 | Dive, stop the shot | reach in the time the ball takes | reactivity, explosive force, *joint mobility*, height | ✓ since 51: reaction time from reactivity, dive from explosive force, met where the ball passes him (`balance/save.json`); joint mobility not yet |
-| Catch or parry | held, parried, spilled | *handling* (`goalkeeping` today), *body control* | ◐ since 51: held or parried from his hands, the reach margin and the ball's speed; nearer him the parry rebounds loose, at the edge of his reach he tips it past the post (61); no spill yet |
+| Catch or parry | held, parried, spilled | *handling* (`goalkeeping` today), *body control* | ✓ since 76: held when his hands reach the difficulty, the reach margin and the ball\'s speed added (before they multiplied and every ball was held); about 60% held; parried nearer him, tipped at the edge; no spill yet |
 | Come out | whether | decision making, *courage* | ◐ the choice exists (ADR-049), only inside his area |
-| Claim a cross | whether, win | decision making, jump, *handling* | — |
+| Claim a cross | whether, win | decision making, jump, *handling* | ◐ since 71: the keeper in his area catches the ball in the air within his reach (arms); the choice to come is not his yet |
 | Distribute | hands, feet | passing, foot, vision | ◐ as an outfield pass |
 
 ## 6. Restarts

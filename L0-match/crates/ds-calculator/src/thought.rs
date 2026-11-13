@@ -12,6 +12,8 @@ use crate::kick::KickBalance;
 use crate::save::SaveBalance;
 
 const THOUGHT_JSON: &str = include_str!("../../../balance/thought.json");
+/// The ball's physics: the thought reads the same gravity as the engine.
+const BALL_JSON: &str = include_str!("../../../balance/ball.json");
 
 /// The thought's declared values (`balance/thought.json`).
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
@@ -28,6 +30,11 @@ pub struct ThoughtBalance {
     pub believed_reaction_ticks: f64,
     /// A forecast with this many ticks to spare is sure.
     pub trust_ticks: f64,
+    /// How high he believes a keeper reaches with his hands and a jump, cm.
+    pub believed_keeper_reach_cm: f64,
+    /// Gravity, cm/tick² (`balance/ball.json`, the engine's own).
+    #[serde(skip)]
+    pub gravity_cm_per_tick2: f64,
 }
 
 impl ThoughtBalance {
@@ -77,7 +84,15 @@ impl ThoughtBalance {
     /// catches it at test time.
     #[must_use]
     pub fn load() -> Self {
-        serde_json::from_str(THOUGHT_JSON).expect("embedded thought file is valid JSON")
+        #[derive(Deserialize)]
+        struct Ball {
+            gravity_cm_per_tick2: f64,
+        }
+        let mut t: Self =
+            serde_json::from_str(THOUGHT_JSON).expect("embedded thought file is valid JSON");
+        let ball: Ball = serde_json::from_str(BALL_JSON).expect("embedded ball file is valid JSON");
+        t.gravity_cm_per_tick2 = ball.gravity_cm_per_tick2;
+        t
     }
 }
 
@@ -242,9 +257,22 @@ pub fn lob_chance(
     kick: &KickBalance,
     t: &ThoughtBalance,
 ) -> f64 {
-    let flight = distance_cm / kick.speed(power, 0.5).max(1.0);
+    let v = kick.speed(power, 0.5).max(1.0);
+    let flight = distance_cm / v;
+    // The arc the engine gives it (ADR-052: the same physics): it reaches
+    // the height he aims at on the line, lifted against gravity for the
+    // whole flight. Over the keeper it must pass above his reach, or he
+    // takes it over his head (2026-11-13: before, the thought ignored it
+    // and four shots in five were lobs the keepers caught).
+    let to_keeper = (distance_cm - keeper_off_cm).max(0.0);
+    let at_keeper = to_keeper / v;
+    let height = f64::from(kick.aim_high_cm).mul_add(
+        to_keeper / distance_cm.max(1.0),
+        t.gravity_cm_per_tick2 / 2.0 * at_keeper * (flight - at_keeper),
+    );
+    let over = (0.5 + (height - t.believed_keeper_reach_cm) / 100.0).clamp(0.0, 1.0);
     let back = t.believed_reaction_ticks + keeper_off_cm / t.believed_speed_cm_per_tick.max(1.0);
-    let beaten = t.confidence(back - flight);
+    let beaten = over * t.confidence(back - flight);
     let half = f64::from(t.goal_width_cm) / 2.0;
     let spread = distance_cm * kick.error_rad(0.5, 0.75, power, 0.0);
     beaten * half / (half + spread)
@@ -261,7 +289,7 @@ mod tests {
         let (k, t) = (KickBalance::load(), ThoughtBalance::load());
         let far = lob_chance((2000.0, 1200.0), 0.2, &k, &t);
         let home = lob_chance((2000.0, 100.0), 0.2, &k, &t);
-        assert!(far > 0.3 && home < 0.1, "far {far}, home {home}");
+        assert!(far > 0.2 && home < 0.1, "far {far}, home {home}");
     }
 
     /// The keeper leaning to the post aimed at closes it (P1).

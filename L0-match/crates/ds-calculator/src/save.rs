@@ -24,6 +24,10 @@ pub struct SaveBalance {
     pub body_centre_cm: f64,
     /// A ball at this speed, at the edge of his reach, needs perfect hands.
     pub catch_speed_ref_cm_per_tick: f64,
+    /// How much reaching far for it makes a ball hard to hold.
+    pub catch_offset_weight: f64,
+    /// How much the ball's speed makes it hard to hold.
+    pub catch_speed_weight: f64,
     /// A parried ball comes back at this fraction of its speed, thousandths.
     pub parry_rebound_milli: i32,
     /// Beyond this share of his reach he only tips the ball, thousandths.
@@ -77,8 +81,13 @@ impl SaveBalance {
         if reach_cm <= 0.0 {
             return false;
         }
-        let difficulty =
-            (offset_cm / reach_cm) * (speed / self.catch_speed_ref_cm_per_tick.max(1.0));
+        // The two causes add (2026-11-13): a hard shot straight at him is
+        // parried too, and at full stretch he only parries. Before
+        // `SIM_VERSION` 76 they multiplied, and every save was held.
+        let difficulty = self.catch_offset_weight.mul_add(
+            offset_cm / reach_cm,
+            self.catch_speed_weight * speed / self.catch_speed_ref_cm_per_tick.max(1.0),
+        );
         f64::from(handling) >= difficulty
     }
 }
@@ -128,8 +137,17 @@ mod tests {
     #[test]
     fn good_hands_hold_poor_hands_parry() {
         let b = SaveBalance::load();
-        assert!(b.held(0.9, 150.0, 200.0, 280.0));
-        assert!(!b.held(0.3, 150.0, 200.0, 280.0));
-        assert!(b.held(0.1, 10.0, 200.0, 100.0));
+        assert!(b.held(0.9, 50.0, 200.0, 150.0));
+        assert!(!b.held(0.3, 50.0, 200.0, 150.0));
+        assert!(b.held(0.3, 10.0, 200.0, 50.0));
+    }
+
+    /// The two causes add (`SIM_VERSION` 76): a hard shot straight at him
+    /// is parried even by good hands, and so is a ball at full stretch.
+    #[test]
+    fn a_hard_shot_or_a_full_stretch_is_parried() {
+        let b = SaveBalance::load();
+        assert!(!b.held(0.9, 10.0, 200.0, 300.0));
+        assert!(!b.held(0.9, 190.0, 200.0, 120.0));
     }
 }

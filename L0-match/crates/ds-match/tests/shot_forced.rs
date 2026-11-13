@@ -62,7 +62,7 @@ fn resolve_shot_returns_new_payload() {
     // `shot_type` is derived, not a field of the die.
     assert!(matches!(
         outcome.shot_type,
-        ShotType::Power | ShotType::Placed | ShotType::Normal
+        ShotType::Power | ShotType::Placed | ShotType::Normal | ShotType::Lob | ShotType::Header
     ));
 }
 

@@ -46,6 +46,10 @@ pub enum ShotType {
     Placed,
     /// An ordinary shot.
     Normal,
+    /// A lob over the keeper (his choice of a soft, high contact).
+    Lob,
+    /// A header at goal (ADR-042, in the air).
+    Header,
 }
 
 impl ShotType {
@@ -56,6 +60,8 @@ impl ShotType {
             Self::Power => "power",
             Self::Placed => "placed",
             Self::Normal => "normal",
+            Self::Lob => "lob",
+            Self::Header => "header",
         }
     }
 }

@@ -20,6 +20,9 @@ pub struct KickBalance {
     pub speed_explosive_base: f64,
     /// Angular error of the worst kicker at medium power, radians.
     pub error_ref_rad: f64,
+    /// The same for a pass to a teammate, radians: a pass is aimed at a
+    /// man who comes to meet it, not at the corner of a goal.
+    pub pass_error_ref_rad: f64,
     /// How much power widens the error.
     pub error_power_gain: f64,
     /// Angular error added by full pressure, radians.

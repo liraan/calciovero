@@ -146,9 +146,8 @@ impl GroundTruth {
     /// The shot's choice balance (ADR-047). Read by `Actor::decide` to
     /// build the complete phrases from the scene; not a latent, a
     /// declared coefficient (`L0-match/balance/shot_choice.json`, L3).
-    pub(crate) const fn shot_choice_balance(
-        &self,
-    ) -> &ds_calculator::shot_choice::ShotChoiceBalance {
+    #[must_use]
+    pub const fn shot_choice_balance(&self) -> &ds_calculator::shot_choice::ShotChoiceBalance {
         &self.shot_choice_balance
     }
 
@@ -392,7 +391,10 @@ impl GroundTruth {
 
         // shot_type: geometric, derived from the shot position. Unchanged.
         let dist_cm = (ctx.to.0 - ctx.from.0).abs();
-        let shot_type = if dist_cm > 2000 {
+        let shot_type = if ctx.contact_height >= 0.5 && ctx.power <= 0.3 {
+            // His choice: soft and high, over the keeper.
+            ShotType::Lob
+        } else if dist_cm > 2000 {
             ShotType::Power
         } else if (to.1 - ctx.to.1).abs() > goal_half_width_cm / 2 {
             ShotType::Placed
@@ -536,7 +538,8 @@ impl GroundTruth {
             foot,
             (weighed / k.speed_ref_cm_per_tick).min(1.0),
             0.0,
-        );
+        ) * k.pass_error_ref_rad
+            / k.error_ref_rad.max(1e-6);
         let speed = (weighed * (1.0 + error)).min(max);
         // The drift: across the line, by the error, towards the centre of
         // the pitch (his body is open to the play; a declared placeholder,
