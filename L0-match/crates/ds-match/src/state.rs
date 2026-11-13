@@ -219,8 +219,8 @@ pub(crate) enum ChosenAction {
     /// Carry the ball towards this point, the direction he chose (plan
     /// L0-CLOSE 10a).
     Carry((i32, i32)),
-    /// Clear the ball away (ADR-051).
-    Clear,
+    /// Clear the ball away (ADR-051), towards the landing he chose.
+    Clear((i32, i32)),
     /// Hold the ball up, shielding it, while the team comes up (plan
     /// L0-CLOSE 11): he keeps it at his feet until his next decision.
     Hold,
@@ -1066,7 +1066,7 @@ impl MatchState {
             ds_orchestrator::ChoiceKind::Duel => ChosenAction::Duel,
             ds_orchestrator::ChoiceKind::Advance => ChosenAction::Advance,
             ds_orchestrator::ChoiceKind::Carry { to } => ChosenAction::Carry(to),
-            ds_orchestrator::ChoiceKind::Clear => ChosenAction::Clear,
+            ds_orchestrator::ChoiceKind::Clear { to } => ChosenAction::Clear(to),
             ds_orchestrator::ChoiceKind::Hold => ChosenAction::Hold,
         };
 
@@ -1360,8 +1360,8 @@ impl MatchState {
         // defender is put in the carrier's scene, the branch becomes
         // reachable again. Removed-by: Plan E. Do not delete without
         // the migration: `resolve_duel` would lose its only caller.
-        } else if chosen == ChosenAction::Clear {
-            self.play_clearance(ctx, tick, attacker, own_goal);
+        } else if let ChosenAction::Clear(to) = chosen {
+            self.play_clearance(ctx, tick, attacker, to);
         } else if chosen == ChosenAction::Duel {
             let ctx_duel = ds_orchestrator::DuelContext {
                 attacker,
@@ -1623,23 +1623,12 @@ impl MatchState {
         ctx: &mut MatchContext<'_>,
         tick: u64,
         kicker: PlayerId,
-        own_goal: (i32, i32),
+        to: (i32, i32),
     ) {
-        let Some(from) = self.spatial.agent(kicker).map(|a| a.position) else {
-            return;
-        };
+        let (fx, fy, _) = self.spatial.ball_3d();
+        let from = (fx, fy);
         let (length, width) = pitch_cm(ctx);
-        let forward = if own_goal.0 == 0 { 1 } else { -1 };
-        let k = ctx.hidden.kick_balance();
-        let wing = if from.1 < width / 2 {
-            width / 10
-        } else {
-            width - width / 10
-        };
-        let to = (
-            (from.0 + forward * k.clear_length_cm).clamp(0, length),
-            wing,
-        );
+        let to = (to.0.clamp(0, length), to.1.clamp(0, width));
         let v = ctx
             .hidden
             .resolve_clearance(kicker, (from.0, from.1, 0), to);

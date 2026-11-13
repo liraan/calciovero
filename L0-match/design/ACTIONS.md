@@ -64,7 +64,7 @@ with their first consumer (ADR-051 §4).
 | Cross | same | passing, foot | ✓ since 54: a pass from a wide position into the area, lofted or, since 92, low (the real definition counts the low cross and the cut-back); met in the air (71) |
 | Shoot | choice, direction, power, precision | *shooting* (`finishing` today), foot, explosive force, composure | ✓ since 52: speed from power and explosive force; the miss an angle from finishing, the foot, power and pressure (since 91 a spread: the phase of his stride at the contact picks where in it, ADR-054); low or high by his choice, struck to reach that height (gravity); either post, the keeper hiding the side he covers (60); the miss's side from his body's momentum, standing from his foot's side (placeholder); composure ✗ |
 | Head (attack) | reach, direction | heading, jump, *courage* | ✓ since 71: in the opponents' area the winner of the ball in the air heads at goal (shot type `header`, 76); courage ✗ |
-| Clear | distance, direction | passing, explosive force | ◐ since 59 his choice near his own goal under pressure (pressure, distance, appetite); his strongest kick (explosive force), lifted, towards his wing; no error yet |
+| Clear | distance, direction | passing, explosive force | ◐ since 59 his choice near his own goal under pressure (pressure, distance, appetite); his strongest kick (explosive force), lifted, towards his wing; no error yet; since 98 he imagines where it comes down (up his wing, the middle, the other wing) and who gets there first, and kicks it where it is worth most |
 
 ## 4. Without the ball
 

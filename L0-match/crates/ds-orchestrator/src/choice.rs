@@ -51,9 +51,13 @@ pub enum ChoiceKind {
     /// Carry the ball forward: the carrier's gesture when the scene
     /// shows nothing clearer (ADR-040 note 2026-11-09, IDEA-DESIGN-010).
     Advance,
-    /// Clear the ball: kick it long and high, away from his own goal, to
-    /// no one (ADR-051, "clear").
-    Clear,
+    /// Clear the ball: kick it long and high, away from his own goal (ADR-051,
+    /// "clear"), to where it comes down at `to`, the landing he chose (plan
+    /// L0-CLOSE 11).
+    Clear {
+        /// Where he kicks it to, cm.
+        to: (i32, i32),
+    },
     /// Carry the ball towards this point, the direction he chose (plan
     /// L0-CLOSE 10a): to goal, or into the space on either side.
     Carry {
@@ -165,7 +169,7 @@ impl GroundTruth {
                 | ChoiceKind::Advance
                 | ChoiceKind::Carry { .. }
                 | ChoiceKind::Hold
-                | ChoiceKind::Clear => ctx.actor.slot(),
+                | ChoiceKind::Clear { .. } => ctx.actor.slot(),
             };
             tiebreaks.push(tiebreak);
         }

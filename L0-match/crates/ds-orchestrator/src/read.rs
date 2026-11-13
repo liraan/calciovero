@@ -761,51 +761,73 @@ fn hold_candidate(
 }
 
 /// ADR-051, "clear": near his own goal and under pressure he may kick the
-/// ball away, more readily the more he is pressed, the nearer his goal and
-/// the less he likes risk.
+/// ball away, more readily the more he is pressed and the nearer his goal.
+/// He imagines where it comes down (plan L0-CLOSE 11): long up his own
+/// wing, through the middle, or across to the other wing, and who gets
+/// there first, his teammates or theirs, as for a long ball (ADR-052); he
+/// kicks it where it is worth most. Before `SIM_VERSION` 98 it always went
+/// up his wing to no one, and came down where nobody was.
 #[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
 fn clear_candidate(
+    scene: &PerceivedScene,
     pos: (i32, i32),
-    (own_goal, goal): ((i32, i32), (i32, i32)),
-    risk_appetite: f64,
-    pressure: f64,
+    (risk_appetite, pressure): (f64, f64),
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
 ) -> Option<ChoiceCandidate> {
+    let (own_goal, goal) = (scene.own_goal, scene.goal);
     let own_dist = distance_squared(pos, own_goal).isqrt();
     if own_dist >= balance.clear_zone_cm || pressure <= 0.0 {
         return None;
     }
-    // ADR-052: he imagines the ball where it lands, up the pitch on his
-    // wing, contested: it is worth what that space would give whoever gets
-    // it, against what the space where he stands would give the opponents
-    // if he loses it there (that is in the other options' worth).
     let _ = balance.clear_salience;
     let m = mind();
     let forward = if own_goal.0 == 0 { 1 } else { -1 };
     let width = own_goal.1 * 2;
-    let wing = if pos.1 < own_goal.1 {
-        width / 10
+    let (near, far) = if pos.1 < own_goal.1 {
+        (width / 10, width - width / 10)
     } else {
-        width - width / 10
+        (width - width / 10, width / 10)
     };
-    let landing = (pos.0 + forward * m.kick.clear_length_cm, wing);
-    let gain = space_value(landing, goal, own_goal);
-    let loss = space_value(landing, own_goal, goal);
+    let x = pos.0 + forward * m.kick.clear_length_cm;
+    let players = imagined(scene);
     // What it takes away: the danger of losing the ball here, as much as he
     // is pressed (the same danger a defender reads, ADR-052 §5).
     let danger = pressure * space_value(pos, own_goal, goal);
-    Some(ChoiceCandidate {
-        kind: ChoiceKind::Clear,
-        geometric: (ds_calculator::thought::ThoughtBalance::expected(
-            0.5,
-            gain,
-            loss,
-            risk_appetite,
-        ) + danger)
-            .max(0.0),
-        risk: 0.0,
-        visibility: 1.0,
-    })
+    [near, own_goal.1, far]
+        .into_iter()
+        .map(|y| {
+            let landing = (x, y);
+            let d = (distance_squared(pos, landing) as f64).sqrt();
+            let flight = d / 1000.0 * m.kick.loft_ticks_per_10m;
+            let spread = d * m.kick.error_rad(0.5, 0.75, 1.0, pressure)
+                / m.thought.believed_speed_cm_per_tick;
+            let first = |mate: bool| {
+                players
+                    .iter()
+                    .filter(|p| p.mate == mate)
+                    .map(|p| {
+                        let run =
+                            f64::from(p.at.0 - landing.0).hypot(f64::from(p.at.1 - landing.1));
+                        (p.reaction + run / p.speed.max(1.0)).max(flight)
+                    })
+                    .fold(f64::INFINITY, f64::min)
+            };
+            let sure = m.thought.confidence(first(false) - first(true) - spread);
+            let gain = space_value(landing, goal, own_goal);
+            let loss = space_value(landing, own_goal, goal);
+            let worth =
+                (ds_calculator::thought::ThoughtBalance::expected(sure, gain, loss, risk_appetite)
+                    + danger)
+                    .max(0.0);
+            (worth, landing)
+        })
+        .max_by(|a, b| a.0.total_cmp(&b.0))
+        .map(|(geometric, to)| ChoiceCandidate {
+            kind: ChoiceKind::Clear { to },
+            geometric,
+            risk: 0.0,
+            visibility: 1.0,
+        })
 }
 
 /// Where a ground pass meets a teammate running (plan L0-CLOSE 11).
@@ -1143,10 +1165,9 @@ pub fn build_choice(
         balance,
     ));
     candidates.extend(clear_candidate(
+        scene,
         pos,
-        (scene.own_goal, scene.goal),
-        risk_appetite,
-        pressure,
+        (risk_appetite, pressure),
         balance,
     ));
     // Fallback: no candidate (no teammate with enough freedom, no shot in
@@ -1376,6 +1397,26 @@ mod keeper_visibility_tests {
     #[cfg(test)]
     mod brings_tests {
         use super::*;
+
+        /// The clearance (P1, plan L0-CLOSE 11): pressed near his goal he
+        /// kicks it where his side gets there first; with his teammate in
+        /// the middle and their men on both wings, through the middle.
+        #[test]
+        fn the_clearance_goes_where_his_side_gets_there_first() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let mut s = scene((5000, 3400), Some((1100, 1500)));
+            s.positions.insert(PlayerId::new(6, 0), (1000, 1500));
+            for (i, y) in [(106u32, 680), (107, 6120)] {
+                s.opponents.push(PlayerId::new(i, 0));
+                s.positions.insert(PlayerId::new(i, 0), (5000, y));
+            }
+            let (ctx, _) = build_choice(&s, Side::Right, 0.5, 0.04, &b);
+            let to = ctx.candidates.iter().find_map(|c| match c.kind {
+                ChoiceKind::Clear { to } => Some(to),
+                _ => None,
+            });
+            assert_eq!(to.map(|p| p.1), Some(3400), "{to:?}");
+        }
 
         /// The pass into the run (P1, plan L0-CLOSE 11): standing, it goes
         /// where he is; running, ahead of him the way he runs, and farther
