@@ -68,7 +68,7 @@ Modules marked *(planned)* below do not have a file yet. Their links are intenti
 | L0.10 | [`L0-match/10-ground-truth.md`](../L0-match/specs/10-ground-truth.md) | ✅ ratified | 00, L0.01, L0.03 |
 | L0.11 | [`L0-match/11-player-characteristics.md`](../L0-match/specs/11-player-characteristics.md) | 🟡 draft | 00, L0.03, L0.10, ADR-003, ADR-028 |
 
-**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (11 crates, 345 tests). See `doctrine/STRUCTURE.md` §3.
+**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (11 crates, 346 tests). See `doctrine/STRUCTURE.md` §3.
 
 ---
 

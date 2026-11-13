@@ -3,9 +3,9 @@ title: "L0.05 — Match Events (observation layer)"
 level: 0
 cell: "L0-match"
 module_id: "L0.05"
-version: "1.1"
+version: "1.2"
 status: "ratified"
-last_updated: "2026-10-27"
+last_updated: "2026-11-13"
 supersedes: null
 depends_on: ["00-foundations", "L0.01", "L0.03"]
 referenced_by: ["L0.04", "L0.06", "L0.07", "L0.08", "L1-statistics", "L2-scouting"]
@@ -79,7 +79,9 @@ pub enum EventType {
     // Physical
     Duel, Foul, Card,
     // Set pieces
-    Corner, FreeKick, Penalty,
+    Corner, FreeKick, Penalty, ThrowIn, GoalKick,
+    // The ball and the goal frame (1.2)
+    Woodwork,
     // Meta
     Substitution, Injury, Goal, Assist,
     // Advanced
@@ -92,6 +94,8 @@ pub enum EventType {
 ```
 
 The set is closed at L0. `L3-registry` allows pack-provided event kinds later.
+
+**Amended 2026-11-13 (version 1.2, the maintainer's decision).** Three kinds join the closed set so that every time the ball leaves the pitch or meets the frame, the match tells it: `ThrowIn` (Law 15), `GoalKick` (Law 16) and `Woodwork` (a post or the crossbar, ADR-048 §1). `Corner` already existed. The restart's taker is the event's actor.
 
 ### 2.3 Cause trace
 

@@ -77,6 +77,13 @@ pub enum EventType {
     FullTime,
     /// Match abandoned.
     MatchAbandoned,
+    /// The ball out over a touchline: a throw-in (Law 15).
+    ThrowIn,
+    /// The ball out over the goal line, last touched by the attackers: a
+    /// goal kick (Law 16).
+    GoalKick,
+    /// The ball hit a post or the crossbar (ADR-048 §1).
+    Woodwork,
 }
 
 /// The half of the match an event belongs to (ADR-026).

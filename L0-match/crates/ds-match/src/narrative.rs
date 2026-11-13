@@ -178,12 +178,15 @@ const fn importance_for(event_type: EventType) -> Importance {
         | EventType::FreeKick
         | EventType::ProgressiveCarry
         | EventType::ProgressivePass
+        | EventType::Woodwork
         | EventType::RandomEvent => Importance::Medium,
         EventType::Pass
         | EventType::Cross
         | EventType::Clearance
         | EventType::Duel
         | EventType::Corner
+        | EventType::ThrowIn
+        | EventType::GoalKick
         | EventType::Pressure => Importance::Low,
         EventType::KeyPass
         | EventType::Save
@@ -260,6 +263,9 @@ fn render_text(
             }
         }
         EventType::Corner => format!("Corner for {player} in the {minute}'"),
+        EventType::ThrowIn => format!("Throw-in for {player} in the {minute}'"),
+        EventType::GoalKick => format!("Goal kick for {player} in the {minute}'"),
+        EventType::Woodwork => format!("Off the woodwork! {player} in the {minute}'"),
         EventType::FreeKick => {
             if ev.fields.get("reason").and_then(serde_json::Value::as_str) == Some("offside") {
                 format!("Offside: free kick for {player} in the {minute}'")

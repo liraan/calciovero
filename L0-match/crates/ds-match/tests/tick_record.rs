@@ -445,3 +445,23 @@ fn the_laws_call_fouls_and_cards() {
     assert!(fouls > 0, "no foul in the match");
     assert!(cards <= fouls, "{cards} cards for {fouls} fouls");
 }
+
+/// Laws 15-17 told (P1, L0.05 1.2): every time the ball leaves the pitch
+/// the restart is an event. Before `SIM_VERSION` 65 only the corner was
+/// told: throw-ins and goal kicks happened unseen.
+#[test]
+fn the_restarts_are_told() {
+    let (result, _) = recorded();
+    let told = result
+        .events
+        .events()
+        .iter()
+        .filter(|e| {
+            matches!(
+                e.event_type,
+                ds_stats::EventType::ThrowIn | ds_stats::EventType::GoalKick
+            )
+        })
+        .count();
+    assert!(told > 0, "no throw-in nor goal kick told");
+}

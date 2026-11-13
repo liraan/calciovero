@@ -1675,12 +1675,20 @@ impl MatchState {
             return;
         };
         if let Some(taker) = self.apply_restart(ctx, restart) {
-            if restart.kind == crate::rules::RestartKind::Corner {
+            // Every time the ball leaves the pitch the restart is told
+            // (Laws 15-17): throw-in, goal kick, corner.
+            let kind = match restart.kind {
+                crate::rules::RestartKind::Corner => Some(EventType::Corner),
+                crate::rules::RestartKind::ThrowIn => Some(EventType::ThrowIn),
+                crate::rules::RestartKind::GoalKick => Some(EventType::GoalKick),
+                _ => None,
+            };
+            if let Some(kind) = kind {
                 self.emit_event(
                     ctx,
                     tick,
                     Some(ActorId::Player(taker)),
-                    EventType::Corner,
+                    kind,
                     serde_json::json!({ "x": restart.spot.0, "y": restart.spot.1 }),
                 );
             }
@@ -2149,10 +2157,7 @@ impl MatchState {
         // pending is not cleared, no goal, no save. The geometry and the
         // reflection are `goal_plane_deflection`, pure and testable.
         //
-        // Declared debt: the deflection emits no event. The L0 event set is
-        // closed (`ds-stats/src/event.rs`, spec L0.05) and has no woodwork
-        // kind; adding one is a change to the ratified vocabulary, the
-        // maintainer's decision. `Removed-by: the woodwork event in L0.05`.
+        // The woodwork is told (L0.05 1.2, the maintainer, 2026-11-13).
         let impact = (plane_x, y_at, z_at);
         if let Some(v) = Self::goal_plane_deflection(
             impact,
@@ -2161,6 +2166,13 @@ impl MatchState {
             &self.obstacle_balance,
         ) {
             self.spatial.deflect_ball(impact, v);
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(attacker)),
+                EventType::Woodwork,
+                serde_json::json!({ "x": plane_x, "y": y_at, "z": z_at }),
+            );
             return;
         }
 
