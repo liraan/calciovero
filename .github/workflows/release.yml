@@ -11,9 +11,19 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Started by hand (or by an agent that cannot push tags): GitHub
+  # creates the tag on the commit it builds.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The tag to publish, e.g. v0.1.0-alpha.1"
+        required: true
 
 permissions:
   contents: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   build:
@@ -46,7 +56,7 @@ jobs:
       - name: Package
         shell: bash
         run: |
-          name="calcio-vero-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          name="calcio-vero-${TAG}-${{ matrix.target }}"
           mkdir "$name"
           cp "target/release/ds-gui${{ matrix.ext }}" "target/release/ds-demo${{ matrix.ext }}" "$name/"
           cp README.md LICENSE.md LICENSE-MIT LICENSE-APACHE LICENSE-ASSETS "$name/"
@@ -79,7 +89,7 @@ jobs:
         shell: bash
         run: |
           {
-            echo "Calcio Vero ${GITHUB_REF_NAME}."
+            echo "Calcio Vero ${TAG}."
             echo
             echo "Run \`ds-gui\` for the window (the friendly on a 2D pitch), \`ds-demo --help\` for the command line."
             echo "On Linux the GUI needs an X11 or Wayland desktop; on macOS the binary is not signed (right click, Open)."
@@ -89,7 +99,9 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          name: Calcio Vero ${{ github.ref_name }}
+          tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          name: Calcio Vero ${{ env.TAG }}
           body_path: notes.md
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(env.TAG, '-') }}
           files: dist/*
