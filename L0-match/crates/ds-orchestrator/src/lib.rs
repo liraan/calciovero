@@ -175,12 +175,12 @@ impl GroundTruth {
         let defender = self.latents_for(ctx.defender);
 
         let attacker_score = match ctx.duel_type {
-            DuelType::Aerial => attacker.technical.aerial,
+            DuelType::Aerial => attacker.technical.heading,
             DuelType::Ground => attacker.technical.tackling.mul_add(-1.0, 1.0),
             DuelType::WithGoalkeeper => attacker.technical.finishing,
         };
         let defender_score = match ctx.duel_type {
-            DuelType::Aerial => defender.technical.aerial,
+            DuelType::Aerial => defender.technical.heading,
             DuelType::Ground => defender.technical.tackling,
             DuelType::WithGoalkeeper => defender.technical.goalkeeping,
         };
@@ -693,18 +693,19 @@ impl GroundTruth {
     /// The set-piece taker his teammates send (plan L0-CLOSE step 7): of
     /// `candidates`, the one who kicks this ball best, as a team knows its
     /// players from training: a penalty to the best finisher at a dead
-    /// ball, a corner or a free kick to the best deliverer. Ties to the
+    /// ball, a corner or a free kick to the best deliverer, each read from
+    /// his technique and his better foot. Ties to the
     /// first, so the nearer one (the caller orders by distance).
     #[must_use]
     pub fn set_piece_taker(&mut self, candidates: &[PlayerId], penalty: bool) -> Option<PlayerId> {
         let mut best: Option<(f32, PlayerId)> = None;
         for id in candidates {
+            // Derived from his roots, not stored: the technique of the
+            // kick (finishing at goal, passing to deliver) by the quality
+            // of his better foot.
             let t = self.latents_for(*id).technical;
-            let quality = if penalty {
-                t.finishing.mul_add(0.5, t.set_pieces * 0.5)
-            } else {
-                t.passing.mul_add(0.5, t.set_pieces * 0.5)
-            };
+            let foot = 0.5f32.mul_add(t.left_foot.max(t.right_foot), 0.5);
+            let quality = if penalty { t.finishing } else { t.passing } * foot;
             if best.is_none_or(|(q, _)| quality > q) {
                 best = Some((quality, *id));
             }

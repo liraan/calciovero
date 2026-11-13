@@ -27,9 +27,10 @@
 //! no datum yet (psychological, cognitive) are empty: their content
 //! arrives with the consumer, not before (D3).
 //!
-//! The prototype fields keep their prototype names and their prototype
-//! place: `aerial` and `set_pieces` are composites (L0.11 §7.9 and §10), and
-//! they are migrated when their split arrives (OI-48, OI-50).
+//! No composite is stored (maintainer, 2026-11-13: every value has its
+//! roots): the prototype composites `aerial` and `set_pieces` were removed
+//! at `SIM_VERSION` 75; the aerial duel reads heading, the jump, strength
+//! and height, a set piece the kicker's passing or finishing and his foot.
 //! `explosive_force` is the first new-model field: it is read by the
 //! movement formula (F.7).
 
@@ -88,9 +89,6 @@ pub struct TechnicalLatents {
     pub first_touch: f32,
     /// Tackling, consumed by the ground duel.
     pub tackling: f32,
-    /// Prototype composite (`heading` × `height` × `explosive_force`): to be
-    /// split (OI-50).
-    pub aerial: f32,
     /// Heading: the technique of the header (ADR-042, the aerial duel;
     /// consumed with the jump, the height and the strength).
     pub heading: f32,
@@ -99,11 +97,6 @@ pub struct TechnicalLatents {
     pub dribbling: f32,
     /// Goalkeeping, consumed by the save.
     pub goalkeeping: f32,
-    /// Prototype composite (free kicks, penalties, corners, throw-ins):
-    /// to be split (OI-48, OI-50).
-    #[allow(dead_code)]
-    // no consumer today: the die that read it is removed (ADR-035); arrives with the set-piece formula (OI-48)
-    pub set_pieces: f32,
     /// Left foot, one of the two performances per foot (ADR-031, L0.11 7.2).
     #[allow(dead_code)] // no consumer yet: ADR-031, arrives with the pass formula (OI-64)
     pub left_foot: f32,
@@ -164,11 +157,9 @@ impl PlayerLatents {
                 passing: unit_from_key(world_seed, player, "passing"),
                 first_touch: unit_from_key(world_seed, player, "first_touch"),
                 tackling: unit_from_key(world_seed, player, "tackling"),
-                aerial: unit_from_key(world_seed, player, "aerial"),
                 heading: unit_from_key(world_seed, player, "heading"),
                 dribbling: unit_from_key(world_seed, player, "dribbling"),
                 goalkeeping: unit_from_key(world_seed, player, "goalkeeping"),
-                set_pieces: unit_from_key(world_seed, player, "set_pieces"),
                 left_foot: unit_from_key(world_seed, player, "left_foot"),
                 right_foot: unit_from_key(world_seed, player, "right_foot"),
             },
@@ -228,9 +219,7 @@ mod tests {
                 l.technical.finishing,
                 l.technical.passing,
                 l.technical.tackling,
-                l.technical.aerial,
                 l.technical.goalkeeping,
-                l.technical.set_pieces,
                 l.technical.left_foot,
                 l.technical.right_foot,
             ] {
