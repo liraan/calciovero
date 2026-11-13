@@ -93,19 +93,18 @@ fn resolve_shot_deviates_laterally() {
 
 #[test]
 fn resolve_shot_contact_height_picks_the_vertical_direction() {
+    // Since `SIM_VERSION` 52 (ADR-051) the contact is the height he aims
+    // at (`kick.json` `aim_low_cm`, `aim_high_cm`), and a miscued strike
+    // rises: a high contact goes higher than a low one, both off the
+    // ground. It no longer means "over the bar": that was the old model,
+    // where every shot aimed at the bar.
     let mut gt = GroundTruth::new(42, MatchId::new(1, 0));
-    // contact_height = 1.0 (high): dz > 0 (above the crossbar line).
     let high = gt.resolve_shot(&ctx_contact(3400, 0, 1.0));
-    assert!(
-        high.to.2 > 244,
-        "high contact should send the ball above the crossbar: to.2={}",
-        high.to.2
-    );
-    // contact_height = 0.0 (low): dz < 0 (below the crossbar line).
     let low = gt.resolve_shot(&ctx_contact(3400, 0, 0.0));
     assert!(
-        low.to.2 < 244,
-        "low contact should keep the ball below the crossbar: to.2={}",
+        high.to.2 > low.to.2 && low.to.2 >= 0,
+        "high {} must be above low {}",
+        high.to.2,
         low.to.2
     );
 }
