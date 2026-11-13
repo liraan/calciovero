@@ -43,6 +43,43 @@ impl FormationId {
     }
 }
 
+/// How high the team defends (the coach's intention, plan L0-CLOSE step 9).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum BlockHeight {
+    /// It presses up the pitch: the line pushed up, near the ball.
+    High,
+    /// The default: the line where the block puts it.
+    #[default]
+    Mid,
+    /// It sits deep: the line dropped, farther behind the ball.
+    Low,
+}
+
+/// How wide the team plays with the ball (the coach's intention).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum Width {
+    /// Through the middle: the players closer together.
+    Narrow,
+    /// The default.
+    #[default]
+    Normal,
+    /// Wide: the wide players on the touchlines.
+    Wide,
+}
+
+/// The coach's intention for his team (VISION §6, OI-27).
+///
+/// It modulates the team's default shape, it does not replace it; each
+/// player reads it in his own scene (ADR-052 note: the block high, mid or
+/// low; the width).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct Intention {
+    /// How high the team defends.
+    pub block: BlockHeight,
+    /// How wide it plays with the ball.
+    pub width: Width,
+}
+
 /// A squad, as seen by the match engine.
 ///
 /// See `L0-match/specs/03-entities-minimal.md` §2.4.
@@ -56,6 +93,9 @@ pub struct Squad {
     pub bench: Vec<Player>,
     /// The formation.
     pub formation: FormationId,
+    /// The coach's intention (the default: a mid block, normal width).
+    #[serde(default)]
+    pub intention: Intention,
 }
 
 impl Squad {
@@ -88,7 +128,15 @@ impl Squad {
             players,
             bench,
             formation,
+            intention: Intention::default(),
         })
+    }
+
+    /// The same squad with the coach's intention.
+    #[must_use]
+    pub const fn with_intention(mut self, intention: Intention) -> Self {
+        self.intention = intention;
+        self
     }
 }
 

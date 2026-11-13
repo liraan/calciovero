@@ -594,6 +594,13 @@ pub struct BlockBalance {
     pub line_max_out_of_possession_cm: i32,
     /// How much the block shifts towards the ball's side, thousandths.
     pub ball_side_shift_milli: i32,
+    /// A high block pushes the line up by this much out of possession, cm.
+    pub high_block_line_cm: i32,
+    /// A low block drops the line by this much out of possession, cm.
+    pub low_block_line_cm: i32,
+    /// A wide team stretches its width with the ball by this share,
+    /// thousandths; a narrow one shrinks it by the same.
+    pub width_change_milli: i32,
 }
 
 impl Default for BlockBalance {

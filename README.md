@@ -8,7 +8,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-366_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-372_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -107,17 +107,20 @@ What exists today:
   positions himself, posts and crossbar that deflect the ball;
 - a **2D debug view** in the terminal that replays a match tick by tick,
   and a text board and an HTML page with the result;
-- **366 tests** and a health check that runs on every commit.
+- a **friendly you can play** from the command line: choose your eleven
+  from the squad and the bench, how high you defend and how wide you play,
+  save the match, reload it, and read why you conceded each goal;
+- **372 tests** and a health check that runs on every commit.
 
-What does not exist yet: a pitch view you can watch, the rules of the
-game (throw-ins, offside, fouls), fatigue, the season, the career, the
-transfer market. The order in which they arrive is public.
+What does not exist yet: substitutions during the match, the season, the
+career, the transfer market. And the match is not calibrated yet: today it
+has too many shots and too many goals. The order in which they arrive is public.
 
 | Milestone | What you get |
 |---|---|
 | **The match can be watched** | a 2D view of twenty-two players and a ball, from any seed (first version: done) |
 | **The match reads as football** | shots, saves, restarts, fouls; a match a fan recognises |
-| **A friendly you can play** | pick the line-ups, play ninety minutes, save, reload, read why you conceded |
+| **A friendly you can play** | pick the line-ups, play ninety minutes, save, reload, read why you conceded (first version: done) |
 | **A season**, then **a career** | standings and fixtures; then scouting, the market, the academy |
 
 The second one is the longest. We will not skip it to ship faster: a
@@ -138,6 +141,12 @@ and the ball on a text pitch, with the events as they happen. It works
 in Git Bash too. Add `--speed 60` to go faster, `--step` to advance with
 Enter, `--frame 30` to print the pitch at the 30th minute. It is a debug
 view, and it shows the engine as it is today, stalls included.
+
+Play a friendly: you are the home side.
+
+    cargo run --release --bin ds-demo -- --roster
+    cargo run --release --bin ds-demo -- --seed 7 --xi A,B,C,D,E,F,G,H,I,J,P --block high --width wide --why --save friendly.json
+    cargo run --release --bin ds-demo -- --load friendly.json --tui
 
 Run it twice: same seed, same match, to the last event. `--roster` shows
 who is who: each player has a role and a body that fits it. Then open

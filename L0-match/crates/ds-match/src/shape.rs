@@ -77,6 +77,8 @@ pub struct Situation {
     pub pitch: (i32, i32),
     /// The kick-off: the whole block in its own half.
     pub kick_off: bool,
+    /// The coach's intention for the player's side.
+    pub intention: ds_model::Intention,
 }
 
 /// Where a player with `role` stands in his side's block.
@@ -89,7 +91,7 @@ pub struct Situation {
 #[must_use]
 pub fn place(role: Role, s: Situation, blk: &BlockBalance) -> (i32, i32) {
     let (length, width) = s.pitch;
-    let (depth, span, behind, line_max) = if s.in_possession {
+    let (depth, mut span, mut behind, mut line_max) = if s.in_possession {
         (
             blk.depth_in_possession_cm,
             blk.width_in_possession_cm.min(width),
@@ -104,6 +106,29 @@ pub fn place(role: Role, s: Situation, blk: &BlockBalance) -> (i32, i32) {
             blk.line_max_out_of_possession_cm,
         )
     };
+    // The coach's intention modulates the block (OI-27): the line out of
+    // possession, the width with the ball.
+    if s.in_possession {
+        let w = match s.intention.width {
+            ds_model::Width::Wide => 1000 + blk.width_change_milli,
+            ds_model::Width::Narrow => 1000 - blk.width_change_milli,
+            ds_model::Width::Normal => 1000,
+        };
+        span = (span * w / 1000).min(width);
+    } else {
+        match s.intention.block {
+            ds_model::BlockHeight::High => {
+                line_max += blk.high_block_line_cm;
+                behind -= blk.high_block_line_cm / 2;
+            }
+            ds_model::BlockHeight::Low => {
+                line_max -= blk.low_block_line_cm;
+                behind += blk.low_block_line_cm / 2;
+            }
+            ds_model::BlockHeight::Mid => {}
+        }
+        behind = behind.max(0);
+    }
     // Distances along the side's own attacking direction (u = 0 at its own
     // goal line).
     let u_ball = if s.home { s.ball.0 } else { length - s.ball.0 };
@@ -143,7 +168,35 @@ mod tests {
             home: true,
             pitch: PITCH,
             kick_off: false,
+            intention: ds_model::Intention::default(),
         }
+    }
+
+    /// Twin test (OI-27): two teams identical but for the coach's
+    /// intention; out of possession the high block's line stands higher
+    /// than the mid block's, the low block's lower; with the ball the wide
+    /// team is wider than the narrow one.
+    #[test]
+    fn the_intention_moves_the_block() {
+        let blk = BlockBalance::load();
+        let with = |block, width, in_possession| {
+            let mut s = at((6000, 3400), in_possession);
+            s.intention = ds_model::Intention { block, width };
+            s
+        };
+        let line = |b| place(DEFENDER, with(b, ds_model::Width::Normal, false), &blk).0;
+        let (high, mid, low) = (
+            line(ds_model::BlockHeight::High),
+            line(ds_model::BlockHeight::Mid),
+            line(ds_model::BlockHeight::Low),
+        );
+        assert!(high > mid && mid > low, "high {high} mid {mid} low {low}");
+        let wing = Role {
+            depth: 500,
+            width: 1000,
+        };
+        let y = |w| place(wing, with(ds_model::BlockHeight::Mid, w, true), &blk).1;
+        assert!(y(ds_model::Width::Wide) > y(ds_model::Width::Narrow));
     }
 
     #[test]

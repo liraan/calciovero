@@ -76,6 +76,16 @@ const ROLES_4_4_2: [&str; 11] = [
     "striker",
 ];
 
+/// The bench (plan L0-CLOSE step 9): one per line, so the manager can
+/// choose his eleven. Squad slots 11-15.
+const BENCH_ROLES: [&str; 5] = [
+    "goalkeeper",
+    "centre_back",
+    "central_midfielder",
+    "wide_midfielder",
+    "striker",
+];
+
 const PROFILES_JSON: &str = include_str!("../../../L0-match/balance/profiles.json");
 
 /// The visible part of a role's profile: the body.
@@ -108,27 +118,51 @@ fn body(seed: u64, id: PlayerId, role: &str) -> Result<(u16, u16), String> {
     Ok((height, weight))
 }
 
+fn make_player(
+    seed: u64,
+    label: &str,
+    pid: PlayerId,
+    i: u32,
+    role: &str,
+) -> Result<Player, String> {
+    let (height, weight) = body(seed, pid, role)?;
+    Player::try_new(
+        pid,
+        format!("{label} {i}"),
+        RoleId::new(role).map_err(|e| e.to_string())?,
+        height,
+        weight,
+        PhysicalStateMinimal::default(),
+        PsychologicalStateMinimal::default(),
+    )
+    .map_err(|e| e.to_string())
+}
+
 fn make_squad(id: u32, label: &str, slot_base: u32, seed: u64) -> Result<Squad, String> {
     let mut players = Vec::with_capacity(11);
     for (i, role) in (0..11_u32).zip(ROLES_4_4_2) {
-        let pid = PlayerId::new(slot_base + i, 0);
-        let (height, weight) = body(seed, pid, role)?;
-        let p = Player::try_new(
-            pid,
-            format!("{label} {i}"),
-            RoleId::new(role).map_err(|e| e.to_string())?,
-            height,
-            weight,
-            PhysicalStateMinimal::default(),
-            PsychologicalStateMinimal::default(),
-        )
-        .map_err(|e| e.to_string())?;
-        players.push(p);
+        players.push(make_player(
+            seed,
+            label,
+            PlayerId::new(slot_base + i, 0),
+            i,
+            role,
+        )?);
+    }
+    let mut bench = Vec::with_capacity(BENCH_ROLES.len());
+    for (i, role) in (11..16_u32).zip(BENCH_ROLES) {
+        bench.push(make_player(
+            seed,
+            label,
+            PlayerId::new(slot_base + i, 0),
+            i,
+            role,
+        )?);
     }
     Squad::try_new(
         SquadId::new(id, 0),
         players,
-        vec![],
+        bench,
         FormationId::new("4-4-2").map_err(|e| e.to_string())?,
     )
     .map_err(|e| e.to_string())

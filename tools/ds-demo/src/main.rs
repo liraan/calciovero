@@ -11,6 +11,7 @@
 //! ```
 
 mod board;
+mod friendly;
 mod pitchview;
 mod render;
 mod viewmodel;
@@ -35,6 +36,19 @@ OPTIONS:
     --quiet         Print only the final score
     --help          Print this help
 
+A FRIENDLY (you are the home side):
+    --xi <LETTERS>        Your eleven, from --roster (A-K the default eleven,
+                          L-P the bench), in the order GK, LB, CB, CB, RB,
+                          LM, CM, CM, RM, ST, ST; e.g. A,B,C,D,E,F,G,H,I,J,P
+    --block <B>           How high you defend: high, mid (default), low
+    --width <W>           How wide you play: narrow, normal (default), wide
+    --away-block <B>      The same for the opponents
+    --away-width <W>
+    --why                 After the match, why you conceded each goal
+    --save <PATH>         Save the match (it can be reloaded and replayed)
+    --load <PATH>         Reload a saved match, replay it and check it is
+                          the same match, to the last event
+
 TUI OPTIONS (with --tui):
     --speed <N>     Match seconds per real second (default: 30)
     --from <MIN>    Start at this minute (default: 0)
@@ -47,6 +61,8 @@ EXAMPLES:
     ds-demo --seed 42 --html /tmp/match.html
     ds-demo --seed 42 --tui --speed 60
     ds-demo --seed 42 --tui --frame 12
+    ds-demo --seed 42 --block high --width wide --why --save /tmp/f.json
+    ds-demo --load /tmp/f.json --why
 
 Something does not look like football? Want to change how players behave?
 The numbers are in L0-match/balance/ (plain JSON), and CONTRIBUTING.md
@@ -59,6 +75,10 @@ struct Args {
     seed: u64,
     quiet: bool,
     output: Output,
+    choices: friendly::Choices,
+    why: bool,
+    save: Option<String>,
+    load: Option<String>,
 }
 
 /// What the demo prints. The modes exclude each other.
@@ -124,6 +144,8 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
     let mut modes: Vec<Output> = Vec::new();
     let mut t = TuiArgs::default();
     let mut tui_option = false;
+    let mut choices = friendly::Choices::default();
+    let (mut why, mut save, mut load) = (false, None, None);
 
     while let Some(arg) = iter.next() {
         match arg.as_str() {
@@ -162,6 +184,22 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
                 tui_option = true;
                 t.step = true;
             }
+            "--xi" | "--block" | "--width" | "--away-block" | "--away-width" | "--save"
+            | "--load" => {
+                let v = iter
+                    .next()
+                    .ok_or_else(|| format!("{arg} requires a value"))?;
+                match arg.as_str() {
+                    "--xi" => choices.xi = Some(friendly::parse_xi(&v)?),
+                    "--block" => choices.home.block = friendly::parse_block(&v)?,
+                    "--width" => choices.home.width = friendly::parse_width(&v)?,
+                    "--away-block" => choices.away.block = friendly::parse_block(&v)?,
+                    "--away-width" => choices.away.width = friendly::parse_width(&v)?,
+                    "--save" => save = Some(v),
+                    _ => load = Some(v),
+                }
+            }
+            "--why" => why = true,
             other => return Err(format!("unknown argument: {other}")),
         }
     }
@@ -180,10 +218,19 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
         return Err("--speed, --from, --to, --step, --frame and --cols need --tui".to_string());
     }
 
+    if load.is_some() && (choices != friendly::Choices::default() || save.is_some()) {
+        return Err(
+            "--load replays a saved match: no --xi, --block, --width or --save".to_string(),
+        );
+    }
     Ok(Some(Args {
         seed,
         quiet,
         output,
+        choices,
+        why,
+        save,
+        load,
     }))
 }
 
@@ -192,7 +239,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     };
 
-    let match_ = ds_fixtures::match_fixture(args.seed)?;
+    if let Some(path) = &args.load {
+        return run_load(path, &args);
+    }
+    let match_ = friendly::apply(ds_fixtures::match_fixture(args.seed)?, &args.choices)?;
     match &args.output {
         Output::Roster => {
             print!("{}", pitchview::roster(&match_));
@@ -202,7 +252,58 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         _ => {}
     }
     let result = ds_match::simulate_from_seed(&match_, args.seed, MatchConfig::default());
+    if let Some(path) = &args.save {
+        let save = ds_match::MatchSave::from_result(
+            &result,
+            &match_,
+            args.seed,
+            ds_core::time::GameInstant::from_raw(0),
+        );
+        std::fs::write(path, save.to_bytes()?)?;
+        eprintln!("match saved to {path}");
+    }
+    print_result(&result, &args)?;
+    if args.why {
+        print!(
+            "{}",
+            friendly::why_conceded(&match_, result.events.events())
+        );
+    }
+    Ok(())
+}
 
+/// Reloads a saved match, replays it from its seed and its squads, and
+/// checks that it is the same match (the state hash): the save is the
+/// seed and the choices, the match is deterministic.
+fn run_load(path: &str, args: &Args) -> Result<(), Box<dyn std::error::Error>> {
+    let save = ds_match::MatchSave::from_bytes(&std::fs::read(path)?)?;
+    if !save.can_replay() {
+        eprintln!(
+            "saved with SIM_VERSION {}, this engine is {}: the replay will differ",
+            save.sim_version,
+            ds_match::SIM_VERSION
+        );
+    }
+    let result = ds_match::replay(&save);
+    print_result(&result, args)?;
+    if result.state_hash == save.result.state_hash {
+        eprintln!("replayed: the same match, to the last event");
+    } else {
+        eprintln!("replayed: a different match (the engine changed)");
+    }
+    if args.why {
+        print!(
+            "{}",
+            friendly::why_conceded(&save.match_, result.events.events())
+        );
+    }
+    Ok(())
+}
+
+fn print_result(
+    result: &ds_match::MatchResult,
+    args: &Args,
+) -> Result<(), Box<dyn std::error::Error>> {
     if args.quiet {
         println!("{} - {}", result.score.home, result.score.away);
         return Ok(());
@@ -210,16 +311,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     match &args.output {
         Output::Board => {
-            let vm = viewmodel::MatchViewModel::from_result(&result);
+            let vm = viewmodel::MatchViewModel::from_result(result);
             board::print_board(&vm)?;
         }
-        Output::Json => render::print_json(&result)?,
+        Output::Json => render::print_json(result)?,
         Output::Html(path) => {
-            render::print_text(&result)?;
-            render::write_html(&result, path)?;
+            render::print_text(result)?;
+            render::write_html(result, path)?;
             eprintln!("HTML written to {path}");
         }
-        _ => render::print_text(&result)?,
+        _ => render::print_text(result)?,
     }
 
     Ok(())

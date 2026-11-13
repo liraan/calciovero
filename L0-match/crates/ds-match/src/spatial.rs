@@ -108,6 +108,8 @@ pub struct SpatialState {
     /// Each outfield player's place in the block: `(depth, width)` in
     /// thousandths, from the formation (0 = defensive line / left).
     roles: BTreeMap<PlayerId, crate::shape::Role>,
+    /// The coaches' intentions, home and away (OI-27).
+    intentions: (ds_model::Intention, ds_model::Intention),
     /// The pitch, in centimetres: `(length, width)`.
     pitch_cm: (i32, i32),
     /// Whether the home side has the ball (set by the match each tick).
@@ -202,6 +204,7 @@ impl SpatialState {
             ball_physics: crate::balance::BallBalance::load(),
             block: crate::balance::BlockBalance::load(),
             roles: crate::shape::roles(home, away),
+            intentions: (home.intention, away.intention),
             pitch_cm: (length, width),
             home_in_possession: true,
             carry_target: None,
@@ -265,12 +268,18 @@ impl SpatialState {
         own_half: bool,
     ) -> Option<(i32, i32)> {
         let role = *self.roles.get(&id)?;
+        let home = crate::perception::team_of(id) == 0;
         let situation = crate::shape::Situation {
             ball,
             in_possession,
-            home: crate::perception::team_of(id) == 0,
+            home,
             pitch: self.pitch_cm,
             kick_off: own_half,
+            intention: if home {
+                self.intentions.0
+            } else {
+                self.intentions.1
+            },
         };
         Some(crate::shape::place(role, situation, &self.block))
     }
@@ -587,6 +596,11 @@ impl SpatialState {
                         home,
                         pitch: self.pitch_cm,
                         kick_off: false,
+                        intention: if home {
+                            self.intentions.0
+                        } else {
+                            self.intentions.1
+                        },
                     },
                     &self.block,
                 );

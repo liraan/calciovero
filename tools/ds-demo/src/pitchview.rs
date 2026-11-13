@@ -132,7 +132,10 @@ pub fn roster(m: &ds_model::Match) -> String {
     let mut out = String::new();
     for (label, squad) in [("HOME", &m.home), ("AWAY", &m.away)] {
         let _ = writeln!(out, " {label}");
-        for p in &squad.players {
+        for (i, p) in squad.players.iter().chain(squad.bench.iter()).enumerate() {
+            if i == squad.players.len() && !squad.bench.is_empty() {
+                let _ = writeln!(out, "   bench");
+            }
             let _ = writeln!(
                 out,
                 "   {}  {:<10} {:<20} {} cm  {} kg",
