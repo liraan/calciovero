@@ -74,5 +74,5 @@ exclusively.
 
 - ADR-027 (project rename: Calcio Vero / Deep Simulator), §46
 - ADR-007 (English is canonical)
-- `process/IDEAS.md` (question 1, resolved by this ADR)
-- `process/SESSION-STATE.md` (Plan, step `ADR32`)
+- `context/IDEAS.md` (question 1, resolved by this ADR)
+- `context/STATE.md` (Plan, step `ADR32`)

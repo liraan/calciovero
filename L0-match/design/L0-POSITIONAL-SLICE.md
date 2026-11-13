@@ -3,7 +3,7 @@
 ## For the new agent (read before §0)
 
 This note assumes you have run the startup ritual in
-`process/NEW-SESSION-PROMPT.md` and read the bookmark. It does not
+`context/RULES.md` and read the bookmark. It does not
 repeat the operating rules. It tells you what this note is, what it is
 not, and where to find what you need.
 
@@ -17,7 +17,7 @@ two sections the note leans on most.
 
 ### Before writing code, read (in this order)
 
-1. `process/SESSION-STATE.md` — the bookmark: where we are
+1. `context/STATE.md` — the bookmark: where we are
 2. this note, §0 (vision), §2 (the slices), §3 (the decisions), §6-ter (the
    event map), §7 (what is next)
 3. `L0-match/specs/04-match-engine.md` §2.2 and `10-ground-truth.md` §2.2
@@ -46,7 +46,7 @@ A slice is done when **all** hold:
 1. `cargo build --release`, `cargo clippy --workspace --all-targets -- -D
    warnings`, `cargo test --workspace`, `cargo fmt --check`, `cargo run
    --release --bin pcfm-test-runner -- --check --seed 42`: all green (C2).
-2. `process/scripts/gates.sh closing`: green.
+2. `context/scripts/gates.sh closing`: green.
 3. If the behaviour changed: `SIM_VERSION` bumped, golden hash regenerated,
    `CHANGELOG-SIM` entry.
 4. Commit pushed, `git status -sb` shows `## main...origin/main`.
@@ -446,7 +446,7 @@ pass clears the carrier. `SIM_VERSION` 7 → 8, golden hash regenerated.
 See §2 and §7.
 **Reading order for the next agent, before writing any code:**
 
-1. `process/SESSION-STATE.md` (the bookmark: where we are)
+1. `context/STATE.md` (the bookmark: where we are)
 2. this note, §1 (the gap), §3 (the decisions), §6-bis (what exists)
 3. `crates/pcfm-match/src/spatial.rs` (what slice A produced)
 4. `crates/pcfm-match/src/state.rs`, `pick_players` at `:228` (what slice B

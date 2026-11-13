@@ -1,10 +1,10 @@
 #!/bin/sh
-# Pre-push gate: runs process/scripts/gates.sh before any push.
+# Pre-push gate: runs context/scripts/gates.sh before any push.
 # Exit non-zero to block the push.
 #
 # Bypass: `git push --no-verify` (documented, not recommended).
 # In phase 2 this is replaced by the ruleset + CI on GitHub (server-side,
-# not bypassable). See process/AGENT-POLICY.md and IDEA-INFRA-010.
+# not bypassable). See context/RULES.md §C1.
 
 set -u
 
@@ -20,12 +20,12 @@ if ! git diff --quiet HEAD 2>/dev/null; then
   exit 1
 fi
 
-if [ ! -f process/scripts/gates.sh ]; then
-  echo "pre-push: process/scripts/gates.sh not found" >&2
+if [ ! -f context/scripts/gates.sh ]; then
+  echo "pre-push: context/scripts/gates.sh not found" >&2
   exit 1
 fi
 
-if bash process/scripts/gates.sh closing; then
+if bash context/scripts/gates.sh closing; then
   exit 0
 else
   echo "" >&2

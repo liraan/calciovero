@@ -90,8 +90,8 @@ The lesson for future ADRs: **read the code that will move, not just the code th
 
 ## References
 
-- `IDEA-INFRA-004` — `pcfm-debug` covers installed modules and plugins (`process/IDEAS.md`).
-- `IDEA-INFRA-005` — separate diagnostics and benchmark from the test runner (`process/IDEAS.md`).
+- `IDEA-INFRA-004` — `pcfm-debug` covers installed modules and plugins (`context/IDEAS.md`).
+- `IDEA-INFRA-005` — separate diagnostics and benchmark from the test runner (`context/IDEAS.md`).
 - ADR-012 (plugins), ADR-013 (worlds) — the runtime contracts the runner will eventually load.
 - Code read for this ADR: `crates/pcfm-debug/src/main.rs`, `commands.rs`, `check.rs`; `tools/ds-testkit/src/lib.rs`, `scenario.rs`, `registry.rs`, `feature.rs`.
 - Not read in detail: `crates/pcfm-debug/src/args.rs` (233 lines), `demo.rs`, `render.rs`, `error.rs`. Their split between runner and demo is part of the implementation, not the decision.

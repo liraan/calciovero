@@ -172,4 +172,4 @@ In particular:
 - ADR-003 — Plane A enforcement (relevant only if perception is later decided to live in Plane A; see Open question 2).
 - `doctrine/00-foundations.md` §3 — Three Planes (observation vs truth)
 - conversation 2026-10-29 (this ADR is its first written record); related sketches in
-  `process/IDEAS.md` (IDEA-TACT-001, IDEA-INFRA-007, IDEA-STAFF-001)
+  `context/IDEAS.md` (IDEA-TACT-001, IDEA-INFRA-007, IDEA-STAFF-001)

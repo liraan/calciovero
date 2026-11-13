@@ -104,5 +104,5 @@ ADR-005 receives `Amended by: ADR-022 (presentation primacy only)` in its header
 - ADR-005 — Qt binding (amended, presentation primacy only)
 - ADR-003 — Plane A enforcement
 - ADR-019 — match engine contract
-- `process/IDEAS.md` — IDEA-PRES-001 (TUI-first), IDEA-INFRA-006 (TUI renderer prototype)
+- `context/IDEAS.md` — IDEA-PRES-001 (TUI-first), IDEA-INFRA-006 (TUI renderer prototype)
 - `doctrine/00-foundations.md` §2 (clean data/logic/UI separation), §3 (Three Planes)

@@ -110,7 +110,7 @@ The board therefore does not close any of the census gaps, and does not need to.
 - ADR-022 — presentation contract (view model separation), §3
 - ADR-020 — `pcfm-demo` naming
 - ADR-019 — match engine contract
-- `process/IDEAS.md` — IDEA-INFRA-006 (TUI renderer), IDEA-PRES-001 (TUI-first)
+- `context/IDEAS.md` — IDEA-INFRA-006 (TUI renderer), IDEA-PRES-001 (TUI-first)
 - `process/analysis/2026-10-31-22-28-review.md` — L0 census (4 of 27 events, no positions)
 - `SESSION-STATE.md` — step 12 (scope: board + events, not pitch)
 - `SESSION-STATE.md` OI-17 — L0 census gap decision (not taken here)

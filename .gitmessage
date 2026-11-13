@@ -2,7 +2,7 @@
 #
 # Optional body (one blank line above).
 #
-# Trailers — required on closing commits (validated by .githooks/commit-msg).
+# Trailers (validated by .githooks/commit-msg, see context/RULES.md §C4).
 # Verified: C2-green
 # Rules-Audit: N changes, 0 contradictions, 0 leaks   -- only if a rule file changed
-# Note-Read: L0-POSITIONAL-SLICE §0, §6-ter, §7   -- required if state.rs, spatial.rs, perception.rs, orchestrator.rs, save.rs or golden_l0.rs is staged
+# Direction-Check: <term> -> <contradicted item | none>   -- only if IDEAS.md or WORLD-MODEL.md changed

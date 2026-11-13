@@ -124,6 +124,6 @@ The 2D horizon keeps "ball with physics" in the force sense: a renderer or a fut
 - It is **not** a contract. The contract is `doctrine/adr/019-match-engine-contract.md`.
 - It is **not** a specification. The specification is `specs/`.
 - It is **not** a promise of implementation. Some of it may never be implemented.
-- It is **not** a briefing. Briefings live in `process/`.
+- It is **not** a briefing. Briefings live in `context/`.
 
 It is a **map**. If something new appears, it gets a place here first, then (if it needs a contract) an ADR, then (if it needs a spec) a module.

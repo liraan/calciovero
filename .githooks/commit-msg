@@ -1,7 +1,7 @@
 #!/bin/sh
-# Validates closing-commit trailers per NEW-SESSION-PROMPT.md §G.
+# Validates closing-commit trailers per context/RULES.md §C4.
 # Uses `git interpret-trailers --parse`, the same parser as `git log --format`.
-# The hook fires when SESSION-STATE.md is staged (closing commit), not by subject.
+# The hook fires when context/STATE.md is staged (closing commit), not by subject.
 
 MSG="$1"
 
@@ -10,24 +10,24 @@ MSG="$1"
 # The judgment is not mechanised; the artefact is (a missing trailer is
 # a red hook, a false "none" is a D1 violation visible in git log).
 msg_trailers=$(git interpret-trailers --parse < "$MSG")
-dir_staged=$(git diff --cached --name-only | grep -E '^docs/context/IDEAS\.md$|^docs/WORLD-MODEL\.md$' || true)
+dir_staged=$(git diff --cached --name-only | grep -E '^context/IDEAS\.md$|^doctrine/WORLD-MODEL\.md$' || true)
 if [ -n "$dir_staged" ]; then
   echo "$msg_trailers" | grep -qE '^Direction-Check:' || { echo "commit-msg: direction file staged ($(echo "$dir_staged" | tr '\n' ' ')); missing 'Direction-Check:' trailer" >&2; exit 1; }
 fi
 
-if ! git diff --cached --name-only | grep -qx 'process/SESSION-STATE.md'; then
+if ! git diff --cached --name-only | grep -qx 'context/STATE.md'; then
   exit 0
 fi
 
 
-# S1 on every bookmark update: the staged SESSION-STATE.md must point
+# S1 on every bookmark update: the staged STATE.md must point
 # `Last commit verified` to the commit before this one, i.e. current HEAD.
 # A commit that touches the bookmark without updating the field leaves it
 # partially inconsistent (E4).
-staged_lcv=$(git show :process/SESSION-STATE.md 2>/dev/null | grep -oE 'Last commit verified:\*\* `[0-9a-f]{7,40}`' | grep -oE '[0-9a-f]{7,40}')
+staged_lcv=$(git show :context/STATE.md 2>/dev/null | grep -oE 'Last commit verified:\*\* `[0-9a-f]{7,40}`' | grep -oE '[0-9a-f]{7,40}')
 head_short=$(git rev-parse --short HEAD)
 if [ -z "$staged_lcv" ]; then
-  echo "commit-msg: SESSION-STATE.md staged but 'Last commit verified' not found" >&2
+  echo "commit-msg: STATE.md staged but 'Last commit verified' not found" >&2
   exit 1
 fi
 case "$staged_lcv" in
@@ -41,22 +41,22 @@ trailers=$msg_trailers
 # `Files touched` and `Done (storico)` were removed from §F because both are
 # already in `git log --stat` and `git log --oneline`. A future edit that
 # reintroduces them is caught here, not at the closing ritual.
-staged_ss=$(git show :process/SESSION-STATE.md 2>/dev/null)
+staged_ss=$(git show :context/STATE.md 2>/dev/null)
 if echo "$staged_ss" | grep -qE '^\*\*Files touched this session'; then
-  echo "commit-msg: SESSION-STATE.md contains 'Files touched this session'; it duplicates git log (see NEW-SESSION-PROMPT.md §F)" >&2
+  echo "commit-msg: STATE.md contains 'Files touched this session'; it duplicates git log (see context/RULES.md §E2)" >&2
   exit 1
 fi
 if echo "$staged_ss" | grep -qE '^\*\*Done \(storico\)'; then
-  echo "commit-msg: SESSION-STATE.md contains 'Done (storico)'; it duplicates git log (see NEW-SESSION-PROMPT.md §F)" >&2
+  echo "commit-msg: STATE.md contains 'Done (storico)'; it duplicates git log (see context/RULES.md §E2)" >&2
   exit 1
 fi
 # Rule changes require a non-skipped Rules-Audit trailer.
-if git diff --cached --name-only | grep -qx 'process/NEW-SESSION-PROMPT.md'; then
+if git diff --cached --name-only | grep -qx 'context/RULES.md'; then
   if echo "$trailers" | grep -qE '^Rules-Audit:[[:space:]]*skipped'; then
-    echo "commit-msg: NEW-SESSION-PROMPT.md changed; Rules-Audit: skipped is not allowed" >&2
+    echo "commit-msg: RULES.md changed; Rules-Audit: skipped is not allowed" >&2
     exit 1
   fi
-  echo "$trailers" | grep -qE '^Rules-Audit:' || { echo "commit-msg: NEW-SESSION-PROMPT.md changed; missing 'Rules-Audit:' trailer" >&2; exit 1; }
+  echo "$trailers" | grep -qE '^Rules-Audit:' || { echo "commit-msg: RULES.md changed; missing 'Rules-Audit:' trailer" >&2; exit 1; }
 fi
 
 

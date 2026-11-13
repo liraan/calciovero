@@ -42,7 +42,7 @@ The reason: a `PathBuf` in a public type is a platform dependency that travels t
 
 ### The gate (B9)
 
-A new gate B9 in `process/scripts/gates.sh` (closing and startup) greps the simulation crates for the banned imports and fails if any is found. The banned list lives in the gate, not in the ADR, so a future change to the list is a change to one place.
+A new gate B9 in `context/scripts/gates.sh` (closing and startup) greps the simulation crates for the banned imports and fails if any is found. The banned list lives in the gate, not in the ADR, so a future change to the list is a change to one place.
 
 What the gate does **not** check: whether a `pub fn` returns a `PathBuf` (that would need an AST, not a grep; an OI, not this ADR); whether `f64` is used in a hot path (that is a profile concern, not a boundary concern); whether `no_std` is possible today (it is not; the boundary only says it stays *possible*).
 

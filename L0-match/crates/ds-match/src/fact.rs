@@ -53,7 +53,7 @@ pub enum TrajectoryKind {
     /// A pass. `success` is whether it was completed.
     Pass { success: bool },
     /// A shot. The payload is what F.3-b3 requires (see
-    /// `process/analysis/2026-11-04-match-stats-and-traits.md` §3).
+    /// the 2026-11-04 match statistics report, §3, in git history).
     Shot {
         on_target: bool,
         from: (i32, i32, i32),

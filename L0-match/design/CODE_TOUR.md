@@ -15,7 +15,7 @@ doc comments (`///` and `//!`) on every public item. This file says
 *which files to read, in which order, and why*.
 
 - For *how the crates interact*: see [`ARCHITECTURE.md`](ARCHITECTURE.md).
-- For *the current state*: see [`SESSION-STATE.md`](../../process/SESSION-STATE.md).
+- For *the current state*: see [`STATE.md`](../../context/STATE.md).
 - For *how to contribute*: see [`../CONTRIBUTING.md`](../../CONTRIBUTING.md).
 - For *the rules of the repo*: see [`../STRUCTURE.md`](../../doctrine/STRUCTURE.md).
 
@@ -194,7 +194,7 @@ third is safe if the scenario passes. The last two require an ADR, as per
 If you want to go deeper, in this order:
 
 1. [`L0-match/design/ARCHITECTURE.md`](ARCHITECTURE.md) — how the crates interact.
-2. [`process/SESSION-STATE.md`](../../process/SESSION-STATE.md) — current state and next steps.
+2. [`context/STATE.md`](../../context/STATE.md) — current state and next steps.
 3. [`L0-match/specs/11-player-characteristics.md`](../specs/11-player-characteristics.md) — the player model for the new engine: what a characteristic is, the three components, the catalogue, the dynamics. **Read this before touching `PlayerLatents`, any `resolve_*`, or any `L0-match/balance/` formula**: the prototype's shape is not the new contract.
 4. [`doctrine/adr/028-dimension-performance-plane-criterion.md`](../../doctrine/adr/028-dimension-performance-plane-criterion.md) — dimension vs performance (the Plane A/B criterion), and the three components.
 5. [`doctrine/adr/029-keyed-derivation.md`](../../doctrine/adr/029-keyed-derivation.md) — latents and noise derived by key, not by sequence.

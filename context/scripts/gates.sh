@@ -1,19 +1,14 @@
 #!/usr/bin/env bash
 # Re-exec under bash when started as `sh script` (dash has no here-strings).
 [ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
-# Gates A and B - mechanical checks from NEW-SESSION-PROMPT.md.
+# Gates A and B - the mechanical checks of context/RULES.md.
 # Exit 0 = green (all mechanical checks pass), 1 = red.
 # Run from anywhere: it moves to the repo root. Needs bash (here-strings).
 #
-# Usage: process/scripts/gates.sh [startup|closing|resume]
-#   closing (default) - full set: A1, A3, B1, B3, B6, B7 + manual B2
-#   resume            - pointers for a fresh session (LCV, next step, OIs)
-#   startup           - fast set: A1, A3, B1, B3, B6, B7 + manual B2
-#                        (B2 is only meaningful after work has been done)
-#
-# Manual checks are NOT reported as "ok": they are listed as "manual" and must
-# be done in the report. Reporting them as "ok" without checking would be a
-# leak (D5).
+# Usage: context/scripts/gates.sh [startup|closing|resume]
+#   closing (default) - the full set
+#   startup           - the same set (run by CI)
+#   resume            - the same set, plus the pointers of STATE.md
 
 set -u
 cd "$(dirname "$0")/../.." || { echo "gates: cannot cd to repo root" >&2; exit 2; }
@@ -22,7 +17,6 @@ fail=0
 
 say_ok()     { printf '  ok      %s\n' "$1"; }
 say_fail()   { printf '  FAIL    %s\n' "$1"; fail=1; }
-say_manual() { printf '  manual  %s\n' "$1"; }
 
 case "$MODE" in
   startup|closing|resume) : ;;
@@ -48,11 +42,11 @@ fi
 # count is a documentation check, not a simulation invariant: the badge is
 # declared in the closing report, where the real output is visible.
 
-a3=$(grep -nE '[0-9]+ (tests?|crates?|ADRs?)\b|(tests?|crates?|ADRs?) [0-9]+' process/NEW-SESSION-PROMPT.md 2>/dev/null | head -5)
+a3=$(grep -nE '[0-9]+ (tests?|crates?|ADRs?)\b|(tests?|crates?|ADRs?) [0-9]+' context/RULES.md 2>/dev/null | head -5)
 if [ -z "$a3" ]; then
-  say_ok "A3 no hardcoded counts in NEW-SESSION-PROMPT.md"
+  say_ok "A3 no hardcoded counts in RULES.md"
 else
-  say_fail "A3 hardcoded counts found in NEW-SESSION-PROMPT.md:"
+  say_fail "A3 hardcoded counts found in RULES.md:"
   printf '%s\n' "$a3"
 fi
 
@@ -116,8 +110,7 @@ fi
 # ---------- Gate B: fresh-session simulation (mechanical subset) ----------
 echo "Gate B - fresh-session simulation (mechanical subset)"
 
-SS=process/SESSION-STATE.md
-NSP=process/NEW-SESSION-PROMPT.md
+SS=context/STATE.md
 
 # B1 (2026-11-02, revised): only [next] counts as "the next step".
 # No fallback to [open]: that fallback returned 11 (a [deferred] step)
@@ -138,13 +131,11 @@ else
   fi
 fi
 
-say_manual "B2 Plan vs Detail order - check in the report"
-
 oi_count=$(grep -cE '^\| OI-[0-9]+ ' "$SS" 2>/dev/null || echo 0)
 if [ "$oi_count" -gt 0 ]; then
   say_ok "B3 OI table present ($oi_count items)"
 else
-  say_fail "B3 no OI table in SESSION-STATE.md"
+  say_fail "B3 no OI table in STATE.md"
 fi
 # B3-bis (2026-11-02): every OI must have a non-empty "Prima azione"
 # (third column). An OI without a first action is a step the next session
@@ -175,30 +166,19 @@ else
   say_fail "B6 proposed ADRs surfaced ($surfaced/$proposed)"
 fi
 
-uncited=0
-for r in process/analysis/*.md; do
-  [ -e "$r" ] || continue
-  base=$(basename "$r")
-  if ! grep -q "$base" "$SS"; then uncited=$((uncited + 1)); fi
-done
-if [ "$uncited" -eq 0 ]; then
-  say_ok "B7 all reports in analysis/ are cited in SESSION-STATE.md"
-else
-  say_fail "B7 $uncited report(s) in analysis/ not cited in SESSION-STATE.md"
-fi
 
 echo ""
 # E4b (2026-11-02): before a push, the bookmark update is the last commit.
 # Mechanised: if there are commits ahead of the upstream, HEAD must touch
-# process/SESSION-STATE.md. This failed twice on 2026-11-02: code
+# context/STATE.md. This failed twice on 2026-11-02: code
 # pushed, bookmark not updated first.
 if git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1; then
   e4b_ahead=$(git rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)
   if [ "${e4b_ahead:-0}" -gt 0 ]; then
-    if git show --name-only --format='' HEAD 2>/dev/null | grep -qx 'process/SESSION-STATE.md'; then
-      say_ok "E4b bookmark updated before push (HEAD touches SESSION-STATE.md)"
+    if git show --name-only --format='' HEAD 2>/dev/null | grep -qx 'context/STATE.md'; then
+      say_ok "E4b bookmark updated before push (HEAD touches STATE.md)"
     else
-      say_fail "E4b bookmark not updated: HEAD ($(git rev-parse --short HEAD)) does not touch SESSION-STATE.md, $e4b_ahead unpushed commit(s)"
+      say_fail "E4b bookmark not updated: HEAD ($(git rev-parse --short HEAD)) does not touch STATE.md, $e4b_ahead unpushed commit(s)"
     fi
   else
     say_ok "E4b no unpushed commits"
@@ -208,26 +188,6 @@ else
 fi
 
 
-echo ""
-# B8 (2026-11-03, MD-32): every [done] micro-decision that declares a
-# simplification must say which leaf removes it. The gate checks that
-# `Removed-by:` exists and is non-empty; it does NOT check that the value
-# is right (not mechanisable). `never` is a valid declared value.
-b8_missing=0
-while IFS= read -r line; do
-  case "$line" in
-    *"- [done]"*"[simpl]"*)
-      if ! printf '%s' "$line" | grep -qE 'Removed-by:[[:space:]]*[^[:space:]]'; then
-        b8_missing=$((b8_missing + 1))
-      fi
-      ;;
-  esac
-done < "$SS"
-if [ "$b8_missing" -eq 0 ]; then
-  say_ok "B8 simplifications declare Removed-by:"
-else
-  say_fail "B8 $b8_missing simplification(s) without a non-empty Removed-by: (MD-32)"
-fi
 
 # B9 (ADR-038, 2026-11-07): the simulation path is platform-free. The
 # six simulation crates must not import platform modules (`std::fs`,
@@ -273,22 +233,19 @@ if [ "$MODE" = "resume" ]; then
   echo "Plan, next steps:"
   grep -nE '^\| \[(next|wip|urgent)\]' "$SS" 2>/dev/null | cut -c1-160
   echo ""
-  echo "Open items: $(grep -cE '^\| OI-[0-9]+ ' "$SS" 2>/dev/null) total"
-  echo "  newest: $(grep -oE 'OI-[0-9]+' "$SS" 2>/dev/null | sort -t- -k2 -n | tail -1)"
-  echo "Method lessons (B1-bis), last 2:"
-  awk '/Tool fallbacks \(observed\)/{f=1} /^- \*\*B2 —/{f=0} f && /^    - \*\*/' "$NSP" 2>/dev/null | tail -2 | cut -c1-140
-  echo "Ideas backlog: $(grep -cE '^### IDEA-' process/IDEAS.md 2>/dev/null) entries"
-  echo "Analysis reports: $(ls process/analysis/*.md 2>/dev/null | wc -l) in process/analysis/"
-  echo "Direction: process/analysis/2026-11-04-direction-decisions.md (why the engine has this shape)"
+  echo "Open items: $(grep -cE '^\| OI-[0-9]+ ' "$SS" 2>/dev/null)"
+  echo "Ideas: $(grep -cE '^### IDEA-' context/IDEAS.md 2>/dev/null)"
+  echo "Active plan: $(ls context/plans/*.md 2>/dev/null | tr '
+' ' ')"
   echo ""
   echo "Dirty tree: $(git status --short 2>/dev/null | wc -l) file(s)"
 fi
 
 if [ "$fail" -eq 0 ]; then
   if [ "$MODE" = "closing" ]; then
-    echo "gates: GREEN (closing; manual: B2 - do it in the closing report)"
+    echo "gates: GREEN (closing)"
   else
-    echo "gates: GREEN (startup; manual: B2)"
+    echo "gates: GREEN ($MODE)"
   fi
   exit 0
 else

@@ -46,7 +46,7 @@ you start, so that two people do not take the same task.
 | [#17](https://github.com/liraan/calciovero/issues/17) Load a folder of changed `balance/` files at runtime, without rebuilding (needs an ADR first: the engine does no I/O, ADR-038) | the engine | `tools/ds-demo`, `L0-match/crates/ds-match` | yes |
 
 The list changes as tasks are done; the maintainer's own plan is in
-[`process/SESSION-STATE.md`](process/SESSION-STATE.md) (the `[next]` row).
+[`context/STATE.md`](context/STATE.md) (the `[next]` row).
 
 ---
 
@@ -129,7 +129,7 @@ centre, then the match, then the tools, then the working notes.
 doctrine/    the rules everything obeys: foundations, vision, decisions (ADRs), glossary
 L0-match/    the match: specs/, design/, balance/ (the numbers), crates/ (the engine)
 tools/       demo and 2D view, fixtures, test harness, test runner
-process/     the maintainer's working notes and scripts: you can ignore it
+context/     the maintainer's working notes and scripts: you can ignore it
 ```
 
 Each directory's `README.md` says what it is for. The full rules of the

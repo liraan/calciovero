@@ -1201,7 +1201,7 @@ exists. None of them changes the model.
   cell (§4) and ADR-028. It will be rewritten when the three components
   exist in code; until then the note keeps it from being read as the
   current contract.
-- `process/SESSION-STATE.md` MD-23 (fidelity first, cost as
+- decisions in the history of `process/SESSION-STATE.md`: MD-23 (fidelity first, cost as
   constraint), MD-24 (amended), MD-40 (fatigue), MD-53 (one module, one
   function), MD-54 (the observability lens)
 - OI-44 (event-keyed noise), OI-53 (keyed latents, extension of OI-44),

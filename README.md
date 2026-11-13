@@ -176,7 +176,7 @@ pointing inward.
 doctrine/    the rules everything obeys: foundations, vision, decisions (ADRs)
 L0-match/    the match: its spec, its design notes, its parameters, its engine
 tools/       demo, fixtures, test harness, test runner
-process/     how the work is done: the bookmark, the session notes, the scripts
+context/     how the work is done: the bookmark, the rules, the ideas, the scripts
 ```
 
 Start with [`doctrine/00-foundations.md`](doctrine/00-foundations.md),
@@ -202,7 +202,7 @@ invariant, and a human review for everything. The full process is in
 **Continuous integration.** Every push runs the full gate: build,
 clippy with warnings as errors, the test suite with the golden hash,
 fmt, the health check and the documentation gates
-([`process/scripts/gates.sh`](process/scripts/gates.sh)). GitHub is the
+([`context/scripts/gates.sh`](context/scripts/gates.sh)). GitHub is the
 primary remote ([`.github/workflows/ci.yml`](.github/workflows/ci.yml));
 Codeberg is the backup, with the same gate on Woodpecker
 ([`.woodpecker/ci.yml`](.woodpecker/ci.yml)).

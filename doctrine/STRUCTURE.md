@@ -125,12 +125,12 @@ calciovero/
 │   ├── ds-testkit/          the test contract (no dependency on any ds-* crate)
 │   └── ds-test-runner/      run the scenarios (`--check`)
 │
-└── process/                 OUTSIDE THE RINGS: how the work is done
-    ├── SESSION-STATE.md     the bookmark: where we are
-    ├── NEW-SESSION-PROMPT.md  NOTA-PER-NUOVA-AI.md  AGENT-POLICY.md  …
+└── context/                 OUTSIDE THE RINGS: how the work is done
+    ├── STATE.md             the bookmark: where we are, the plan, the open items
+    ├── RULES.md             how we work
     ├── IDEAS.md             what is not decided
-    ├── analysis/  captures/ the current reports, the record of the pauses
-    └── scripts/             gates, starting, closing, capture
+    ├── plans/  captures/    the current task's plan, the record of the pauses
+    └── scripts/             gates.sh, session.sh (start, close, capture)
 ```
 
 `.githooks/`, `.github/` and `.woodpecker/` stay at the root: git and the

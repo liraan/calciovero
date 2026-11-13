@@ -11,7 +11,7 @@
 #   Codeberg. If the first run exceeds the cap, either a named volume for
 #   target/ or a self-hosted runner; both are a later decision.
 # - `git` is installed explicitly: rust:1-slim is Debian but git is not
-#   part of the image, and process/scripts/gates.sh calls git.
+#   part of the image, and context/scripts/gates.sh calls git.
 # - `rust-toolchain.toml` pins the channel and the components (rustfmt,
 #   clippy); rustup installs them on first use. No extra component step.
 #
@@ -34,4 +34,4 @@ steps:
       - cargo build --release
       - cargo test --workspace
       - cargo run --release --bin ds-test-runner -- --check --seed 42
-      - bash process/scripts/gates.sh startup
+      - bash context/scripts/gates.sh startup
