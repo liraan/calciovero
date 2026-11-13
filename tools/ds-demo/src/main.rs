@@ -44,6 +44,9 @@ A FRIENDLY (you are the home side):
     --width <W>           How wide you play: narrow, normal (default), wide
     --away-block <B>      The same for the opponents
     --away-width <W>
+    --sub <MIN:OUT=IN>    A substitution: from that minute, at the next
+                          stoppage, OUT off and IN (from the bench) on;
+                          e.g. 60:J=P; up to five
     --why                 After the match, why you conceded each goal
     --save <PATH>         Save the match (it can be reloaded and replayed)
     --load <PATH>         Reload a saved match, replay it and check it is
@@ -185,7 +188,7 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
                 t.step = true;
             }
             "--xi" | "--block" | "--width" | "--away-block" | "--away-width" | "--save"
-            | "--load" => {
+            | "--load" | "--sub" => {
                 let v = iter
                     .next()
                     .ok_or_else(|| format!("{arg} requires a value"))?;
@@ -196,6 +199,7 @@ fn parse_args_from<I: Iterator<Item = String>>(mut iter: I) -> Result<Option<Arg
                     "--away-block" => choices.away.block = friendly::parse_block(&v)?,
                     "--away-width" => choices.away.width = friendly::parse_width(&v)?,
                     "--save" => save = Some(v),
+                    "--sub" => choices.subs.push(friendly::parse_sub(&v)?),
                     _ => load = Some(v),
                 }
             }

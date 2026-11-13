@@ -18,6 +18,11 @@ pub enum ModelError {
     #[error("player name must not be empty")]
     EmptyPlayerName,
 
+    /// A planned substitution is not valid: more than five, or not from the
+    /// bench for a starter (Law 3).
+    #[error("invalid substitution: at most five, from the bench for a starter")]
+    InvalidSubstitution,
+
     /// The player's height is zero.
     #[error("player height must be positive, got {0}")]
     InvalidHeight(u16),

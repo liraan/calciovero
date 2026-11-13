@@ -80,6 +80,22 @@ pub struct Intention {
     pub width: Width,
 }
 
+/// A substitution the manager plans before the kick-off (Law 3, plan
+/// L0-CLOSE 10f): from this minute, at the next stoppage, `incoming` from
+/// the bench takes the place of `outgoing`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Substitution {
+    /// The match minute from which it is made (the broadcast clock).
+    pub minute: u16,
+    /// The player who comes off.
+    pub outgoing: ds_core::ids::PlayerId,
+    /// The player who comes on, from the bench.
+    pub incoming: ds_core::ids::PlayerId,
+}
+
+/// The most substitutions a side may make (Law 3).
+pub const MAX_SUBSTITUTIONS: usize = 5;
+
 /// A squad, as seen by the match engine.
 ///
 /// See `L0-match/specs/03-entities-minimal.md` §2.4.
@@ -96,6 +112,9 @@ pub struct Squad {
     /// The coach's intention (the default: a mid block, normal width).
     #[serde(default)]
     pub intention: Intention,
+    /// The substitutions he plans (plan L0-CLOSE 10f).
+    #[serde(default)]
+    pub substitutions: Vec<Substitution>,
 }
 
 impl Squad {
@@ -129,7 +148,29 @@ impl Squad {
             bench,
             formation,
             intention: Intention::default(),
+            substitutions: Vec::new(),
         })
+    }
+
+    /// The same squad with the substitutions the manager plans: at most
+    /// five (Law 3), each from the bench for a player who starts.
+    ///
+    /// # Errors
+    ///
+    /// [`ModelError::InvalidSubstitution`] if there are more than five, or
+    /// one brings on a player not on the bench or takes off one not
+    /// starting.
+    pub fn with_substitutions(mut self, subs: Vec<Substitution>) -> Result<Self, ModelError> {
+        let ok = subs.len() <= MAX_SUBSTITUTIONS
+            && subs.iter().all(|s| {
+                self.bench.iter().any(|p| p.id == s.incoming)
+                    && self.players.iter().any(|p| p.id == s.outgoing)
+            });
+        if !ok {
+            return Err(ModelError::InvalidSubstitution);
+        }
+        self.substitutions = subs;
+        Ok(self)
     }
 
     /// The same squad with the coach's intention.

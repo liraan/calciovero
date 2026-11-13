@@ -241,6 +241,32 @@ impl SpatialState {
         self.act_targets.insert(id, target);
     }
 
+    /// A substitution (Law 3, plan L0-CLOSE 10f): `incoming` takes the place
+    /// of `outgoing` on the pitch, where he was, in his role in the shape,
+    /// from a standstill. Returns `false` if `outgoing` is not on the pitch.
+    pub fn substitute(&mut self, outgoing: PlayerId, incoming: PlayerId) -> bool {
+        let Some(mut agent) = self.agents.remove(&outgoing) else {
+            return false;
+        };
+        agent.velocity = (0, 0);
+        self.agents.insert(incoming, agent);
+        if let Some(role) = self.roles.remove(&outgoing) {
+            self.roles.insert(incoming, role);
+        }
+        self.acts.remove(&outgoing);
+        self.act_targets.remove(&outgoing);
+        if self.goalkeepers.0 == outgoing {
+            self.goalkeepers.0 = incoming;
+        }
+        if self.goalkeepers.1 == outgoing {
+            self.goalkeepers.1 = incoming;
+        }
+        if self.carrier == Some(outgoing) {
+            self.carrier = Some(incoming);
+        }
+        true
+    }
+
     /// Where a player's chosen act takes him (offer, run, mark), if it
     /// has a place: what a teammate sees of his movement.
     #[must_use]

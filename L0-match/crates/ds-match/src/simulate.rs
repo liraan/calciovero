@@ -86,11 +86,27 @@ impl<'a> Recorder<'a> {
     }
 }
 
-/// One tick of the match: the substrate, the decision, and the record.
-fn step(state: &mut MatchState, ctx: &mut MatchContext<'_>, t: u64, rec: &mut Recorder<'_>) {
-    state.tick(t, ctx);
-    state.decide(t, ctx);
-    rec.capture(state, ctx, t);
+/// One tick of the match: the substitutions due, the substrate, the
+/// decision, and the record. The tick is played on `live`, the squads as
+/// they are now (plan L0-CLOSE 10f: a substitution changes them).
+fn step(
+    state: &mut MatchState,
+    ctx: &mut MatchContext<'_>,
+    live: &mut ds_model::Match,
+    t: u64,
+    rec: &mut Recorder<'_>,
+) {
+    state.substitute_due(live, t, ctx.config.ticks_per_second);
+    let mut now = MatchContext {
+        match_: live,
+        hidden: &mut *ctx.hidden,
+        rng: &mut *ctx.rng,
+        chain: &mut *ctx.chain,
+        config: ctx.config,
+    };
+    state.tick(t, &mut now);
+    state.decide(t, &mut now);
+    rec.capture(state, &now, t);
 }
 
 fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
@@ -98,12 +114,21 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
     let table = StoppageTime::load();
 
     let mut state = MatchState::new(ctx.match_);
+    let mut live = ctx.match_.clone();
 
     // --- First half ---
     state.begin_half(Half::First, 0);
     state.kick_off(ctx, Half::First);
     state.emit_boundary(ctx, 0, EventType::KickOff);
-    let tick_after_first = run_half(&mut state, ctx, 0, Half::First, tps, &table, rec);
+    let tick_after_first = run_half(
+        &mut state,
+        (ctx, &mut live),
+        0,
+        Half::First,
+        tps,
+        &table,
+        rec,
+    );
 
     // --- Half-time ---
     state.emit_boundary(ctx, tick_after_first, EventType::HalfTime);
@@ -114,7 +139,7 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
     state.emit_boundary(ctx, tick_after_first, EventType::SecondHalf);
     let tick_after_second = run_half(
         &mut state,
-        ctx,
+        (ctx, &mut live),
         tick_after_first,
         Half::Second,
         tps,
@@ -137,7 +162,7 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
 /// time, extending the half until the new events add no contribution.
 fn run_half(
     state: &mut MatchState,
-    ctx: &mut MatchContext<'_>,
+    (ctx, live): (&mut MatchContext<'_>, &mut ds_model::Match),
     start_tick: u64,
     half: Half,
     tps: u64,
@@ -149,7 +174,7 @@ fn run_half(
 
     let mut t = start_tick;
     while t < regulation_end {
-        step(state, ctx, t, rec);
+        step(state, ctx, live, t, rec);
         t += 1;
     }
 
@@ -157,7 +182,7 @@ fn run_half(
     loop {
         let extra_end = regulation_end + rec_secs * tps;
         while t < extra_end {
-            step(state, ctx, t, rec);
+            step(state, ctx, live, t, rec);
             t += 1;
         }
         let new_rec = stoppage_seconds(ctx, half, table);
@@ -170,7 +195,7 @@ fn run_half(
             rec_secs = GUARD_MINUTES * 60;
             let clamped_end = regulation_end + rec_secs * tps;
             while t < clamped_end {
-                step(state, ctx, t, rec);
+                step(state, ctx, live, t, rec);
                 t += 1;
             }
             break;

@@ -8,7 +8,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-385_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-387_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -109,10 +109,10 @@ What exists today:
   and a text board and an HTML page with the result;
 - a **friendly you can play** from the command line: choose your eleven
   from the squad and the bench, how high you defend and how wide you play,
-  save the match, reload it, and read why you conceded each goal;
-- **385 tests** and a health check that runs on every commit.
+  your substitutions, save the match, reload it, and read why you conceded each goal;
+- **387 tests** and a health check that runs on every commit.
 
-What does not exist yet: substitutions during the match, the season, the
+What does not exist yet: changing the plan during the match, the season, the
 career, the transfer market. And the match is not calibrated yet: today it
 has too many goals. The full list is below; the order in which things
 arrive is public.
@@ -190,7 +190,7 @@ the player's characteristics; the full catalogue, act by act, is
 |---|---|
 | ✅ Choose the eleven from squad and bench | ✅ The intention: block height and width |
 | ✅ Save, reload, replay the same match | ✅ Why you conceded each goal |
-| ⬜ Substitutions during the match | ⬜ Instructions during the match |
+| ✅ Substitutions: planned before the kick-off, made at a stoppage | ⬜ Instructions during the match |
 
 **Then** (after the match engine is complete, [VISION](doctrine/VISION.md))
 
@@ -216,7 +216,7 @@ view, and it shows the engine as it is today, stalls included.
 Play a friendly: you are the home side.
 
     cargo run --release --bin ds-demo -- --roster
-    cargo run --release --bin ds-demo -- --seed 7 --xi A,B,C,D,E,F,G,H,I,J,P --block high --width wide --why --save friendly.json
+    cargo run --release --bin ds-demo -- --seed 7 --xi A,B,C,D,E,F,G,H,I,J,K --sub 60:J=P --block high --width wide --why --save friendly.json
     cargo run --release --bin ds-demo -- --load friendly.json --tui
 
 Run it twice: same seed, same match, to the last event. `--roster` shows

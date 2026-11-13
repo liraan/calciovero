@@ -113,6 +113,8 @@ impl GroundTruth {
                 .players
                 .iter()
                 .chain(match_.away.players.iter())
+                .chain(match_.home.bench.iter())
+                .chain(match_.away.bench.iter())
                 .map(|p| (p.id, p.role.as_str().to_string())),
         );
         g

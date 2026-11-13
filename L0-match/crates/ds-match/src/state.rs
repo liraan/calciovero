@@ -181,6 +181,13 @@ pub struct MatchState {
     /// The keeper holding the ball in his hands (plan L0-CLOSE 10d): he
     /// throws it, and nobody may challenge him for it (Law 12).
     in_hands: Option<PlayerId>,
+    /// The substitutions made, by the player who came off (plan L0-CLOSE
+    /// 10f), and those still to announce: `(outgoing, incoming)`.
+    substituted: BTreeSet<PlayerId>,
+    to_announce: Vec<(PlayerId, PlayerId)>,
+    /// The ball went dead since the last tick (a restart was given): the
+    /// moment a substitution may be made (Law 3).
+    stoppage: bool,
 }
 
 /// The action an agent chooses from its point of view (MD-01, MD-43).
@@ -653,6 +660,9 @@ impl MatchState {
             coverage_possession: Possession::Home,
             latencies: BTreeMap::new(),
             in_hands: None,
+            substituted: BTreeSet::new(),
+            to_announce: Vec::new(),
+            stoppage: false,
         }
     }
 
@@ -666,6 +676,58 @@ impl MatchState {
         self.half = half;
         self.half_start_tick = start_tick;
     }
+    /// The substitutions due (Law 3, plan L0-CLOSE 10f): from its minute,
+    /// at the next stoppage (the ball dead before a restart), the player
+    /// from the bench takes the place of the one coming off, in the live
+    /// squad and on the pitch, fresh. The caller plays on with `live`.
+    pub fn substitute_due(&mut self, live: &mut ds_model::Match, tick: u64, ticks_per_second: u8) {
+        if !std::mem::take(&mut self.stoppage) {
+            return;
+        }
+        let tps = u64::from(ticks_per_second).max(1);
+        let in_half = tick.saturating_sub(self.half_start_tick) / tps / 60;
+        let minute = match self.half {
+            Half::First => in_half,
+            Half::Second => in_half + 45,
+        };
+        let carrier = self.spatial.carrier();
+        for squad in [&mut live.home, &mut live.away] {
+            let due: Vec<ds_model::Substitution> = squad
+                .substitutions
+                .iter()
+                .copied()
+                .filter(|s| u64::from(s.minute) <= minute)
+                .filter(|s| !self.substituted.contains(&s.outgoing))
+                // Not the taker of the restart: he is on the ball.
+                .filter(|s| Some(s.outgoing) != carrier)
+                .collect();
+            for s in due {
+                let (Some(i), Some(j)) = (
+                    squad.players.iter().position(|p| p.id == s.outgoing),
+                    squad.bench.iter().position(|p| p.id == s.incoming),
+                ) else {
+                    continue;
+                };
+                if !self.spatial.substitute(s.outgoing, s.incoming) {
+                    continue;
+                }
+                let incoming = squad.bench.remove(j);
+                self.bodies.insert(
+                    incoming.id,
+                    PlayerBody {
+                        height_cm: f64::from(incoming.height_cm),
+                        weight_kg: f64::from(incoming.weight_kg),
+                        fatigue: f64::from(incoming.physical.fatigue),
+                    },
+                );
+                let outgoing = std::mem::replace(&mut squad.players[i], incoming);
+                squad.bench.push(outgoing);
+                self.substituted.insert(s.outgoing);
+                self.to_announce.push((s.outgoing, s.incoming));
+            }
+        }
+    }
+
     /// Advances the time by one tick: the substrate of the match.
     ///
     /// Resolves the due pending (MD-37), advances the ball, checks the
@@ -684,6 +746,15 @@ impl MatchState {
     /// `tick()`. Making the tick a pure counter is a separate refactor,
     /// tracked in IDEA-DESIGN-011's implementation note (2026-11-09).
     pub fn tick(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
+        for (outgoing, incoming) in std::mem::take(&mut self.to_announce) {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(incoming)),
+                EventType::Substitution,
+                serde_json::json!({ "out": outgoing.slot(), "in": incoming.slot() }),
+            );
+        }
         // Resolve a due pending first (MD-37): the possession is applied
         // here, not at launch. F.4-d: an unseen opponent on the line
         // intercepts, and the event is emitted at resolution.
@@ -2382,6 +2453,7 @@ impl MatchState {
         restart: crate::rules::Restart,
     ) -> Option<PlayerId> {
         let taker = self.restart_taker(ctx, &restart)?;
+        self.stoppage = true;
         self.pending = None;
         self.offside_at_pass.clear();
         self.restart_pass = Some(restart.kind);

@@ -24,6 +24,9 @@ pub struct Choices {
     pub home: Intention,
     /// The opponents' intention.
     pub away: Intention,
+    /// His substitutions: from this minute, this roster letter off, that
+    /// one on (plan L0-CLOSE 10f).
+    pub subs: Vec<(u16, char, char)>,
 }
 
 /// Parses an intention's block height.
@@ -83,6 +86,29 @@ pub fn parse_xi(s: &str) -> Result<Vec<char>, String> {
     Ok(letters)
 }
 
+/// Parses a substitution, `MIN:OUT=IN` with roster letters (`60:J=P`).
+///
+/// # Errors
+///
+/// Not in that form.
+pub fn parse_sub(s: &str) -> Result<(u16, char, char), String> {
+    let err = || format!("--sub takes MIN:OUT=IN with roster letters, e.g. 60:J=P, not {s}");
+    let (min, rest) = s.split_once(':').ok_or_else(err)?;
+    let (out, inn) = rest.split_once('=').ok_or_else(err)?;
+    let letter = |l: &str| {
+        let mut c = l.trim().chars();
+        match (c.next(), c.next()) {
+            (Some(ch), None) if ch.is_ascii_alphabetic() => Ok(ch.to_ascii_uppercase()),
+            _ => Err(err()),
+        }
+    };
+    Ok((
+        min.trim().parse().map_err(|_| err())?,
+        letter(out)?,
+        letter(inn)?,
+    ))
+}
+
 /// The roster letter of a home player: `A`-`K` the eleven, `L`-`P` the
 /// bench, by squad slot.
 fn letter(id: PlayerId) -> char {
@@ -119,6 +145,27 @@ pub fn apply(mut m: Match, c: &Choices) -> Result<Match, String> {
         m.home = Squad::try_new(m.home.id, starters, bench, m.home.formation.clone())
             .map_err(|e| e.to_string())?;
     }
+    if !c.subs.is_empty() {
+        let id_of = |l: char, squad: &[Player]| {
+            squad
+                .iter()
+                .find(|p| letter(p.id) == l)
+                .map(|p| p.id)
+                .ok_or_else(|| format!("no player {l} for that substitution (see --roster)"))
+        };
+        let subs = c
+            .subs
+            .iter()
+            .map(|(minute, out, inn)| {
+                Ok(ds_model::Substitution {
+                    minute: *minute,
+                    outgoing: id_of(*out, &m.home.players)?,
+                    incoming: id_of(*inn, &m.home.bench)?,
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        m.home = m.home.with_substitutions(subs).map_err(|e| e.to_string())?;
+    }
     m.home = m.home.with_intention(c.home);
     m.away = m.away.with_intention(c.away);
     Ok(m)
@@ -130,6 +177,8 @@ fn who(m: &Match, id: PlayerId) -> String {
         .players
         .iter()
         .chain(m.away.players.iter())
+        .chain(m.home.bench.iter())
+        .chain(m.away.bench.iter())
         .find(|p| p.id == id)
         .map_or_else(
             || format!("player {}", id.slot()),
@@ -436,6 +485,61 @@ mod tests {
         let plain = ds_fixtures::match_fixture(seed).expect("fixture");
         let r0 = ds_match::simulate_from_seed(&plain, seed, ds_match::MatchConfig::default());
         assert_ne!(r0.state_hash, r.state_hash, "the choices changed nothing");
+    }
+
+    /// A planned substitution is made (P1, plan L0-CLOSE 10f): from its
+    /// minute, at the next stoppage, the player from the bench comes on and
+    /// plays (he is on the pitch in the tick record), the one who came off is
+    /// gone; saved and reloaded, it is the same match.
+    #[test]
+    fn the_substitute_comes_on() {
+        let seed = 7;
+        let choices = Choices {
+            subs: vec![parse_sub("60:J=P").expect("sub")],
+            ..Choices::default()
+        };
+        let game =
+            apply(ds_fixtures::match_fixture(seed).expect("fixture"), &choices).expect("apply");
+        let (r, records) =
+            ds_match::simulate_from_seed_recorded(&game, seed, ds_match::MatchConfig::default());
+        let sub = r
+            .events
+            .events()
+            .iter()
+            .find(|e| e.event_type == EventType::Substitution)
+            .expect("a substitution");
+        assert_eq!(sub.half, ds_stats::Half::Second);
+        assert!(sub.timestamp_minute >= 15, "from the 60th minute");
+        let on = game
+            .home
+            .bench
+            .iter()
+            .find(|p| letter(p.id) == 'P')
+            .expect("P")
+            .id;
+        let off = game
+            .home
+            .players
+            .iter()
+            .find(|p| letter(p.id) == 'J')
+            .expect("J")
+            .id;
+        let last = records.last().expect("records");
+        assert!(last.agents.iter().any(|a| a.id == on), "P plays");
+        assert!(last.agents.iter().all(|a| a.id != off), "J is off");
+        let save = ds_match::MatchSave::from_result(
+            &r,
+            &game,
+            seed,
+            ds_core::time::GameInstant::from_raw(0),
+        );
+        assert_eq!(ds_match::replay(&save).state_hash, r.state_hash);
+    }
+
+    #[test]
+    fn a_substitution_is_min_out_in() {
+        assert_eq!(parse_sub("60:J=P"), Ok((60, 'J', 'P')));
+        assert!(parse_sub("J=P").is_err());
     }
 
     /// Every goal conceded gets its reasons (P1): the scorer, and where the
