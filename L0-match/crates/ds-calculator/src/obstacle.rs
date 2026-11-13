@@ -48,9 +48,57 @@ impl ObstacleReflection {
     }
 }
 
+/// A ball meeting a round body (a defender's leg, a keeper's hand).
+///
+/// The velocity is reflected about the line from the body's centre to the
+/// ball, in the ground plane, and scaled by `rebound` (thousandths); the
+/// vertical speed is scaled too. A ball that hits the body square comes
+/// back; one that grazes it goes on, turned. No die (ADR-035).
+#[must_use]
+pub fn reflect_off_body(
+    velocity: (i16, i16, i16),
+    body: (i32, i32),
+    ball: (i32, i32),
+    rebound_milli: i32,
+) -> (i16, i16, i16) {
+    let (nx, ny) = (f64::from(ball.0 - body.0), f64::from(ball.1 - body.1));
+    let len = nx.hypot(ny);
+    let k = f64::from(rebound_milli) / 1000.0;
+    let (vx, vy) = (f64::from(velocity.0), f64::from(velocity.1));
+    let (rx, ry) = if len > 0.0 {
+        let (ux, uy) = (nx / len, ny / len);
+        let dot = vx.mul_add(ux, vy * uy);
+        // Only a ball moving into the body is reflected.
+        if dot < 0.0 {
+            ((2.0 * dot).mul_add(-ux, vx), (2.0 * dot).mul_add(-uy, vy))
+        } else {
+            (vx, vy)
+        }
+    } else {
+        (-vx, -vy)
+    };
+    #[allow(clippy::cast_possible_truncation)]
+    let c = |v: f64| {
+        (v * k)
+            .round()
+            .clamp(f64::from(i16::MIN), f64::from(i16::MAX)) as i16
+    };
+    (c(rx), c(ry), c(f64::from(velocity.2)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::ObstacleReflection;
+
+    /// Square on, the ball comes back; grazing, it goes on turned (P1,
+    /// ADR-051 "block").
+    #[test]
+    fn a_body_reflects_by_where_the_ball_meets_it() {
+        let square = super::reflect_off_body((-200, 0, 0), (0, 0), (50, 0), 1000);
+        assert!(square.0 > 0 && square.1 == 0, "{square:?}");
+        let graze = super::reflect_off_body((-200, 0, 0), (0, 0), (30, 40), 1000);
+        assert!(graze.1 > 0, "turned to the side: {graze:?}");
+    }
 
     #[test]
     fn reflect_reverses_the_normal_component_and_keeps_the_others() {

@@ -1,7 +1,7 @@
 {
   "power_strong": 0.85,
   "power_placed": 0.35,
-  "aim_edge_fraction": 0.9,
+  "aim_edge_fraction": 0.8,
   "reading_weight": 0.5,
   "risk_weight": 0.5,
   "shot_range_cm": 3500,

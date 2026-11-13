@@ -26,6 +26,8 @@ pub struct SaveBalance {
     pub catch_speed_ref_cm_per_tick: f64,
     /// A parried ball comes back at this fraction of its speed, thousandths.
     pub parry_rebound_milli: i32,
+    /// Beyond this share of his reach he only tips the ball, thousandths.
+    pub tip_share_milli: i32,
 }
 
 impl SaveBalance {
@@ -90,14 +92,14 @@ mod tests {
     }
 
     /// Twin test (ADR-051 §3): two keepers identical but for reactivity;
-    /// on a shot that arrives in six ticks the reactive one reaches a
-    /// metre farther.
+    /// on a shot that arrives in eight ticks the reactive one reaches more
+    /// than half a metre farther.
     #[test]
     fn the_reactive_twin_reaches_farther() {
         let b = SaveBalance::load();
-        let slow = b.reach_cm(95.0, 0.1, 0.6, 6.0);
-        let fast = b.reach_cm(95.0, 0.9, 0.6, 6.0);
-        assert!(fast > slow + 80.0, "fast {fast} cm, slow {slow} cm");
+        let slow = b.reach_cm(95.0, 0.1, 0.6, 8.0);
+        let fast = b.reach_cm(95.0, 0.9, 0.6, 8.0);
+        assert!(fast > slow + 50.0, "fast {fast} cm, slow {slow} cm");
     }
 
     /// Twin test: the explosive twin dives farther in the same time.

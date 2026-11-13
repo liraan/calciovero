@@ -999,10 +999,11 @@ impl MatchState {
             });
         let Some(blocker) = blocker else { return };
         let vel = self.spatial.ball_velocity();
-        let rebound = i32::from(i16::try_from(off.block_rebound_milli).unwrap_or(0));
-        let back = |c: i16| i16::try_from(-i32::from(c) * rebound / 1000).unwrap_or(0);
-        self.spatial
-            .deflect_ball((bx, by, bz), (back(vel.0), back(vel.1), 0));
+        let body = self.spatial.agent(blocker).map_or((bx, by), |a| a.position);
+        self.spatial.deflect_ball(
+            (bx, by, bz),
+            ds_calculator::obstacle::reflect_off_body(vel, body, (bx, by), off.block_rebound_milli),
+        );
         self.pending = None;
         self.possession = if shooter_home {
             Possession::Away
@@ -1719,18 +1720,22 @@ impl MatchState {
                 // In his hands: the ball is his.
                 self.spatial.set_carrier(Some(gk));
             } else {
-                // Parried: the ball comes back into play, pushed away from
-                // the centre of the goal, loose for whoever gets there.
+                // Parried: nearer him, pushed back into play away from the
+                // centre of the goal; at the edge of his reach only tipped,
+                // going on past the post (a corner if it crosses the line).
                 let k = i32::from(
                     i16::try_from(ctx.hidden.save_balance().parry_rebound_milli).unwrap_or(0),
                 );
                 let away = if y_at >= goal_center_y { 1 } else { -1 };
                 let rebound = |c: i16| i16::try_from(i32::from(c) * k / 1000).unwrap_or(0);
                 let side = i16::try_from(away * i32::from(v.0).abs() * k / 1000).unwrap_or(0);
-                self.spatial.deflect_ball(
-                    (plane_x, y_at, z_at),
-                    (rebound(v.0).saturating_neg(), side, rebound(v.2).abs()),
-                );
+                let vx = if o.tipped {
+                    rebound(v.0)
+                } else {
+                    rebound(v.0).saturating_neg()
+                };
+                self.spatial
+                    .deflect_ball((plane_x, y_at, z_at), (vx, side, rebound(v.2).abs()));
             }
         }
         true

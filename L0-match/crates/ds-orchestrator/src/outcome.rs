@@ -73,6 +73,9 @@ pub struct SaveOutcome {
     pub saved: bool,
     /// Whether he held it (else he parried it). Never true if not saved.
     pub held: bool,
+    /// Whether he only tipped it, at the edge of his reach: it goes on,
+    /// turned, past the post. Never true if held.
+    pub tipped: bool,
 }
 
 /// The outcome of a movement resolution (F.7).

@@ -511,7 +511,13 @@ impl GroundTruth {
                 reach,
                 ctx.ball_speed_cm_per_tick,
             );
-        let outcome = SaveOutcome { saved, held };
+        let tipped =
+            saved && !held && ctx.offset_cm > reach * f64::from(b.tip_share_milli) / 1000.0;
+        let outcome = SaveOutcome {
+            saved,
+            held,
+            tipped,
+        };
         self.observations.push(ObservationEvent::Save {
             goalkeeper: ctx.goalkeeper,
             saved,
