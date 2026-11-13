@@ -827,9 +827,17 @@ impl MatchState {
             &self.keeper_balance,
         );
         let hold = self.in_hands.is_some() || self.restart_pass.is_some();
+        let keep_max = f64::from(self.reception_balance.first_touch_keep_max_milli) / 1000.0;
         let hidden = &mut *ctx.hidden;
-        self.spatial
-            .follow_carrier(tick, hold, |p, pace| hidden.touch_period_ticks(p, pace));
+        let periods = std::cell::RefCell::new(hidden);
+        self.spatial.follow_carrier(
+            tick,
+            hold,
+            |p, pace| periods.borrow_mut().touch_period_ticks(p, pace),
+            |p, incoming| periods.borrow_mut().control_spill(p, incoming, keep_max),
+        );
+        // The carried ball has moved with him: it may have crossed a line.
+        self.restart_if_out(ctx, tick);
         self.tire_players(ctx);
         self.meet_ball_in_air(ctx, tick);
         self.control_loose_ball(ctx, tick);
@@ -2417,17 +2425,23 @@ impl MatchState {
     /// applies it. Before, a ball that left the pitch elsewhere than into
     /// the goal stayed out for the rest of the match (OI-97).
     fn restart_if_out(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
-        // A carried ball goes out only when it rolls ahead of him, between
-        // two touches (plan L0-CLOSE 11): at his feet it is where he is.
-        if self.spatial.ball_state() == crate::spatial::BallState::Possessed
-            && !self.spatial.ball_ahead()
-        {
-            return;
-        }
+        // Out is where the ball is (Laws 9, 15-17), whoever has it: rolling
+        // ahead of him between two touches, or under his foot as he takes it
+        // (plan L0-CLOSE 11). At his feet it is where he is, on the pitch.
         let (x, y, _) = self.spatial.ball_3d();
-        let Some(restart) =
-            crate::rules::out_of_play((x, y), side_of(self.possession), pitch_cm(ctx))
-        else {
+        // The last to touch it: the man who has it, if anyone (the side in
+        // possession can lag a tick behind a ball just won).
+        let last = self.spatial.carrier().map_or_else(
+            || side_of(self.possession),
+            |c| {
+                if ctx.match_.home.players.iter().any(|p| p.id == c) {
+                    crate::rules::Side::Home
+                } else {
+                    crate::rules::Side::Away
+                }
+            },
+        );
+        let Some(restart) = crate::rules::out_of_play((x, y), last, pitch_cm(ctx)) else {
             return;
         };
         if let Some(taker) = self.apply_restart(ctx, restart) {
@@ -2497,6 +2511,8 @@ impl MatchState {
         self.offside_at_pass.clear();
         self.restart_pass = Some(restart.kind);
         self.spatial.set_position(taker, restart.spot);
+        // Out of play nobody has it, even if it went out under his foot.
+        self.spatial.set_carrier(None);
         self.spatial
             .set_ball_in_flight((restart.spot.0, restart.spot.1, 0), (0, 0, 0));
         self.spatial.advance_ball();

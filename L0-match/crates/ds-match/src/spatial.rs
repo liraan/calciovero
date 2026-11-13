@@ -52,13 +52,20 @@ struct Touch {
     at: u64,
     /// Ticks until he meets it again, at his pace.
     period: f64,
+    /// A ball he has just controlled, still under his foot: how far from
+    /// him he took it, cm (0 for a touch played ahead).
+    held_cm: f64,
 }
 
 // Compared bit for bit: the values are computed, never NaN.
 impl PartialEq for Touch {
     fn eq(&self, o: &Self) -> bool {
-        let bits =
-            |t: &Self| [t.from.0, t.from.1, t.dir.0, t.dir.1, t.speed, t.period].map(f64::to_bits);
+        let bits = |t: &Self| {
+            [
+                t.from.0, t.from.1, t.dir.0, t.dir.1, t.speed, t.period, t.held_cm,
+            ]
+            .map(f64::to_bits)
+        };
         bits(self) == bits(o) && self.at == o.at
     }
 }
@@ -76,6 +83,19 @@ pub fn touch_speed(pace: f64, period: f64, keep: f64) -> f64 {
         return pace;
     }
     pace * period * (1.0 - keep) / lost
+}
+
+/// A ball under his foot `off` from his feet, brought to them in `step`
+/// ticks (plan L0-CLOSE 11).
+fn under_foot(off: (f64, f64), at: u64, step: f64) -> Touch {
+    Touch {
+        from: off,
+        dir: (0.0, 0.0),
+        speed: 0.0,
+        at,
+        period: step.max(1.0),
+        held_cm: off.0.hypot(off.1),
+    }
 }
 
 /// How far a touch of speed `speed` has rolled after `t` ticks.
@@ -183,6 +203,9 @@ pub struct SpatialState {
     /// The carrier's last touch (plan L0-CLOSE 11): between two touches
     /// the ball rolls on its own. `None`: the ball is at his feet.
     touch: Option<Touch>,
+    /// The velocity of the ball he has just won, cm/tick, until his first
+    /// touch reads it (plan L0-CLOSE 11).
+    won: Option<(i16, i16)>,
     /// The goalkeeper of each team: `(home, away)`. A fact of the
     /// formation, populated at construction (OI-81-step-move). The keeper
     /// moves with `resolve_movement` like every agent; only his target
@@ -268,6 +291,7 @@ impl SpatialState {
             home_in_possession: true,
             carry_target: None,
             touch: None,
+            won: None,
             acts: BTreeMap::new(),
             act_targets: BTreeMap::new(),
             off_pitch: BTreeMap::new(),
@@ -558,7 +582,11 @@ impl SpatialState {
         self.carrier = carrier;
         self.carry_target = None;
         self.touch = None;
+        self.won = None;
         if carrier.is_some() {
+            if !matches!(self.ball, BallState::Possessed) {
+                self.won = Some((self.ball_velocity.0, self.ball_velocity.1));
+            }
             self.ball = BallState::Possessed;
             self.ball_velocity = (0, 0, 0);
         } else if matches!(self.ball, BallState::Possessed) {
@@ -584,6 +612,7 @@ impl SpatialState {
         tick: u64,
         hold: bool,
         mut period_of: impl FnMut(PlayerId, f64) -> f64,
+        mut spill_of: impl FnMut(PlayerId, f64) -> f64,
     ) {
         if !matches!(self.ball, BallState::Possessed) {
             return;
@@ -601,8 +630,48 @@ impl SpatialState {
         let reached = distance_squared(pos, (self.ball_position.0, self.ball_position.1))
             <= i64::from(BODY_RADIUS_CM).pow(2);
         let due = self.touch.as_ref().is_none_or(|tc| since(tc) >= tc.period);
+        // A ball brought under his foot is at his feet when the step ends.
+        let reached = reached
+            || self
+                .touch
+                .as_ref()
+                .is_some_and(|tc| tc.held_cm > 0.0 && since(tc) >= tc.period);
         if hold {
             self.touch = None;
+        } else if let Some(v) = self.won.take().filter(|_| self.touch.is_none()) {
+            // He has just won it (the maintainer, 2026-11-13: before, the
+            // ball jumped to the middle of his body, as if drawn to him).
+            // His first touch takes it where it is: the better it is, the
+            // more of its speed it kills. What is left runs on, and he goes
+            // after it; a dead ball he brings under his foot in a step.
+            let (vx, vy) = (f64::from(v.0), f64::from(v.1));
+            let incoming = vx.hypot(vy);
+            let spill = spill_of(carrier, incoming);
+            let from = (
+                f64::from(self.ball_position.0),
+                f64::from(self.ball_position.1),
+            );
+            if spill >= 1.0 {
+                self.touch = Some(Touch {
+                    from,
+                    dir: (vx / incoming, vy / incoming),
+                    speed: spill,
+                    at: tick,
+                    period: 0.0,
+                    held_cm: 0.0,
+                });
+            } else if !reached {
+                let off = (from.0 - f64::from(pos.0), from.1 - f64::from(pos.1));
+                self.touch = Some(under_foot(off, tick, period_of(carrier, 0.0)));
+            }
+        } else if self.touch.is_none() && !reached {
+            // At his feet in no other way (a restart, the keeper putting it
+            // down): under his foot in a step.
+            let off = (
+                f64::from(self.ball_position.0 - pos.0),
+                f64::from(self.ball_position.1 - pos.1),
+            );
+            self.touch = Some(under_foot(off, tick, period_of(carrier, 0.0)));
         } else if due && (reached || self.touch.is_none()) {
             // He plays it where he chose to take it, at the pace he runs
             // that way; holding it, he keeps it at his feet.
@@ -622,12 +691,22 @@ impl SpatialState {
                         speed: touch_speed(pace, period, keep),
                         at: tick,
                         period,
+                        held_cm: 0.0,
                     })
                 }
                 _ => None,
             };
         }
         let at = self.touch.as_ref().map_or(pos, |tc| {
+            if tc.held_cm > 0.0 {
+                // Under his foot: from where he took it to his feet, in a step.
+                let left = (1.0 - since(tc) / tc.period).clamp(0.0, 1.0);
+                #[allow(clippy::cast_possible_truncation)]
+                return (
+                    tc.from.0.mul_add(left, f64::from(pos.0)).round() as i32,
+                    tc.from.1.mul_add(left, f64::from(pos.1)).round() as i32,
+                );
+            }
             let d = rolled(tc.speed, since(tc), keep);
             #[allow(clippy::cast_possible_truncation)]
             (
@@ -642,19 +721,17 @@ impl SpatialState {
     /// rolling ahead between two touches (plan L0-CLOSE 11).
     #[must_use]
     pub fn ball_at_feet(&self) -> bool {
+        // A ball he has just controlled is under his foot as far as he
+        // reached for it; one played ahead only when it is back at his feet.
+        #[allow(clippy::cast_possible_truncation)]
+        let held = self.touch.as_ref().map_or(0, |tc| tc.held_cm.ceil() as i64);
+        let foot = i64::from(BODY_RADIUS_CM).max(held);
         self.carrier
             .and_then(|c| self.agents.get(&c))
             .is_some_and(|a| {
                 distance_squared(a.position, (self.ball_position.0, self.ball_position.1))
-                    <= i64::from(BODY_RADIUS_CM).pow(2)
+                    <= foot.pow(2)
             })
-    }
-
-    /// Whether the carried ball is rolling ahead of him, out of his
-    /// reach until the next touch.
-    #[must_use]
-    pub fn ball_ahead(&self) -> bool {
-        matches!(self.ball, BallState::Possessed) && self.touch.is_some() && !self.ball_at_feet()
     }
 
     /// Moves every agent one tick toward its target (MD-09, MD-10, MD-12).
@@ -1247,6 +1324,30 @@ mod tests {
         let id = PlayerId::new(1, 0);
         s.agent_mut(id).unwrap().position = (500, 500);
         assert_eq!(s.agent(id).unwrap().position, (500, 500));
+    }
+
+    /// The first touch (P1, plan L0-CLOSE 11): the ball he wins stays where
+    /// he took it, it does not jump to the middle of his body; a perfect
+    /// touch kills it there, a poor one lets it run on the way it came.
+    #[test]
+    fn a_ball_won_is_taken_where_it_is() {
+        let id = PlayerId::new(1, 0);
+        let won = |spill: f64| {
+            let mut s = make_state();
+            let at = s.agent(id).map(|a| a.position).unwrap_or_default();
+            let from = (at.0 + 80, at.1, 0);
+            s.set_ball_in_flight(from, (60, 0, 0));
+            s.set_carrier(Some(id));
+            s.follow_carrier(1, false, |_, _| 2.5, |_, _| spill);
+            let first = s.ball();
+            s.follow_carrier(4, false, |_, _| 2.5, |_, _| spill);
+            (at, first, s.ball())
+        };
+        let (at, first, later) = won(0.0);
+        assert_ne!(first, at, "not drawn to him");
+        assert_eq!(later, at, "a dead ball under his foot in a step");
+        let (_, first, later) = won(10.0);
+        assert!(first.0 > at.0 && later.0 > first.0, "a poor touch runs on");
     }
 
     #[test]

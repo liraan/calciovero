@@ -784,6 +784,15 @@ impl GroundTruth {
         (t.horizon_max_cm - t.horizon_min_cm).mul_add(a, t.horizon_min_cm)
     }
 
+    /// The speed, cm/tick, the ball `player` wins keeps after his control
+    /// (plan L0-CLOSE 11): from the speed it came with and his first touch
+    /// (`ds_calculator::control::spill_speed`).
+    #[must_use]
+    pub fn control_spill(&mut self, player: PlayerId, incoming: f64, keep_max: f64) -> f64 {
+        let first_touch = f64::from(self.latents_for(player).technical.first_touch);
+        ds_calculator::control::spill_speed(incoming, first_touch, keep_max)
+    }
+
     /// The length of a step at a sprint, cm (plan L0-CLOSE 11): the
     /// fastest top speed over the running cadence (`balance/movement.json`).
     #[must_use]

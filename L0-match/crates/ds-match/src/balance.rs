@@ -282,6 +282,9 @@ pub struct ReceptionBalance {
     pub control_threshold_milli: i64,
     /// A loose ball within this distance of a player is his (ADR-041 §5).
     pub loose_control_radius_cm: i32,
+    /// The share of the ball's speed the worst first touch leaves it,
+    /// thousandths (plan L0-CLOSE 11).
+    pub first_touch_keep_max_milli: i32,
 }
 
 impl Default for ReceptionBalance {
