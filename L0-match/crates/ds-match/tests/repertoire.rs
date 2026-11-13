@@ -14,8 +14,10 @@ use ds_stats::EventType;
 /// The post and the bar are not acts: they are the ball meeting the frame
 /// (ADR-048); the catalogue lists what players do.
 ///
-/// The seeds the test plays: the first ten of the golden range.
-const SEEDS: std::ops::Range<u64> = 42..52;
+/// The seeds the test plays: fourteen from the golden range's start, so
+/// that the rare acts (the keeper's claim, a red card, a penalty) show in
+/// some match (2026-11-13: ten were not always enough for the claim).
+const SEEDS: std::ops::Range<u64> = 42..56;
 
 /// Acts of the catalogue an observer cannot see yet, and why. The test
 /// fails if one of them shows: then it moves to the detectors.

@@ -112,6 +112,7 @@ impl Profiles {
                 game_reading: value("game_reading", "family:cognitive"),
                 decision_making: value("decision_making", "family:cognitive"),
                 risk_management: value("risk_management", "family:cognitive"),
+                vision: value("vision", "family:cognitive"),
             },
         })
     }

@@ -169,18 +169,22 @@ mod tests {
     }
 
     #[test]
-    fn score_is_plausible() {
-        let mut total_goals = 0_u32;
+    fn no_match_diverges() {
+        // A guard against a match that runs away (2026-11-13: a 44-10 was
+        // found), not a target: how many goals a match has is the realism
+        // of plan L0-CLOSE step 11, derived from the players, never adjusted
+        // (ADR-052 note). On footballers: the squads profiled by role
+        // (`ds-fixtures`), not `make_match`'s twenty-two players drawn at
+        // random with no role, the keeper included.
         for seed in 0..10_u64 {
-            let r = simulate_once(seed);
-            total_goals += u32::from(r.score.home) + u32::from(r.score.away);
+            let m = ds_fixtures::match_fixture(seed).expect("fixture");
+            let r = crate::driver::simulate_from_seed(&m, seed, MatchConfig::default());
+            let goals = u32::from(r.score.home) + u32::from(r.score.away);
+            assert!(
+                goals <= 20,
+                "seed {seed}: {goals} goals, the match ran away"
+            );
         }
-        #[allow(clippy::cast_precision_loss)]
-        let avg = (total_goals as f32) / 10.0;
-        assert!(
-            (0.0..=10.0).contains(&avg),
-            "average total goals per match is {avg}, expected in [0, 10]"
-        );
     }
 
     #[test]

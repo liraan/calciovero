@@ -143,8 +143,10 @@ const SCANNING_JSON: &str = include_str!("../../../balance/scanning.json");
 /// state they need does not exist yet (`Removed-by: OI-71`).
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct ScanningBalance {
-    /// Latency of the gaze turn, in ticks (N).
-    pub scan_interval_ticks: u64,
+    /// The fewest glances a second (the poorest vision).
+    pub scan_rate_min_per_s: f64,
+    /// The most glances a second (the best vision).
+    pub scan_rate_max_per_s: f64,
     /// Radius within which an opponent counts as "on the ball", in cm.
     pub scan_reach_cm: i32,
     /// Salience weight of the ball.
@@ -385,7 +387,7 @@ mod tests {
     #[test]
     fn embedded_scanning_is_valid() {
         let b = ScanningBalance::load();
-        assert_eq!(b.scan_interval_ticks, 5);
+        assert!(b.scan_rate_max_per_s > b.scan_rate_min_per_s && b.scan_rate_min_per_s > 0.0);
         assert_eq!(b.scan_reach_cm, 3000);
         assert_eq!(b.weight_ball, 100);
         assert_eq!(b.weight_opponent_on_ball, 80);

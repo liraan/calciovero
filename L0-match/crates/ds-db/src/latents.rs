@@ -133,6 +133,9 @@ pub struct CognitiveLatents {
     pub decision_making: f32,
     /// Risk management: the risk he accepts (consumed by the choice, F.6-cog).
     pub risk_management: f32,
+    /// Vision: how often he looks around to take in the pitch (ADR-052
+    /// e, plan L0-CLOSE 10b; consumed by the scan).
+    pub vision: f32,
 }
 
 impl PlayerLatents {
@@ -171,6 +174,7 @@ impl PlayerLatents {
                 game_reading: unit_from_key(world_seed, player, "game_reading"),
                 decision_making: unit_from_key(world_seed, player, "decision_making"),
                 risk_management: unit_from_key(world_seed, player, "risk_management"),
+                vision: unit_from_key(world_seed, player, "vision"),
             },
         }
     }

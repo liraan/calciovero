@@ -716,6 +716,23 @@ impl GroundTruth {
         best.map(|(_, id)| id)
     }
 
+    /// How many ticks between two of his glances around (plan L0-CLOSE
+    /// 10b): his vision places him between the fewest and the most glances
+    /// a second (`scanning.json`).
+    #[must_use]
+    pub fn scan_interval_ticks(
+        &mut self,
+        player: PlayerId,
+        (rate_min, rate_max): (f64, f64),
+        ticks_per_s: f64,
+    ) -> u64 {
+        let vision = f64::from(self.latents_for(player).cognitive.vision);
+        let rate = (rate_max - rate_min).mul_add(vision, rate_min).max(0.01);
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let ticks = (ticks_per_s / rate).round() as u64;
+        ticks.max(1)
+    }
+
     /// Fatigue's declared parameters (`balance/fatigue.json`).
     #[must_use]
     pub const fn fatigue_balance(&self) -> ds_calculator::fatigue::FatigueBalance {
@@ -1280,6 +1297,28 @@ mod choice_filter_tests {
     /// reader must see it and pick it. Without the filter both pick the
     /// hidden one, because 0.9 > 0.5: the test fails, which is the
     /// positive proof that it measures the filter and not something else.
+    /// Twin test (ADR-051 §3, plan L0-CLOSE 10b): the player with the
+    /// better vision looks around more often; at the two ends of the
+    /// sample, about every 1.3 s against every 5 s.
+    #[test]
+    fn the_player_with_vision_looks_around_more() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (mut weak, mut strong) = ((0u32, 1.0f32), (0u32, 0.0f32));
+        for slot in 1..=200u32 {
+            let v = g.latents_for(PlayerId::new(slot, 0)).cognitive.vision;
+            if v < weak.1 {
+                weak = (slot, v);
+            }
+            if v > strong.1 {
+                strong = (slot, v);
+            }
+        }
+        let rates = (0.2, 0.8);
+        let w = g.scan_interval_ticks(PlayerId::new(weak.0, 0), rates, 10.0);
+        let s = g.scan_interval_ticks(PlayerId::new(strong.0, 0), rates, 10.0);
+        assert!(s * 2 < w, "strong every {s} ticks, weak every {w}");
+    }
+
     #[test]
     fn a_weak_reader_misses_the_hidden_option_a_strong_reader_sees() {
         let mut g = GroundTruth::new(42, MatchId::new(1, 0));

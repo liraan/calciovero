@@ -1,10 +1,11 @@
 {
-  "scan_interval_ticks": 5,
+  "scan_rate_min_per_s": 0.2,
+  "scan_rate_max_per_s": 0.8,
   "scan_reach_cm": 3000,
   "mark_radius_cm": 800,
   "weight_ball": 100,
   "weight_opponent_on_ball": 80,
   "weight_mark": 60,
-  "_note": "Scanning parameters (ADR-034). Arbitrary and declared until calibration (D6: no number without a source). The scan interval is the latency N in ticks (prototype). The weights are relative: the highest wins, ties by PlayerId. Candidates 4 (receiving space) and 5 (line) are not implemented: the per-agent state they need does not exist yet. Removed-by: OI-71. `vision` reduces the re-scan interval when the consumer exists (declared, not implemented).",
-  "_source": "Prototype. The latency N=5 (0.5 s at 10 ticks/s) is a declared default, not a cited figure. The weights are relative salience, not calibrated. Marking beats the ball when the mark is within `mark_radius_cm` (ADR-034 cascade, not a weight)."
+  "_note": "How often a player looks around (2026-11-13, plan L0-CLOSE 10b, ADR-052 e): his vision places him between scan_rate_min_per_s and scan_rate_max_per_s glances a second, staggered by player; between glances the gaze is on the ball. Before, everyone scanned every 5 ticks (twice a second), whoever he was. Scanning parameters (ADR-034). Arbitrary and declared until calibration (D6: no number without a source). The scan interval is the latency N in ticks (prototype). The weights are relative: the highest wins, ties by PlayerId. Candidates 4 (receiving space) and 5 (line) are not implemented: the per-agent state they need does not exist yet. Removed-by: OI-71. `vision` reduces the re-scan interval when the consumer exists (declared, not implemented).",
+  "_source": "scan rates: elite players' visual exploratory activity before receiving, from under 0.2 to over 0.6-0.8 searches a second, the best midfielders the most (Jordet, Bloomfield and Heijmerikx 2013, MIT Sloan Sports Analytics Conference; McGuckian et al. 2018, Frontiers in Psychology 9:2520). Prototype. The latency N=5 (0.5 s at 10 ticks/s) is a declared default, not a cited figure. The weights are relative salience, not calibrated. Marking beats the ball when the mark is within `mark_radius_cm` (ADR-034 cascade, not a weight)."
 }

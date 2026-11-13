@@ -794,7 +794,7 @@ impl SpatialState {
             }
         }
 
-        self.write_back(&work, ball, tick, scan_balance);
+        self.write_back(&work, ball, (tick, hidden), scan_balance);
     }
     /// Writes back the moved positions, with velocity derived from the
     /// displacement, and updates heading and gaze.
@@ -802,7 +802,7 @@ impl SpatialState {
         &mut self,
         work: &[Work],
         ball: (i32, i32),
-        tick: u64,
+        (tick, hidden): (u64, &mut ds_orchestrator::GroundTruth),
         scan_balance: &crate::balance::ScanningBalance,
     ) {
         for (id, new_pos, _) in work {
@@ -820,7 +820,7 @@ impl SpatialState {
                 agent.heading = h;
             }
         }
-        // ADR-034: scan every `scan_interval_ticks`, not every tick. The
+        // ADR-034: he scans now and then, not every tick. The
         // scan needs `&self` (read-only) to see the other agents; the
         // movement loop above held `&mut`, so the gaze pass is separate.
         //
@@ -829,9 +829,18 @@ impl SpatialState {
         // is a glance (at the mark, the opponent on the ball), not a place
         // where the head stays. Before, a marked player looked at his mark
         // for good and never saw the ball again, and nobody went for it.
-        let scanning =
-            scan_balance.scan_interval_ticks != 0 && tick % scan_balance.scan_interval_ticks == 0;
         for (id, _, _) in work {
+            // His vision sets how often he glances (plan L0-CLOSE 10b);
+            // the glances are staggered by player.
+            let every = hidden.scan_interval_ticks(
+                *id,
+                (
+                    scan_balance.scan_rate_min_per_s,
+                    scan_balance.scan_rate_max_per_s,
+                ),
+                10.0,
+            );
+            let scanning = (tick + u64::from(id.slot())) % every == 0;
             let glance = if scanning {
                 crate::perception::scan(self, *id, ball, scan_balance)
             } else {

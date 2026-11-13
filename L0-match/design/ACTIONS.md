@@ -47,7 +47,7 @@ with their first consumer (ADR-051 §4).
 
 | Act | Quantities | Roots | Engine today |
 |---|---|---|---|
-| Scan, look around | width of the cone, how often | *vision*, game reading | ◐ fixed cone (`balance/scanning.json`), no vision |
+| Scan, look around | width of the cone, how often | vision, game reading | ✓ since 81: how often he glances, 0.2-0.8 a second by vision (Jordet et al. 2013); the cone is fixed |
 | Read the play | what he notices | game reading | ✓ the visibility filter of the choice |
 | Decide | how long he takes | decision making; crowding, threat | ✓ `resolve_latency` (`balance/latency.json`) |
 
