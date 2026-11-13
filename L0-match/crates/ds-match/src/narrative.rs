@@ -252,7 +252,13 @@ fn render_text(
             }
         }
         EventType::Foul => format!("Foul by {player} in the {minute}'"),
-        EventType::Card => format!("Card for {player} in the {minute}'"),
+        EventType::Card => {
+            if ev.fields.get("color").and_then(serde_json::Value::as_str) == Some("red") {
+                format!("Red card for {player} in the {minute}'")
+            } else {
+                format!("Yellow card for {player} in the {minute}'")
+            }
+        }
         EventType::Corner => format!("Corner for {player} in the {minute}'"),
         EventType::FreeKick => {
             if ev.fields.get("reason").and_then(serde_json::Value::as_str) == Some("offside") {

@@ -112,6 +112,9 @@ pub struct PsychologicalLatents {
     /// Aggressiveness: how readily he goes into a contact, and how hard
     /// (consumed by the defender's choice of how to go in).
     pub aggressiveness: f32,
+    /// Emotional control: whether he keeps control in a contact (consumed
+    /// by the foul's band, ADR-042 §4).
+    pub emotional_control: f32,
 }
 
 /// Cognitive traits (L0.11 §7.4).
@@ -159,6 +162,7 @@ impl PlayerLatents {
             },
             psychological: PsychologicalLatents {
                 aggressiveness: unit_from_key(world_seed, player, "aggressiveness"),
+                emotional_control: unit_from_key(world_seed, player, "emotional_control"),
             },
             cognitive: CognitiveLatents {
                 game_reading: unit_from_key(world_seed, player, "game_reading"),

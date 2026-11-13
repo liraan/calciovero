@@ -28,6 +28,10 @@ pub struct DuelContext {
     pub duel_type: DuelType,
     /// How the defender went in (ADR-042 §2, amended).
     pub tackle: ds_calculator::duel::TackleKind,
+    /// He came from behind the carrier (geometry, ADR-042 §4).
+    pub from_behind: bool,
+    /// His speed when he arrived, cm/tick.
+    pub approach_cm_per_tick: i32,
 }
 
 /// The context of a shot resolution.

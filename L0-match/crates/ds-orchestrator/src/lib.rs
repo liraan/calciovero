@@ -214,10 +214,26 @@ impl GroundTruth {
             ctx.defender
         };
 
+        // The band (ADR-042 §4): a ground contact the defender did not win
+        // is a foul when the way he went in, his speed, his temper and his
+        // technique reach the threshold. A won contact is clean: he played
+        // the ball.
+        let foul = ctx.duel_type == DuelType::Ground
+            && (attacker_wins || loose)
+            && self.duel_balance.foul(
+                &ds_calculator::duel::ChallengeFacts {
+                    slide: ctx.tackle == ds_calculator::duel::TackleKind::Slide,
+                    from_behind: ctx.from_behind,
+                    approach_cm_per_tick: ctx.approach_cm_per_tick,
+                },
+                defender.psychological.aggressiveness,
+                defender.psychological.emotional_control,
+                defender.technical.tackling,
+            );
         let outcome = DuelOutcome {
             winner,
             ball_retained: attacker_wins && !loose,
-            foul_committed: None,
+            foul_committed: foul.then_some(()),
             loose,
         };
 
@@ -380,14 +396,14 @@ impl GroundTruth {
     pub fn choose_tackle(
         &mut self,
         defender: PlayerId,
-        in_standing_reach: bool,
+        reach_area_booked: (bool, bool, bool),
     ) -> ds_calculator::duel::TackleKind {
         let l = self.latents_for(defender);
         self.duel_balance.choose(
             l.technical.tackling,
             l.psychological.aggressiveness,
             l.cognitive.game_reading,
-            in_standing_reach,
+            reach_area_booked,
         )
     }
 
@@ -804,6 +820,8 @@ mod tests {
             defender: PlayerId::new(2, 0),
             duel_type: DuelType::Ground,
             tackle: ds_calculator::duel::TackleKind::Standing,
+            from_behind: false,
+            approach_cm_per_tick: 0,
         }
     }
 

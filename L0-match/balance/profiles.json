@@ -83,6 +83,10 @@
         "aggressiveness": [
           0.4,
           0.15
+        ],
+        "emotional_control": [
+          0.55,
+          0.15
         ]
       }
     },
@@ -163,6 +167,10 @@
         "aggressiveness": [
           0.62,
           0.15
+        ],
+        "emotional_control": [
+          0.55,
+          0.15
         ]
       }
     },
@@ -241,6 +249,10 @@
           0.12
         ],
         "aggressiveness": [
+          0.55,
+          0.15
+        ],
+        "emotional_control": [
           0.55,
           0.15
         ]
@@ -323,6 +335,10 @@
         "aggressiveness": [
           0.55,
           0.15
+        ],
+        "emotional_control": [
+          0.55,
+          0.15
         ]
       }
     },
@@ -402,6 +418,10 @@
         ],
         "aggressiveness": [
           0.42,
+          0.15
+        ],
+        "emotional_control": [
+          0.55,
           0.15
         ]
       }
@@ -483,10 +503,14 @@
         "aggressiveness": [
           0.5,
           0.15
+        ],
+        "emotional_control": [
+          0.55,
+          0.15
         ]
       }
     }
   },
-  "_note": "The generated players' profiles, by role (maintainer, 2026-11-12: random but sensible, recognisable). Each value is [mean, spread]. A characteristic is derived by key, so the same world gives the same player: value = mean + spread * z, clamped to [0.02, 0.98], with z in [-1, 1] mixing the player's own key (1 - family_weight) and a key shared by his family of characteristics (family_weight), so that what goes together goes together (an explosive player is usually fast). The body (height, weight) is derived the same way. The strong foot follows the passing profile; the weak foot is a fraction of it (weak_foot_ratio); left_footed_share of the players are left-footed. Edit a role, replay the same seed, and the players change: no code to touch. reactivity (2026-11-12, ADR-051): how soon the body answers what the eyes saw; the keeper's is highest (it is his reaction time on a shot), a striker's a little above the average (the rebound, the second ball). maximal_force, body_control, aggressiveness (2026-11-13, ADR-042 accepted): they enter with the duel; a centre back is the strongest and the most aggressive, a winger the lightest and the most balanced.",
+  "_note": "The generated players' profiles, by role (maintainer, 2026-11-12: random but sensible, recognisable). Each value is [mean, spread]. A characteristic is derived by key, so the same world gives the same player: value = mean + spread * z, clamped to [0.02, 0.98], with z in [-1, 1] mixing the player's own key (1 - family_weight) and a key shared by his family of characteristics (family_weight), so that what goes together goes together (an explosive player is usually fast). The body (height, weight) is derived the same way. The strong foot follows the passing profile; the weak foot is a fraction of it (weak_foot_ratio); left_footed_share of the players are left-footed. Edit a role, replay the same seed, and the players change: no code to touch. reactivity (2026-11-12, ADR-051): how soon the body answers what the eyes saw; the keeper's is highest (it is his reaction time on a shot), a striker's a little above the average (the rebound, the second ball). maximal_force, body_control, aggressiveness (2026-11-13, ADR-042 accepted): they enter with the duel; a centre back is the strongest and the most aggressive, a winger the lightest and the most balanced. emotional_control (2026-11-13, ADR-042 step b): whether he keeps control in a contact; it enters with the foul.",
   "_source": "Orders of magnitude of real football: goalkeepers and centre backs are the tallest, wide players the lightest and fastest, strikers finish, centre backs tackle and head, midfielders pass and read; about a quarter of players are left-footed. Not calibrated on data: the real distributions are the generator's job (L3, IDEA-DESIGN-007), and this file is its declared prototype."
 }

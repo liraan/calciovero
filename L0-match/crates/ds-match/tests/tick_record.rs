@@ -426,3 +426,22 @@ fn a_pressed_defender_can_clear_the_ball() {
         .count();
     assert!(clears > 0, "no clearance in the match");
 }
+
+/// Law 12 (P1, ADR-042 step b): a match has fouls, and the cards follow
+/// them. Before `SIM_VERSION` 64 no `Foul` and no `Card` was ever emitted.
+#[test]
+fn the_laws_call_fouls_and_cards() {
+    let (result, _) = recorded();
+    let count = |t: ds_stats::EventType| {
+        result
+            .events
+            .events()
+            .iter()
+            .filter(|e| e.event_type == t)
+            .count()
+    };
+    let fouls = count(ds_stats::EventType::Foul);
+    let cards = count(ds_stats::EventType::Card);
+    assert!(fouls > 0, "no foul in the match");
+    assert!(cards <= fouls, "{cards} cards for {fouls} fouls");
+}

@@ -44,6 +44,48 @@ pub enum RestartKind {
     Corner,
     /// A free kick, after an offence (Laws 11-13).
     FreeKick,
+    /// A penalty kick (Law 14), after a foul in the penalty area.
+    Penalty,
+}
+
+/// A card (Law 12).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Card {
+    /// A caution.
+    Yellow,
+    /// A sending-off.
+    Red,
+}
+
+/// The facts of a foul, as the Laws read them (ADR-042 §4).
+#[derive(Debug, Clone, Copy)]
+pub struct FoulFacts {
+    /// The offender went in sliding.
+    pub slide: bool,
+    /// He came from behind.
+    pub from_behind: bool,
+    /// His approach speed, thousandths of the reference speed.
+    pub approach_milli: i32,
+    /// The foul denied an obvious goal-scoring opportunity.
+    pub denies_obvious_chance: bool,
+}
+
+/// Law 12's card for a foul.
+///
+/// Excessive force (a slide from behind at a sprint) or the denial of an
+/// obvious goal-scoring opportunity is a red card; a reckless challenge (a
+/// slide from behind, at speed) a yellow; a careless one none. Thresholds
+/// in `balance/laws.json`.
+#[must_use]
+pub const fn card_for(f: &FoulFacts, reckless_milli: i32, excessive_milli: i32) -> Option<Card> {
+    if f.denies_obvious_chance || (f.slide && f.from_behind && f.approach_milli >= excessive_milli)
+    {
+        Some(Card::Red)
+    } else if f.slide && f.from_behind && f.approach_milli >= reckless_milli {
+        Some(Card::Yellow)
+    } else {
+        None
+    }
 }
 
 /// Who restarts, from where, and how.
@@ -148,6 +190,42 @@ mod tests {
     use super::*;
 
     const PITCH: (i32, i32) = (10_500, 6_800);
+
+    /// Law 12 (P1): a careless foul is no card; a slide from behind,
+    /// yellow; a slide from behind at a sprint, red; denying an obvious
+    /// chance, red.
+    #[test]
+    fn the_card_follows_the_facts() {
+        let careless = FoulFacts {
+            slide: false,
+            from_behind: false,
+            approach_milli: 300,
+            denies_obvious_chance: false,
+        };
+        assert_eq!(card_for(&careless, 600, 900), None);
+        let behind = FoulFacts {
+            from_behind: true,
+            ..careless
+        };
+        assert_eq!(card_for(&behind, 600, 900), None, "on his feet from behind");
+        let slide_behind = FoulFacts {
+            slide: true,
+            approach_milli: 700,
+            ..behind
+        };
+        assert_eq!(card_for(&slide_behind, 600, 900), Some(Card::Yellow));
+        let brutal = FoulFacts {
+            slide: true,
+            approach_milli: 950,
+            ..behind
+        };
+        assert_eq!(card_for(&brutal, 600, 900), Some(Card::Red));
+        let dogso = FoulFacts {
+            denies_obvious_chance: true,
+            ..careless
+        };
+        assert_eq!(card_for(&dogso, 600, 900), Some(Card::Red));
+    }
 
     /// Law 11 (P1): beyond the second-last defender and the ball, in their
     /// half, he is offside; level, or behind the ball, or in his own half,

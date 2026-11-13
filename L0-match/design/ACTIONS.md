@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 63).
+engine (updated at `SIM_VERSION` 64).
 
 **How to read the state.**
 
@@ -121,9 +121,9 @@ The variation comes from the situation, never from a die. Twin tests: the better
 | Kick-off, throw-in, goal kick, corner (Laws 8, 15-17) | ✓ `rules.rs`, exact |
 | Goal (Law 10) | ✓ the ball over the line between the posts |
 | Offside (Law 11) | ✓ since 62, exact: `rules::offside_position` at the pass, the offence when he plays the ball, a free kick |
-| Fouls (Law 12) | — the outcome of a contact; needs the duel's form (§4.1, ADR-042) |
-| Advantage | — |
-| Cards | — |
+| Fouls (Law 12) | ✓ since 64: the contact's band (slide, from behind, speed, temper, technique); free kick, or a penalty in the area |
+| Advantage | ✓ since 64: kept ball in the opponents' half, outside the area |
+| Cards | ✓ since 64: reckless yellow, excessive force and denial of an obvious chance red, second yellow red; the sent-off player leaves the pitch |
 | The referee on the pitch | — not drawn yet |
 
 ## 7. The order of work (ADR-051 §5)

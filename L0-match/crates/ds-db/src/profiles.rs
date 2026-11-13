@@ -105,6 +105,7 @@ impl Profiles {
             },
             psychological: PsychologicalLatents {
                 aggressiveness: value("aggressiveness", "family:psychological"),
+                emotional_control: value("emotional_control", "family:psychological"),
             },
             cognitive: CognitiveLatents {
                 game_reading: value("game_reading", "family:cognitive"),

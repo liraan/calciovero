@@ -149,6 +149,10 @@ pub struct MatchState {
     /// Scanning parameters (ADR-034), loaded once at construction.
     scan_balance: crate::balance::ScanningBalance,
     keeper_balance: crate::balance::KeeperBalance,
+    /// The Laws' thresholds (Law 12, `balance/laws.json`).
+    laws: crate::balance::LawsBalance,
+    /// The players cautioned once (Law 12): a second yellow is a red.
+    cautioned: BTreeSet<PlayerId>,
     obstacle_balance: crate::balance::ObstacleBalance,
     reception_balance: crate::balance::ReceptionBalance,
     carry_balance: crate::balance::CarryBalance,
@@ -441,6 +445,8 @@ impl MatchState {
             pending: None,
             scan_balance: crate::balance::ScanningBalance::load(),
             keeper_balance: crate::balance::KeeperBalance::load(),
+            laws: crate::balance::LawsBalance::load(),
+            cautioned: BTreeSet::new(),
             obstacle_balance: crate::balance::ObstacleBalance::load(),
             reception_balance: crate::balance::ReceptionBalance::load(),
             carry_balance: crate::balance::CarryBalance::load(),
@@ -916,6 +922,8 @@ impl MatchState {
                 defender,
                 duel_type: ds_orchestrator::DuelType::Ground,
                 tackle: ds_calculator::duel::TackleKind::Standing,
+                from_behind: false,
+                approach_cm_per_tick: 0,
             };
             let outcome = ctx.hidden.resolve_duel(&ctx_duel);
             let fact = crate::fact::Fact::Contact {
@@ -1407,7 +1415,17 @@ impl MatchState {
             }
             ds_calculator::duel::TackleKind::Standing
         } else {
-            ctx.hidden.choose_tackle(challenger, in_reach)
+            // In his own penalty area he is careful (a foul is a penalty).
+            let defending_home = !ctx.match_.home.players.iter().any(|p| p.id == carrier);
+            let in_area = in_keeper_box(
+                ball,
+                defending_home,
+                pitch_cm(ctx),
+                &ctx.hidden.offball_balance(),
+            );
+            let booked = self.cautioned.contains(&challenger);
+            ctx.hidden
+                .choose_tackle(challenger, (in_reach, in_area, booked))
         };
         // One attempt per choice: then he keeps pressing until he chooses again.
         self.spatial
@@ -1418,6 +1436,7 @@ impl MatchState {
                 .insert(challenger, tick + duel.retry_ticks / 2);
             return;
         }
+        let (from_behind, approach) = self.challenge_geometry(ctx, carrier, challenger, ball);
         let outcome = ctx.hidden.resolve_duel(&ds_orchestrator::DuelContext {
             attacker: carrier,
             defender: challenger,
@@ -1427,6 +1446,8 @@ impl MatchState {
                 ds_orchestrator::DuelType::Ground
             },
             tackle,
+            from_behind,
+            approach_cm_per_tick: approach,
         });
         self.emit_contact(ctx, tick, carrier, challenger, &outcome);
         let down = if tackle == ds_calculator::duel::TackleKind::Slide {
@@ -1434,17 +1455,25 @@ impl MatchState {
         } else {
             duel.retry_ticks
         };
+        if outcome.foul_committed.is_some() {
+            self.challenges.insert(challenger, tick + down);
+            let facts = crate::rules::FoulFacts {
+                slide: tackle == ds_calculator::duel::TackleKind::Slide,
+                from_behind,
+                approach_milli: approach * 1000 / duel.speed_ref_cm_per_tick.max(1),
+                denies_obvious_chance: false,
+            };
+            self.apply_foul(
+                ctx,
+                tick,
+                (carrier, challenger),
+                facts,
+                outcome.ball_retained,
+            );
+            return;
+        }
         if outcome.loose {
-            // Neither has it: the ball runs from the contact, away from the
-            // defender, for whoever gets there (ADR-042, amended).
-            let from = self.spatial.agent(challenger).map_or(ball, |a| a.position);
-            let (dx, dy) = (f64::from(ball.0 - from.0), f64::from(ball.1 - from.1));
-            let len = dx.hypot(dy).max(1.0);
-            let sp = f64::from(duel.loose_speed_cm_per_tick);
-            #[allow(clippy::cast_possible_truncation)]
-            let v = ((dx / len * sp) as i16, (dy / len * sp) as i16, 0);
-            self.spatial.set_carrier(None);
-            self.spatial.set_ball_in_flight((ball.0, ball.1, 0), v);
+            self.loose_from_contact(challenger, ball, duel.loose_speed_cm_per_tick);
             self.challenges.insert(challenger, tick + down);
         } else if outcome.winner == challenger {
             self.flip_possession();
@@ -1454,6 +1483,150 @@ impl MatchState {
             // Beaten, he needs time to recover before he can try again; a
             // slide that missed leaves him on the ground longer.
             self.challenges.insert(challenger, tick + down);
+        }
+    }
+
+    /// The contact's geometry (ADR-042 §4): whether the challenger comes
+    /// from behind the carrier (from the side the carrier is leaving), and
+    /// how fast he arrives, cm/tick.
+    fn challenge_geometry(
+        &self,
+        ctx: &MatchContext<'_>,
+        carrier: PlayerId,
+        challenger: PlayerId,
+        ball: (i32, i32),
+    ) -> (bool, i32) {
+        let ch = self
+            .spatial
+            .agent(challenger)
+            .map(|a| (a.position, a.velocity));
+        let carrier_home = ctx.match_.home.players.iter().any(|p| p.id == carrier);
+        let forward = if carrier_home { 1 } else { -1 };
+        let from_behind = ch.is_some_and(|(p, _)| (p.0 - ball.0) * forward < -50);
+        #[allow(clippy::cast_possible_truncation)]
+        let approach = ch.map_or(0, |(_, v)| f64::from(v.0).hypot(f64::from(v.1)) as i32);
+        (from_behind, approach)
+    }
+
+    /// Neither has it: the ball runs from the contact, away from the
+    /// defender, for whoever gets there (ADR-042, amended).
+    fn loose_from_contact(&mut self, challenger: PlayerId, ball: (i32, i32), speed: i32) {
+        let from = self.spatial.agent(challenger).map_or(ball, |a| a.position);
+        let (dx, dy) = (f64::from(ball.0 - from.0), f64::from(ball.1 - from.1));
+        let len = dx.hypot(dy).max(1.0);
+        let sp = f64::from(speed);
+        #[allow(clippy::cast_possible_truncation)]
+        let v = ((dx / len * sp) as i16, (dy / len * sp) as i16, 0);
+        self.spatial.set_carrier(None);
+        self.spatial.set_ball_in_flight((ball.0, ball.1, 0), v);
+    }
+
+    /// Law 12, applied objectively (ADR-021 note, ADR-042 step b): the foul
+    /// is called; its card follows the facts (a second yellow is a red, a
+    /// red sends the player off); then the advantage, or the free kick where
+    /// it happened, or a penalty if it happened in the penalty area.
+    fn apply_foul(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        (fouled, offender): (PlayerId, PlayerId),
+        mut facts: crate::rules::FoulFacts,
+        kept: bool,
+    ) {
+        let (length, width) = pitch_cm(ctx);
+        let spot = self
+            .spatial
+            .agent(fouled)
+            .map_or_else(|| self.spatial.ball(), |a| a.position);
+        let fouled_home = ctx.match_.home.players.iter().any(|p| p.id == fouled);
+        let goal = (if fouled_home { length } else { 0 }, width / 2);
+        let depth = |p: (i32, i32)| (goal.0 - p.0).abs();
+        let laws = self.laws;
+        let in_area = depth(spot) <= laws.penalty_area_depth_cm
+            && (spot.1 - goal.1).abs() <= laws.penalty_area_half_width_cm;
+        // An obvious goal-scoring opportunity: near the goal he attacks, and
+        // no defender but the offender, the keeper included, nearer to it.
+        let defenders = if fouled_home {
+            &ctx.match_.away
+        } else {
+            &ctx.match_.home
+        };
+        let cover = defenders
+            .players
+            .iter()
+            .filter(|q| q.id != offender)
+            .filter_map(|q| self.spatial.agent(q.id))
+            .any(|a| depth(a.position) < depth(spot));
+        facts.denies_obvious_chance =
+            distance_squared(spot, goal) <= i64::from(laws.dogso_distance_cm).pow(2) && !cover;
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(offender)),
+            EventType::Foul,
+            serde_json::json!({ "against": fouled.slot(), "x": spot.0, "y": spot.1, "slide": facts.slide, "from_behind": facts.from_behind }),
+        );
+        let card = crate::rules::card_for(
+            &facts,
+            laws.reckless_speed_milli,
+            laws.excessive_speed_milli,
+        );
+        let card = match card {
+            Some(crate::rules::Card::Yellow) if !self.cautioned.insert(offender) => {
+                Some(crate::rules::Card::Red)
+            }
+            c => c,
+        };
+        if let Some(c) = card {
+            let red = c == crate::rules::Card::Red;
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(offender)),
+                EventType::Card,
+                serde_json::json!({ "color": if red { "red" } else { "yellow" } }),
+            );
+            if red {
+                // Off the pitch: to the bench, by the halfway line.
+                self.spatial.send_off(offender, (length / 2, -300));
+            }
+        }
+        // Advantage: the side that suffered it keeps the ball in the
+        // opponents' half, outside the area; play goes on.
+        if kept && !in_area && depth(spot) < length / 2 {
+            return;
+        }
+        let side = if fouled_home {
+            crate::rules::Side::Home
+        } else {
+            crate::rules::Side::Away
+        };
+        let (restart, kind) = if in_area {
+            let x = goal.0
+                - if fouled_home {
+                    laws.penalty_spot_cm
+                } else {
+                    -laws.penalty_spot_cm
+                };
+            (
+                crate::rules::Restart {
+                    side,
+                    spot: (x, goal.1),
+                    kind: crate::rules::RestartKind::Penalty,
+                },
+                EventType::Penalty,
+            )
+        } else {
+            (crate::rules::free_kick(side, spot), EventType::FreeKick)
+        };
+        if let Some(taker) = self.apply_restart(ctx, restart) {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(taker)),
+                kind,
+                serde_json::json!({ "reason": "foul", "x": restart.spot.0, "y": restart.spot.1 }),
+            );
         }
     }
 
@@ -1575,15 +1748,20 @@ impl MatchState {
                 state: self.spatial.ball_state(),
             },
             carrier: self.spatial.carrier(),
-            agents: self
-                .spatial
-                .iter()
-                .map(|(id, a)| crate::record::AgentFrame {
-                    id: *id,
-                    position: a.position,
-                    heading: a.heading,
-                })
-                .collect(),
+            agents: {
+                let mut agents: Vec<crate::record::AgentFrame> = self
+                    .spatial
+                    .iter()
+                    .map(|(id, a)| crate::record::AgentFrame {
+                        id: *id,
+                        position: a.position,
+                        heading: a.heading,
+                    })
+                    .collect();
+                // The players sent off are listed too, in id order.
+                agents.sort_by_key(|a| a.id);
+                agents
+            },
             score: self.score,
             events,
         }

@@ -60,6 +60,37 @@ pub struct DuelBalance {
     pub slide_salience_milli: i32,
     /// The salience of jockeying, thousandths.
     pub jockey_salience_milli: i32,
+    /// A contact not won is a foul at this band, thousandths.
+    pub foul_threshold_milli: i32,
+    /// What a slide adds to the band, thousandths.
+    pub foul_slide_milli: i32,
+    /// What a challenge from behind adds, thousandths.
+    pub foul_behind_milli: i32,
+    /// What aggressiveness without emotional control adds, thousandths.
+    pub foul_temper_milli: i32,
+    /// What the approach speed adds (at `speed_ref`), thousandths.
+    pub foul_speed_milli: i32,
+    /// What a poor tackling technique adds, thousandths.
+    pub foul_technique_milli: i32,
+    /// The approach speed of reference, cm/tick.
+    pub speed_ref_cm_per_tick: i32,
+    /// In his own penalty area the slide's salience is multiplied by this,
+    /// thousandths.
+    pub area_slide_caution_milli: i32,
+    /// A player already cautioned multiplies the slide's salience by this,
+    /// thousandths.
+    pub booked_slide_caution_milli: i32,
+}
+
+/// The facts of a challenge the foul's band reads (ADR-042 §4).
+#[derive(Debug, Clone, Copy)]
+pub struct ChallengeFacts {
+    /// He went in sliding.
+    pub slide: bool,
+    /// He came from behind the carrier.
+    pub from_behind: bool,
+    /// His speed when he arrived, cm/tick.
+    pub approach_cm_per_tick: i32,
 }
 
 impl DuelBalance {
@@ -124,6 +155,32 @@ impl DuelBalance {
         }
     }
 
+    /// Whether a contact the defender did not win is a foul (ADR-042 §4,
+    /// the band): the way he went in, his speed, his temper, his technique.
+    #[must_use]
+    pub fn foul(
+        &self,
+        facts: &ChallengeFacts,
+        aggressiveness: f32,
+        emotional_control: f32,
+        tackling: f32,
+    ) -> bool {
+        let speed = f32::from(i16::try_from(facts.approach_cm_per_tick).unwrap_or(i16::MAX))
+            / f32::from(i16::try_from(self.speed_ref_cm_per_tick.max(1)).unwrap_or(1));
+        let temper = milli(self.foul_temper_milli) * aggressiveness * (1.0 - emotional_control);
+        let mut band = milli(self.foul_technique_milli).mul_add(
+            1.0 - tackling,
+            milli(self.foul_speed_milli).mul_add(speed, temper),
+        );
+        if facts.slide {
+            band += milli(self.foul_slide_milli);
+        }
+        if facts.from_behind {
+            band += milli(self.foul_behind_milli);
+        }
+        band >= milli(self.foul_threshold_milli)
+    }
+
     /// How the defender goes in: the most salient of standing, slide and
     /// jockey. Within his standing reach all three; beyond it, only within
     /// a slide's reach, slide or jockey.
@@ -133,11 +190,21 @@ impl DuelBalance {
         tackling: f32,
         aggressiveness: f32,
         reading: f32,
-        in_standing_reach: bool,
+        (in_standing_reach, in_own_area, booked): (bool, bool, bool),
     ) -> TackleKind {
         let half = 0.5f32;
         let standing = milli(self.standing_salience_milli) * half.mul_add(tackling, half);
-        let slide = milli(self.slide_salience_milli) * aggressiveness;
+        let caution = if in_own_area {
+            milli(self.area_slide_caution_milli)
+        } else {
+            1.0
+        };
+        let booked = if booked {
+            milli(self.booked_slide_caution_milli)
+        } else {
+            1.0
+        };
+        let slide = milli(self.slide_salience_milli) * aggressiveness * caution * booked;
         let jockey = milli(self.jockey_salience_milli)
             * (1.0 - aggressiveness)
             * half.mul_add(reading, half);
@@ -222,12 +289,62 @@ mod tests {
         assert_eq!(b.contact(0.50, 0.49), None);
     }
 
+    /// Twin test (ADR-051 §3): the same slide from the side, by two
+    /// defenders identical but for emotional control: the one who loses it
+    /// fouls, the calm one does not.
+    #[test]
+    fn the_hothead_twin_fouls() {
+        let b = DuelBalance::load();
+        let f = super::ChallengeFacts {
+            slide: true,
+            from_behind: false,
+            approach_cm_per_tick: 40,
+        };
+        assert!(b.foul(&f, 0.8, 0.1, 0.5));
+        assert!(!b.foul(&f, 0.8, 0.9, 0.5));
+    }
+
+    /// From behind and fast, even a calm good tackler fouls; from the front
+    /// on his feet, he does not (P1, Law 12).
+    #[test]
+    fn from_behind_is_a_foul() {
+        let b = DuelBalance::load();
+        let behind = super::ChallengeFacts {
+            slide: true,
+            from_behind: true,
+            approach_cm_per_tick: 60,
+        };
+        let front = super::ChallengeFacts {
+            slide: false,
+            from_behind: false,
+            approach_cm_per_tick: 30,
+        };
+        assert!(b.foul(&behind, 0.3, 0.8, 0.8));
+        assert!(!b.foul(&front, 0.3, 0.8, 0.8));
+    }
+
     /// Twin test: two defenders identical but for aggressiveness; the
     /// aggressive one slides, the calm one jockeys.
     #[test]
     fn the_aggressive_twin_slides() {
         let b = DuelBalance::load();
-        assert_eq!(b.choose(0.5, 0.95, 0.5, false), TackleKind::Slide);
-        assert_eq!(b.choose(0.5, 0.1, 0.5, false), TackleKind::Jockey);
+        assert_eq!(
+            b.choose(0.5, 0.95, 0.5, (false, false, false)),
+            TackleKind::Slide
+        );
+        assert_eq!(
+            b.choose(0.5, 0.1, 0.5, (false, false, false)),
+            TackleKind::Jockey
+        );
+        // In his own area, or once cautioned, even the aggressive one stays
+        // on his feet when the carrier is in reach.
+        assert_ne!(
+            b.choose(0.5, 0.95, 0.5, (true, true, false)),
+            TackleKind::Slide
+        );
+        assert_ne!(
+            b.choose(0.5, 0.95, 0.5, (true, false, true)),
+            TackleKind::Slide
+        );
     }
 }

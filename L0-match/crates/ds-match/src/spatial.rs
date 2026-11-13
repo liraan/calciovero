@@ -113,6 +113,9 @@ pub struct SpatialState {
     acts: BTreeMap<PlayerId, ds_orchestrator::OffBallAct>,
     /// Where a player who chose to offer or to run is going (ADR-051).
     act_targets: BTreeMap<PlayerId, (i32, i32)>,
+    /// Players sent off (Law 12): off the pitch, on the bench. Not agents:
+    /// nobody sees them, nothing reaches them; the record still shows them.
+    off_pitch: BTreeMap<PlayerId, AgentState>,
     /// Where the carrier is taking the ball, if he chose to carry it
     /// (IDEA-DESIGN-010: carrying is a choice). `None`: he holds it.
     carry_target: Option<(i32, i32)>,
@@ -201,6 +204,7 @@ impl SpatialState {
             carry_target: None,
             acts: BTreeMap::new(),
             act_targets: BTreeMap::new(),
+            off_pitch: BTreeMap::new(),
             carrier: None,
             goalkeepers: (home.players[0].id, away.players[0].id),
         };
@@ -738,7 +742,27 @@ impl SpatialState {
 
     /// Iterates over every `(PlayerId, AgentState)` pair, in `PlayerId` order.
     pub fn iter(&self) -> impl Iterator<Item = (&PlayerId, &AgentState)> {
+        self.agents.iter().chain(self.off_pitch.iter())
+    }
+
+    /// The players on the pitch (not those sent off).
+    pub fn on_pitch(&self) -> impl Iterator<Item = (&PlayerId, &AgentState)> {
         self.agents.iter()
+    }
+
+    /// Sends a player off (Law 12): he leaves the pitch for `bench`, and is
+    /// no longer an agent (`agent` returns `None` for him).
+    pub fn send_off(&mut self, id: PlayerId, bench: (i32, i32)) {
+        if let Some(mut a) = self.agents.remove(&id) {
+            a.position = bench;
+            a.velocity = (0, 0);
+            self.off_pitch.insert(id, a);
+        }
+        self.acts.remove(&id);
+        self.act_targets.remove(&id);
+        if self.carrier == Some(id) {
+            self.set_carrier(None);
+        }
     }
 }
 

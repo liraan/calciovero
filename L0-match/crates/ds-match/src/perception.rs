@@ -254,7 +254,7 @@ pub fn scan(
     let team = team_of(from);
     let mut mark: Option<(i64, PlayerId, (i32, i32))> = None;
     let mut on_ball: Option<(i64, PlayerId, (i32, i32))> = None;
-    for (id, a) in spatial.iter() {
+    for (id, a) in spatial.on_pitch() {
         if team_of(*id) == team {
             continue;
         }

@@ -214,6 +214,39 @@ impl KeeperBalance {
     }
 }
 
+/// The embedded laws file (Law 12, ADR-042 step b).
+const LAWS_JSON: &str = include_str!("../../../balance/laws.json");
+
+/// The Laws' declared thresholds (`L0-match/balance/laws.json`).
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+pub struct LawsBalance {
+    /// A slide at this share of the reference speed is reckless, thousandths.
+    pub reckless_speed_milli: i32,
+    /// A slide from behind at this share is excessive force, thousandths.
+    pub excessive_speed_milli: i32,
+    /// Within this distance of the goal a foul may deny an obvious chance, cm.
+    pub dogso_distance_cm: i32,
+    /// The penalty mark, from the goal line, cm (Law 1).
+    pub penalty_spot_cm: i32,
+    /// The penalty area's depth, cm (Law 1).
+    pub penalty_area_depth_cm: i32,
+    /// The penalty area's half width, cm (Law 1).
+    pub penalty_area_half_width_cm: i32,
+}
+
+impl LawsBalance {
+    /// Loads the embedded laws.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the embedded JSON is invalid; `embedded_laws_are_valid`
+    /// catches it at test time.
+    #[must_use]
+    pub fn load() -> Self {
+        serde_json::from_str(LAWS_JSON).expect("embedded laws file is valid JSON")
+    }
+}
+
 /// The embedded reception balance file (REC).
 const RECEPTION_JSON: &str = include_str!("../../../balance/reception.json");
 
@@ -324,6 +357,13 @@ mod tests {
         assert_eq!(w.space_threshold_cm, 2000);
         let hidden = w.to_weights();
         assert_eq!(hidden.w_space, w.w_space);
+    }
+
+    #[test]
+    fn embedded_laws_are_valid() {
+        let b = LawsBalance::load();
+        assert!(b.reckless_speed_milli < b.excessive_speed_milli);
+        assert_eq!(b.penalty_spot_cm, 1100);
     }
 
     #[test]
