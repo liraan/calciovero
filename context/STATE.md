@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `9982054` - "test(repertoire): every act shows, and what it found -- plan L0-CLOSE 8"
+**Last commit verified:** `e83dc32` - "feat(friendly): a friendly you can play -- plan L0-CLOSE 9"
 
 ## Dove siamo (2026-11-13)
 
@@ -15,7 +15,7 @@
 
 | Pr. | # | Cosa | Dipende da | Prima azione |
 |---|---|---|---|---|
-| [next] | L0-CLOSE | **Chiudere L0 prima di L1** (maintainer, 2026-11-13). Dieci passi in `plans/L0-CLOSE.md`, 1-9 fatti. | ADR-051, ADR-052, ADR-042 | Passo 10, con il maintainer: giocare un'amichevole (`README`, *Try the engine*), poi la taratura fine sui 30 seed. La leva principale: `thought.json` `possession_value` (i tiri sono troppi). |
+| [next] | L0-CLOSE | **Chiudere L0 prima di L1** (maintainer, 2026-11-13). Dieci passi in `plans/L0-CLOSE.md`, 1-9 fatti. | ADR-051, ADR-052, ADR-042 | Passo 10, con il maintainer: la misura è scritta in `plans/L0-CLOSE.md` (tabella contro il reale e sei leve in ordine); giocare un'amichevole, poi tarare, prima la leva 1 (`possession_value`). |
 | [open] | 10 | **L1, il mondo** (`L1-world/`). Si apre solo dopo L0 chiuso. | L0-CLOSE | Scrivere `L1-world/00-overview.md` (L1.04) prima di L1.05. |
 | [deferred] | 11 | **Ruleset GitHub (fase 2).** Disattivo; si riattiva quando c'è un secondo revisore, il progetto esce, o un agente riceve un token di scrittura. | — | Rileggere `RULES.md` §C quando una delle tre condizioni si presenta. |
 
