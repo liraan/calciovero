@@ -259,7 +259,12 @@ impl crate::GroundTruth {
                 best = (spaces.offer, OffBallAct::Offer);
             }
             if m.to_line_cm.is_some() {
-                let pace = f64::from(l.physical.max_speed) * 90.0;
+                // His own top speed, as his body has it (movement.json).
+                let mv = &self.movement_balance;
+                let pace = (mv.top_speed_max_cm_per_tick - mv.top_speed_min_cm_per_tick).mul_add(
+                    f64::from(l.physical.max_speed),
+                    mv.top_speed_min_cm_per_tick,
+                );
                 #[allow(clippy::cast_precision_loss)]
                 let run = spaces.run
                     * thought.race(spaces.run_cm as f64, pace, spaces.defender_cm as f64);

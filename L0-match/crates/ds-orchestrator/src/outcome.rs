@@ -100,6 +100,10 @@ pub struct MovementOutcome {
     pub acceleration: f64,
     /// The top speed, in cm/tick (the clamp).
     pub v_max: f64,
+    /// The braking, in cm/tick² (body control).
+    pub deceleration: f64,
+    /// A player taking up his place gets there in about this many ticks.
+    pub reposition_ticks: f64,
     /// The stride ratio: how much ground one unit of leg speed covers,
     /// relative to the reference height.
     pub stride: f64,

@@ -1,10 +1,15 @@
 {
-  "accel_ref_cm_per_tick2": 3,
-  "v_max_ref_cm_per_tick": 90,
+  "accel_min_cm_per_tick2": 2.5,
+  "accel_max_cm_per_tick2": 5.0,
+  "top_speed_min_cm_per_tick": 75.0,
+  "top_speed_max_cm_per_tick": 100.0,
+  "decel_min_cm_per_tick2": 3.5,
+  "decel_max_cm_per_tick2": 6.0,
+  "reposition_ticks": 30.0,
   "weight_ref_kg": 78,
   "height_ref_cm": 180,
   "fatigue_coefficient": 0.5,
   "fatigue_floor": 0.5,
-  "_note": "Prototype, not calibrated. The reference values are derived from standard sports-science figures. fatigue_coefficient and fatigue_floor are model choices (ADR-030: one scalar, two mechanisms, multiplicative factor with a floor); to be replaced by a cited study before calibration (L3). A term with no derivation does not enter the model.",
-  "_source": "Standard figures: a professional footballer reaches ~9 m/s (90 cm/tick at 10 ticks/s) in ~3 s (30 ticks), median weight ~78 kg, median height ~180 cm. Fatigue coefficient and floor: prototype, not calibrated."
+  "_note": "The body (2026-11-13, rebuilt on a professional's figures; ADR-052 note: derived, never adjusted). Top speed: top_speed_min + (top_speed_max - top_speed_min) x max_speed. Acceleration: (accel_min + (accel_max - accel_min) x explosive_force) x weight_ref / weight, dimmed by fatigue (ADR-030: 1 - fatigue_coefficient x fatigue, floored). Braking: decel_min + (decel_max - decel_min) x body_control: he slows down to stop where he is going, and to turn. He moves in a straight line towards his target (before, a diagonal ran 1.4 times his top speed). His pace is his: when he contests something (pressing, going in, going for the ball, running in behind, carrying it) he runs as fast as he can; when he takes up his place he goes at the speed that gets him there in about reposition_ticks. Before, every player ran every run at full speed (13 km a match, a third of the time above 4 m/s). The characteristics are read through the range, never to zero (before, an average player reached 4.5 m/s, accelerating at 1.5 m/s2).",
+  "_source": "Professional footballers' peak sprint speeds of about 7.5-10 m/s (27-36 km/h, top-league tracking data); maximal accelerations of about 2.5-5 m/s2 and decelerations larger than accelerations, up to 5-6 m/s2 and more (Harper, Carling and Kiely 2019, Sports Medicine 49:1923-1947). weight_ref and height_ref: median professional (78 kg, 180 cm). reposition_ticks (3 s), fatigue_coefficient and fatigue_floor: arbitrary, declared, to be sourced at L3."
 }

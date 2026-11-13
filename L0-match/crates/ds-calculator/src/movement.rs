@@ -6,7 +6,11 @@
 //!
 //! The formula, in the grammar:
 //!
-//! `a = accel_ref * explosive_force * (weight_ref / weight)`
+//! `a = (accel_min + (accel_max - accel_min) * explosive_force) * (weight_ref / weight)`
+//!
+//! The range is a professional footballer's (2026-11-13): explosive force
+//! places him in it, never at zero (before, an average player accelerated
+//! at half the reference and reached 4.5 m/s).
 //!
 //! The constants come from `L0-match/balance/movement.json`, which is embedded at
 //! compile time: the engine performs no I/O. A balance change is a
@@ -29,10 +33,20 @@ const MOVEMENT_JSON: &str = include_str!("../../../balance/movement.json");
 /// The constants of the movement formula, and the formula itself.
 #[derive(Debug, Clone)]
 pub struct MovementBalance {
-    /// Reference acceleration, in cm/tick².
-    pub accel_ref_cm_per_tick2: f64,
-    /// Reference top speed, in cm/tick.
-    pub v_max_ref_cm_per_tick: f64,
+    /// The acceleration of the least explosive professional, cm/tick².
+    pub accel_min_cm_per_tick2: f64,
+    /// The acceleration of the most explosive professional, cm/tick².
+    pub accel_max_cm_per_tick2: f64,
+    /// The top speed of the slowest professional, cm/tick.
+    pub top_speed_min_cm_per_tick: f64,
+    /// The top speed of the fastest professional, cm/tick.
+    pub top_speed_max_cm_per_tick: f64,
+    /// The braking of the least balanced professional, cm/tick².
+    pub decel_min_cm_per_tick2: f64,
+    /// The braking of the most balanced professional, cm/tick².
+    pub decel_max_cm_per_tick2: f64,
+    /// A player taking up his place gets there in about this many ticks.
+    pub reposition_ticks: f64,
     /// Reference weight, in kg.
     pub weight_ref_kg: f64,
     /// Reference height, in cm.
@@ -48,8 +62,13 @@ pub struct MovementBalance {
 /// The JSON shape, parsed before the formula is built.
 #[derive(Debug, Clone, Deserialize)]
 struct MovementBalanceRaw {
-    accel_ref_cm_per_tick2: f64,
-    v_max_ref_cm_per_tick: f64,
+    accel_min_cm_per_tick2: f64,
+    accel_max_cm_per_tick2: f64,
+    top_speed_min_cm_per_tick: f64,
+    top_speed_max_cm_per_tick: f64,
+    decel_min_cm_per_tick2: f64,
+    decel_max_cm_per_tick2: f64,
+    reposition_ticks: f64,
     weight_ref_kg: f64,
     height_ref_cm: f64,
     fatigue_coefficient: f64,
@@ -69,8 +88,13 @@ impl MovementBalance {
             serde_json::from_str(MOVEMENT_JSON).expect("embedded movement balance is valid JSON");
         let formula = Self::build_formula(&raw);
         Self {
-            accel_ref_cm_per_tick2: raw.accel_ref_cm_per_tick2,
-            v_max_ref_cm_per_tick: raw.v_max_ref_cm_per_tick,
+            accel_min_cm_per_tick2: raw.accel_min_cm_per_tick2,
+            accel_max_cm_per_tick2: raw.accel_max_cm_per_tick2,
+            top_speed_min_cm_per_tick: raw.top_speed_min_cm_per_tick,
+            top_speed_max_cm_per_tick: raw.top_speed_max_cm_per_tick,
+            decel_min_cm_per_tick2: raw.decel_min_cm_per_tick2,
+            decel_max_cm_per_tick2: raw.decel_max_cm_per_tick2,
+            reposition_ticks: raw.reposition_ticks,
             weight_ref_kg: raw.weight_ref_kg,
             height_ref_cm: raw.height_ref_cm,
             fatigue_coefficient: raw.fatigue_coefficient,
@@ -81,7 +105,7 @@ impl MovementBalance {
 
     /// The movement formula, built once in `load()`.
     ///
-    /// `a = accel_ref * explosive_force * (weight_ref / weight) * max(floor, 1 - c*fatigue)`
+    /// `a = (accel_min + range * explosive_force) * (weight_ref / weight) * max(floor, 1 - c*fatigue)`
     ///
     /// The fatigue modifier is ADR-030 (one scalar, multiplicative with a
     /// floor). It is identity at fatigue = 0, so the golden is unchanged
@@ -93,8 +117,13 @@ impl MovementBalance {
 
     fn build_formula(b: &MovementBalanceRaw) -> Formula {
         Formula::Product(vec![
-            Formula::Const(b.accel_ref_cm_per_tick2),
-            Formula::Term(Characteristic::ExplosiveForce),
+            Formula::Sum(vec![
+                Formula::Const(b.accel_min_cm_per_tick2),
+                Formula::Product(vec![
+                    Formula::Const(b.accel_max_cm_per_tick2 - b.accel_min_cm_per_tick2),
+                    Formula::Term(Characteristic::ExplosiveForce),
+                ]),
+            ]),
             Formula::Ratio(
                 Box::new(Formula::Const(b.weight_ref_kg)),
                 Box::new(Formula::Datum(Datum::Weight)),
@@ -121,8 +150,11 @@ mod tests {
     #[test]
     fn embedded_movement_balance_is_valid() {
         let b = MovementBalance::load();
-        assert!(b.accel_ref_cm_per_tick2 > 0.0);
-        assert!(b.v_max_ref_cm_per_tick > 0.0);
+        assert!(
+            b.accel_min_cm_per_tick2 > 0.0 && b.accel_max_cm_per_tick2 > b.accel_min_cm_per_tick2
+        );
+        assert!(b.top_speed_max_cm_per_tick > b.top_speed_min_cm_per_tick);
+        assert!(b.decel_max_cm_per_tick2 > b.decel_min_cm_per_tick2);
         assert!(b.weight_ref_kg > 0.0);
         assert!(b.height_ref_cm > 0.0);
     }

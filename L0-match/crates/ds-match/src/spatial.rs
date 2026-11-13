@@ -667,8 +667,8 @@ impl SpatialState {
             let Some(body) = bodies.get(&entry.0) else {
                 continue;
             };
-            let v_prev = self.agents.get(&entry.0).map_or(0, |a| {
-                i32::from(a.velocity.0.unsigned_abs().max(a.velocity.1.unsigned_abs()))
+            let v_prev = self.agents.get(&entry.0).map_or((0.0, 0.0), |a| {
+                (f64::from(a.velocity.0), f64::from(a.velocity.1))
             });
             let mctx = ds_orchestrator::MovementContext {
                 player: entry.0,
@@ -677,24 +677,71 @@ impl SpatialState {
                 fatigue: body.fatigue,
             };
             let outcome = hidden.resolve_movement(&mctx);
-            let stride = outcome.stride;
             // Displacement space: stride is a positive per-player constant,
-            // so `min(v + a, v_max)` in leg-speed space becomes
-            // `min(v_disp + a*stride, v_max*stride)`.
-            let accel_disp = outcome.acceleration * stride;
-            let v_max_disp = outcome.v_max * stride;
-            let dist = (target.0 - entry.1.0)
-                .abs()
-                .max((target.1 - entry.1.1).abs());
-            let v_next = (f64::from(v_prev) + accel_disp)
-                .min(v_max_disp)
-                .min(f64::from(dist));
+            // so the leg speeds and accelerations scale by it.
+            let stride = outcome.stride;
+            let accel = outcome.acceleration * stride;
+            let decel = outcome.deceleration * stride;
+            let top = outcome.v_max * stride;
+            let (dx, dy) = (
+                f64::from(target.0 - entry.1.0),
+                f64::from(target.1 - entry.1.1),
+            );
+            let dist = dx.hypot(dy);
+            // His pace is his (2026-11-13): he runs flat out when he
+            // contests something; taking up his place he goes at the speed
+            // that gets him there in time.
+            let keeper = keeper_targets.iter().any(|(g, _)| *g == entry.0);
+            let contests = Some(entry.0) == self.carrier
+                || to_the_ball
+                || act == Some(ds_orchestrator::OffBallAct::Run);
+            // Without the ball his side must be in its place before the ball
+            // can get there: he goes as much faster, against a player as
+            // fast as he is, as his place is nearer to him than to the ball.
+            // With the ball he takes his place in his own time. The keeper
+            // keeps his angle at every moment.
+            let defending = (crate::perception::team_of(entry.0) == 0) != self.home_in_possession;
+            let in_time = if keeper {
+                top
+            } else if defending {
+                let to_ball = f64::from(target.0 - ball.0).hypot(f64::from(target.1 - ball.1));
+                top * (dist / to_ball.max(1.0))
+            } else {
+                dist / outcome.reposition_ticks.max(1.0)
+            };
+            // He brakes to stop at his place; into a contest he goes at speed.
+            let wanted = if contests {
+                top
+            } else {
+                in_time.min(top).min((2.0 * decel * dist).sqrt())
+            }
+            .min(dist);
+            let (ux, uy) = if dist > 0.0 {
+                (dx / dist, dy / dist)
+            } else {
+                (0.0, 0.0)
+            };
+            let (wx, wy) = (ux * wanted, uy * wanted);
+            // Towards the velocity he wants: speeding up by his
+            // acceleration, slowing down or turning by his braking.
+            let (cx, cy) = (wx - v_prev.0, wy - v_prev.1);
+            let change = cx.hypot(cy);
+            let limit = if wanted > v_prev.0.hypot(v_prev.1) {
+                accel
+            } else {
+                decel
+            };
+            let k = if change > limit { limit / change } else { 1.0 };
+            let (mut vx, mut vy) = (cx.mul_add(k, v_prev.0), cy.mul_add(k, v_prev.1));
+            let speed = vx.hypot(vy);
+            if speed > top {
+                vx *= top / speed;
+                vy *= top / speed;
+            }
             #[allow(clippy::cast_possible_truncation)]
-            let step = v_next.round() as i32;
-            let step_x = (target.0 - entry.1.0).signum() * step;
-            let step_y = (target.1 - entry.1.1).signum() * step;
-            let nx = (entry.1.0 + step_x).clamp(0, pitch_length_cm);
-            let ny = (entry.1.1 + step_y).clamp(0, pitch_width_cm);
+            let nx = (entry.1.0 + vx.round() as i32).clamp(0, pitch_length_cm);
+            #[allow(clippy::cast_possible_truncation)]
+            let ny = (entry.1.1 + vy.round() as i32).clamp(0, pitch_width_cm);
             entry.1 = (nx, ny);
         }
 

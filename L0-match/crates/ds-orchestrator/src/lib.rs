@@ -777,16 +777,22 @@ impl GroundTruth {
         // (`PlayerLatents: Copy`), so the borrow ends at the end of this
         // line.
         let mut custodian = self.custodian(ctx.player);
-        let max_speed = self.latents_for(ctx.player).physical.max_speed;
+        let latents = self.latents_for(ctx.player).physical;
+        let max_speed = latents.max_speed;
         let balance = &self.movement_balance;
         // v_max and stride are not terms of the acceleration formula: they
         // are the clamp and the ground-per-step, computed from the balance
         // and the player's data. The model says
         // `v = min(v + a, v_max_ref * max_speed)`, `x += v * (height / height_ref)`.
         // Fatigue dims the top speed too (plan L0-CLOSE step 6).
-        let v_max = balance.v_max_ref_cm_per_tick
-            * f64::from(max_speed)
+        let v_max = (balance.top_speed_max_cm_per_tick - balance.top_speed_min_cm_per_tick)
+            .mul_add(f64::from(max_speed), balance.top_speed_min_cm_per_tick)
             * self.fatigue_balance.v_max_factor(ctx.fatigue);
+        let deceleration = (balance.decel_max_cm_per_tick2 - balance.decel_min_cm_per_tick2)
+            .mul_add(
+                f64::from(latents.body_control),
+                balance.decel_min_cm_per_tick2,
+            );
         let stride = ctx.height_cm / balance.height_ref_cm;
         let situation = TheSituation {
             height: ctx.height_cm,
@@ -798,6 +804,8 @@ impl GroundTruth {
         MovementOutcome {
             acceleration,
             v_max,
+            deceleration,
+            reposition_ticks: balance.reposition_ticks,
             stride,
         }
     }

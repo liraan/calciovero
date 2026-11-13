@@ -60,11 +60,11 @@ Trenta partite, seed 42-71, la squadra di default (blocco medio, ampiezza normal
 
 | # | Che cosa | La causa da cercare (nel modo in cui i giocatori percepiscono, pensano, si muovono) |
 |---|---|---|
-| 1 | **Corrono troppo** (13,2 km a partita, un terzo del tempo sopra 4 m/s, contro 10-11 km e 15%): finiscono stanchi a 0,9 | nessuno sceglie il passo: ogni corsa è a tutta velocità. Il giocatore deve scegliere quanto correre come sceglie dove (ADR-052): di corsa se arrivare prima vale, al passo se no |
+| 1 | **Corrono troppo** (13,2 km a partita, un terzo del tempo sopra 4 m/s, contro 10-11 km e 15%): finiscono stanchi a 0,9 — **fatto (78)**: il corpo sui valori dei professionisti, la diagonale, la frenata, il passo scelto; ora 9,5 km, 60/26/9/3/1%, tiri 29 | nessuno sceglie il passo: ogni corsa è a tutta velocità. Il giocatore deve scegliere quanto correre come sceglie dove (ADR-052): di corsa se arrivare prima vale, al passo se no |
 | 2 | **Tiri troppi** (64 contro 25), gol troppi (8 contro 2,7) | il valore del tenere palla non è ancora derivato dal motore (ADR-052 nota, punto 3: quanto spesso un possesso da lì finisce in gol nelle partite del motore); poi, se restano troppi, che cosa il tiratore non vede |
 | 3 | **Tiri in porta troppi** (91% contro 34%) | l'errore del tiro (`kick.json` `error_ref_rad`) è arbitrario: va fondato sugli studi della precisione del calcio |
 | 4 | **Contrasti vinti pochi** (7 contro 30), intercetti tanti | il difensore entra poco; un passaggio perso è contato come intercetto (definizione da allineare al reale) |
 | 5 | **Cross e duelli aerei pochi** | il valore dello spazio in area (segue il 2); chi va sulla palla alta |
 | 6 | **Recupero lungo, gialli tanti** | seguono il 2; i secondi per evento e la soglia dell'imprudenza vanno fondati sul regolamento e sui dati arbitrali |
 
-**L'ordine:** 1 (il passo scelto), poi 2 (il valore del possesso derivato), poi la fonte dell'errore del tiro; misurando dopo ognuno, senza ritoccare.
+**L'ordine:** 1 fatto (78); poi la fonte dell'errore del tiro (86% in porta contro 34%), poi il valore del possesso derivato; misurando dopo ognuno, senza ritoccare.

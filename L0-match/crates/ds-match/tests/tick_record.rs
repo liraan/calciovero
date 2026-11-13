@@ -370,9 +370,11 @@ fn the_keeper_stays_between_the_ball_and_his_goal() {
     assert!(checked > 0, "the ball comes near a goal");
     // A keeper moving back to his line after a restart may be caught a
     // moment beyond the ball; standing there is the defect. Measured on
-    // seed 42: 3% of these ticks after the fix, 63% before.
+    // seed 42: 3% of these ticks after the fix, 63% before; 6% since
+    // `SIM_VERSION` 78, when the keeper's body accelerates and brakes like
+    // a real one and a keeper beaten on his way out needs time to get back.
     assert!(
-        beyond * 20 <= checked,
+        beyond * 10 <= checked,
         "the keeper stood beyond the ball in {beyond} of {checked} ticks"
     );
 }
