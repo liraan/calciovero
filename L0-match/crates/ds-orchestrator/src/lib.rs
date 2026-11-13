@@ -793,6 +793,32 @@ impl GroundTruth {
         ds_calculator::control::spill_speed(incoming, first_touch, keep_max)
     }
 
+    /// How far `player` trusts what he imagines the others will do (ADR-052):
+    /// his game reading.
+    #[must_use]
+    pub fn foresight(&mut self, player: PlayerId) -> f64 {
+        f64::from(self.latents_for(player).cognitive.game_reading)
+    }
+
+    /// How sure `player` is to keep the ball shielding it against a man on
+    /// him (plan L0-CLOSE 11, holding the ball up): his own answer to a
+    /// contact, as he knows his body (ADR-052).
+    #[must_use]
+    pub fn shield_confidence(&mut self, player: PlayerId) -> f64 {
+        let l = self.latents_for(player);
+        let body = ds_calculator::duel::DuelBody {
+            explosive: l.physical.explosive_force,
+            maximal_force: l.physical.maximal_force,
+            body_control: l.physical.body_control,
+        };
+        f64::from(self.duel_balance.answer_confidence(
+            ds_calculator::duel::CarrierAnswer::Shield,
+            &body,
+            l.technical.first_touch,
+            l.technical.dribbling,
+        ))
+    }
+
     /// The length of a step at a sprint, cm (plan L0-CLOSE 11): the
     /// fastest top speed over the running cadence (`balance/movement.json`).
     #[must_use]

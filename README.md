@@ -8,7 +8,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-406_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-408_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -110,7 +110,7 @@ What exists today:
 - a **friendly you can play** from the command line: choose your eleven
   from the squad and the bench, how high you defend and how wide you play,
   your substitutions, save the match, reload it, and read why you conceded each goal;
-- **406 tests** and a health check that runs on every commit.
+- **408 tests** and a health check that runs on every commit.
 
 What does not exist yet: changing the plan during the match, the season, the
 career, the transfer market. And the match is not calibrated yet: today it

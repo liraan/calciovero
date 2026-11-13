@@ -221,6 +221,9 @@ pub(crate) enum ChosenAction {
     Carry((i32, i32)),
     /// Clear the ball away (ADR-051).
     Clear,
+    /// Hold the ball up, shielding it, while the team comes up (plan
+    /// L0-CLOSE 11): he keeps it at his feet until his next decision.
+    Hold,
 }
 
 /// Builds the `PerceivedScene` from the engine's spatial state.
@@ -259,6 +262,9 @@ fn scene_from(
         runs: std::collections::BTreeMap::new(),
         horizon_cm: f64::MAX,
         strike_error_rad: 0.0,
+        soon: std::collections::BTreeMap::new(),
+        shield_keep: 0.0,
+        foresight: 1.0,
     }
 }
 
@@ -979,6 +985,34 @@ impl MatchState {
             }),
             self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
         );
+        // What he sees coming (plan L0-CLOSE 11, holding the ball up; the
+        // maintainer: "pensa a cosa pensa ed immagina un giocatore"): the
+        // players he sees, where they will be by his next decision, going
+        // as they are going. A teammate running up he sees arriving; an
+        // opponent getting back, too.
+        let soon = latency.ticks;
+        let (length, width) = pitch_cm(ctx);
+        scene.soon = crate::perception::visible_to(&self.spatial, attacker)
+            .into_iter()
+            .filter(|id| *id != attacker)
+            .filter_map(|id| {
+                self.spatial.agent(id).map(|a| {
+                    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                    let ahead = |p: i32, v: i16, max: i32| {
+                        (i64::from(p) + i64::from(v) * soon as i64).clamp(0, i64::from(max)) as i32
+                    };
+                    (
+                        id,
+                        (
+                            ahead(a.position.0, a.velocity.0, length),
+                            ahead(a.position.1, a.velocity.1, width),
+                        ),
+                    )
+                })
+            })
+            .collect();
+        scene.shield_keep = ctx.hidden.shield_confidence(attacker);
+        scene.foresight = ctx.hidden.foresight(attacker);
         // The teammates he sees attacking the depth, and where they run to
         // (plan L0-CLOSE 10a: the through ball).
         let seen = crate::perception::visible_to(&self.spatial, attacker);
@@ -1027,6 +1061,7 @@ impl MatchState {
             ds_orchestrator::ChoiceKind::Advance => ChosenAction::Advance,
             ds_orchestrator::ChoiceKind::Carry { to } => ChosenAction::Carry(to),
             ds_orchestrator::ChoiceKind::Clear => ChosenAction::Clear,
+            ds_orchestrator::ChoiceKind::Hold => ChosenAction::Hold,
         };
 
         // Only the restart's first pass is free of offside: any other play
@@ -1073,6 +1108,11 @@ impl MatchState {
                 self.spatial
                     .set_carry_target(Some((x + dx * step / len, y + dy * step / len)));
             }
+        }
+        if chosen == ChosenAction::Hold {
+            // He stays on it, his body between it and the man on him.
+            let at = self.spatial.agent(attacker).map(|a| a.position);
+            self.spatial.set_carry_target(at);
         }
         if let ChosenAction::Carry(to) = chosen {
             // Into the space he chose, as far as his carry goes.

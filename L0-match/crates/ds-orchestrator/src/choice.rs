@@ -60,6 +60,9 @@ pub enum ChoiceKind {
         /// Where he takes it, cm.
         to: (i32, i32),
     },
+    /// Hold the ball up: keep it, shielding it, while the team comes up
+    /// (plan L0-CLOSE 11).
+    Hold,
 }
 
 /// The side of the body: which foot the actor prefers (ADR-047, forma (d)).
@@ -161,6 +164,7 @@ impl GroundTruth {
                 | ChoiceKind::Duel
                 | ChoiceKind::Advance
                 | ChoiceKind::Carry { .. }
+                | ChoiceKind::Hold
                 | ChoiceKind::Clear => ctx.actor.slot(),
             };
             tiebreaks.push(tiebreak);

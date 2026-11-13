@@ -350,6 +350,24 @@ mod tests {
         body_control: 0.5,
     };
 
+    /// Twin test (ADR-051 §3, plan L0-CLOSE 11, holding the ball up): two
+    /// carriers identical but for their strength; the stronger is surer to
+    /// keep the ball shielding it.
+    #[test]
+    fn the_stronger_carrier_is_surer_to_shield_the_ball() {
+        let b = DuelBalance::load();
+        let strong = DuelBody {
+            maximal_force: 0.9,
+            ..AVERAGE
+        };
+        let weak = DuelBody {
+            maximal_force: 0.2,
+            ..AVERAGE
+        };
+        let sure = |d: &DuelBody| b.answer_confidence(CarrierAnswer::Shield, d, 0.5, 0.5);
+        assert!(sure(&strong) > sure(&weak));
+    }
+
     /// Twin test (ADR-051 §3): two carriers identical but for dribbling;
     /// the better dribbler beats the man the other loses the ball to.
     #[test]

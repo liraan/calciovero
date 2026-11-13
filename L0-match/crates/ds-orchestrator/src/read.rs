@@ -62,6 +62,18 @@ pub struct PerceivedScene {
     /// The miss he expects of his strike from how he is moving and how
     /// tired he is, radians, as well as he reads it (plan L0-CLOSE 11).
     pub strike_error_rad: f64,
+    /// The players he sees, where they will be by his next decision, going
+    /// as they are going (plan L0-CLOSE 11, holding the ball up): a
+    /// teammate running up, an opponent getting back. Empty: he does not
+    /// weigh holding it.
+    pub soon: BTreeMap<PlayerId, (i32, i32)>,
+    /// How sure he is to keep the ball shielding it against a man on him,
+    /// as he knows his body (`DuelBalance::answer_confidence`, shield).
+    pub shield_keep: f64,
+    /// How far he trusts what he imagines the others will do, his game
+    /// reading (ADR-052: he misjudges them as poorly as he reads the game):
+    /// what he sees now is sure, what he foresees is worth this much of it.
+    pub foresight: f64,
 }
 
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
@@ -653,6 +665,98 @@ fn aim_inside(
         .min((half - BALL_RADIUS_CM - POST_RADIUS_CM - expected_miss).max(aim_edge_cm * 0.25))
 }
 
+/// ADR-051, "carry": with room in front he may carry the ball himself, in
+/// the direction he chooses (plan L0-CLOSE 10a).
+fn carry_candidates(
+    scene: &PerceivedScene,
+    pos: (i32, i32),
+    opponent_positions: &[(i32, i32)],
+    (risk_appetite, pressure): (f64, f64),
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> Vec<ChoiceCandidate> {
+    let mut out = Vec::new();
+    if scene.can_carry {
+        // The direction is his (plan L0-CLOSE 10a): to goal, or into the
+        // space on either side, each imagined as the carry towards goal is.
+        for (i, dir) in carry_directions(pos, scene.goal).into_iter().enumerate() {
+            let carry = carry_salience(
+                pos,
+                (scene.goal, scene.own_goal),
+                dir,
+                opponent_positions,
+                risk_appetite,
+                balance,
+            );
+            if carry.0 > 0.0 {
+                out.push(ChoiceCandidate {
+                    kind: if i == 0 {
+                        ChoiceKind::Advance
+                    } else {
+                        ChoiceKind::Carry { to: carry.1 }
+                    },
+                    geometric: carry.0,
+                    risk: pressure,
+                    visibility: 1.0,
+                });
+            }
+        }
+    }
+    out
+}
+
+/// Waiting for the moment (plan L0-CLOSE 11, ADR-056; the maintainer
+/// 2026-11-13: "non vedo protezione della palla per far alzare la
+/// squadra"; "pensa a cosa pensa ed immagina un giocatore"). Every choice
+/// has a when: he may play now, or keep the ball, his body between it and
+/// the man on him, and play at his next decision. He imagines that scene,
+/// everyone he sees going as they are going (a teammate coming up, an
+/// opponent getting back, a space opening or closing), and judges it with
+/// the same thought he gives the scene now, every option; he gets there if
+/// he keeps the ball, which the pressure on him puts at risk as much as
+/// his body cannot hold it, and it is worth as much as he trusts his
+/// reading of the others: he waits only for a moment clearly better than
+/// this one. No weight of its own (ADR-052).
+fn hold_candidate(
+    scene: &PerceivedScene,
+    (preferred_foot, own_error): (Side, f64),
+    (risk_appetite, pressure): (f64, f64),
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> Option<ChoiceCandidate> {
+    if scene.soon.is_empty() {
+        return None;
+    }
+    // The scene at his next decision: he where he is, the ball at his feet,
+    // everyone he sees going as they are going; then the same thought he
+    // gives the scene now, every option (ADR-052).
+    let mut later = scene.clone();
+    later.soon.clear();
+    for (id, at) in &scene.soon {
+        if *id != scene.actor {
+            later.positions.insert(*id, *at);
+        }
+    }
+    let (ctx, _) = build_choice(&later, preferred_foot, risk_appetite, own_error, balance);
+    // He can wait only for what he would recognise: the best option of
+    // that scene, with how plainly he would see it.
+    let best = ctx
+        .candidates
+        .iter()
+        .max_by(|a, b| a.geometric.total_cmp(&b.geometric))?;
+    let (best, seen) = (best.geometric, best.visibility);
+    let keep = pressure
+        .clamp(0.0, 1.0)
+        .mul_add(-(1.0 - scene.shield_keep.clamp(0.0, 1.0)), 1.0);
+    // What he foresees is worth as much as he trusts his reading of the
+    // others; what he has now is sure.
+    let trust = scene.foresight.clamp(0.0, 1.0);
+    (best > 0.0).then_some(ChoiceCandidate {
+        kind: ChoiceKind::Hold,
+        geometric: keep * trust * best,
+        risk: pressure,
+        visibility: seen,
+    })
+}
+
 /// ADR-051, "clear": near his own goal and under pressure he may kick the
 /// ball away, more readily the more he is pressed, the nearer his goal and
 /// the less he likes risk.
@@ -968,32 +1072,19 @@ pub fn build_choice(
     // an option like the others (before `SIM_VERSION` 54 only the
     // fallback when nothing was clear, and the carrier passed as soon as
     // he received).
-    if scene.can_carry {
-        // The direction is his (plan L0-CLOSE 10a): to goal, or into the
-        // space on either side, each imagined as the carry towards goal is.
-        for (i, dir) in carry_directions(pos, scene.goal).into_iter().enumerate() {
-            let carry = carry_salience(
-                pos,
-                (scene.goal, scene.own_goal),
-                dir,
-                &opponent_positions,
-                risk_appetite,
-                balance,
-            );
-            if carry.0 > 0.0 {
-                candidates.push(ChoiceCandidate {
-                    kind: if i == 0 {
-                        ChoiceKind::Advance
-                    } else {
-                        ChoiceKind::Carry { to: carry.1 }
-                    },
-                    geometric: carry.0,
-                    risk: pressure,
-                    visibility: 1.0,
-                });
-            }
-        }
-    }
+    candidates.extend(carry_candidates(
+        scene,
+        pos,
+        &opponent_positions,
+        (risk_appetite, pressure),
+        balance,
+    ));
+    candidates.extend(hold_candidate(
+        scene,
+        (preferred_foot, own_error),
+        (risk_appetite, pressure),
+        balance,
+    ));
     candidates.extend(clear_candidate(
         pos,
         (scene.own_goal, scene.goal),
@@ -1077,6 +1168,9 @@ mod keeper_visibility_tests {
             runs: BTreeMap::new(),
             horizon_cm: f64::MAX,
             strike_error_rad: 0.0,
+            soon: BTreeMap::new(),
+            shield_keep: 0.0,
+            foresight: 1.0,
         }
     }
 
@@ -1225,6 +1319,35 @@ mod keeper_visibility_tests {
     mod brings_tests {
         use super::*;
 
+        /// Waiting for the moment (P1, plan L0-CLOSE 11, ADR-056): with his
+        /// teammate coming up into free space, he weighs keeping the ball;
+        /// the surer his body, the more it is worth under the same
+        /// pressure, the less the poorer he reads the game; with nothing
+        /// foreseen he does not weigh it.
+        #[test]
+        fn he_weighs_holding_the_ball_while_his_team_comes_up() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let hold = |s: &PerceivedScene| {
+                let (ctx, _) = build_choice(s, Side::Right, 0.5, 0.04, &b);
+                ctx.candidates
+                    .iter()
+                    .find(|c| c.kind == ChoiceKind::Hold)
+                    .map(|c| c.geometric)
+            };
+            let mut s = scene((3000, 3400), Some((5200, 3400)));
+            assert_eq!(hold(&s), None, "nothing imagined, nothing weighed");
+            s.soon.insert(PlayerId::new(7, 0), (7500, 3400));
+            s.shield_keep = 0.9;
+            let strong = hold(&s).expect("a hold candidate");
+            s.shield_keep = 0.2;
+            let weak = hold(&s).expect("a hold candidate");
+            assert!(strong > weak && weak > 0.0, "{strong} {weak}");
+            // The poorer reader trusts less what he foresees.
+            s.foresight = 0.3;
+            let doubtful = hold(&s).expect("a hold candidate");
+            assert!(doubtful < weak, "{doubtful} {weak}");
+        }
+
         fn scene(mate: (i32, i32), opponent: Option<(i32, i32)>) -> PerceivedScene {
             let me = PlayerId::new(6, 0);
             let them = PlayerId::new(7, 0);
@@ -1250,6 +1373,9 @@ mod keeper_visibility_tests {
                 runs: BTreeMap::new(),
                 horizon_cm: f64::MAX,
                 strike_error_rad: 0.0,
+                soon: BTreeMap::new(),
+                shield_keep: 0.0,
+                foresight: 1.0,
             }
         }
 
