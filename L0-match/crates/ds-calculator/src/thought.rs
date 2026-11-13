@@ -30,6 +30,10 @@ pub struct ThoughtBalance {
     pub believed_reaction_ticks: f64,
     /// A forecast with this many ticks to spare is sure.
     pub trust_ticks: f64,
+    /// The horizon of the least anticipating player, cm.
+    pub horizon_min_cm: f64,
+    /// The horizon of the most anticipating player, cm.
+    pub horizon_max_cm: f64,
     /// How high he believes a keeper reaches with his hands and a jump, cm:
     /// computed, not declared (a reference keeper's height, his arms and an
     /// average jump, `save.json` and `duel.json`), set by the caller.

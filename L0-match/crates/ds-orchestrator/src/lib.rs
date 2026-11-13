@@ -733,6 +733,16 @@ impl GroundTruth {
         ticks.max(1)
     }
 
+    /// How far ahead a player imagines, cm (plan L0-CLOSE 10b): his
+    /// anticipation places him between the shortest and the longest
+    /// horizon (`thought.json`).
+    #[must_use]
+    pub fn horizon_cm(&mut self, player: PlayerId) -> f64 {
+        let t = ds_calculator::thought::ThoughtBalance::load();
+        let a = f64::from(self.latents_for(player).cognitive.anticipation);
+        (t.horizon_max_cm - t.horizon_min_cm).mul_add(a, t.horizon_min_cm)
+    }
+
     /// Fatigue's declared parameters (`balance/fatigue.json`).
     #[must_use]
     pub const fn fatigue_balance(&self) -> ds_calculator::fatigue::FatigueBalance {
@@ -869,6 +879,11 @@ impl GroundTruth {
             nearest_threat: ctx.nearest_threat,
         };
         let latency = Calculator::apply(formula, &mut custodian, &situation);
+        // Concentration (plan L0-CLOSE 10b): as he tires his thought slows,
+        // the more the less concentrated he is (mental fatigue goes with the
+        // physical and slows the decision: Smith et al. 2016).
+        let concentration = f64::from(self.latents_for(ctx.player).cognitive.concentration);
+        let latency = latency * (1.0 - concentration).mul_add(ctx.fatigue.clamp(0.0, 1.0), 1.0);
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let ticks = latency.round().max(1.0) as u64;
         LatencyOutcome { ticks }
@@ -913,6 +928,7 @@ mod latency_scale_tests {
                         player: PlayerId::new(slot, 0),
                         crowding,
                         nearest_threat: threat,
+                        fatigue: 0.0,
                     })
                     .ticks;
                 assert!((1..=40).contains(&t), "slot {slot}: {t} ticks");
@@ -1184,6 +1200,7 @@ mod latency_tests {
             player: PlayerId::new(slot, 0),
             crowding: 0.0,
             nearest_threat: 0.0,
+            fatigue: 0.0,
         }
     }
 
@@ -1215,11 +1232,13 @@ mod latency_tests {
             player,
             crowding: 0.0,
             nearest_threat: 0.0,
+            fatigue: 0.0,
         };
         let crowded = LatencyContext {
             player,
             crowding: 1.0,
             nearest_threat: 1.0,
+            fatigue: 0.0,
         };
         let t_open = g.resolve_latency(&open).ticks;
         let t_crowded = g.resolve_latency(&crowded).ticks;
@@ -1244,6 +1263,7 @@ mod latency_tests {
                     player: p,
                     crowding: 0.0,
                     nearest_threat: 0.0,
+                    fatigue: 0.0,
                 })
                 .ticks;
             if t < fastest.1 {
@@ -1291,12 +1311,6 @@ mod choice_filter_tests {
         .chosen
     }
 
-    /// ADR-039 section 2: a high `game_reading` sees more options. The
-    /// hidden option is better (0.9 vs 0.5) but hard to notice (0.2); a
-    /// weak reader must miss it and pick the obvious one, a strong
-    /// reader must see it and pick it. Without the filter both pick the
-    /// hidden one, because 0.9 > 0.5: the test fails, which is the
-    /// positive proof that it measures the filter and not something else.
     /// Twin test (ADR-051 §3, plan L0-CLOSE 10b): the player with the
     /// better vision looks around more often; at the two ends of the
     /// sample, about every 1.3 s against every 5 s.
@@ -1319,6 +1333,115 @@ mod choice_filter_tests {
         assert!(s * 2 < w, "strong every {s} ticks, weak every {w}");
     }
 
+    /// The player at each end of a characteristic, in a sample of 200.
+    fn ends(g: &mut GroundTruth, of: impl Fn(&PlayerLatents) -> f32) -> (PlayerId, PlayerId) {
+        let (mut weak, mut strong) = ((0u32, 1.0f32), (0u32, 0.0f32));
+        for slot in 1..=200u32 {
+            let v = of(&g.latents_for(PlayerId::new(slot, 0)));
+            if v < weak.1 {
+                weak = (slot, v);
+            }
+            if v > strong.1 {
+                strong = (slot, v);
+            }
+        }
+        (PlayerId::new(weak.0, 0), PlayerId::new(strong.0, 0))
+    }
+
+    /// Twin test (plan L0-CLOSE 10b, creativity): among players who read
+    /// the game alike, the least creative does not notice the through ball
+    /// and plays the obvious pass; the most creative sees it and plays it.
+    #[test]
+    fn the_creative_player_sees_the_through_ball() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let mut band: Vec<(f32, u32)> = (1..=400u32)
+            .filter_map(|slot| {
+                let l = g.latents_for(PlayerId::new(slot, 0));
+                (0.45..0.65)
+                    .contains(&l.cognitive.game_reading)
+                    .then_some((l.cognitive.creativity, slot))
+            })
+            .collect();
+        band.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let (low, high) = (band[0], band[band.len() - 1]);
+        assert!(low.0 < 0.25 && high.0 > 0.75, "sample: {low:?} {high:?}");
+        let choose = |g: &mut GroundTruth, slot: u32| {
+            g.resolve_choice(&ChoiceContext {
+                actor: PlayerId::new(slot, 0),
+                can_carry: false,
+                candidates: vec![
+                    ChoiceCandidate {
+                        kind: ChoiceKind::Pass(PlayerId::new(300, 0)),
+                        geometric: 0.5,
+                        risk: 0.0,
+                        visibility: 1.0,
+                    },
+                    ChoiceCandidate {
+                        kind: ChoiceKind::Through {
+                            to: PlayerId::new(301, 0),
+                            at: (9000, 3400),
+                        },
+                        geometric: 0.9,
+                        risk: 0.0,
+                        visibility: 1.0,
+                    },
+                ],
+            })
+            .chosen
+        };
+        assert_eq!(
+            choose(&mut g, low.1),
+            ChoiceKind::Pass(PlayerId::new(300, 0))
+        );
+        assert!(matches!(choose(&mut g, high.1), ChoiceKind::Through { .. }));
+    }
+
+    /// Twin test (plan L0-CLOSE 10b, concentration): equally tired, the
+    /// less concentrated player takes longer to decide; fresh, they are
+    /// as quick as their decision making makes them.
+    #[test]
+    fn the_unfocused_player_decides_slower_when_tired() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (weak, strong) = ends(&mut g, |l| l.cognitive.concentration);
+        let at = |g: &mut GroundTruth, p: PlayerId, fatigue: f64| {
+            let fresh = g
+                .resolve_latency(&LatencyContext {
+                    player: p,
+                    crowding: 0.0,
+                    nearest_threat: 0.0,
+                    fatigue: 0.0,
+                })
+                .ticks;
+            let tired = g
+                .resolve_latency(&LatencyContext {
+                    player: p,
+                    crowding: 0.0,
+                    nearest_threat: 0.0,
+                    fatigue,
+                })
+                .ticks;
+            (fresh, tired)
+        };
+        let (wf, wt) = at(&mut g, weak, 1.0);
+        let (sf, st) = at(&mut g, strong, 1.0);
+        assert!(wt - wf > st - sf, "weak {wf}->{wt}, strong {sf}->{st}");
+    }
+
+    /// Twin test (plan L0-CLOSE 10b, anticipation): the more anticipating
+    /// player imagines farther.
+    #[test]
+    fn the_anticipating_player_imagines_farther() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (weak, strong) = ends(&mut g, |l| l.cognitive.anticipation);
+        assert!(g.horizon_cm(strong) > g.horizon_cm(weak) + 2000.0);
+    }
+
+    /// ADR-039 section 2: a high `game_reading` sees more options. The
+    /// hidden option is better (0.9 vs 0.5) but hard to notice (0.2); a
+    /// weak reader must miss it and pick the obvious one, a strong
+    /// reader must see it and pick it. Without the filter both pick the
+    /// hidden one, because 0.9 > 0.5: the test fails, which is the
+    /// positive proof that it measures the filter and not something else.
     #[test]
     fn a_weak_reader_misses_the_hidden_option_a_strong_reader_sees() {
         let mut g = GroundTruth::new(42, MatchId::new(1, 0));

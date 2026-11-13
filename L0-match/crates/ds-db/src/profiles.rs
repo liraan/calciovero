@@ -113,6 +113,9 @@ impl Profiles {
                 decision_making: value("decision_making", "family:cognitive"),
                 risk_management: value("risk_management", "family:cognitive"),
                 vision: value("vision", "family:cognitive"),
+                anticipation: value("anticipation", "family:cognitive"),
+                creativity: value("creativity", "family:cognitive"),
+                concentration: value("concentration", "family:cognitive"),
             },
         })
     }

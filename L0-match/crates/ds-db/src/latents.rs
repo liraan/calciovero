@@ -136,6 +136,15 @@ pub struct CognitiveLatents {
     /// Vision: how often he looks around to take in the pitch (ADR-052
     /// e, plan L0-CLOSE 10b; consumed by the scan).
     pub vision: f32,
+    /// Anticipation: how far ahead he imagines (ADR-052 e; consumed by the
+    /// thought's horizon).
+    pub anticipation: f32,
+    /// Creativity: whether he considers the options few would see (ADR-052
+    /// e; consumed by the choice's read).
+    pub creativity: f32,
+    /// Concentration: how well his thought holds as he tires (ADR-052 e;
+    /// consumed by the decision's latency).
+    pub concentration: f32,
 }
 
 impl PlayerLatents {
@@ -175,6 +184,9 @@ impl PlayerLatents {
                 decision_making: unit_from_key(world_seed, player, "decision_making"),
                 risk_management: unit_from_key(world_seed, player, "risk_management"),
                 vision: unit_from_key(world_seed, player, "vision"),
+                anticipation: unit_from_key(world_seed, player, "anticipation"),
+                creativity: unit_from_key(world_seed, player, "creativity"),
+                concentration: unit_from_key(world_seed, player, "concentration"),
             },
         }
     }

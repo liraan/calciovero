@@ -175,11 +175,25 @@ impl GroundTruth {
         let mut custodian = self.custodian(ctx.actor);
         let game_reading = custodian.value(Characteristic::GameReading);
         let perception_threshold = 1.0 - game_reading;
+        // Creativity (ADR-052 e, plan L0-CLOSE 10b): the options few would
+        // see (the through ball, the long ball over the lines, the lob) he
+        // notices as much as he is creative; then the read filters them.
+        let creativity = f64::from(self.latents_for(ctx.actor).cognitive.creativity);
         let mut effective = scores.clone();
         for (i, candidate) in ctx.candidates.iter().enumerate() {
-            if candidate.visibility < perception_threshold
-                && !matches!(candidate.kind, ChoiceKind::Advance)
-            {
+            let few_would_see = matches!(
+                candidate.kind,
+                ChoiceKind::Through { .. } | ChoiceKind::Loft(_)
+            ) || matches!(
+                candidate.kind,
+                ChoiceKind::Shoot { contact_height, .. } if contact_height >= 0.5
+            );
+            let visibility = if few_would_see {
+                candidate.visibility * creativity
+            } else {
+                candidate.visibility
+            };
+            if visibility < perception_threshold && !matches!(candidate.kind, ChoiceKind::Advance) {
                 effective[i] = 0.0;
             }
         }

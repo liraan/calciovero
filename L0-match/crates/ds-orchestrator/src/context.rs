@@ -243,4 +243,7 @@ pub struct LatencyContext {
     pub crowding: f64,
     /// Nearest threat distance, 0.0-1.0 (scene term, ADR-044 §6).
     pub nearest_threat: f64,
+    /// His fatigue, 0.0-1.0 (Plane B): concentration dims the decision
+    /// as he tires (plan L0-CLOSE 10b).
+    pub fatigue: f64,
 }

@@ -56,6 +56,9 @@ pub struct PerceivedScene {
     /// The teammates he sees attacking the depth, and where each is
     /// running to (the movement, Plane B): the through ball's runners.
     pub runs: BTreeMap<PlayerId, (i32, i32)>,
+    /// How far ahead he imagines, cm (his anticipation, ADR-052 e): an
+    /// option that ends farther he cannot see through.
+    pub horizon_cm: f64,
 }
 
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
@@ -461,7 +464,25 @@ fn worth(
 ) -> f64 {
     let gain = space_value(gain_at, scene.goal, scene.own_goal);
     let loss = space_value(loss_at, scene.own_goal, scene.goal);
+    let confidence = foresee(scene, confidence, gain_at);
     ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, appetite).max(0.0)
+}
+
+/// His confidence in an option that ends at `at`, through his horizon
+/// (ADR-052 e, anticipation): within it as he forecast it; beyond it he
+/// cannot see how it ends, and it falls towards a coin he does not toss
+/// (half), the more the farther.
+#[allow(clippy::cast_precision_loss)] // cm on a pitch
+fn foresee(scene: &PerceivedScene, confidence: f64, at: (i32, i32)) -> f64 {
+    let Some(me) = scene.positions.get(&scene.actor).copied() else {
+        return confidence;
+    };
+    let d = distance_squared(me, at).isqrt() as f64;
+    if d <= scene.horizon_cm {
+        return confidence;
+    }
+    let seen = (scene.horizon_cm / d.max(1.0)).clamp(0.0, 1.0);
+    (confidence - 0.5).mul_add(seen, 0.5)
 }
 
 /// How sure he is that his side gets the ball first along a forecast.
@@ -1044,6 +1065,7 @@ mod keeper_visibility_tests {
             can_carry: true,
             penalty_kick: false,
             runs: BTreeMap::new(),
+            horizon_cm: f64::MAX,
         }
     }
 
@@ -1215,6 +1237,7 @@ mod keeper_visibility_tests {
                 can_carry: true,
                 penalty_kick: false,
                 runs: BTreeMap::new(),
+                horizon_cm: f64::MAX,
             }
         }
 

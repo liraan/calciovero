@@ -247,6 +247,7 @@ fn scene_from(
         can_carry,
         penalty_kick: false,
         runs: std::collections::BTreeMap::new(),
+        horizon_cm: f64::MAX,
     }
 }
 
@@ -713,6 +714,7 @@ impl MatchState {
                 player: attacker,
                 crowding,
                 nearest_threat,
+                fatigue: self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
             });
         self.latencies
             .insert(attacker, tick.saturating_add(latency.ticks));
@@ -763,6 +765,7 @@ impl MatchState {
             can_carry,
         );
         scene.penalty_kick = self.restart_pass == Some(crate::rules::RestartKind::Penalty);
+        scene.horizon_cm = ctx.hidden.horizon_cm(attacker);
         // The teammates he sees attacking the depth, and where they run to
         // (plan L0-CLOSE 10a: the through ball).
         let seen = crate::perception::visible_to(&self.spatial, attacker);
@@ -2488,6 +2491,7 @@ impl MatchState {
                 player: id,
                 crowding,
                 nearest_threat,
+                fatigue: self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
             })
             .ticks
     }
