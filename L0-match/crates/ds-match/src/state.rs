@@ -356,10 +356,38 @@ impl TeamView {
         &self,
         me: (i32, i32),
         c: (i32, i32),
-        mark_radius_cm: i32,
+        off: &ds_calculator::offball::OffBallBalance,
+        (length, width): (i32, i32),
     ) -> ds_orchestrator::MateBall {
+        let mark_radius_cm = off.mark_radius_cm;
         let ahead = (me.0 - c.0) * self.forward > 0;
+        // ADR-052 §5: the value to his side of the spaces he could occupy,
+        // as free as he would be there.
+        let goal = (self.their_goal_x, width / 2);
+        let other = (length - self.their_goal_x, width / 2);
+        let worth = |p: (i32, i32)| ds_orchestrator::read::space_value(p, goal, other);
+        let free = |p: (i32, i32)| {
+            1.0 - self
+                .marker(p)
+                .map_or(0.0, |o| ds_orchestrator::read::soon(o, p))
+        };
+        let offer_at = self
+            .act_target(ds_orchestrator::OffBallAct::Offer, me, off, (length, width))
+            .unwrap_or(me);
+        let run_at = self
+            .act_target(ds_orchestrator::OffBallAct::Run, me, off, (length, width))
+            .unwrap_or(me);
+        let values = ds_orchestrator::SpaceValues {
+            hold: worth(me) * free(me),
+            offer: worth(offer_at) * free(offer_at),
+            run: worth(run_at),
+            run_cm: distance_squared(me, run_at).isqrt(),
+            defender_cm: self
+                .marker(run_at)
+                .map_or(i64::MAX / 4, |o| distance_squared(o, run_at).isqrt()),
+        };
         ds_orchestrator::MateBall {
+            values,
             to_carrier_cm: distance_squared(me, c).isqrt(),
             marked: self
                 .marker(me)
@@ -1429,7 +1457,7 @@ impl MatchState {
                             rank: rank(c),
                         }),
                     carrier_in_reach: to_carrier.is_some_and(|d| d <= slide_reach),
-                    with_mate: carrier_mate.map(|c| view.mate_ball(me, c, off.mark_radius_cm)),
+                    with_mate: carrier_mate.map(|c| view.mate_ball(me, c, &off, (length, width))),
                     to_mark: carrier_pos.and_then(|_| view.man_to_mark(me)).map(|m| {
                         ds_orchestrator::Target {
                             distance_cm: distance_squared(me, m).isqrt(),

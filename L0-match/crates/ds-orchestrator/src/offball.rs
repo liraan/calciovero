@@ -50,6 +50,25 @@ pub struct MateBall {
     pub to_line_cm: Option<i64>,
     /// The room behind the last defender, to the goal line, cm.
     pub room_cm: i64,
+    /// What each choice would give his side (ADR-052 §5, in units of
+    /// keeping the ball): the space he holds, the space he would offer in,
+    /// the space on the last line, each as free as he would be there.
+    pub values: SpaceValues,
+}
+
+/// The value of the spaces an attacker without the ball weighs.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SpaceValues {
+    /// Holding his space, as free as he is now.
+    pub hold: f64,
+    /// Offering a line of pass where he would go, as free as he would be.
+    pub offer: f64,
+    /// Attacking the depth: the space on the last line.
+    pub run: f64,
+    /// His run to that space, cm.
+    pub run_cm: i64,
+    /// The nearest defender's run to it, cm.
+    pub defender_cm: i64,
 }
 
 /// The player's place in the team, for the choice.
@@ -229,21 +248,27 @@ impl crate::GroundTruth {
             );
         }
         if let (Some(m), false) = (s.with_mate, keeper) {
-            let half = 0.5f64;
-            if m.marked {
-                offer(
-                    milli(b.offer_salience_milli)
-                        * proximity(m.to_carrier_cm)
-                        * half.mul_add(reading, half),
-                    OffBallAct::Offer,
-                );
+            // ADR-052 §5: he occupies the space that gives his side the
+            // most, as free as he would be there; on the last line, if he
+            // gets there before the defender (his own pace, which he knows,
+            // against the one he believes the defender has).
+            let thought = ds_calculator::thought::ThoughtBalance::load();
+            let spaces = m.values;
+            let mut best = (spaces.hold, OffBallAct::Hold);
+            if spaces.offer > best.0 {
+                best = (spaces.offer, OffBallAct::Offer);
             }
-            if let Some(d) = m.to_line_cm {
-                offer(
-                    b.run(d, m.room_cm, l.physical.max_speed, l.cognitive.game_reading),
-                    OffBallAct::Run,
-                );
+            if m.to_line_cm.is_some() {
+                let pace = f64::from(l.physical.max_speed) * 90.0;
+                #[allow(clippy::cast_precision_loss)]
+                let run = spaces.run
+                    * thought.race(spaces.run_cm as f64, pace, spaces.defender_cm as f64);
+                if run > best.0 {
+                    best = (run, OffBallAct::Run);
+                }
             }
+            let _ = (proximity, reading);
+            return best.1;
         }
         best.1
     }
@@ -312,11 +337,20 @@ mod tests {
 
     #[allow(clippy::unnecessary_wraps)] // the scene's field is an option
     fn mate(marked: bool, to_line_cm: Option<i64>, room_cm: i64) -> Option<MateBall> {
+        // Marked: his space is worth little, the free one he would offer in
+        // more; with room behind the line, the depth is worth the most.
         Some(MateBall {
             to_carrier_cm: 1000,
             marked,
             to_line_cm,
             room_cm,
+            values: SpaceValues {
+                hold: if marked { 0.5 } else { 2.0 },
+                offer: if marked { 1.8 } else { 1.0 },
+                run: if room_cm > 1000 { 6.0 } else { 0.0 },
+                run_cm: to_line_cm.unwrap_or(0),
+                defender_cm: 1200,
+            },
         })
     }
 

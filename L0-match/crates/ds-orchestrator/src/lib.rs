@@ -43,7 +43,7 @@ pub use context::{
 };
 pub use ds_calculator::shot_choice::ShotChoiceBalance;
 pub use observation::ObservationEvent;
-pub use offball::{MateBall, OffBallAct, OffBallScene, Place, Target, Threats};
+pub use offball::{MateBall, OffBallAct, OffBallScene, Place, SpaceValues, Target, Threats};
 pub use outcome::{
     DuelOutcome, LatencyOutcome, MovementOutcome, PassOutcome, ReceptionOutcome, SaveOutcome,
     ShotOutcome, ShotType,

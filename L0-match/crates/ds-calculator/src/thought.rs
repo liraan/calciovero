@@ -38,6 +38,17 @@ impl ThoughtBalance {
         (0.5 + margin / (2.0 * self.trust_ticks.max(1.0))).clamp(0.0, 1.0)
     }
 
+    /// How sure a player is to win a race to a space (ADR-052 §5): his run
+    /// at his own pace (cm/tick), which he knows, against the defender's at
+    /// the pace he believes.
+    #[must_use]
+    pub fn race(&self, my_cm: f64, my_pace: f64, their_cm: f64) -> f64 {
+        let mine = my_cm / my_pace.max(1.0);
+        let theirs =
+            self.believed_reaction_ticks + their_cm / self.believed_speed_cm_per_tick.max(1.0);
+        self.confidence(theirs - mine)
+    }
+
     /// What a space is worth to the side attacking `goal`, in units of
     /// keeping the ball: keeping it there, more the nearer to the goal
     /// (`length` the pitch), plus the chance quality of the space.
@@ -276,6 +287,17 @@ mod tests {
         let b = who_first((0, 0), (3000, 0), (150.0, 0.957), &[mate, fast], 100);
         assert_eq!(a.first, Some(0));
         assert_eq!(b.first, Some(1));
+    }
+
+    /// Twin test (ADR-051 §3): two forwards identical but for pace, in the
+    /// same race for the space behind the line: the fast one is sure to
+    /// win it, the slow one is not.
+    #[test]
+    fn the_fast_twin_wins_the_race() {
+        let t = ThoughtBalance::load();
+        let fast = t.race(1500.0, 85.0, 1500.0);
+        let slow = t.race(1500.0, 40.0, 1500.0);
+        assert!(fast > 0.7 && slow < 0.3, "fast {fast}, slow {slow}");
     }
 
     /// The chance a position gives falls with the distance and with the
