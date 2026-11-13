@@ -22,6 +22,39 @@ pub struct ThoughtBalance {
     pub possession_value: f64,
     /// The forecast samples a ball's path every this many cm.
     pub forecast_step_cm: i32,
+    /// The speed he believes the others run at, cm/tick.
+    pub believed_speed_cm_per_tick: f64,
+    /// The time he believes the others take to move, ticks.
+    pub believed_reaction_ticks: f64,
+    /// A forecast with this many ticks to spare is sure.
+    pub trust_ticks: f64,
+}
+
+impl ThoughtBalance {
+    /// How sure he is of a forecast that leaves `margin` ticks to spare
+    /// (negative: the other side gets there first), in `[0, 1]`.
+    #[must_use]
+    pub fn confidence(&self, margin: f64) -> f64 {
+        (0.5 + margin / (2.0 * self.trust_ticks.max(1.0))).clamp(0.0, 1.0)
+    }
+
+    /// What a space is worth to the side attacking `goal`, in units of
+    /// keeping the ball: keeping it there, more the nearer to the goal
+    /// (`length` the pitch), plus the chance quality of the space.
+    #[must_use]
+    pub fn space_value(&self, distance_to_goal_cm: f64, length_cm: f64, chance: f64) -> f64 {
+        let near = (1.0 - distance_to_goal_cm / length_cm.max(1.0)).clamp(0.0, 1.0);
+        1.0 + near + chance / self.possession_value.max(1e-6)
+    }
+
+    /// An option's worth: sure by `confidence`, it reaches a space worth
+    /// `gain`; otherwise the opponents have a space worth `loss` to them,
+    /// weighed by his risk management (a bold player fears it less).
+    #[must_use]
+    pub fn expected(confidence: f64, gain: f64, loss: f64, risk_appetite: f64) -> f64 {
+        ((1.0 - confidence) * loss)
+            .mul_add(-(1.5 - risk_appetite.clamp(0.0, 1.0)), confidence * gain)
+    }
 }
 
 impl ThoughtBalance {
@@ -158,18 +191,22 @@ pub fn who_first(
 /// of the goal he sees.
 #[must_use]
 pub fn chance(
-    distance_cm: f64,
+    (distance_cm, keeper_off_cm): (f64, f64),
     goal_cone: f64,
     kick: &KickBalance,
     save: &SaveBalance,
     t: &ThoughtBalance,
 ) -> f64 {
+    // The keeper meets the shot `keeper_off_cm` off his line: there the
+    // goal looks narrower and the ball has had less time.
+    let meet = (distance_cm - keeper_off_cm.clamp(0.0, distance_cm)).max(1.0);
+    let share = meet / distance_cm.max(1.0);
     let speed = kick.speed(0.85, 0.5).max(1.0);
-    let flight = distance_cm / speed;
+    let flight = meet / speed;
     let reach = save.reach_cm(95.0, 0.5, 0.5, flight);
-    let half = f64::from(t.goal_width_cm) / 2.0;
+    let half = f64::from(t.goal_width_cm) / 2.0 * share;
     let open = (half - reach).max(0.0);
-    let spread = distance_cm * kick.error_rad(0.5, 0.75, 0.85, 0.0);
+    let spread = meet * kick.error_rad(0.5, 0.75, 0.85, 0.0);
     let hit = if open + spread > 0.0 {
         open / (open + spread)
     } else {
@@ -250,9 +287,11 @@ mod tests {
             SaveBalance::load(),
             ThoughtBalance::load(),
         );
-        let spot = chance(1100.0, 0.6, &k, &s, &t);
-        let far = chance(2500.0, 0.28, &k, &s, &t);
-        let tight = chance(1100.0, 0.15, &k, &s, &t);
+        let spot = chance((1100.0, 0.0), 0.6, &k, &s, &t);
+        let far = chance((2500.0, 0.0), 0.28, &k, &s, &t);
+        let tight = chance((1100.0, 0.0), 0.15, &k, &s, &t);
+        // A keeper off his line narrows the goal (P1).
+        assert!(chance((1100.0, 400.0), 0.6, &k, &s, &t) < spot);
         assert!(
             spot > far && spot > tight,
             "spot {spot}, far {far}, tight {tight}"

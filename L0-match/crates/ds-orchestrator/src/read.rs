@@ -38,6 +38,9 @@ pub struct PerceivedScene {
     pub goal: (i32, i32),
     /// The goal he defends, cm.
     pub own_goal: (i32, i32),
+    /// The share of its speed a ball on the grass keeps per tick (the
+    /// pitch, which he knows).
+    pub ground_keep: f64,
     /// The opponent goalkeeper, if he is in the scene (ADR-047 §3).
     pub keeper: Option<PlayerId>,
     /// The reach of the keeper, in cm (a visible fact: half his height).
@@ -285,7 +288,7 @@ fn shot_salience(
 #[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
 fn carry_salience(
     pos: (i32, i32),
-    goal: (i32, i32),
+    (goal, own_goal): ((i32, i32), (i32, i32)),
     opponents: &[(i32, i32)],
     risk_appetite: f64,
     pressure: f64,
@@ -306,9 +309,109 @@ fn carry_salience(
         pos.0 + i32::try_from(gx * step / len).unwrap_or(0),
         pos.1 + i32::try_from(gy * step / len).unwrap_or(0),
     );
-    balance.carry_salience
-        * (room as f64 / reference as f64)
-        * brings(pos, ahead, goal, risk_appetite, pressure, balance)
+    let _ = (pressure, balance.carry_salience);
+    // ADR-052: he imagines carrying it to `ahead`, at the speed he runs
+    // with the ball, against the opponents who could get there first.
+    let m = mind();
+    let mine = step as f64 / m.thought.believed_speed_cm_per_tick;
+    let theirs = opponents
+        .iter()
+        .map(|o| {
+            let run = f64::from(o.0 - ahead.0).hypot(f64::from(o.1 - ahead.1));
+            m.thought.believed_reaction_ticks + run / m.thought.believed_speed_cm_per_tick
+        })
+        .fold(f64::INFINITY, f64::min);
+    let confidence = m.thought.confidence(theirs - mine);
+    let gain = space_value(ahead, goal, own_goal);
+    let loss = space_value(pos, own_goal, goal);
+    ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, risk_appetite).max(0.0)
+}
+
+/// The balances the player's thought reads (ADR-052), parsed once.
+struct Mind {
+    thought: ds_calculator::thought::ThoughtBalance,
+    kick: ds_calculator::kick::KickBalance,
+    save: ds_calculator::save::SaveBalance,
+}
+
+fn mind() -> &'static Mind {
+    static MIND: std::sync::OnceLock<Mind> = std::sync::OnceLock::new();
+    MIND.get_or_init(|| Mind {
+        thought: ds_calculator::thought::ThoughtBalance::load(),
+        kick: ds_calculator::kick::KickBalance::load(),
+        save: ds_calculator::save::SaveBalance::load(),
+    })
+}
+
+/// The players as the actor imagines them (ADR-052 §2): those he
+/// perceives, at the speed and reaction he believes they have.
+fn imagined(scene: &PerceivedScene) -> Vec<ds_calculator::thought::Imagined> {
+    let t = &mind().thought;
+    let mut v = Vec::new();
+    for (ids, mate) in [(&scene.teammates, true), (&scene.opponents, false)] {
+        for id in ids {
+            if *id == scene.actor {
+                continue;
+            }
+            if let Some(at) = scene.positions.get(id).copied() {
+                v.push(ds_calculator::thought::Imagined {
+                    at,
+                    speed: t.believed_speed_cm_per_tick,
+                    reaction: t.believed_reaction_ticks,
+                    mate,
+                });
+            }
+        }
+    }
+    v
+}
+
+/// Where he expects the keeper to stand off his line when the ball is
+/// `d` cm from the goal, for a space he imagines and cannot see yet: a
+/// modern keeper comes out as the ball approaches (about 2 m, up to 6 m).
+fn keeper_off(d: f64) -> f64 {
+    (1.0 - d / 3000.0).clamp(0.0, 1.0).mul_add(400.0, 200.0)
+}
+
+/// What a space is worth to the side attacking `goal` (ADR-052 §3), in
+/// units of keeping the ball, from the side defending `other`.
+#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+fn space_value(p: (i32, i32), goal: (i32, i32), other: (i32, i32)) -> f64 {
+    let m = mind();
+    let d = distance_squared(p, goal).isqrt() as f64;
+    let length = f64::from((goal.0 - other.0).abs());
+    let chance = ds_calculator::thought::chance(
+        (d, keeper_off(d)),
+        goal_cone(p, goal),
+        &m.kick,
+        &m.save,
+        &m.thought,
+    );
+    m.thought.space_value(d, length, chance)
+}
+
+/// The worth of an option (ADR-052 §3): by the forecast's confidence it
+/// reaches `gain_at` for his side; otherwise the opponents have `loss_at`.
+fn worth(
+    scene: &PerceivedScene,
+    confidence: f64,
+    gain_at: (i32, i32),
+    loss_at: (i32, i32),
+    appetite: f64,
+) -> f64 {
+    let gain = space_value(gain_at, scene.goal, scene.own_goal);
+    let loss = space_value(loss_at, scene.own_goal, scene.goal);
+    ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, appetite).max(0.0)
+}
+
+/// How sure he is that his side gets the ball first along a forecast.
+fn sure(players: &[ds_calculator::thought::Imagined], f: &ds_calculator::thought::Forecast) -> f64 {
+    let t = &mind().thought;
+    match f.first {
+        Some(i) if players[i].mate => t.confidence(f.margin),
+        Some(_) => t.confidence(-f.margin),
+        None => t.confidence(0.0) * 0.8,
+    }
 }
 
 /// The shot candidates (ADR-046 §1, ADR-047, ADR-050, ADR-051): within
@@ -327,9 +430,61 @@ fn shot_candidates(
     let goal_dist = distance_squared(pos, goal).isqrt();
     let shoot_range = balance.shot_range_cm.max(1);
     if goal_dist < shoot_range {
-        let geom = shot_salience(pos, goal, risk_appetite, pressure, balance);
-        // risk: 0.0 at the goal line, 1.0 at the shoot range edge.
-        let risk = (goal_dist as f64) / (shoot_range as f64);
+        // ADR-052: the chance this space gives, in units of keeping the
+        // ball; missed, the ball is theirs by our goal line.
+        let m = mind();
+        // The keeper as he sees him: how far off his line he stands.
+        let off = scene
+            .keeper
+            .and_then(|k| scene.positions.get(&k))
+            .map_or_else(
+                || keeper_off(goal_dist as f64),
+                |k| f64::from((k.0 - goal.0).abs()),
+            );
+        let chance = ds_calculator::thought::chance(
+            (goal_dist as f64, off),
+            goal_cone(pos, goal),
+            &m.kick,
+            &m.save,
+            &m.thought,
+        );
+        let loss = space_value(goal, scene.own_goal, goal);
+        // A defender who reaches the line of the shot before the ball
+        // blocks it (ADR-052 §2: the same forecast as a pass, the keeper
+        // being already in the chance).
+        let keeper = scene.keeper;
+        let blockers: Vec<ds_calculator::thought::Imagined> = imagined(scene)
+            .into_iter()
+            .filter(|p| !p.mate)
+            .filter(|p| {
+                keeper
+                    .and_then(|k| scene.positions.get(&k))
+                    .is_none_or(|k| *k != p.at)
+            })
+            .collect();
+        let forecast = ds_calculator::thought::who_first(
+            pos,
+            goal,
+            (m.kick.speed(0.85, 0.5), 1.0),
+            &blockers,
+            m.thought.forecast_step_cm,
+        );
+        let clear = if forecast.first.is_some() {
+            m.thought
+                .confidence(-forecast.margin.min(0.0) - m.thought.trust_ticks)
+        } else {
+            1.0
+        };
+        let scores = clear * chance;
+        let geom = ((1.0 - scores) * loss)
+            .mul_add(-(1.5 - risk_appetite), scores / m.thought.possession_value)
+            .max(0.0);
+        let _ = (
+            pressure,
+            shot_salience(pos, goal, risk_appetite, pressure, balance),
+        );
+        // The risk is in the worth (ADR-052): none on top of it.
+        let risk = 0.0;
         // ADR-046 §1, ADR-047: the shot is a complete phrase. The side
         // is the actor's preferred foot (a fact of the body, not a
         // latent); the two powers are the two phrases from
@@ -413,6 +568,8 @@ fn pass_candidates(
     let opponents: &[PlayerId] = &scene.opponents;
     let mut candidates = Vec::new();
     let mut freedoms = BTreeMap::new();
+    let imagined_players = imagined(scene);
+    let players = &imagined_players[..];
     for id in teammates {
         if *id == attacker {
             continue;
@@ -430,13 +587,40 @@ fn pass_candidates(
             continue;
         }
         // ADR-040: salience, not probability. freedom x line x distance.
-        let freedom_norm = (freedom as f64) / (freedom as f64 + PASS_FREEDOM_CM as f64);
         let lq = line_quality(pos, tpos, opponent_positions);
-        let dp = distance_plausible(distance_squared(pos, tpos).isqrt());
-        let brings = brings(pos, tpos, goal, risk_appetite, pressure, balance);
-        let geom = freedom_norm * lq * dp * brings;
-        // risk: 1.0 at PASS_FREEDOM_CM, falling with freedom.
-        let risk = (PASS_FREEDOM_CM as f64) / (freedom as f64);
+        // ADR-052: he imagines the pass, weighed to arrive rolling, and who
+        // reaches it first along its path; it is worth what it reaches.
+        let m = mind();
+        let d = distance_squared(pos, tpos).isqrt() as f64;
+        let v0 = d
+            .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
+            .min(m.kick.speed(1.0, 0.5));
+        let forecast = ds_calculator::thought::who_first(
+            pos,
+            tpos,
+            (v0, scene.ground_keep),
+            players,
+            m.thought.forecast_step_cm,
+        );
+        let gain_at = if forecast.first.is_some_and(|i| players[i].mate) {
+            forecast.at
+        } else {
+            tpos
+        };
+        let geom = worth(
+            scene,
+            sure(players, &forecast),
+            gain_at,
+            forecast.at,
+            risk_appetite,
+        );
+        let _ = (
+            goal,
+            pressure,
+            balance,
+            brings(pos, tpos, goal, risk_appetite, pressure, balance),
+        );
+        let risk = 0.0;
         candidates.push(ChoiceCandidate {
             kind: ChoiceKind::Pass(*id),
             geometric: geom,
@@ -447,12 +631,34 @@ fn pass_candidates(
         // and it reaches farther; it is less precise and harder to control
         // (`loft_salience`). A teammate too far for a ground pass may be
         // found in the air (ADR-051, the long ball, the switch, the cross).
-        let d = distance_squared(pos, tpos).isqrt();
-        if d >= balance.loft_min_cm {
-            let reach = (1.0 - (d as f64 / balance.loft_max_cm.max(1) as f64)).max(0.0);
+        if d >= balance.loft_min_cm as f64 {
+            // In the air it goes over the lines; who is first where it
+            // lands, after its flight, less the spread of a long kick.
+            let flight = d / 1000.0 * m.kick.loft_ticks_per_10m;
+            let spread = d * m.kick.error_rad(0.5, 0.75, 0.6, pressure)
+                / m.thought.believed_speed_cm_per_tick;
+            let arrival = |p: &ds_calculator::thought::Imagined| {
+                let run = f64::from(p.at.0 - tpos.0).hypot(f64::from(p.at.1 - tpos.1));
+                (p.reaction + run / p.speed.max(1.0)).max(flight)
+            };
+            let best = |mate: bool| {
+                players
+                    .iter()
+                    .filter(|p| p.mate == mate)
+                    .map(arrival)
+                    .fold(f64::INFINITY, f64::min)
+            };
+            let margin = best(false) - best(true) - spread;
+            let geom = worth(
+                scene,
+                m.thought.confidence(margin),
+                tpos,
+                tpos,
+                risk_appetite,
+            );
             candidates.push(ChoiceCandidate {
                 kind: ChoiceKind::Loft(*id),
-                geometric: balance.loft_salience * freedom_norm * reach.sqrt() * brings,
+                geometric: geom,
                 risk,
                 visibility: 1.0,
             });
@@ -546,7 +752,7 @@ pub fn build_choice(
     if scene.can_carry {
         let carry = carry_salience(
             pos,
-            scene.goal,
+            (scene.goal, scene.own_goal),
             &opponent_positions,
             risk_appetite,
             pressure,
@@ -634,6 +840,7 @@ mod keeper_visibility_tests {
             positions,
             goal: (10500, 3400),
             own_goal: (0, 3400),
+            ground_keep: 0.957,
             keeper: keeper_y.map(|_| keeper),
             keeper_reach_cm: 90.0,
             can_carry: true,
@@ -705,6 +912,7 @@ mod keeper_visibility_tests {
                 positions,
                 goal: (10500, 3400),
                 own_goal: (0, 3400),
+                ground_keep: 0.957,
                 keeper: None,
                 keeper_reach_cm: 0.0,
                 can_carry: true,

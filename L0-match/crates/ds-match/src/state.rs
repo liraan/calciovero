@@ -234,6 +234,7 @@ fn scene_from(
         positions,
         goal,
         own_goal,
+        ground_keep: f64::from(spatial.ground_friction_milli()) / 1000.0,
         keeper,
         keeper_reach_cm,
         can_carry,
