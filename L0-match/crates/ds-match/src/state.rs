@@ -258,6 +258,7 @@ fn scene_from(
         penalty_kick: false,
         runs: std::collections::BTreeMap::new(),
         horizon_cm: f64::MAX,
+        strike_error_rad: 0.0,
     }
 }
 
@@ -949,6 +950,13 @@ impl MatchState {
         );
         scene.penalty_kick = self.restart_pass == Some(crate::rules::RestartKind::Penalty);
         scene.horizon_cm = ctx.hidden.horizon_cm(attacker);
+        scene.strike_error_rad = ctx.hidden.strike_error_he_expects(
+            attacker,
+            self.spatial.agent(attacker).map_or(0.0, |a| {
+                f64::from(a.velocity.0).hypot(f64::from(a.velocity.1))
+            }),
+            self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
+        );
         // The teammates he sees attacking the depth, and where they run to
         // (plan L0-CLOSE 10a: the through ball).
         let seen = crate::perception::visible_to(&self.spatial, attacker);

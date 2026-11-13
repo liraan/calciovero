@@ -156,3 +156,16 @@ fn a_shot_on_the_run_is_less_clean() {
     assert!(miss(across) > miss(running), "across the body");
     assert!(miss(tired) > miss(still), "tired");
 }
+
+/// The shooter reckons his strike (P1, plan L0-CLOSE 11): standing fresh he
+/// expects no extra miss; on the run, and tired, he expects more.
+#[test]
+fn the_shooter_expects_a_worse_strike_on_the_run_and_tired() {
+    let mut gt = GroundTruth::new(42, MatchId::new(1, 0));
+    let still = gt.strike_error_he_expects(shooter(9), 0.0, 0.0);
+    let running = gt.strike_error_he_expects(shooter(9), 80.0, 0.0);
+    let tired = gt.strike_error_he_expects(shooter(9), 0.0, 1.0);
+    assert!(still.abs() < 1e-12, "still and fresh: {still}");
+    assert!(running > still, "on the run: {running}");
+    assert!(tired > still, "tired: {tired}");
+}

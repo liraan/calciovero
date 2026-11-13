@@ -779,6 +779,32 @@ impl GroundTruth {
         (t.horizon_max_cm - t.horizon_min_cm).mul_add(a, t.horizon_min_cm)
     }
 
+    /// The miss a player expects of his strike from how he is moving and
+    /// how tired he is, radians (plan L0-CLOSE 11): the engine's own causes
+    /// (on the run, tired), as well as he reads them (ADR-052: he misjudges
+    /// in proportion to how poorly he reads the game). Across his body is
+    /// not in it: it depends on where he aims.
+    #[must_use]
+    pub fn strike_error_he_expects(
+        &mut self,
+        player: PlayerId,
+        run_cm_per_tick: f64,
+        fatigue: f64,
+    ) -> f64 {
+        let l = self.latents_for(player);
+        let k = self.kick_balance;
+        let run = (run_cm_per_tick / k.run_speed_ref_cm_per_tick.max(1.0)).min(1.0);
+        let on_the_run = k.run_error_rad * run * (1.0 - f64::from(l.physical.body_control));
+        let tired = self
+            .movement_balance
+            .fatigue_coefficient
+            .mul_add(-fatigue.clamp(0.0, 1.0), 1.0)
+            .max(self.movement_balance.fatigue_floor);
+        let skill = f64::from(l.technical.finishing);
+        let tiredness = k.error_ref_rad * skill * (1.0 - tired);
+        f64::from(l.cognitive.game_reading) * (on_the_run + tiredness)
+    }
+
     /// Fatigue's declared parameters (`balance/fatigue.json`).
     #[must_use]
     pub const fn fatigue_balance(&self) -> ds_calculator::fatigue::FatigueBalance {

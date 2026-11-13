@@ -59,6 +59,9 @@ pub struct PerceivedScene {
     /// How far ahead he imagines, cm (his anticipation, ADR-052 e): an
     /// option that ends farther he cannot see through.
     pub horizon_cm: f64,
+    /// The miss he expects of his strike from how he is moving and how
+    /// tired he is, radians, as well as he reads it (plan L0-CLOSE 11).
+    pub strike_error_rad: f64,
 }
 
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
@@ -552,7 +555,6 @@ fn shot_candidates(
                 .mul_add(-(1.5 - risk_appetite), scores / m.thought.possession_value)
                 .max(0.0)
         };
-        let risk = 0.0;
         // ADR-046 §1, ADR-047: the shot is a complete phrase; both posts,
         // the keeper hiding the side he covers (ADR-047 §3).
         let aim_edge_cm = (GOAL_WIDTH_CM as f64) * 0.5 * balance.aim_edge_fraction;
@@ -565,7 +567,12 @@ fn shot_candidates(
         };
         for side in [side_sign, -side_sign] {
             for power in [balance.power_strong, balance.power_placed] {
-                let edge = aim_inside(goal_dist as f64, (own_error, hurry), power, aim_edge_cm);
+                let edge = aim_inside(
+                    goal_dist as f64,
+                    (own_error, hurry, scene.strike_error_rad),
+                    power,
+                    aim_edge_cm,
+                );
                 let aim_y = side.mul_add(edge, f64::from(goal.1));
                 // How far the keeper leans towards this post, at his depth.
                 let shift = keeper_at.map_or(0.0, |k| side * f64::from(k.1 - goal.1));
@@ -586,7 +593,7 @@ fn shot_candidates(
                         contact_height: 0.0,
                     },
                     geometric: geom,
-                    risk,
+                    risk: 0.0,
                     visibility: shot_visibility,
                 });
             }
@@ -606,7 +613,7 @@ fn shot_candidates(
                     contact_height: 1.0,
                 },
                 geometric: worth_of(lob),
-                risk,
+                risk: 0.0,
                 visibility: 1.0,
             });
         }
@@ -621,15 +628,18 @@ fn shot_candidates(
 /// a quarter of it.
 fn aim_inside(
     goal_dist_cm: f64,
-    (own_error, pressure): (f64, f64),
+    (own_error, pressure, strike): (f64, f64, f64),
     power: f64,
     aim_edge_cm: f64,
 ) -> f64 {
     // The same angle the engine gives his kick: his own error, widened by
     // the power, and the pressure he feels.
     let k = &mind().kick;
-    let angle = (own_error * k.error_power_gain.mul_add(power, 0.5))
-        .mul_add(1.0, k.error_pressure_rad * pressure.clamp(0.0, 1.0));
+    let angle = (own_error * k.error_power_gain.mul_add(power, 0.5)).mul_add(
+        1.0,
+        k.error_pressure_rad
+            .mul_add(pressure.clamp(0.0, 1.0), strike),
+    );
     let expected_miss = goal_dist_cm * angle;
     #[allow(clippy::cast_precision_loss)] // 732 cm
     let half = GOAL_WIDTH_CM as f64 * 0.5;
@@ -1066,6 +1076,7 @@ mod keeper_visibility_tests {
             penalty_kick: false,
             runs: BTreeMap::new(),
             horizon_cm: f64::MAX,
+            strike_error_rad: 0.0,
         }
     }
 
@@ -1238,6 +1249,7 @@ mod keeper_visibility_tests {
                 penalty_kick: false,
                 runs: BTreeMap::new(),
                 horizon_cm: f64::MAX,
+                strike_error_rad: 0.0,
             }
         }
 
