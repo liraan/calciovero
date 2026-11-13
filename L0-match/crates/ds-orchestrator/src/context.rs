@@ -80,6 +80,9 @@ pub struct ShotContext {
     pub across: f64,
     /// His fatigue, 0-1: it dims his technique (VISION §3).
     pub fatigue: f64,
+    /// Where his stride is when his foot meets the ball, in `[0, 1)` of a
+    /// step (plan L0-CLOSE 11): the contact he cannot see as he decides.
+    pub gait: f64,
 }
 
 /// The context of a pass resolution.

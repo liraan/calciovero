@@ -32,6 +32,7 @@ const fn ctx_at(from_y: i32, difficulty: i32) -> ShotContext {
         run_cm_per_tick: 0.0,
         across: 0.0,
         fatigue: 0.0,
+        gait: 0.75,
         gravity_cm_per_tick2: 10,
     }
 }
@@ -49,6 +50,7 @@ const fn ctx_contact(from_y: i32, difficulty: i32, contact_height: f64) -> ShotC
         run_cm_per_tick: 0.0,
         across: 0.0,
         fatigue: 0.0,
+        gait: 0.75,
         gravity_cm_per_tick2: 10,
     }
 }
@@ -168,4 +170,35 @@ fn the_shooter_expects_a_worse_strike_on_the_run_and_tired() {
     assert!(still.abs() < 1e-12, "still and fresh: {still}");
     assert!(running > still, "on the run: {running}");
     assert!(tired > still, "tired: {tired}");
+}
+
+/// The contact (P1, plan L0-CLOSE 11, ADR-054): the same shooter, the same
+/// aim, met at three phases of his stride. In the middle of the step the
+/// strike is clean; late it runs away from the post he chose and rises;
+/// early it is pulled back across and kept low.
+#[test]
+fn the_contact_spreads_the_shot() {
+    let shot = |gait: f64| {
+        let ctx = ShotContext {
+            aim_y: 3650.0,
+            gait,
+            ..ctx_at(3400, 50)
+        };
+        GroundTruth::new(42, MatchId::new(1, 0))
+            .resolve_shot(&ctx)
+            .to
+    };
+    let (early, middle, late) = (shot(0.0), shot(0.5), shot(0.99));
+    assert!(
+        (middle.1 - 3650).abs() <= 1,
+        "clean in the middle: {middle:?}"
+    );
+    assert!(
+        late.1 > middle.1 && early.1 < middle.1,
+        "{early:?} {late:?}"
+    );
+    assert!(
+        late.2 > middle.2 && middle.2 > early.2,
+        "{early:?} {middle:?} {late:?}"
+    );
 }

@@ -643,14 +643,14 @@ fn aim_inside(
     let expected_miss = goal_dist_cm * angle;
     #[allow(clippy::cast_precision_loss)] // 732 cm
     let half = GOAL_WIDTH_CM as f64 * 0.5;
-    // He does not know his miss to the centimetre: he keeps half as much
-    // again, and the ball and the post, between it and the post (before
-    // `SIM_VERSION` 76 his miss landed exactly on the post).
-    aim_edge_cm.min(
-        1.5f64
-            .mul_add(-expected_miss, half - BALL_RADIUS_CM - POST_RADIUS_CM)
-            .max(aim_edge_cm * 0.25),
-    )
+    // His miss is a spread (plan L0-CLOSE 11): he does not know which way
+    // the contact will send it, only how wide, as well as he reads it. He
+    // aims so that his widest miss, as he reckons it, still meets the
+    // inside of the post: nearer the post every shot he misses goes wide,
+    // farther in the keeper covers more. Before `SIM_VERSION` 91 he kept
+    // half as much again, when his miss was a known offset.
+    aim_edge_cm
+        .min((half - BALL_RADIUS_CM - POST_RADIUS_CM - expected_miss).max(aim_edge_cm * 0.25))
 }
 
 /// ADR-051, "clear": near his own goal and under pressure he may kick the

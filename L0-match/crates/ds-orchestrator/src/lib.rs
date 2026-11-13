@@ -381,8 +381,6 @@ impl GroundTruth {
         let distance = f64::from(ctx.to.0 - ctx.from.0).hypot(ctx.aim_y - f64::from(ctx.from.1));
         #[allow(clippy::cast_possible_truncation)]
         let base_dy = (ctx.aim_y - f64::from(ctx.to.1)) as i32;
-        #[allow(clippy::cast_possible_truncation)]
-        let lateral_abs = (distance * error) as i32;
         // The side of the miss: the way his body is moving when he strikes
         // (a body moving one way drags the ball that way); standing still,
         // to the side of the foot he kicks with, the side he aimed at (the
@@ -390,21 +388,25 @@ impl GroundTruth {
         // frame, so the two teams miss alike. Before `SIM_VERSION` 55 it
         // came from where he stood, and with the foot's absolute side it
         // made one team shoot wide.
-        let deviation_sign: i32 = match ctx.momentum_y.signum() {
-            0 => {
-                if base_dy >= 0 {
-                    1
-                } else {
-                    -1
-                }
-            }
-            s => s,
+        // The contact (plan L0-CLOSE 11): where his stride is when his foot
+        // meets the ball, which he cannot see as he decides. Met late in
+        // the step (`gait` past one half) the foot opens and the ball runs
+        // away from the post he chose, and rises; met early it is pulled
+        // back across, and kept down. In the middle of the step, clean.
+        let contact = ctx.gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
+        let aimed: f64 = if base_dy >= 0 { 1.0 } else { -1.0 };
+        // The run drags the ball the way his body moves (standing, the way
+        // he aimed).
+        let drag: f64 = match ctx.momentum_y.signum() {
+            0 => aimed,
+            s => f64::from(s),
         };
-        let dy = base_dy + deviation_sign * lateral_abs;
-        // A miscued strike rises: the vertical share of the error lifts the
-        // ball above the height he aimed at.
         #[allow(clippy::cast_possible_truncation)]
-        let dz = (distance * error * k.vertical_share) as i32;
+        let dy = base_dy + (distance * (aimed * clean).mul_add(contact, drag * on_the_run)) as i32;
+        // A miscued strike rises: the vertical share of the error lifts the
+        // ball above the height he aimed at, the more the later he meets it.
+        #[allow(clippy::cast_possible_truncation)]
+        let dz = (distance * error * k.vertical_share * 0.5 * (1.0 + contact)) as i32;
         let to = (
             ctx.to.0,
             ctx.to.1 + dy,
@@ -780,6 +782,15 @@ impl GroundTruth {
         let t = ds_calculator::thought::ThoughtBalance::load();
         let a = f64::from(self.latents_for(player).cognitive.anticipation);
         (t.horizon_max_cm - t.horizon_min_cm).mul_add(a, t.horizon_min_cm)
+    }
+
+    /// The length of a step at a sprint, cm (plan L0-CLOSE 11): the
+    /// fastest top speed over the running cadence (`balance/movement.json`).
+    #[must_use]
+    pub fn step_length_cm(&self) -> f64 {
+        let b = &self.movement_balance;
+        // Ten ticks a second (MD-18).
+        b.top_speed_max_cm_per_tick * 10.0 / b.step_hz.max(0.1)
     }
 
     /// How many ticks pass between two touches of a carrier running at

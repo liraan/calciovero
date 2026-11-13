@@ -100,6 +100,10 @@ pub struct AgentState {
     /// from heading (body). Written in `from_squads` (all look at the ball
     /// at kickoff) and in `move_agents` via `perception::scan` (ADR-034).
     pub gaze: u16,
+    /// Where he is in his stride, thousandths of a step (plan L0-CLOSE
+    /// 11): it moves on with the ground he covers. A strike meets the ball
+    /// at this phase of his step.
+    pub gait_milli: u16,
 }
 
 // Note (2026-11-07): superseded. `velocity` is written by the movement
@@ -230,6 +234,7 @@ impl SpatialState {
                     velocity: (0, 0),
                     heading: 90,
                     gaze: 90,
+                    gait_milli: 0,
                 },
             );
         }
@@ -246,6 +251,7 @@ impl SpatialState {
                     velocity: (0, 0),
                     heading: 270,
                     gaze: 270,
+                    gait_milli: 0,
                 },
             );
         }
@@ -979,10 +985,19 @@ impl SpatialState {
         (tick, hidden): (u64, &mut ds_orchestrator::GroundTruth),
         scan_balance: &crate::balance::ScanningBalance,
     ) {
+        let step_cm = hidden.step_length_cm().max(1.0);
         for (id, new_pos, _) in work {
             let Some(agent) = self.agents.get_mut(id) else {
                 continue;
             };
+            // His stride moves on with the ground he covers.
+            let covered = f64::from(new_pos.0 - agent.position.0)
+                .hypot(f64::from(new_pos.1 - agent.position.1));
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let advance = ((covered / step_cm) * 1000.0).round() as u32 % 1000;
+            #[allow(clippy::cast_possible_truncation)]
+            let gait = ((u32::from(agent.gait_milli) + advance) % 1000) as u16;
+            agent.gait_milli = gait;
             agent.velocity = (
                 i16::try_from(new_pos.0 - agent.position.0).unwrap_or(0),
                 i16::try_from(new_pos.1 - agent.position.1).unwrap_or(0),

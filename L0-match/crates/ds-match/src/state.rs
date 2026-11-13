@@ -1213,6 +1213,10 @@ impl MatchState {
                     .agent(attacker)
                     .map_or(0, |a| i32::from(a.velocity.1)),
                 gravity_cm_per_tick2: self.spatial.gravity_cm_per_tick2(),
+                gait: self
+                    .spatial
+                    .agent(attacker)
+                    .map_or(0.5, |a| f64::from(a.gait_milli) / 1000.0),
                 run_cm_per_tick: self.spatial.agent(attacker).map_or(0.0, |a| {
                     f64::from(a.velocity.0).hypot(f64::from(a.velocity.1))
                 }),
