@@ -206,6 +206,9 @@ pub struct SpatialState {
     /// The velocity of the ball he has just won, cm/tick, until his first
     /// touch reads it (plan L0-CLOSE 11).
     won: Option<(i16, i16)>,
+    /// How far the carrier reaches for his ball, cm (his reactivity, the
+    /// same reach he wins a loose ball with), and the tick it was read.
+    carrier_reach: (i64, u64),
     /// The goalkeeper of each team: `(home, away)`. A fact of the
     /// formation, populated at construction (OI-81-step-move). The keeper
     /// moves with `resolve_movement` like every agent; only his target
@@ -292,6 +295,7 @@ impl SpatialState {
             carry_target: None,
             touch: None,
             won: None,
+            carrier_reach: (i64::from(BODY_RADIUS_CM), 0),
             acts: BTreeMap::new(),
             act_targets: BTreeMap::new(),
             off_pitch: BTreeMap::new(),
@@ -613,6 +617,7 @@ impl SpatialState {
         hold: bool,
         mut period_of: impl FnMut(PlayerId, f64) -> f64,
         mut spill_of: impl FnMut(PlayerId, f64) -> f64,
+        reach_cm: i64,
     ) {
         if !matches!(self.ball, BallState::Possessed) {
             return;
@@ -627,8 +632,16 @@ impl SpatialState {
         let keep = f64::from(self.ball_physics.ground_friction_milli) / 1000.0;
         #[allow(clippy::cast_precision_loss)]
         let since = |touch: &Touch| tick.saturating_sub(touch.at) as f64;
-        let reached = distance_squared(pos, (self.ball_position.0, self.ball_position.1))
-            <= i64::from(BODY_RADIUS_CM).pow(2);
+        // He touches it again where it is, as soon as it is within his
+        // reach (the maintainer, 2026-11-13: players circled the ball they
+        // could not take; before, he had to have it within his body's width,
+        // which the bodies around it often kept him from).
+        let reach = reach_cm.max(i64::from(BODY_RADIUS_CM));
+        self.carrier_reach = (reach, tick);
+        let gap = distance_squared(pos, (self.ball_position.0, self.ball_position.1));
+        let reached = gap <= reach.pow(2);
+        // At his feet: within his body's width, nothing to bring under him.
+        let at_body = gap <= i64::from(BODY_RADIUS_CM).pow(2);
         let due = self.touch.as_ref().is_none_or(|tc| since(tc) >= tc.period);
         // A ball brought under his foot is at his feet when the step ends.
         let reached = reached
@@ -660,11 +673,11 @@ impl SpatialState {
                     period: 0.0,
                     held_cm: 0.0,
                 });
-            } else if !reached {
+            } else if !at_body {
                 let off = (from.0 - f64::from(pos.0), from.1 - f64::from(pos.1));
                 self.touch = Some(under_foot(off, tick, period_of(carrier, 0.0)));
             }
-        } else if self.touch.is_none() && !reached {
+        } else if self.touch.is_none() && !at_body {
             // At his feet in no other way (a restart, the keeper putting it
             // down): under his foot in a step.
             let off = (
@@ -686,7 +699,10 @@ impl SpatialState {
                 Some(dir) if pace >= 1.0 => {
                     let period = period_of(carrier, pace).max(1.0);
                     Some(Touch {
-                        from: (f64::from(pos.0), f64::from(pos.1)),
+                        from: (
+                            f64::from(self.ball_position.0),
+                            f64::from(self.ball_position.1),
+                        ),
                         dir,
                         speed: touch_speed(pace, period, keep),
                         at: tick,
@@ -722,10 +738,16 @@ impl SpatialState {
     #[must_use]
     pub fn ball_at_feet(&self) -> bool {
         // A ball he has just controlled is under his foot as far as he
-        // reached for it; one played ahead only when it is back at his feet.
-        #[allow(clippy::cast_possible_truncation)]
-        let held = self.touch.as_ref().map_or(0, |tc| tc.held_cm.ceil() as i64);
-        let foot = i64::from(BODY_RADIUS_CM).max(held);
+        // reached for it; one played ahead is his again within his reach
+        // once he meets it (the touch is due); rolling in between, it is not.
+        let (reach, now) = self.carrier_reach;
+        #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+        let foot = match &self.touch {
+            None => reach,
+            Some(tc) if tc.held_cm > 0.0 => i64::from(BODY_RADIUS_CM).max(tc.held_cm.ceil() as i64),
+            Some(tc) if now.saturating_sub(tc.at) as f64 >= tc.period => reach,
+            Some(_) => i64::from(BODY_RADIUS_CM),
+        };
         self.carrier
             .and_then(|c| self.agents.get(&c))
             .is_some_and(|a| {
@@ -1338,9 +1360,9 @@ mod tests {
             let from = (at.0 + 80, at.1, 0);
             s.set_ball_in_flight(from, (60, 0, 0));
             s.set_carrier(Some(id));
-            s.follow_carrier(1, false, |_, _| 2.5, |_, _| spill);
+            s.follow_carrier(1, false, |_, _| 2.5, |_, _| spill, 45);
             let first = s.ball();
-            s.follow_carrier(4, false, |_, _| 2.5, |_, _| spill);
+            s.follow_carrier(4, false, |_, _| 2.5, |_, _| spill, 45);
             (at, first, s.ball())
         };
         let (at, first, later) = won(0.0);
@@ -1348,6 +1370,26 @@ mod tests {
         assert_eq!(later, at, "a dead ball under his foot in a step");
         let (_, first, later) = won(10.0);
         assert!(first.0 > at.0 && later.0 > first.0, "a poor touch runs on");
+    }
+
+    /// His own ball within his reach (P1, plan L0-CLOSE 11): he plays it
+    /// where it is once his touch meets it; with a shorter reach it is not
+    /// his to play yet. Bodies around it no longer keep him from it.
+    #[test]
+    fn he_plays_his_ball_within_his_reach() {
+        let id = PlayerId::new(1, 0);
+        let at_feet = |reach: i64| {
+            let mut s = make_state();
+            let at = s.agent(id).map(|a| a.position).unwrap_or_default();
+            s.set_ball_in_flight((at.0 + 80, at.1, 0), (0, 0, 0));
+            s.set_carrier(Some(id));
+            s.follow_carrier(1, false, |_, _| 2.5, |_, _| 0.0, reach);
+            s.follow_carrier(5, false, |_, _| 2.5, |_, _| 0.0, reach);
+            (s.ball(), at, s.ball_at_feet())
+        };
+        let (ball, at, mine) = at_feet(120);
+        assert!(mine, "within his reach");
+        assert_eq!(ball, at, "brought under his foot, not left behind");
     }
 
     #[test]

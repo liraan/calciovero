@@ -828,6 +828,11 @@ impl MatchState {
         );
         let hold = self.in_hands.is_some() || self.restart_pass.is_some();
         let keep_max = f64::from(self.reception_balance.first_touch_keep_max_milli) / 1000.0;
+        let radius = self.reception_balance.loose_control_radius_cm;
+        let reach = self
+            .spatial
+            .carrier()
+            .map_or(0, |c| ctx.hidden.ball_reach_cm(c, radius));
         let hidden = &mut *ctx.hidden;
         let periods = std::cell::RefCell::new(hidden);
         self.spatial.follow_carrier(
@@ -835,6 +840,7 @@ impl MatchState {
             hold,
             |p, pace| periods.borrow_mut().touch_period_ticks(p, pace),
             |p, incoming| periods.borrow_mut().control_spill(p, incoming, keep_max),
+            reach,
         );
         // The carried ball has moved with him: it may have crossed a line.
         self.restart_if_out(ctx, tick);
