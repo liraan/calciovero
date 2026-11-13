@@ -6,6 +6,7 @@ It is outside the rings: nothing in `doctrine/`, `L0-match/` or `tools/` reads i
 
 | File | What it is |
 |---|---|
+| [`NEW-AI-PROMPT.md`](NEW-AI-PROMPT.md) | the prompt to paste into a new chat with an AI that has never opened the repository: what to read, how to answer, the direction, the technical procedure |
 | [`STATE.md`](STATE.md) | the bookmark: last commit verified, where we are, the plan, the open items |
 | [`RULES.md`](RULES.md) | how we work: the pact, the filters (luna, partita vera), honesty, git, the sessions |
 | [`IDEAS.md`](IDEAS.md) | ideas still alive, not decisions; the rejected ones, so they are not discussed again |
@@ -14,6 +15,6 @@ It is outside the rings: nothing in `doctrine/`, `L0-match/` or `tools/` reads i
 | [`scripts/gates.sh`](scripts/gates.sh) | the mechanical checks (docs coherence, bookmark, platform-free engine); run by CI and the pre-push hook |
 | [`scripts/session.sh`](scripts/session.sh) | `start`, `close`, `capture`: the rituals of a session, in one script |
 
-**Read order for a new session:** `RULES.md`, `STATE.md`, then `bash context/scripts/session.sh start`.
+**Read order for a new session:** `RULES.md`, `STATE.md`, then `bash context/scripts/session.sh start`. For an AI new to the repository, paste `NEW-AI-PROMPT.md`.
 
 Files here are rewritten or removed when their function is served; what was removed is in `git log` (until 2026-11-13 this directory was `process/`).
