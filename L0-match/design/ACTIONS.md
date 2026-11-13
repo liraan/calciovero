@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 53).
+engine (updated at `SIM_VERSION` 54).
 
 **How to read the state.**
 
@@ -56,7 +56,7 @@ with their first consumer (ADR-051 §4).
 | Act | Quantities | Roots | Engine today |
 |---|---|---|---|
 | Receive, control | clean or loose, the touch's length | first touch, foot, *body control* | ✓ since 52 where the pass reaches him: first touch, freedom, distance; a heavy touch runs on; foot ✗ |
-| Carry | speed with the ball, direction | *dribbling*, run | ◐ speed is the run's; step length constant; direction is a rule (to goal, or to the open pitch when blocked) |
+| Carry | speed with the ball, direction | *dribbling*, run | ◐ since 54 an option with its own salience (room ahead, what it brings); speed is the run's; step length constant; direction is a rule (to goal, or to the open pitch when blocked); dribbling ✗ |
 | Dribble past a man | beat or lose | *dribbling*, acceleration, *joint mobility*, *body control* | — |
 | Shield | keep the ball under a challenge | *maximal force*, *body control*, weight | — (the carrier's side of the duel reads first touch) |
 | Short pass | choice, speed, precision | passing, foot, vision, game reading, risk | ✓ since 52: choice; weighed to arrive rolling (`kick.json`), capped by his kick; drift and overhit from passing and the foot |

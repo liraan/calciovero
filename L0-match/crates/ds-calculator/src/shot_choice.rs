@@ -42,6 +42,11 @@ pub struct ShotChoiceBalance {
     /// The goal's visible width from the penalty spot (the sine of the
     /// angle): a goal seen this well is a whole goal (ADR-051).
     pub shot_cone_ref: f64,
+    /// The salience of carrying the ball with full room in front (ADR-051).
+    pub carry_salience: f64,
+    /// The room in front (to the nearest opponent ahead) that is full room
+    /// for a carry, cm.
+    pub carry_room_ref_cm: i64,
 }
 
 impl ShotChoiceBalance {

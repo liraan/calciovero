@@ -276,6 +276,87 @@ fn shot_salience(
     distance_factor * cone * brings(pos, goal, goal, risk_appetite, pressure, balance)
 }
 
+/// The salience of carrying the ball (ADR-051, "carry"): the room in front
+/// of him towards the goal (the nearest opponent ahead, against
+/// `carry_room_ref_cm`), and what the carry brings (the same term as a
+/// pass, to the point he can reach).
+#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+fn carry_salience(
+    pos: (i32, i32),
+    goal: (i32, i32),
+    opponents: &[(i32, i32)],
+    risk_appetite: f64,
+    pressure: f64,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> f64 {
+    let (gx, gy) = (i64::from(goal.0 - pos.0), i64::from(goal.1 - pos.1));
+    let reference = balance.carry_room_ref_cm.max(1);
+    let room = opponents
+        .iter()
+        .filter(|o| i64::from(o.0 - pos.0) * gx + i64::from(o.1 - pos.1) * gy > 0)
+        .map(|o| distance_squared(pos, *o).isqrt())
+        .min()
+        .unwrap_or(reference)
+        .min(reference);
+    let len = (gx * gx + gy * gy).isqrt().max(1);
+    let step = room.min(len);
+    let ahead = (
+        pos.0 + i32::try_from(gx * step / len).unwrap_or(0),
+        pos.1 + i32::try_from(gy * step / len).unwrap_or(0),
+    );
+    balance.carry_salience
+        * (room as f64 / reference as f64)
+        * brings(pos, ahead, goal, risk_appetite, pressure, balance)
+}
+
+/// The shot candidates (ADR-046 §1, ADR-047, ADR-050, ADR-051): within
+/// range, one complete phrase per power, on the side of his preferred foot.
+#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+fn shot_candidates(
+    scene: &PerceivedScene,
+    pos: (i32, i32),
+    preferred_foot: Side,
+    risk_appetite: f64,
+    pressure: f64,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> Vec<ChoiceCandidate> {
+    let goal = scene.goal;
+    let mut candidates = Vec::new();
+    let goal_dist = distance_squared(pos, goal).isqrt();
+    let shoot_range = balance.shot_range_cm.max(1);
+    if goal_dist < shoot_range {
+        let geom = shot_salience(pos, goal, risk_appetite, pressure, balance);
+        // risk: 0.0 at the goal line, 1.0 at the shoot range edge.
+        let risk = (goal_dist as f64) / (shoot_range as f64);
+        // ADR-046 §1, ADR-047: the shot is a complete phrase. The side
+        // is the actor's preferred foot (a fact of the body, not a
+        // latent); the two powers are the two phrases from
+        // `L0-match/balance/shot_choice.json`. The contact height is 0.0 in this
+        // cantiere (`Removed-by: ADR-046 §5`, the lob needs the flight's
+        // time).
+        let aim_edge_cm = (GOAL_WIDTH_CM as f64) * 0.5 * balance.aim_edge_fraction;
+        let side_sign: f64 = match preferred_foot {
+            Side::Right => 1.0,
+            Side::Left => -1.0,
+        };
+        let aim_y = side_sign.mul_add(aim_edge_cm, f64::from(goal.1));
+        let shot_visibility = keeper_visibility(scene, pos, goal, side_sign, goal_cone(pos, goal));
+        for power in [balance.power_strong, balance.power_placed] {
+            candidates.push(ChoiceCandidate {
+                kind: ChoiceKind::Shoot {
+                    aim_y,
+                    power,
+                    contact_height: 0.0,
+                },
+                geometric: geom,
+                risk,
+                visibility: shot_visibility,
+            });
+        }
+    }
+    candidates
+}
+
 /// Builds the choice context for `attacker` from the scene, and the
 /// freedom of each pass receiver (carried to `resolve_pass`).
 ///
@@ -331,38 +412,14 @@ pub fn build_choice(
     };
 
     let pressure = pressure_on(pos, scene, balance);
-    let goal_dist = distance_squared(pos, goal).isqrt();
-    let shoot_range = balance.shot_range_cm.max(1);
-    if goal_dist < shoot_range {
-        let geom = shot_salience(pos, goal, risk_appetite, pressure, balance);
-        // risk: 0.0 at the goal line, 1.0 at the shoot range edge.
-        let risk = (goal_dist as f64) / (shoot_range as f64);
-        // ADR-046 §1, ADR-047: the shot is a complete phrase. The side
-        // is the actor's preferred foot (a fact of the body, not a
-        // latent); the two powers are the two phrases from
-        // `L0-match/balance/shot_choice.json`. The contact height is 0.0 in this
-        // cantiere (`Removed-by: ADR-046 §5`, the lob needs the flight's
-        // time).
-        let aim_edge_cm = (GOAL_WIDTH_CM as f64) * 0.5 * balance.aim_edge_fraction;
-        let side_sign: f64 = match preferred_foot {
-            Side::Right => 1.0,
-            Side::Left => -1.0,
-        };
-        let aim_y = side_sign.mul_add(aim_edge_cm, f64::from(goal.1));
-        let shot_visibility = keeper_visibility(scene, pos, goal, side_sign, goal_cone(pos, goal));
-        for power in [balance.power_strong, balance.power_placed] {
-            candidates.push(ChoiceCandidate {
-                kind: ChoiceKind::Shoot {
-                    aim_y,
-                    power,
-                    contact_height: 0.0,
-                },
-                geometric: geom,
-                risk,
-                visibility: shot_visibility,
-            });
-        }
-    }
+    candidates.extend(shot_candidates(
+        scene,
+        pos,
+        preferred_foot,
+        risk_appetite,
+        pressure,
+        balance,
+    ));
 
     let opponent_positions: Vec<(i32, i32)> = opponents
         .iter()
@@ -401,11 +458,31 @@ pub fn build_choice(
         freedoms.insert(*id, freedom);
     }
 
-    // Fallback: no candidate today (no teammate with enough freedom,
-    // no shot in range). The actor carries the ball; the clarity
-    // threshold in `resolve_choice` turns this into `ChoiceKind::Advance`
-    // because `0.0` is below `clarity_threshold` (ADR-040 note 2026-11-09,
-    // IDEA-DESIGN-010).
+    // ADR-051, "carry": with room in front he may carry the ball himself,
+    // an option like the others (before `SIM_VERSION` 54 only the
+    // fallback when nothing was clear, and the carrier passed as soon as
+    // he received).
+    if scene.can_carry {
+        let carry = carry_salience(
+            pos,
+            goal,
+            &opponent_positions,
+            risk_appetite,
+            pressure,
+            balance,
+        );
+        if carry > 0.0 {
+            candidates.push(ChoiceCandidate {
+                kind: ChoiceKind::Advance,
+                geometric: carry,
+                risk: pressure,
+                visibility: 1.0,
+            });
+        }
+    }
+    // Fallback: no candidate (no teammate with enough freedom, no shot in
+    // range, no room): the clarity threshold in `resolve_choice` turns
+    // this into `ChoiceKind::Advance` (ADR-040 note 2026-11-09).
     if candidates.is_empty() {
         candidates.push(ChoiceCandidate {
             kind: ChoiceKind::Advance,
@@ -526,6 +603,27 @@ mod keeper_visibility_tests {
                 keeper_reach_cm: 0.0,
                 can_carry: true,
             }
+        }
+
+        fn carry_salience_of(s: &PerceivedScene) -> f64 {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let (ctx, _) = build_choice(s, Side::Right, 0.5, &b);
+            ctx.candidates
+                .iter()
+                .filter(|c| c.kind == ChoiceKind::Advance)
+                .map(|c| c.geometric)
+                .fold(0.0, f64::max)
+        }
+
+        /// With room in front, carrying is an option of its own (P1,
+        /// ADR-051); with an opponent two metres ahead it weighs less.
+        /// Before `SIM_VERSION` 54 carrying was only the fallback.
+        #[test]
+        fn with_room_in_front_carrying_is_an_option() {
+            let free = carry_salience_of(&scene((4000, 3400), None));
+            let blocked = carry_salience_of(&scene((4000, 3400), Some((5200, 3400))));
+            assert!(free > 0.0, "free: {free}");
+            assert!(blocked < free / 2.0, "blocked {blocked}, free {free}");
         }
 
         fn pass_salience(s: &PerceivedScene, appetite: f64) -> f64 {
