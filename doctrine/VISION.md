@@ -129,18 +129,13 @@ not set numbers: he **shapes intentions and develops people**, and he
 does it with his own limits.
 
 ```
-watch  ->  observe  ->  understand  ->  adjust  ->  decide  ->  (watch)
+observe  ->  decide  ->  watch  ->  understand  ->  adjust
 ```
 
-He watches the match (everything starts from the pitch), observes what
-his players did (ratings and data from events, never from hidden
-numbers), understands why it went as it went, adjusts the intentions and
-the training because he understood, and decides roles, line-ups and
-signings for the next match. The cycle is the same at every scale
-(VISION §4-§5): inside a match, from the touchline, at half-time, with
-the substitutions; across a season, between matches. *(Order corrected
-by the maintainer, 2026-11-13: it was observe, decide, watch,
-understand, adjust; the manager's knowledge starts from what he sees.)* He never sees the truth directly: no CA/PA, no star rating
+He observes what his players did (ratings from events, never from hidden
+numbers), decides roles, line-ups, training and signings, watches the
+match, understands why it went as it went, and adjusts because he
+understood. He never sees the truth directly: no CA/PA, no star rating
 that is the engine's input. He sees estimates, with how sure they are.
 
 The soul is the one of the classic Italian managers, with the depth of

@@ -75,18 +75,14 @@ get an honest answer.
 The loop is familiar, and that is the point:
 
 ```
-watch  ->  observe  ->  understand  ->  adjust  ->  decide  ->  (watch)
+observe  ->  decide  ->  watch  ->  understand  ->  adjust
 ```
 
-**Watch** the match, in a 2D view or as radio commentary: everything
-starts from the pitch. **Observe** what your players actually did,
-through ratings and data built from events, never from hidden numbers.
-**Understand** why it went as it went, down to the moment and the reason.
-**Adjust** the intentions and the training, because you understood, not
-because a number went up. **Decide** the eleven, the tactic, the
-signings for the next match, and watch again. The same cycle turns
-inside a match (the touchline, the half-time talk, the substitutions)
-and across a season.
+**Observe** what your players actually did, through ratings built from
+events, never from hidden numbers. **Decide** the eleven, the tactic,
+the training, the signings. **Watch** the match in a 2D view or as radio
+commentary. **Understand** what happened, down to the moment and the
+reason. **Adjust**, because you understood, not because a number went up.
 
 The soul is old-school: dense, readable screens, text commentary, a
 world that reacts. Think of the depth of the modern games with the soul
