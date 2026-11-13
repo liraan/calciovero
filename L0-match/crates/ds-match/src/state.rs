@@ -1115,7 +1115,9 @@ impl MatchState {
                 lofted: lofted.then(|| self.spatial.gravity_cm_per_tick2()),
             };
             let outcome = ctx.hidden.resolve_pass(&ctx_pass, &params);
-            if lofted {
+            // A cross is the ball from wide into the area, lofted or low
+            // (the low cross, the cut-back): not a keeper's throw.
+            if !throw {
                 self.tell_cross(ctx, tick, attacker, (from.0, from.1), (to.0, to.1));
             }
             // MD-25/F.4-c: carrier released at launch, ball flies, pending
@@ -1323,8 +1325,9 @@ impl MatchState {
     /// player once he is within `loose_control_radius_cm` of it, and his
     /// team has the possession. Before this the ball stayed loose until the
     /// next decision, and the match stood still around it (OI-97).
-    /// A lofted pass from a wide position into the opponents' penalty area
-    /// is a cross (ADR-051): it is told as one.
+    /// A pass from a wide position into the opponents' penalty area is a
+    /// cross (ADR-051), lofted or low (since `SIM_VERSION` 92: the real
+    /// definition counts the low cross and the cut-back): it is told as one.
     fn tell_cross(
         &mut self,
         ctx: &mut MatchContext<'_>,
@@ -1335,12 +1338,8 @@ impl MatchState {
     ) {
         let (length, width) = pitch_cm(ctx);
         let home = ctx.match_.home.players.iter().any(|p| p.id == crosser);
-        let laws = self.laws;
         let goal_x = if home { length } else { 0 };
-        let wide = (from.1 - width / 2).abs() > laws.penalty_area_half_width_cm;
-        let into_area = (goal_x - to.0).abs() <= laws.penalty_area_depth_cm
-            && (to.1 - width / 2).abs() <= laws.penalty_area_half_width_cm;
-        if wide && into_area {
+        if is_cross(from, to, (goal_x, width), &self.laws) {
             self.emit_event(
                 ctx,
                 tick,
@@ -3219,8 +3218,38 @@ fn clamp_u16(value: u64) -> u16 {
     u16::try_from(value).unwrap_or(u16::MAX)
 }
 
+/// Whether a ball played from `from` to `to` is a cross towards the goal on
+/// the line `goal_x` of a pitch `width` wide: from outside the width of the
+/// penalty area into it (Law 1), however it travels.
+const fn is_cross(
+    from: (i32, i32),
+    to: (i32, i32),
+    (goal_x, width): (i32, i32),
+    laws: &crate::balance::LawsBalance,
+) -> bool {
+    let wide = (from.1 - width / 2).abs() > laws.penalty_area_half_width_cm;
+    let into_area = (goal_x - to.0).abs() <= laws.penalty_area_depth_cm
+        && (to.1 - width / 2).abs() <= laws.penalty_area_half_width_cm;
+    wide && into_area
+}
 #[cfg(test)]
 mod tests {
+    /// The cross (P1, `SIM_VERSION` 92): from wide into the area, whatever
+    /// the height; from the middle, or to outside the area, it is a pass.
+    #[test]
+    fn a_ball_from_wide_into_the_area_is_a_cross() {
+        let laws = crate::balance::LawsBalance::load();
+        let goal = (10_500, 6_800);
+        assert!(super::is_cross((9_000, 400), (10_000, 3_400), goal, &laws));
+        assert!(!super::is_cross(
+            (9_000, 3_400),
+            (10_000, 3_400),
+            goal,
+            &laws
+        ));
+        assert!(!super::is_cross((9_000, 400), (7_000, 3_400), goal, &laws));
+    }
+
     use super::*;
     use ds_core::ids::SquadId;
     use ds_model::{
