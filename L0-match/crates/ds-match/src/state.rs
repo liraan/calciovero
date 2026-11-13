@@ -282,6 +282,9 @@ struct TeamView {
     carrier_at: Option<(i32, i32)>,
     /// A teammate is pressing their carrier (plan L0-CLOSE 10c: the cover).
     mate_pressing: bool,
+    /// Where our carrier is, if we have the ball (plan L0-CLOSE 10c: the
+    /// free line to offer on).
+    mate_carrier: Option<(i32, i32)>,
 }
 
 impl TeamView {
@@ -326,6 +329,7 @@ impl TeamView {
                 .and_then(|c| spatial.agent(c))
                 .map(|a| a.position),
             mate_pressing: false,
+            mate_carrier: None,
         }
     }
 
@@ -473,15 +477,50 @@ impl TeamView {
     ) -> Option<(i32, i32)> {
         match act {
             ds_orchestrator::OffBallAct::Offer => self.marker(me).map(|o| {
+                // Away from his marker, where the line from the carrier is
+                // most open (plan L0-CLOSE 10c): straight away, or turned 45
+                // or 90 degrees, by fixed rotations.
                 let (dx, dy) = (f64::from(me.0 - o.0), f64::from(me.1 - o.1));
                 let len = dx.hypot(dy).max(1.0);
+                let (ux, uy) = (dx / len, dy / len);
                 let step = f64::from(off.offer_step_cm);
-                #[allow(clippy::cast_possible_truncation)]
-                let t = (
-                    (me.0 + (dx / len * step) as i32).clamp(0, length),
-                    (me.1 + (dy / len * step) as i32).clamp(0, width),
-                );
-                t
+                let spot = |c: f64, s: f64| {
+                    let (vx, vy) = (ux.mul_add(c, -(uy * s)), ux.mul_add(s, uy * c));
+                    #[allow(clippy::cast_possible_truncation)]
+                    let p = (
+                        (me.0 + (vx * step) as i32).clamp(0, length),
+                        (me.1 + (vy * step) as i32).clamp(0, width),
+                    );
+                    p
+                };
+                let spots = [
+                    spot(1.0, 0.0),
+                    spot(
+                        std::f64::consts::FRAC_1_SQRT_2,
+                        std::f64::consts::FRAC_1_SQRT_2,
+                    ),
+                    spot(
+                        std::f64::consts::FRAC_1_SQRT_2,
+                        -std::f64::consts::FRAC_1_SQRT_2,
+                    ),
+                    spot(0.0, 1.0),
+                    spot(0.0, -1.0),
+                ];
+                let Some(c) = self.mate_carrier else {
+                    return spots[0];
+                };
+                let open = |p: (i32, i32)| {
+                    self.opponents
+                        .iter()
+                        .map(|q| point_segment_dist_sq(c, p, *q))
+                        .min()
+                        .unwrap_or(i64::MAX)
+                };
+                spots
+                    .iter()
+                    .copied()
+                    .max_by(|a, b| open(*a).cmp(&open(*b)).then(b.cmp(a)))
+                    .unwrap_or(spots[0])
             }),
             ds_orchestrator::OffBallAct::Run => self.last_line.map(|l| {
                 (
@@ -1657,6 +1696,9 @@ impl MatchState {
                     return;
                 }
             } else {
+                if self.deflects_the_pass(ctx, tick, (id, by), distance) {
+                    return;
+                }
                 self.emit_event(
                     ctx,
                     tick,
@@ -1681,6 +1723,60 @@ impl MatchState {
         };
         let wait = self.decision_time(ctx, id, opponents);
         self.latencies.insert(id, tick.saturating_add(wait));
+    }
+
+    /// An opponent the pass reaches controls it by the same touch as a
+    /// receiver (plan L0-CLOSE 10c): his first touch, the pass's length,
+    /// how free he is of the passer's teammates. Not controlled, he only
+    /// deflects it: the ball runs on, slower, for whoever. Returns `true`
+    /// if he deflected it.
+    fn deflects_the_pass(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        (id, by): (PlayerId, PlayerId),
+        distance: Option<i64>,
+    ) -> bool {
+        let ball = self.spatial.ball();
+        let by_home = ctx.match_.home.players.iter().any(|p| p.id == by);
+        let params = self.reception_balance.to_params();
+        let passers = if by_home {
+            &ctx.match_.home
+        } else {
+            &ctx.match_.away
+        };
+        let me = self.spatial.agent(id).map_or(ball, |a| a.position);
+        let free = passers
+            .players
+            .iter()
+            .filter_map(|p| self.spatial.agent(p.id))
+            .map(|a| distance_squared(a.position, me).isqrt())
+            .min()
+            .unwrap_or(params.freedom_ref_cm);
+        let rec = ctx.hidden.resolve_reception(
+            &ds_orchestrator::ReceptionContext {
+                receiver: id,
+                distance_cm: distance.unwrap_or(0),
+                freedom_cm: free,
+            },
+            &params,
+        );
+        if rec.controlled {
+            return false;
+        }
+        let v = self.spatial.ball_velocity();
+        self.spatial
+            .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
+        let retry = ctx.hidden.duel_balance().retry_ticks;
+        self.challenges.insert(id, tick + retry);
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(id)),
+            EventType::Block,
+            serde_json::json!({ "pass": true, "from": by.slot() }),
+        );
+        true
     }
 
     /// Every player without the ball chooses his own act when his latency
@@ -1732,6 +1828,7 @@ impl MatchState {
                 .and_then(|c| self.spatial.agent(c))
                 .map(|a| a.position);
             let mut view = TeamView::new(&self.spatial, other, home, length, carrier);
+            view.mate_carrier = carrier_mate;
             view.mate_pressing = squad.players.iter().any(|p| {
                 matches!(
                     self.spatial.act(p.id),

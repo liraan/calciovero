@@ -166,7 +166,7 @@ the player's characteristics; the full catalogue, act by act, is
 | ✅ Press, challenge: standing, slide or jockey | ✅ Mark, offer for a pass, run in behind |
 | ✅ Hold the team's shape, high, mid or low block | ✅ Block a shot; aerial duel shoulder to shoulder |
 | ✅ Intercept: step into the passing lane | ✅ Cover the space behind a teammate who presses |
-| ⬜ Block a pass | ✅ Discipline and work rate |
+| ✅ Deflect a pass he cannot control | ✅ Discipline and work rate |
 
 **In goal**
 
