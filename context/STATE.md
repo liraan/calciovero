@@ -2,20 +2,20 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `00bb935` - "refactor(balance): the statistics are derived, never adjusted"
+**Last commit verified:** `f491210` - "feat(movement): a professional's body, and the pace is his -- plan L0-CLOSE 10"
 
 ## Dove siamo (2026-11-13)
 
-- **Motore L0, `SIM_VERSION` 78.** **Metodo (maintainer, 2026-11-13): le statistiche si derivano dalle abilità, mai si aggiustano** (ADR-052 nota, RULES A5-bis); tre valori scelti guardando le statistiche sono stati rifondati (77). Ogni giocatore sceglie con il suo pensiero (ADR-052): immagina le opzioni (chi arriva prima, la qualità dello spazio raggiunto, cosa si perde) e le giudica con una sola misura; nessun peso per tipo di opzione, nessun dado (ADR-035). Ogni gesto ha le sue radici nelle caratteristiche ed è riconoscibile (ADR-051, catalogo `L0-match/design/ACTIONS.md`).
+- **Motore L0, `SIM_VERSION` 79.** **Metodo (maintainer, 2026-11-13): le statistiche si derivano dalle abilità, mai si aggiustano** (ADR-052 nota, RULES A5-bis); tre valori scelti guardando le statistiche sono stati rifondati (77). Ogni giocatore sceglie con il suo pensiero (ADR-052): immagina le opzioni (chi arriva prima, la qualità dello spazio raggiunto, cosa si perde) e le giudica con una sola misura; nessun peso per tipo di opzione, nessun dado (ADR-035). Ogni gesto ha le sue radici nelle caratteristiche ed è riconoscibile (ADR-051, catalogo `L0-match/design/ACTIONS.md`).
 - **Fatto in L0-CLOSE** (`plans/L0-CLOSE.md`): la difesa pensa (68), l'attacco senza palla pensa (69), spazzata, pallonetto e altro palo (70), il gioco aereo (71), il portatore che protegge palla o punta l'uomo, con la nuova `dribbling` (72), la fatica che cresce con lo sforzo contro la nuova `endurance` e appanna accelerazione e velocità (73), le palle inattive vere (chi batte lo sceglie la squadra, le distanze delle Leggi, il rigore solo tiro) e tre bug trovati per strada, tra cui il portiere avversario che la squadra di casa non riconosceva (74). Nessuna caratteristica composta salvata: tolte `aerial` e `set_pieces`, ogni valore deriva dalle sue radici (75, richiesta del maintainer). Il test di repertorio (76): ogni gesto del catalogo compare nei seed 42-51; per farlo verde, cinque pensieri allineati al motore (parata trattenuta o respinta, pallonetto, pressione sul calcio, mira dentro il palo, palla alta contesa). L'amichevole giocabile (passo 9): `ds-demo --xi`, `--block`, `--width`, `--save`, `--load`, `--why`; l'intenzione dell'allenatore modula il blocco (OI-27, prima forma). Prima: portiere che legge e si tuffa, tiro con forza e piede, contrasto in tre forme con quattro esiti (ADR-042), le Leggi (fuorigioco, falli, cartellini, vantaggio, rigore), palla fuori e ripartenze.
-- **Misura 30 seed (42-71), per partita:** il corpo sui valori dei professionisti e il passo scelto (78): 9,5 km, il tempo per fascia di velocità come nel reale, tiri 29 (reale 25). Restano: 86% dei tiri nello specchio (reale 34%), quindi 7,8 gol. Le cause in `plans/L0-CLOSE.md` passo 10.
+- **Le statistiche non si guardano fino a motore completo** (maintainer, 2026-11-13): prima tutto ciò che manca (passo 10, famiglie 10a-10g), poi il realismo derivato (passo 11). Fatti finora nel 10: il corpo dei professionisti e il passo scelto (78), il filtrante e il duello aereo spalla a spalla (79).
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Plan
 
 | Pr. | # | Cosa | Dipende da | Prima azione |
 |---|---|---|---|---|
-| [next] | L0-CLOSE | **Chiudere L0 prima di L1** (maintainer, 2026-11-13). Passi 1-9 fatti; il 10 è cercare le cause delle statistiche lontane dal reale, senza aggiustarle (la prima, la corsa, fatta in 78). | ADR-051, ADR-052, ADR-042 | La fonte dell'errore del tiro: gli studi sulla precisione del calcio (oggi 86% nello specchio contro 34%). |
+| [next] | L0-CLOSE | **Chiudere L0 prima di L1** (maintainer, 2026-11-13). Passi 1-9 fatti; ora il 10, il motore completo (famiglie 10a-10g in `plans/L0-CLOSE.md`), senza guardare le statistiche; l'11, il realismo derivato, per ultimo. | ADR-051, ADR-052, ADR-042 | 10a, resto: la conduzione con la sua velocità (dribbling) e la sua direzione scelta. |
 | [open] | 10 | **L1, il mondo** (`L1-world/`). Si apre solo dopo L0 chiuso. | L0-CLOSE | Scrivere `L1-world/00-overview.md` (L1.04) prima di L1.05. |
 | [deferred] | 11 | **Ruleset GitHub (fase 2).** Disattivo; si riattiva quando c'è un secondo revisore, il progetto esce, o un agente riceve un token di scrittura. | — | Rileggere `RULES.md` §C quando una delle tre condizioni si presenta. |
 

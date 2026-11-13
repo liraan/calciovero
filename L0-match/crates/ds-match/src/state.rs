@@ -119,6 +119,8 @@ pub(crate) struct Pending {
     pub freedom_cm: Option<i64>,
     /// REC: the pass distance at launch, for `resolve_reception`.
     pub distance_cm: Option<i64>,
+    /// A through ball (plan L0-CLOSE 10a).
+    pub through: bool,
 }
 /// The in-progress state of a match.
 pub struct MatchState {
@@ -189,6 +191,8 @@ pub(crate) enum ChosenAction {
         receiver: PlayerId,
         freedom_cm: i64,
         lofted: bool,
+        /// A through ball: played to this point, ahead of the runner.
+        at: Option<(i32, i32)>,
     },
     /// Shoot at the opponent goal.
     Shoot {
@@ -239,6 +243,7 @@ fn scene_from(
         keeper_reach_cm,
         can_carry,
         penalty_kick: false,
+        runs: std::collections::BTreeMap::new(),
     }
 }
 
@@ -574,6 +579,7 @@ impl MatchState {
                 let receiver = p.receiver;
                 let freedom_cm = p.freedom_cm;
                 let distance_cm = p.distance_cm;
+                let through = p.through;
                 self.pending = None;
                 self.possession = outcome;
                 self.spatial.set_carrier(None);
@@ -607,6 +613,7 @@ impl MatchState {
                         actor: by,
                         kind: crate::fact::TrajectoryKind::Pass {
                             success: rec.controlled,
+                            through,
                         },
                     };
                     for c in crate::fact::classify(&fact) {
@@ -753,6 +760,16 @@ impl MatchState {
             can_carry,
         );
         scene.penalty_kick = self.restart_pass == Some(crate::rules::RestartKind::Penalty);
+        // The teammates he sees attacking the depth, and where they run to
+        // (plan L0-CLOSE 10a: the through ball).
+        let seen = crate::perception::visible_to(&self.spatial, attacker);
+        scene.runs = scene
+            .teammates
+            .iter()
+            .filter(|id| seen.contains(id))
+            .filter(|id| self.spatial.act(**id) == Some(ds_orchestrator::OffBallAct::Run))
+            .filter_map(|id| self.spatial.act_target(*id).map(|t| (*id, t)))
+            .collect();
         let (chosen_kind, freedoms) =
             ds_orchestrator::Actor::new(attacker).decide(&scene, ctx.hidden, tick);
         let chosen = match chosen_kind {
@@ -766,8 +783,18 @@ impl MatchState {
                     receiver,
                     freedom_cm,
                     lofted: matches!(chosen_kind, ds_orchestrator::ChoiceKind::Loft(_)),
+                    at: None,
                 }
             }
+            ds_orchestrator::ChoiceKind::Through { to, at } => ChosenAction::Pass {
+                receiver: to,
+                freedom_cm: freedoms
+                    .get(&to)
+                    .copied()
+                    .unwrap_or(ds_orchestrator::read::PASS_FREEDOM_CM),
+                lofted: false,
+                at: Some(at),
+            },
             ds_orchestrator::ChoiceKind::Shoot {
                 aim_y,
                 power,
@@ -830,18 +857,23 @@ impl MatchState {
             receiver,
             freedom_cm,
             lofted,
+            at,
         } = chosen
         {
             let from = match self.spatial.agent(attacker) {
                 Some(a) => (a.position.0, a.position.1, 0),
                 None => self.spatial.ball_3d(),
             };
-            let to = self
-                .spatial
-                .agent(receiver)
-                .map_or((from.0 + 2000, from.1, from.2), |a| {
-                    (a.position.0, a.position.1, 0)
-                });
+            let to = at.map_or_else(
+                || {
+                    self.spatial
+                        .agent(receiver)
+                        .map_or((from.0 + 2000, from.1, from.2), |a| {
+                            (a.position.0, a.position.1, 0)
+                        })
+                },
+                |p| (p.0, p.1, 0),
+            );
             let params = self.reception_balance.to_params();
             let ctx_pass = ds_orchestrator::PassContext {
                 passer: attacker,
@@ -898,6 +930,7 @@ impl MatchState {
                 freedom_cm: Some(freedom_cm),
                 distance_cm: Some(pass_distance_cm),
                 shot: None,
+                through: at.is_some(),
             });
             // REC: the Pass event is emitted at landing, in `tick`
             // (resolve_reception), not at launch: `complete` is the
@@ -990,6 +1023,7 @@ impl MatchState {
                 receiver: None,
                 freedom_cm: None,
                 distance_cm: None,
+                through: false,
                 shot: Some(ShotPending {
                     attacker,
                     struck: tick,
@@ -1085,6 +1119,9 @@ impl MatchState {
         let passer = self.pending.as_ref().and_then(|p| p.passer);
         let m = ctx.match_;
         let mut contenders: Vec<(PlayerId, f64, bool)> = Vec::new();
+        // Those who reach it (`near`), and those a body's width farther who
+        // can only contest it against them, shoulder to shoulder.
+        let mut shoulder: Vec<(PlayerId, f64, bool)> = Vec::new();
         for (squad, home) in [(&m.home, true), (&m.away, false)] {
             let keeper = squad.players.first().map(|p| p.id);
             for p in &squad.players {
@@ -1094,17 +1131,30 @@ impl MatchState {
                 let Some(a) = self.spatial.agent(p.id).map(|a| a.position) else {
                     continue;
                 };
+                // In the air he contests it shoulder to shoulder: a body's
+                // width beyond his reach, against one who reaches it (plan
+                // L0-CLOSE 10; before, two bodies kept apart were almost
+                // never both within reach of the ball in the same tick).
                 let reach = ctx.hidden.ball_reach_cm(p.id, radius);
-                if distance_squared(a, (bx, by)) > reach * reach {
+                let contest = reach + i64::from(2 * crate::spatial::BODY_RADIUS_CM);
+                let d2 = distance_squared(a, (bx, by));
+                if d2 > contest * contest {
                     continue;
                 }
                 let height = self.bodies.get(&p.id).map_or(180.0, |b| b.height_cm);
                 let hands =
                     Some(p.id) == keeper && in_keeper_box((bx, by), home, (length, width), &off);
                 if ctx.hidden.aerial_reach_cm(p.id, height, hands) >= f64::from(bz) {
-                    contenders.push((p.id, height, hands));
+                    if d2 <= reach * reach {
+                        contenders.push((p.id, height, hands));
+                    } else {
+                        shoulder.push((p.id, height, hands));
+                    }
                 }
             }
+        }
+        if !contenders.is_empty() {
+            contenders.extend(shoulder);
         }
         contenders
     }
@@ -1133,6 +1183,7 @@ impl MatchState {
             receiver: None,
             freedom_cm: None,
             distance_cm: None,
+            through: false,
             shot: Some(ShotPending {
                 attacker: winner,
                 struck: tick,
@@ -1461,7 +1512,7 @@ impl MatchState {
         // it until a fixed 1.5 s had passed, and a weighed pass rolled past
         // its receiver. A shot on its way is the keeper's.
         let pass = match &self.pending {
-            Some(p) if p.shot.is_none() => Some((p.passer, p.freedom_cm, p.distance_cm)),
+            Some(p) if p.shot.is_none() => Some((p.passer, p.freedom_cm, p.distance_cm, p.through)),
             Some(p) => {
                 let shooter = p.shot.as_ref().map(|s| s.attacker);
                 self.block_shot(ctx, tick, shooter);
@@ -1475,12 +1526,12 @@ impl MatchState {
         // The nearest player who reaches it, each with his own reach (his
         // reactivity, ADR-051); one whose touch just failed needs a moment.
         let ball = self.spatial.ball();
-        let passer = pass.and_then(|(by, _, _)| by);
+        let passer = pass.and_then(|(by, _, _, _)| by);
         let Some(id) = self.who_takes_the_ball(ctx, tick, passer, ball) else {
             return;
         };
         let home = |who: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == who);
-        if let Some((Some(by), freedom, distance)) = pass {
+        if let Some((Some(by), freedom, distance, through)) = pass {
             self.pending = None;
             if home(by) == home(id) && self.offside_at_pass.contains(&id) {
                 self.call_offside(ctx, tick, id, home(id), ball);
@@ -1502,6 +1553,7 @@ impl MatchState {
                     actor: by,
                     kind: crate::fact::TrajectoryKind::Pass {
                         success: rec.controlled,
+                        through,
                     },
                 };
                 for c in crate::fact::classify(&fact) {

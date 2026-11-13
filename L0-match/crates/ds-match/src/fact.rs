@@ -51,7 +51,11 @@ pub enum Fact {
 #[derive(Debug, Clone, Copy)]
 pub enum TrajectoryKind {
     /// A pass. `success` is whether it was completed.
-    Pass { success: bool },
+    Pass {
+        success: bool,
+        /// A through ball (plan L0-CLOSE 10a).
+        through: bool,
+    },
     /// A shot. The payload is what F.3-b3 requires (see
     /// the 2026-11-04 match statistics report, §3, in git history).
     Shot {
@@ -98,10 +102,14 @@ pub fn classify(fact: &Fact) -> Vec<Classified> {
             out
         }
         Fact::Trajectory { actor, kind } => match kind {
-            TrajectoryKind::Pass { success } => vec![Classified {
+            TrajectoryKind::Pass { success, through } => vec![Classified {
                 actor: Some(ActorId::Player(*actor)),
                 event_type: EventType::Pass,
-                fields: serde_json::json!({ "complete": *success }),
+                fields: if *through {
+                    serde_json::json!({ "complete": *success, "through": true })
+                } else {
+                    serde_json::json!({ "complete": *success })
+                },
             }],
             TrajectoryKind::Shot {
                 on_target,
@@ -191,7 +199,10 @@ mod tests {
     fn pass_trajectory_emits_pass_with_complete_field() {
         let c = classify(&Fact::Trajectory {
             actor: p(1),
-            kind: TrajectoryKind::Pass { success: true },
+            kind: TrajectoryKind::Pass {
+                success: true,
+                through: false,
+            },
         });
         assert_eq!(c.len(), 1);
         assert_eq!(c[0].event_type, EventType::Pass);

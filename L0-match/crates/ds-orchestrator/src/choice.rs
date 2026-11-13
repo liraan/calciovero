@@ -29,6 +29,14 @@ pub enum ChoiceKind {
     /// A lofted pass to a teammate, over the opponents: the long ball, the
     /// switch, the cross (ADR-051, "the kick").
     Loft(PlayerId),
+    /// A through ball (plan L0-CLOSE 10a): into the space ahead of a
+    /// teammate attacking the depth, where he and the ball arrive together.
+    Through {
+        /// The runner.
+        to: PlayerId,
+        /// Where the ball is played, cm.
+        at: (i32, i32),
+    },
     /// Shoot: the complete phrase of ADR-046 §1 and ADR-047.
     Shoot {
         /// Lateral component of the aim on the goal plane, cm (ADR-046 §1).
@@ -140,7 +148,9 @@ impl GroundTruth {
             let score = Calculator::apply(&formula, &mut custodian, &situation);
             scores.push(score);
             let tiebreak = match candidate.kind {
-                ChoiceKind::Pass(p) | ChoiceKind::Loft(p) => p.slot(),
+                ChoiceKind::Pass(p) | ChoiceKind::Loft(p) | ChoiceKind::Through { to: p, .. } => {
+                    p.slot()
+                }
                 ChoiceKind::Shoot { .. }
                 | ChoiceKind::Duel
                 | ChoiceKind::Advance

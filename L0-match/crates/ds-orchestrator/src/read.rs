@@ -53,6 +53,9 @@ pub struct PerceivedScene {
     /// He is taking a penalty: the Laws (Law 14) let him only kick the
     /// ball forward at the goal, every other player behind the mark.
     pub penalty_kick: bool,
+    /// The teammates he sees attacking the depth, and where each is
+    /// running to (the movement, Plane B): the through ball's runners.
+    pub runs: BTreeMap<PlayerId, (i32, i32)>,
 }
 
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
@@ -755,7 +758,64 @@ fn pass_candidates(
         }
         freedoms.insert(*id, freedom);
     }
+    candidates.extend(through_candidates(scene, pos, players, risk_appetite));
     (candidates, freedoms)
+}
+
+/// The through ball (plan L0-CLOSE 10a, ADR-052): for each teammate he sees
+/// attacking the depth, the ball played to where they arrive together (his
+/// run's point, pushed forward by the ground he covers while the ball
+/// rolls there), worth who reaches it first, as any pass.
+#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)] // cm on a pitch
+fn through_candidates(
+    scene: &PerceivedScene,
+    pos: (i32, i32),
+    players: &[ds_calculator::thought::Imagined],
+    risk_appetite: f64,
+) -> Vec<ChoiceCandidate> {
+    let m = mind();
+    let mut out = Vec::new();
+    let forward: f64 = if scene.goal.0 >= pos.0 { 1.0 } else { -1.0 };
+    for (id, run_to) in &scene.runs {
+        let Some(at_now) = scene.positions.get(id).copied() else {
+            continue;
+        };
+        let pace = m.thought.believed_speed_cm_per_tick.max(1.0);
+        let d = f64::from(run_to.0 - pos.0).hypot(f64::from(run_to.1 - pos.1));
+        let v0 = d
+            .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
+            .min(m.kick.speed(1.0, 0.5));
+        let ball_ticks =
+            ds_calculator::thought::ball_ticks(d, v0, scene.ground_keep).unwrap_or(d / v0);
+        let his = f64::from(run_to.0 - at_now.0).hypot(f64::from(run_to.1 - at_now.1));
+        let lead = (pace.mul_add(ball_ticks, -his)).clamp(0.0, 2000.0);
+        let at = (forward.mul_add(lead, f64::from(run_to.0)) as i32, run_to.1);
+        let d_at = f64::from(at.0 - pos.0).hypot(f64::from(at.1 - pos.1));
+        let v_at = d_at
+            .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
+            .min(m.kick.speed(1.0, 0.5));
+        let forecast = ds_calculator::thought::who_first(
+            pos,
+            at,
+            (v_at, scene.ground_keep),
+            players,
+            m.thought.forecast_step_cm,
+        );
+        let geom = worth(
+            scene,
+            sure(players, &forecast),
+            at,
+            forecast.at,
+            risk_appetite,
+        );
+        out.push(ChoiceCandidate {
+            kind: ChoiceKind::Through { to: *id, at },
+            geometric: geom,
+            risk: 0.0,
+            visibility: 1.0,
+        });
+    }
+    out
 }
 
 /// Builds the choice context for `attacker` from the scene, and the
@@ -946,6 +1006,7 @@ mod keeper_visibility_tests {
             keeper_reach_cm: 90.0,
             can_carry: true,
             penalty_kick: false,
+            runs: BTreeMap::new(),
         }
     }
 
@@ -987,6 +1048,27 @@ mod keeper_visibility_tests {
         };
         let (good, poor) = (widest(0.005), widest(0.06));
         assert!(poor + 50.0 < good, "poor {poor} good {good}");
+    }
+
+    /// The through ball is an option (P1, plan L0-CLOSE 10a): a teammate
+    /// he sees attacking the depth is offered the ball ahead of him, into
+    /// the space he is running to, never behind.
+    #[test]
+    fn a_runner_is_offered_the_through_ball() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let mut s = scene_with(Some(3400));
+        let runner = PlayerId::new(2, 0);
+        s.positions.insert(PlayerId::new(1, 0), (5000, 3400));
+        s.teammates.push(runner);
+        s.positions.insert(runner, (7000, 2500));
+        s.runs.insert(runner, (8000, 2500));
+        let (ctx, _) = build_choice(&s, Side::Right, 0.5, 0.04, &balance);
+        let through = ctx.candidates.iter().find_map(|c| match c.kind {
+            ChoiceKind::Through { to, at } if to == runner => Some(at),
+            _ => None,
+        });
+        let at = through.expect("a through ball to the runner");
+        assert!(at.0 >= 8000, "ahead of his run, not behind: {at:?}");
     }
 
     /// A penalty is a shot (Law 14): nobody is ahead of the ball, so the
@@ -1068,6 +1150,7 @@ mod keeper_visibility_tests {
                 keeper_reach_cm: 0.0,
                 can_carry: true,
                 penalty_kick: false,
+                runs: BTreeMap::new(),
             }
         }
 

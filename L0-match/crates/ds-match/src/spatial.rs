@@ -134,7 +134,7 @@ pub struct SpatialState {
 }
 
 /// ~45 cm shoulder half-width; two agents closer than 2R are pushed apart.
-const BODY_RADIUS_CM: i32 = 45;
+pub(crate) const BODY_RADIUS_CM: i32 = 45;
 
 /// Distance from the goal line at which the goalkeeper stands (F.3-b3).
 /// Arbitrary, declared: 2 m off the line.
@@ -239,6 +239,13 @@ impl SpatialState {
     /// Where a player who chose to offer or to run is going.
     pub fn set_act_target(&mut self, id: PlayerId, target: (i32, i32)) {
         self.act_targets.insert(id, target);
+    }
+
+    /// Where a player's chosen act takes him (offer, run, mark), if it
+    /// has a place: what a teammate sees of his movement.
+    #[must_use]
+    pub fn act_target(&self, id: PlayerId) -> Option<(i32, i32)> {
+        self.act_targets.get(&id).copied()
     }
 
     /// A player's off-ball act, if he has chosen one.

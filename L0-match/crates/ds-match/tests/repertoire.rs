@@ -44,10 +44,6 @@ const NOT_YET: &[(&str, &str)] = &[
         "shield",
         "the carrier's answer is not an event of its own: a kept Duel",
     ),
-    (
-        "long pass",
-        "one pass and one lofted pass; through ball and switch are not kinds",
-    ),
 ];
 
 /// Every act that shows, with what shows it.
@@ -62,6 +58,7 @@ fn acts_seen() -> BTreeSet<&'static str> {
             let yes = |k: &str| f.get(k).and_then(serde_json::Value::as_bool) == Some(true);
             let no = |k: &str| f.get(k).and_then(serde_json::Value::as_bool) == Some(false);
             let act = match e.event_type {
+                EventType::Pass if yes("through") => "through ball",
                 EventType::Pass if yes("complete") => "pass",
                 EventType::Cross => "cross",
                 EventType::Shot if is("shot_type", "lob") => "lob",
@@ -121,6 +118,7 @@ fn acts_seen() -> BTreeSet<&'static str> {
 fn every_act_of_the_catalogue_shows() {
     let expected = [
         "pass",
+        "through ball",
         "cross",
         "shot",
         "lob",

@@ -24,9 +24,23 @@ Gol ~2,7 · tiri ~25 · nello specchio ~9 · angoli ~10 · falli ~22 · gialli ~
 | 7 | **Palle inattive vere** | chi batte lo sceglie la squadra (il miglior calciatore vicino), punizione e rigore calciati come tiri, angolo come cross | i calci piazzati producono occasioni | **fatto** (74) |
 | 8 | **Test di repertorio** | ogni gesto del catalogo compare almeno una volta nei 30 seed | test verde, ogni assenza spiegata | **fatto** (76) |
 | 9 | **L'amichevole giocabile** | da riga di comando: scegli gli undici e l'intenzione (blocco alto/medio/basso, ampiezza), guardi la partita, salvi, ricarichi, e alla fine leggi *perché* hai subito gol | il maintainer gioca un'amichevole | **fatto** (prima forma: da giocare) |
-| 10 | **Misura finale e consegna** | 30 seed contro il reale, resoconto per la taratura fine | il maintainer tara, L0 chiuso | prossimo |
+| 10 | **Il motore completo** (maintainer, 2026-11-13: *"prima completa il motore, poi il realismo; i numeri sempre derivati dalle abilità, mai inventati"*) | ogni gesto del catalogo con la sua forma piena, nelle famiglie qui sotto (10a-10g); nessuna statistica guardata | ogni riga di `ACTIONS.md` ✓, il test di repertorio senza assenze dichiarate | prossimo |
+| 11 | **Il realismo derivato** | solo ora: 30 seed contro il reale, e per ogni distanza la causa nelle abilità dei giocatori, mai un numero aggiustato (ADR-052 nota) | il maintainer gioca e approva, L0 chiuso | |
 
-## Passo 10 — la misura finale, per la taratura con il maintainer (SIM_VERSION 76)
+### Passo 10, le famiglie che mancano (da `ACTIONS.md`)
+
+| | Famiglia | Gesti |
+|---|---|---|
+| 10a | **Il passaggio nei suoi tipi** | il filtrante (nello spazio davanti a chi attacca la profondità), il cambio di gioco, il cross come scelta; la conduzione con la sua velocità (dribbling) e la sua direzione |
+| 10b | **Il pensiero intero** (ADR-052 e) | visione (quanti e quanto lontano vede), anticipazione (quanto avanti immagina), creatività (le opzioni che pochi vedrebbero), concentrazione (l'appannatore che cala) |
+| 10c | **Senza palla** | la copertura e la corsa all'indietro, l'intercetto come scelta (entrare nella linea), il passaggio respinto, lo smarcamento che legge la linea libera; disciplina e generosità (work rate) |
+| 10d | **In porta** | la posizione letta (non una regola), pronto o no quando parte il tiro (concentrazione), l'uscita come scelta anche sul filtrante e sul cross, il rinvio con le mani e con i piedi |
+| 10e | **Il corpo** | girarsi (mobilità articolare), il tempo del salto |
+| 10f | **L'allenatore in partita** | le sostituzioni |
+| 10g | **L'arbitro disegnato** | presente nella vista 2D, senza occlusione |
+
+
+## Passo 11 — la misura (SIM_VERSION 76), da riprendere a motore completo
 
 Trenta partite, seed 42-71, la squadra di default (blocco medio, ampiezza normale).
 
