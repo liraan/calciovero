@@ -501,6 +501,52 @@ impl SpatialState {
         }
     }
 
+    /// Where a player at `from` running at `pace` cm/tick first meets the
+    /// ball rolling on the grass, by the physics `advance_ball` applies (the
+    /// ground keeps `ground_friction_milli` of its speed each tick): the
+    /// first point of its path he reaches no later than it does, or where it
+    /// stops. `None` if the ball is not rolling on the ground.
+    #[must_use]
+    pub fn intercept(&self, from: (i32, i32), pace: f64) -> Option<(i32, i32)> {
+        let rolling = match self.ball {
+            // On the grass and not lifting off: a ball just struck upwards
+            // is in the air, even before it leaves the ground.
+            BallState::InFlight | BallState::Loose => {
+                self.ball_position.2 == 0 && self.ball_velocity.2 <= 0
+            }
+            BallState::Possessed => false,
+        };
+        let (vx, vy) = (
+            f64::from(self.ball_velocity.0),
+            f64::from(self.ball_velocity.1),
+        );
+        if !rolling || vx.hypot(vy) < 1.0 {
+            return None;
+        }
+        let keep = f64::from(self.ball_physics.ground_friction_milli) / 1000.0;
+        let (bx, by) = (
+            f64::from(self.ball_position.0),
+            f64::from(self.ball_position.1),
+        );
+        let mut at = (self.ball_position.0, self.ball_position.1);
+        for t in 1..=80_u32 {
+            let d = rolled(1.0, f64::from(t), keep);
+            #[allow(clippy::cast_possible_truncation)]
+            {
+                at = (
+                    vx.mul_add(d, bx).round() as i32,
+                    vy.mul_add(d, by).round() as i32,
+                );
+            }
+            #[allow(clippy::cast_precision_loss)]
+            let mine = (distance_squared(from, at) as f64).sqrt();
+            if mine <= pace.max(1.0) * f64::from(t) {
+                return Some(at);
+            }
+        }
+        Some(at)
+    }
+
     /// Where a ball in the air comes down to `height_cm`, by the same
     /// physics `advance_ball` applies (gravity, air friction): where a
     /// player who reads it goes to meet it, from the moment it is struck.
@@ -971,6 +1017,15 @@ impl SpatialState {
                 } else {
                     1.0
                 };
+            // A ball rolling on the grass he meets where its path and his
+            // run cross, not where it is (the maintainer, 2026-11-13: players
+            // circled the ball instead of winning it; a keeper chasing a
+            // back pass let it roll past him into his goal).
+            let target = if to_the_ball && Some(entry.0) != self.carrier {
+                self.intercept(entry.1, top).unwrap_or(target)
+            } else {
+                target
+            };
             let (dx, dy) = (
                 f64::from(target.0 - entry.1.0),
                 f64::from(target.1 - entry.1.1),
@@ -1409,6 +1464,21 @@ mod tests {
         assert!(d.0 > 3000 + 1000, "{d:?}");
         s.set_ball_in_flight((3000, 3400, 0), (150, 0, 40));
         assert_eq!(s.drop_point(180), None, "never above his head");
+    }
+
+    /// Meeting a rolling ball (P1, plan L0-CLOSE 11): he runs to where its
+    /// path and his run cross, ahead of the ball, not to where it is now;
+    /// a slower man meets it farther along; a ball at rest, or in the air,
+    /// he goes to as before.
+    #[test]
+    fn a_rolling_ball_is_met_on_its_path() {
+        let mut s = make_state();
+        s.set_ball_in_flight((3000, 3400, 0), (60, 0, 0));
+        let fast = s.intercept((4000, 2400), 90.0).expect("rolling");
+        let slow = s.intercept((4000, 2400), 40.0).expect("rolling");
+        assert!(fast.0 > 3000 && slow.0 > fast.0, "{fast:?} {slow:?}");
+        s.set_ball_in_flight((3000, 3400, 0), (60, 0, 50));
+        assert_eq!(s.intercept((4000, 2400), 90.0), None, "in the air");
     }
 
     #[test]
