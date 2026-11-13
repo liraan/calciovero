@@ -10,6 +10,9 @@
 
 **Note (2026-11-03) — DEFERRED for the new engine.** The new engine has an **omniscient arbiter** (SESSION-STATE T1.3): no vision cone, no obstructed-perception errors, the match is fair. The perception model described below belongs to the prototype; it is not the model of the new engine. Do not implement from this ADR without reading T1.3 (and T1.3-bis: "fairness over realism" is a declared design value). The parts of this ADR that still hold in the new engine: the arbiter is non-physical, not a collision body, its position is informational for the renderer.
 
+
+**Note (2026-11-13) — the maintainer's decision for the new engine.** *"The referee is not an actor: the referee is the rules, applied always objectively; present, but without occlusion."* So: (1) no perception, no position-dependent error, no strictness: every decision is the exact application of the Laws to the facts of the match (T1.3, T1.3-bis confirmed); (2) **present**: the referee is part of the match the manager watches, shown on the pitch as a projection computed for the renderer; (3) **without occlusion**: he is not a body, the ball and the players pass through him, he blocks no line and no view. The VISION's "actor with his limits" applies to the players and the staff, not to the Laws. The laws still missing (offside, fouls as an outcome of contact, advantage, cards) enter as exact rules; the catalogue is `L0-match/design/ACTIONS.md` §6.
+
 ## Context
 
 ADR-019 D9 currently says:

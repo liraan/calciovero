@@ -112,6 +112,20 @@ The variation comes from the situation, never from a die. Twin tests: the better
 
 ---
 
+### 6.1 The referee
+
+**The referee is not an actor** (maintainer, 2026-11-13; ADR-021 note): he is the Laws, applied always objectively, to the facts of the match. He is **present** (shown on the pitch, a projection for the renderer) but **without occlusion** (not a body: the ball and the players pass through him, he hides nothing). No perception, no strictness, no error.
+
+| Law | Engine today |
+|---|---|
+| Kick-off, throw-in, goal kick, corner (Laws 8, 15-17) | ✓ `rules.rs`, exact |
+| Goal (Law 10) | ✓ the ball over the line between the posts |
+| Offside (Law 11) | — (issue #13) |
+| Fouls (Law 12) | — the outcome of a contact; needs the duel's form (§4.1, ADR-042) |
+| Advantage | — |
+| Cards | — |
+| The referee on the pitch | — not drawn yet |
+
 ## 7. The order of work (ADR-051 §5)
 
 **Every act is in every match, in potential.** The work does not add acts
