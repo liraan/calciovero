@@ -2051,7 +2051,12 @@ impl MatchState {
                 // A ball in the air coming down for the other side: where it
                 // will come down, and whether it falls in his own area (the
                 // keeper reads the flight, not where the ball is now).
-                let against = air_drop.filter(|_| home != passing_home);
+                // A ball in the air nobody plays to is anyone's where it
+                // comes down: both sides read it there (a clearance, a
+                // goal kick, a header away).
+                let against = air_drop
+                    .filter(|_| home != passing_home)
+                    .or_else(|| ball_loose.then(|| self.spatial.drop_point(180)).flatten());
                 let drop_in_box =
                     against.is_some_and(|d| in_keeper_box(d, home, (length, width), &off));
                 let contests = |rank0: bool| (keeper && drop_in_box) || (!keeper && rank0);

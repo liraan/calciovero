@@ -503,23 +503,27 @@ impl SpatialState {
 
     /// Where a ball in the air comes down to `height_cm`, by the same
     /// physics `advance_ball` applies (gravity, air friction): where a
-    /// player who reads it goes to meet it. `None` if it is not in the air
-    /// above that height.
+    /// player who reads it goes to meet it, from the moment it is struck.
+    /// `None` if it is below that height and not rising.
     #[must_use]
     pub fn drop_point(&self, height_cm: i32) -> Option<(i32, i32)> {
         let BallState::InFlight = self.ball else {
             return None;
         };
         let (mut x, mut y, mut z) = self.ball_position;
-        if z <= height_cm {
-            return None;
-        }
         let (mut vx, mut vy, mut vz) = (
             i32::from(self.ball_velocity.0),
             i32::from(self.ball_velocity.1),
             i32::from(self.ball_velocity.2),
         );
+        // Below that height and not rising, it is not in the air for him; a
+        // ball just struck and still climbing he reads from the kick.
+        if z <= height_cm && vz <= 0 {
+            return None;
+        }
         let p = self.ball_physics;
+        // Only a ball that goes above that height comes down to it.
+        let mut above = z > height_cm;
         for _ in 0..200 {
             vz -= i32::from(p.gravity_cm_per_tick2);
             vx = vx * p.air_friction_milli / 1000;
@@ -527,11 +531,12 @@ impl SpatialState {
             x += vx;
             y += vy;
             z += vz;
+            above |= z > height_cm;
             if z <= height_cm && vz < 0 {
-                return Some((x, y));
+                return above.then_some((x, y));
             }
         }
-        Some((x, y))
+        above.then_some((x, y))
     }
 
     /// Advances the ball one tick if it is in flight (MD-17/18).
@@ -1390,6 +1395,20 @@ mod tests {
         let (ball, at, mine) = at_feet(120);
         assert!(mine, "within his reach");
         assert_eq!(ball, at, "brought under his foot, not left behind");
+    }
+
+    /// A ball in the air is read from the kick (P1, plan L0-CLOSE 11): just
+    /// struck and still below head height, it already has a place where it
+    /// comes down, up the pitch; one that never rises above his head has
+    /// none.
+    #[test]
+    fn a_ball_in_the_air_is_read_from_the_kick() {
+        let mut s = make_state();
+        s.set_ball_in_flight((3000, 3400, 0), (150, 0, 80));
+        let d = s.drop_point(180).expect("read from the kick");
+        assert!(d.0 > 3000 + 1000, "{d:?}");
+        s.set_ball_in_flight((3000, 3400, 0), (150, 0, 40));
+        assert_eq!(s.drop_point(180), None, "never above his head");
     }
 
     #[test]
