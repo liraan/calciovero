@@ -79,16 +79,20 @@ impl Actor {
         let risk_appetite = hidden
             .custodian(self.player)
             .value(ds_calculator::Characteristic::RiskManagement);
-        // His own miss, which he knows (ADR-052): the base of the kick's
-        // error angle for his finishing and his better foot.
+        // His own miss, as well as he reads it (ADR-052; plan L0-CLOSE 11,
+        // as for the other causes of his strike since `SIM_VERSION` 88):
+        // the base of the kick's error angle for his finishing and his
+        // better foot, which a poor reader of the game underrates.
         let own_error = {
             let mut custodian = hidden.custodian(self.player);
+            let reading = custodian.value(ds_calculator::Characteristic::GameReading);
             let finishing = custodian.value(ds_calculator::Characteristic::Finishing);
             let foot = custodian
                 .value(ds_calculator::Characteristic::LeftFoot)
                 .max(custodian.value(ds_calculator::Characteristic::RightFoot));
-            let skill = finishing.clamp(0.0, 1.0) * 0.5f64.mul_add(foot.clamp(0.0, 1.0), 0.5);
-            hidden.kick_balance().error_ref_rad * (1.0 - skill)
+            hidden
+                .kick_balance()
+                .miss_reckoned(finishing, foot, reading)
         };
         let balance = hidden.shot_choice_balance();
         let (ctx, freedoms) =

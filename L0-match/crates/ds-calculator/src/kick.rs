@@ -88,6 +88,15 @@ impl KickBalance {
             .mul_add(1.0, self.error_pressure_rad * pressure.clamp(0.0, 1.0))
     }
 
+    /// The base of his miss as he reckons it, radians (ADR-052, plan
+    /// L0-CLOSE 11): the error angle for his finishing and his better foot,
+    /// as well as he reads the game. A poor reader underrates it.
+    #[must_use]
+    pub fn miss_reckoned(&self, finishing: f64, best_foot: f64, reading: f64) -> f64 {
+        let skill = finishing.clamp(0.0, 1.0) * 0.5f64.mul_add(best_foot.clamp(0.0, 1.0), 0.5);
+        reading.clamp(0.0, 1.0) * self.error_ref_rad * (1.0 - skill)
+    }
+
     /// The height the shooter aims at, cm, from his contact choice (0 low,
     /// 1 high).
     #[must_use]
@@ -102,6 +111,19 @@ impl KickBalance {
 #[cfg(test)]
 mod tests {
     use super::KickBalance;
+
+    /// Twin test (ADR-051 §3, plan L0-CLOSE 11): two shooters identical but
+    /// for their game reading; the poorer reader reckons a smaller miss than
+    /// his own, the perfect one reckons it exactly.
+    #[test]
+    fn the_poorer_reader_underrates_his_miss() {
+        let b = KickBalance::load();
+        let truth = b.error_ref_rad * 0.6f64.mul_add(-0.9, 1.0);
+        let good = b.miss_reckoned(0.6, 0.8, 0.9);
+        let poor = b.miss_reckoned(0.6, 0.8, 0.3);
+        assert!(poor < good && good < truth);
+        assert!((b.miss_reckoned(0.6, 0.8, 1.0) - truth).abs() < 1e-12);
+    }
 
     #[test]
     fn embedded_kick_is_valid() {

@@ -24,6 +24,6 @@ No die (ADR-035). The ball's position between touches is computed from the touch
 
 ## Consequences
 
-- Measured at 89 (30 seeds, not a target): tackles won 7.6 -> 23.4, goals 6.2 -> 3.3, corners 25.7 -> 21.2, passes 972 -> 938. Shots on target are unchanged (about 90%): the shooter strikes the ball at his foot, as a real one does; the cause of that gap is elsewhere.
+- Measured at 89 (30 seeds, not a target): tackles won 7.6 -> 23.4, goals 6.2 -> 3.3, corners 25.7 -> 21.2, passes 972 -> 938. Shots on target are unchanged: 14.4 of 20.8 a match by the real definition (goals plus saves, 69%; real about 34%), corrected on 2026-11-13 from a first count that also took in blocked shots (about 90%). The shooter strikes the ball at his foot, as a real one does; the cause of that gap is elsewhere.
 - Twin test: `the_better_dribbler_touches_the_ball_more_often`. P1: `a_touch_comes_back_to_his_foot`, `a_ball_between_two_touches_is_the_defenders`.
 - Open: the touch is not yet in the carrier's thought (he does not imagine the defender nicking the ball between touches, nor choose a closer touch under pressure); the receiver's first touch (where he puts the ball as he controls it) is not yet a touch of this kind.
