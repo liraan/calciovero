@@ -67,6 +67,7 @@ pub struct GroundTruth {
     /// for every agent every tick: parsing the JSON 1.2 million times is
     /// waste, and the file does not change during a match.
     movement_balance: ds_calculator::movement::MovementBalance,
+    fatigue_balance: ds_calculator::fatigue::FatigueBalance,
     latency_balance: ds_calculator::latency::LatencyBalance,
     choice_balance: ds_calculator::choice::ChoiceBalance,
     shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance,
@@ -89,6 +90,7 @@ impl GroundTruth {
             vault: ds_db::Vault::new(ds_core::identity::Identity::new(world_seed, match_id)),
             observations: Vec::new(),
             movement_balance: ds_calculator::movement::MovementBalance::load(),
+            fatigue_balance: ds_calculator::fatigue::FatigueBalance::load(),
             latency_balance: ds_calculator::latency::LatencyBalance::load(),
             choice_balance: ds_calculator::choice::ChoiceBalance::load(),
             shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance::load(),
@@ -682,6 +684,21 @@ impl GroundTruth {
         self.kick_balance
     }
 
+    /// Fatigue's declared parameters (`balance/fatigue.json`).
+    #[must_use]
+    pub const fn fatigue_balance(&self) -> ds_calculator::fatigue::FatigueBalance {
+        self.fatigue_balance
+    }
+
+    /// A player's fatigue after a tick at `speed` cm/tick (plan L0-CLOSE
+    /// step 6): his effort, against his endurance. Plane A stays here; the
+    /// fatigue that comes out is Plane B (what an observer sees).
+    #[must_use]
+    pub fn tire(&mut self, player: PlayerId, fatigue: f64, speed: f64) -> f64 {
+        let endurance = f64::from(self.latents_for(player).physical.endurance);
+        self.fatigue_balance.after_tick(fatigue, speed, endurance)
+    }
+
     /// The save's declared parameters (`balance/save.json`).
     #[must_use]
     pub const fn save_balance(&self) -> ds_calculator::save::SaveBalance {
@@ -734,7 +751,10 @@ impl GroundTruth {
         // are the clamp and the ground-per-step, computed from the balance
         // and the player's data. The model says
         // `v = min(v + a, v_max_ref * max_speed)`, `x += v * (height / height_ref)`.
-        let v_max = balance.v_max_ref_cm_per_tick * f64::from(max_speed);
+        // Fatigue dims the top speed too (plan L0-CLOSE step 6).
+        let v_max = balance.v_max_ref_cm_per_tick
+            * f64::from(max_speed)
+            * self.fatigue_balance.v_max_factor(ctx.fatigue);
         let stride = ctx.height_cm / balance.height_ref_cm;
         let situation = TheSituation {
             height: ctx.height_cm,

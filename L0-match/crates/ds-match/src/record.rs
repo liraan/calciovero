@@ -39,6 +39,9 @@ pub struct AgentFrame {
     pub position: (i32, i32),
     /// Body orientation in degrees, `0` = towards positive `y`, clockwise.
     pub heading: u16,
+    /// How tired he looks, thousandths (plan L0-CLOSE step 6: a state of
+    /// the moment has a visible sign).
+    pub fatigue_milli: u16,
 }
 
 /// What the pitch looks like at one tick.

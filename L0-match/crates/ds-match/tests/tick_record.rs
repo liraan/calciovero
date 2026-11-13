@@ -496,3 +496,39 @@ fn a_carrier_can_take_his_man_on() {
         "no dribble in ten matches"
     );
 }
+
+/// Plan L0-CLOSE step 6 (P1, OI-70): the players tire as the match goes
+/// on, and the half-time rest gives some of it back. Before `SIM_VERSION`
+/// 73 fatigue never changed from zero.
+#[test]
+fn the_players_tire_and_half_time_rests_them() {
+    let m = match_fixture(42).expect("fixture");
+    let (_, records) = simulate_from_seed_recorded(&m, 42, MatchConfig::default());
+    let mean = |r: &TickRecord| {
+        let n = f64::from(u32::try_from(r.agents.len().max(1)).unwrap_or(1));
+        r.agents
+            .iter()
+            .map(|a| f64::from(a.fatigue_milli))
+            .sum::<f64>()
+            / n
+    };
+
+    let first_end = records
+        .iter()
+        .rev()
+        .find(|r| r.half == ds_stats::Half::First)
+        .map(mean)
+        .expect("a first half");
+    let second_start = records
+        .iter()
+        .find(|r| r.half == ds_stats::Half::Second)
+        .map(mean)
+        .expect("a second half");
+    let last = records.last().map(mean).expect("records");
+    eprintln!(
+        "fatigue: first half end {first_end:.0}, second half start {second_start:.0}, end {last:.0}"
+    );
+    assert!(first_end > 100.0, "nobody tired in a half: {first_end}");
+    assert!(second_start < first_end, "half-time gave nothing back");
+    assert!(last > second_start && last < 900.0, "end {last}");
+}

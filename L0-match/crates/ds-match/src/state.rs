@@ -631,6 +631,7 @@ impl MatchState {
             &self.keeper_balance,
         );
         self.spatial.follow_carrier();
+        self.tire_players(ctx);
         self.meet_ball_in_air(ctx, tick);
         self.control_loose_ball(ctx, tick);
         self.challenge_carrier(ctx, tick);
@@ -2043,11 +2044,31 @@ impl MatchState {
         }
     }
 
+    /// Fatigue, the first dimmer (plan L0-CLOSE step 6, OI-70): each
+    /// player on the pitch tires by the effort of this tick, his speed,
+    /// against his endurance, and recovers when he walks.
+    fn tire_players(&mut self, ctx: &mut MatchContext<'_>) {
+        for (id, body) in &mut self.bodies {
+            let Some(a) = self.spatial.agent(*id) else {
+                continue;
+            };
+            let speed = f64::from(a.velocity.0).hypot(f64::from(a.velocity.1));
+            body.fatigue = ctx.hidden.tire(*id, body.fatigue, speed);
+        }
+    }
+
     /// The kick-off (Law 8): the home side kicks off the first half, the
     /// away side the second. Before, nobody was on the ball and nobody saw
     /// it, so the match began only because the nearest player could kick a
     /// ball he was not touching (OI-97).
     pub fn kick_off(&mut self, ctx: &MatchContext<'_>, half: Half) {
+        if half == Half::Second {
+            // The half-time rest (plan L0-CLOSE step 6).
+            let f = ctx.hidden.fatigue_balance();
+            for b in self.bodies.values_mut() {
+                b.fatigue = f.after_half_time(b.fatigue);
+            }
+        }
         let side = match half {
             Half::First => crate::rules::Side::Home,
             Half::Second => crate::rules::Side::Away,
@@ -2112,6 +2133,11 @@ impl MatchState {
                         id: *id,
                         position: a.position,
                         heading: a.heading,
+                        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                        fatigue_milli: self
+                            .bodies
+                            .get(id)
+                            .map_or(0, |b| (b.fatigue * 1000.0).round() as u16),
                     })
                     .collect();
                 // The players sent off are listed too, in id order.

@@ -71,6 +71,9 @@ pub struct PhysicalLatents {
     /// Body control: balance and coordination in a contact (ADR-042,
     /// consumed by the duel).
     pub body_control: f32,
+    /// Endurance: how slowly the effort tires him and how fast he
+    /// recovers (plan L0-CLOSE step 6, consumed by fatigue).
+    pub endurance: f32,
 }
 
 /// Technical performances (L0.11 §7.2).
@@ -154,6 +157,7 @@ impl PlayerLatents {
                 reactivity: unit_from_key(world_seed, player, "reactivity"),
                 maximal_force: unit_from_key(world_seed, player, "maximal_force"),
                 body_control: unit_from_key(world_seed, player, "body_control"),
+                endurance: unit_from_key(world_seed, player, "endurance"),
             },
             technical: TechnicalLatents {
                 finishing: unit_from_key(world_seed, player, "finishing"),

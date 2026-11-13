@@ -1,0 +1,9 @@
+{
+  "effort_ref_cm_per_tick": 90.0,
+  "gain_per_tick": 0.00005,
+  "rest_effort": 0.02,
+  "half_time_recovery": 0.3,
+  "v_max_coefficient": 0.12,
+  "_note": "Fatigue, the first dimmer (VISION §3, plan L0-CLOSE step 6, OI-70). Each tick a player's fatigue (0 to 1) changes by gain_per_tick x ((1.5 - endurance) x effort - (0.5 + endurance) x rest_effort), where effort = (his speed / effort_ref)^2: a sprint costs about nine times a jog, and a slow tick lets him recover, the more the higher his endurance. At half-time he recovers half_time_recovery of it. It dims the body: acceleration by movement.json's fatigue_coefficient (ADR-030) and top speed by v_max_coefficient x fatigue. It is Plane B: the observer sees it (the tick record's fatigue_milli), as a fan sees a player with his hands on his knees.",
+  "_source": "Arbitrary, declared, to be calibrated at L3 against the decline of high-intensity running in the last fifteen minutes of real matches (sports-science literature reports a 15-30% drop in sprint distance, a few per cent in top speed). gain_per_tick is set so that an average player who runs a match is about 0.4 tired at the end."
+}

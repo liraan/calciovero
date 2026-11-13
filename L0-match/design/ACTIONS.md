@@ -41,7 +41,7 @@ with their first consumer (ADR-051 §4).
 | Turn, change direction | time to turn, speed kept | *joint mobility*, *body control*, weight | — the heading changes instantly for everyone |
 | Stop, decelerate | braking | explosive force, *body control* | — |
 | Jump | height, timing | explosive force, height, *joint mobility* | — |
-| Endure the 90 minutes | how fast fatigue rises, recovers | *endurance* | — fatigue has no producer |
+| Endure the 90 minutes | how fast fatigue rises, recovers | endurance | ✓ since 73: fatigue grows with the effort (speed squared) against endurance, recovers walking and at half-time (`balance/fatigue.json`); it dims acceleration and top speed; seen in the tick record; his thought still believes his pace fresh |
 
 ## 2. The eyes and the mind
 
