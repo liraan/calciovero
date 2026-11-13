@@ -56,17 +56,15 @@ Trenta partite, seed 42-71, la squadra di default (blocco medio, ampiezza normal
 
 **Cosa è già vicino al reale:** falli, rigori, rimesse laterali, tiri respinti, dribbling, la percentuale di passaggi riusciti (un po' alta), il 10% di conversione dei tiri.
 
-**Cosa non lo è, e la leva che lo muove** (nessuna è un peso per tipo di opzione: ADR-052):
+**Cosa non lo è, e la causa da cercare** (metodo del maintainer, 2026-11-13, ADR-052 nota, RULES A5-bis: le statistiche si derivano dalle abilità, non si aggiustano; nessun numero si sceglie guardando la statistica che produce):
 
-| # | Che cosa | Perché, per come lo leggo | La leva proposta |
-|---|---|---|---|
-| 1 | **Tiri troppi (74 contro 25), quindi gol troppi (7 contro 2,7)** | tenere palla vale poco rispetto a un tiro: un tiro al 5% batte un passaggio laterale | `thought.json` `possession_value` (0,02): quanto vale tenere palla contro un gol; il reale (xT) dice 0,03-0,1 vicino all'area |
-| 2 | **Tiri in porta troppi (75% contro 34%)** | l'errore del tiro è piccolo (`kick.json` `error_ref_rad` 0,08); a 0,2 i tiri in porta erano il 38% | `error_ref_rad`, insieme alla leva 1 (da sola faceva più gol) |
-| 3 | **Contrasti vinti pochi (7 contro 30), intercetti tanti (153 contro 20)** | il difensore temporeggia più che entrare; molti passaggi persi sono contati come intercetti | il pensiero del difensore (passo 1): quanto vale entrare; e la definizione di intercetto |
-| 4 | **Cross e duelli aerei pochi (13 e 3 contro 35 e 35)** | il cross vale poco nel pensiero del portatore; un duello aereo vuole due giocatori sotto la palla nello stesso istante | il valore dello spazio in area (segue la leva 1) e chi va sulla palla alta |
-| 5 | **Recupero lungo (16 contro 7 minuti)** | `stoppage_time.json`: 60 s a gol, 20 s a fallo, e i gol sono troppi | segue la leva 1; poi i secondi per evento |
-| 6 | **Gialli troppi (8,6 contro 4,5)** | la scivolata da dietro è spesso imprudente | `laws.json` `reckless_speed_milli` |
+| # | Che cosa | La causa da cercare (nel modo in cui i giocatori percepiscono, pensano, si muovono) |
+|---|---|---|
+| 1 | **Corrono troppo** (13,2 km a partita, un terzo del tempo sopra 4 m/s, contro 10-11 km e 15%): finiscono stanchi a 0,9 | nessuno sceglie il passo: ogni corsa è a tutta velocità. Il giocatore deve scegliere quanto correre come sceglie dove (ADR-052): di corsa se arrivare prima vale, al passo se no |
+| 2 | **Tiri troppi** (64 contro 25), gol troppi (8 contro 2,7) | il valore del tenere palla non è ancora derivato dal motore (ADR-052 nota, punto 3: quanto spesso un possesso da lì finisce in gol nelle partite del motore); poi, se restano troppi, che cosa il tiratore non vede |
+| 3 | **Tiri in porta troppi** (91% contro 34%) | l'errore del tiro (`kick.json` `error_ref_rad`) è arbitrario: va fondato sugli studi della precisione del calcio |
+| 4 | **Contrasti vinti pochi** (7 contro 30), intercetti tanti | il difensore entra poco; un passaggio perso è contato come intercetto (definizione da allineare al reale) |
+| 5 | **Cross e duelli aerei pochi** | il valore dello spazio in area (segue il 2); chi va sulla palla alta |
+| 6 | **Recupero lungo, gialli tanti** | seguono il 2; i secondi per evento e la soglia dell'imprudenza vanno fondati sul regolamento e sui dati arbitrali |
 
-**L'ordine che propongo:** 1, poi 2, misurando ogni volta i 30 seed; poi 3-6. Ogni passo è un numero in `balance/`, con la fonte o "arbitrario fino a L3".
-
-**Prima della taratura:** giocare un'amichevole (`README`, *Try the engine*) e dire che cosa non sembra calcio.
+**L'ordine:** 1 (il passo scelto), poi 2 (il valore del possesso derivato), poi la fonte dell'errore del tiro; misurando dopo ognuno, senza ritoccare.

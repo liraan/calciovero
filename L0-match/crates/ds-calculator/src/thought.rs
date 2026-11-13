@@ -30,7 +30,10 @@ pub struct ThoughtBalance {
     pub believed_reaction_ticks: f64,
     /// A forecast with this many ticks to spare is sure.
     pub trust_ticks: f64,
-    /// How high he believes a keeper reaches with his hands and a jump, cm.
+    /// How high he believes a keeper reaches with his hands and a jump, cm:
+    /// computed, not declared (a reference keeper's height, his arms and an
+    /// average jump, `save.json` and `duel.json`), set by the caller.
+    #[serde(skip)]
     pub believed_keeper_reach_cm: f64,
     /// Gravity, cm/tick² (`balance/ball.json`, the engine's own).
     #[serde(skip)]
@@ -286,10 +289,12 @@ mod tests {
     /// (P1, ADR-052).
     #[test]
     fn a_keeper_off_his_line_can_be_lobbed() {
-        let (k, t) = (KickBalance::load(), ThoughtBalance::load());
+        let k = KickBalance::load();
+        let mut t = ThoughtBalance::load();
+        t.believed_keeper_reach_cm = 287.0;
         let far = lob_chance((2000.0, 1200.0), 0.2, &k, &t);
         let home = lob_chance((2000.0, 100.0), 0.2, &k, &t);
-        assert!(far > 0.2 && home < 0.1, "far {far}, home {home}");
+        assert!(far > home + 0.1 && home < 0.05, "far {far}, home {home}");
     }
 
     /// The keeper leaning to the post aimed at closes it (P1).

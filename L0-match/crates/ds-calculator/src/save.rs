@@ -24,10 +24,6 @@ pub struct SaveBalance {
     pub body_centre_cm: f64,
     /// A ball at this speed, at the edge of his reach, needs perfect hands.
     pub catch_speed_ref_cm_per_tick: f64,
-    /// How much reaching far for it makes a ball hard to hold.
-    pub catch_offset_weight: f64,
-    /// How much the ball's speed makes it hard to hold.
-    pub catch_speed_weight: f64,
     /// A parried ball comes back at this fraction of its speed, thousandths.
     pub parry_rebound_milli: i32,
     /// Beyond this share of his reach he only tips the ball, thousandths.
@@ -81,13 +77,11 @@ impl SaveBalance {
         if reach_cm <= 0.0 {
             return false;
         }
-        // The two causes add (2026-11-13): a hard shot straight at him is
-        // parried too, and at full stretch he only parries. Before
+        // The two causes add, each at its reference demanding perfect
+        // hands, as the two values are defined: a ball at the edge of his
+        // reach, or a ball at `catch_speed_ref` (2026-11-13). Before
         // `SIM_VERSION` 76 they multiplied, and every save was held.
-        let difficulty = self.catch_offset_weight.mul_add(
-            offset_cm / reach_cm,
-            self.catch_speed_weight * speed / self.catch_speed_ref_cm_per_tick.max(1.0),
-        );
+        let difficulty = offset_cm / reach_cm + speed / self.catch_speed_ref_cm_per_tick.max(1.0);
         f64::from(handling) >= difficulty
     }
 }

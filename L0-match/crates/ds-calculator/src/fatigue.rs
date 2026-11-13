@@ -7,22 +7,49 @@
 use serde::Deserialize;
 
 const FATIGUE_JSON: &str = include_str!("../../../balance/fatigue.json");
+/// The movement's fatigue term: how much fatigue dims the acceleration.
+const MOVEMENT_JSON: &str = include_str!("../../../balance/movement.json");
 
 /// Fatigue's parameters.
-#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+///
+/// `gain_per_tick` and `v_max_coefficient` are not declared: they are computed from a real match's running and its measured
+/// decline (ADR-052 note: derived, never adjusted on the engine's
+/// statistics).
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FatigueBalance {
     /// A reference sprint, cm/tick: the effort of a tick is the square of
     /// his speed over this one (a sprint costs far more than a jog).
     pub effort_ref_cm_per_tick: f64,
     /// What a tick of effort adds to the fatigue of an average-endurance
-    /// player.
+    /// player (computed).
     pub gain_per_tick: f64,
     /// Below this effort he recovers (walking, standing).
     pub rest_effort: f64,
     /// The share of his fatigue he recovers at half-time.
     pub half_time_recovery: f64,
-    /// What full fatigue takes off his top speed, as a share.
+    /// What full fatigue takes off his top speed, as a share (computed).
     pub v_max_coefficient: f64,
+}
+
+/// The file as written: the real match it is derived from.
+#[derive(Deserialize)]
+struct Raw {
+    effort_ref_cm_per_tick: f64,
+    rest_effort: f64,
+    half_time_recovery: f64,
+    /// A real match's running: `[speed cm/tick, share of the time]`.
+    match_profile: Vec<[f64; 2]>,
+    /// Ticks in a match (two halves).
+    match_ticks: f64,
+    /// The decline of high-intensity running in the last fifteen minutes.
+    late_high_intensity_decline: f64,
+    /// The decline of top speed at the end of a match.
+    late_top_speed_decline: f64,
+}
+
+#[derive(Deserialize)]
+struct Movement {
+    fatigue_coefficient: f64,
 }
 
 impl FatigueBalance {
@@ -34,7 +61,32 @@ impl FatigueBalance {
     /// catches it at test time.
     #[must_use]
     pub fn load() -> Self {
-        serde_json::from_str(FATIGUE_JSON).expect("embedded fatigue file is valid JSON")
+        let raw: Raw =
+            serde_json::from_str(FATIGUE_JSON).expect("embedded fatigue file is valid JSON");
+        let movement: Movement =
+            serde_json::from_str(MOVEMENT_JSON).expect("embedded movement file is valid JSON");
+        // The fatigue at the end of a real match: the one that dims his
+        // acceleration (his high-intensity running) by the measured decline.
+        let end = (raw.late_high_intensity_decline / movement.fatigue_coefficient.max(1e-6))
+            .clamp(0.0, 1.0);
+        // The average change per tick of a real match's running, for an
+        // average endurance (0.5: both factors of `after_tick` are 1).
+        let change: f64 = raw
+            .match_profile
+            .iter()
+            .map(|[v, share]| share * (v / raw.effort_ref_cm_per_tick.max(1.0)).powi(2))
+            .sum::<f64>()
+            - raw.rest_effort;
+        // The first half tires him, the rest takes back a share, the second
+        // half tires him again.
+        let halves = raw.match_ticks / 2.0 * (2.0 - raw.half_time_recovery);
+        Self {
+            effort_ref_cm_per_tick: raw.effort_ref_cm_per_tick,
+            gain_per_tick: end / (change * halves).max(1e-6),
+            rest_effort: raw.rest_effort,
+            half_time_recovery: raw.half_time_recovery,
+            v_max_coefficient: raw.late_top_speed_decline / end.max(1e-6),
+        }
     }
 
     /// His fatigue after a tick at `speed` cm/tick: the effort tires him

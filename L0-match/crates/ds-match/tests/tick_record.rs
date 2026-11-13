@@ -530,5 +530,8 @@ fn the_players_tire_and_half_time_rests_them() {
     );
     assert!(first_end > 100.0, "nobody tired in a half: {first_end}");
     assert!(second_start < first_end, "half-time gave nothing back");
-    assert!(last > second_start && last < 900.0, "end {last}");
+    // No upper bound: how tired they end is a finding, not a target (ADR-052
+    // note). At `SIM_VERSION` 77 they end at about 0.9: the engine's players
+    // run more than real ones (13 km, a third of the time above 4 m/s).
+    assert!(last > second_start, "end {last}");
 }

@@ -1,9 +1,28 @@
 {
   "effort_ref_cm_per_tick": 90.0,
-  "gain_per_tick": 0.00005,
   "rest_effort": 0.02,
   "half_time_recovery": 0.3,
-  "v_max_coefficient": 0.12,
-  "_note": "Fatigue, the first dimmer (VISION §3, plan L0-CLOSE step 6, OI-70). Each tick a player's fatigue (0 to 1) changes by gain_per_tick x ((1.5 - endurance) x effort - (0.5 + endurance) x rest_effort), where effort = (his speed / effort_ref)^2: a sprint costs about nine times a jog, and a slow tick lets him recover, the more the higher his endurance. At half-time he recovers half_time_recovery of it. It dims the body: acceleration by movement.json's fatigue_coefficient (ADR-030) and top speed by v_max_coefficient x fatigue. It is Plane B: the observer sees it (the tick record's fatigue_milli), as a fan sees a player with his hands on his knees.",
-  "_source": "Arbitrary, declared, to be calibrated at L3 against the decline of high-intensity running in the last fifteen minutes of real matches (sports-science literature reports a 15-30% drop in sprint distance, a few per cent in top speed). gain_per_tick is set so that an average player who runs a match is about 0.4 tired at the end."
+  "match_profile": [
+    [
+      15.0,
+      0.6
+    ],
+    [
+      35.0,
+      0.25
+    ],
+    [
+      50.0,
+      0.13
+    ],
+    [
+      75.0,
+      0.02
+    ]
+  ],
+  "match_ticks": 54000.0,
+  "late_high_intensity_decline": 0.3,
+  "late_top_speed_decline": 0.04,
+  "_note": "Fatigue, the first dimmer (VISION §3, plan L0-CLOSE step 6, OI-70). Each tick a player's fatigue (0 to 1) changes by gain_per_tick x ((1.5 - endurance) x effort - (0.5 + endurance) x rest_effort), where effort = (his speed / effort_ref)^2: a sprint costs about nine times a jog, and a slow tick lets him recover, the more the higher his endurance. At half-time he recovers half_time_recovery of it. It dims the body: acceleration by movement.json's fatigue_coefficient (ADR-030) and top speed by v_max_coefficient x fatigue. It is Plane B: the observer sees it (the tick record's fatigue_milli). Derived, not adjusted (2026-11-13, the maintainer: the statistics are derived from the players, never fixed): gain_per_tick and v_max_coefficient are not in this file; they are computed (FatigueBalance::load) so that an average player who runs a real match (match_profile) ends it with the fatigue that dims his high-intensity running by late_high_intensity_decline and his top speed by late_top_speed_decline. Whatever the engine's players then run, more or less than real ones, shows in their fatigue: it is a finding, not a number to tune.",
+  "_source": "match_profile: a professional match's activity, about 60% of the time walking or standing (1.5 m/s), 25% jogging (3.5 m/s), 13% running (5 m/s), 2% sprinting (7.5 m/s), about 10-11 km in all (Bangsbo, Mohr and Krustrup 2006, J Sports Sci 24:665-674). late_high_intensity_decline 0.3: high-intensity running in the last 15 minutes is 14-45% below the first 15 (Mohr, Krustrup and Bangsbo 2003, J Sports Sci 21:519-528); the middle of the range. late_top_speed_decline 0.04: a few per cent, order of magnitude, to be sourced. rest_effort 0.02 and half_time_recovery 0.3: arbitrary, declared, to be sourced at L3."
 }

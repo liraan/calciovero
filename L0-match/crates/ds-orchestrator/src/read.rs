@@ -343,10 +343,21 @@ struct Mind {
 
 fn mind() -> &'static Mind {
     static MIND: std::sync::OnceLock<Mind> = std::sync::OnceLock::new();
-    MIND.get_or_init(|| Mind {
-        thought: ds_calculator::thought::ThoughtBalance::load(),
-        kick: ds_calculator::kick::KickBalance::load(),
-        save: ds_calculator::save::SaveBalance::load(),
+    MIND.get_or_init(|| {
+        let save = ds_calculator::save::SaveBalance::load();
+        let duel = ds_calculator::duel::DuelBalance::load();
+        let mut thought = ds_calculator::thought::ThoughtBalance::load();
+        // The keeper's reach he imagines, from the same values the engine
+        // uses: the reference keeper's height, his arms, an average jump.
+        thought.believed_keeper_reach_cm = 0.5f64.mul_add(
+            f64::from(duel.jump_ref_cm),
+            save.reference_keeper_height_cm + f64::from(duel.hands_reach_cm),
+        );
+        Mind {
+            thought,
+            kick: ds_calculator::kick::KickBalance::load(),
+            save,
+        }
     })
 }
 
