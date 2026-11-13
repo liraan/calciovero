@@ -1,12 +1,36 @@
 # Glossary
 
-**Version:** 1.2
+**Version:** 1.3
 **Status:** active
-**Last updated:** 2026-11-05
+**Last updated:** 2026-11-13
 
 Terms, acronyms, and concepts used throughout the specification. Every entry links to the file where the term is defined in full. This file is a navigator, not a replacement for the source.
 
 If a term is missing, open an issue with the `glossary` label. If a definition contradicts its source, the source wins: this file is a summary.
+
+---
+
+## 0. The language of modern football
+
+**Binding (maintainer, 2026-11-13):** *"use the terms of modern football: not position but occupation of space, for example."* The engine, the documents and the match report speak as a modern coach and analyst speak, not as a geometry textbook. A geometric word stays in code only where it names geometry (a point, a distance); where it names football, the football term is used.
+
+| Not | But | What it means on the pitch |
+|---|---|---|
+| position, where he stands | **occupation of space** (*occupazione dello spazio*) | the space a player holds and what it gives his side |
+| the block's place | **the team's structure** (*struttura*, *assetto*) | the shape the side keeps in and out of possession |
+| free teammate | **between the lines**, **in the half-space**, **free man** (*uomo libero*) | where a receiver is free, read against the opponents' lines |
+| run in behind | **attacking the depth** (*attaccare la profondità*) | running into the space behind the last line |
+| offer for a pass | **offering a line of pass** (*dare una linea di passaggio*), **coming short**, **dropping** | moving to open a lane to the carrier |
+| marking | **marking** (*marcatura*), man or **zonal** (*a zona*) | taking a man, or a space |
+| pressing | **pressing**, **counter-pressing** (*riaggressione*), **pressing trigger** (*riferimento di pressione*) | going at the ball, at once after losing it, on a cue |
+| covering | **covering** (*copertura*), **diagonal** (*diagonale*), **compactness** (*compattezza*) | protecting the space behind a teammate who goes out |
+| build-up loop | **build-up** (*costruzione dal basso*), **circulation** (*giro palla*) | the side moving the ball from the back |
+| progression | **progression**, **breaking the line** (*rompere la linea*), **vertical pass** (*verticalizzazione*) | moving the ball past opponents towards goal |
+| switch | **switch of play** (*cambio di gioco*) | moving the ball to the far side |
+| chance a position gives | **chance quality** (*qualità dell'occasione*), **expected threat** of a zone | how much a ball in that space is worth towards a goal |
+| transition | **transition** (*transizione*), positive and negative | the moments just after winning or losing the ball |
+
+New code and documents use the right-hand column; existing names are renamed when their area is touched, not in one sweep (one change at a time).
 
 ---
 
