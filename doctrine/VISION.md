@@ -129,13 +129,19 @@ not set numbers: he **shapes intentions and develops people**, and he
 does it with his own limits.
 
 ```
-observe  ->  decide  ->  watch  ->  understand  ->  adjust
+between matches:   observe  ->  understand  ->  decide  ->  (the match)
+inside the match:  watch    ->  understand  ->  adjust  ->  (watch)
 ```
 
-He observes what his players did (ratings from events, never from hidden
-numbers), decides roles, line-ups, training and signings, watches the
-match, understands why it went as it went, and adjusts because he
-understood. He never sees the truth directly: no CA/PA, no star rating
+Two nested cycles, each with its own clock (§5). Between matches he
+observes what his players did (ratings and data from events, his staff's
+reports, never hidden numbers), understands why, and decides roles,
+line-ups, training and signings. Inside the match he watches, understands
+what is happening, and adjusts from the touchline, at half-time, with the
+substitutions. In both, understanding comes before acting. *(Decided with
+the maintainer, 2026-11-13: the earlier single cycle, observe, decide,
+watch, understand, adjust, decided before understanding and mixed the
+two clocks.)* He never sees the truth directly: no CA/PA, no star rating
 that is the engine's input. He sees estimates, with how sure they are.
 
 The soul is the one of the classic Italian managers, with the depth of
