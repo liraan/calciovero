@@ -1803,11 +1803,17 @@ impl MatchState {
     }
 
     /// The reception's references, from where they are defined (ADR-058):
-    /// the kick's reference speed and the pressure radius.
+    /// the kick's reference speed, and the farthest an opponent can contest
+    /// the ball, his slide (`duel.json`: `reach_cm` x `slide_reach_milli`).
+    /// Beyond it he cannot play the ball; nearer, a contest with the body is
+    /// the duel's, with its fouls (ADR-042; the maintainer, 2026-11-14:
+    /// shielding the ball is one thing, using the arms to take it another).
     fn reception_params(&self, ctx: &MatchContext<'_>) -> ds_orchestrator::ReceptionParams {
+        let duel = ctx.hidden.duel_balance();
+        let reach = i64::from(duel.reach_cm) * i64::from(duel.slide_reach_milli) / 1000;
         self.reception_balance.to_params(
             f64::from(ctx.hidden.kick_balance().speed_ref_cm_per_tick),
-            self.pressure_balance.pressure_radius_cm,
+            i32::try_from(reach).unwrap_or(i32::MAX),
         )
     }
 
