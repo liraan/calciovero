@@ -8,6 +8,8 @@
 - **Referenced by:** ADR-013
 
 > **Scope (2026-10-25):** this ADR applies to the **desktop target**. On mobile (iOS, Android), the plugin system does not exist; only data packs are supported. See [ADR-014](014-mobile-strategy.md).
+>
+> **Scope (2026-11-14, ADR-061):** the scope above is withdrawn. The plugin system applies to the desktop and to Android alike; iOS is not planned. The Android build is distributed outside Google Play. See [ADR-061](061-android-is-the-same-game.md).
 
 ## Context
 
