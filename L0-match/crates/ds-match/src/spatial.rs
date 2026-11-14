@@ -725,6 +725,16 @@ impl SpatialState {
         None
     }
 
+    /// The coach of one side changes his team's intention (ADR-059): from
+    /// now on his players read it.
+    pub const fn set_intention(&mut self, home: bool, intention: ds_model::Intention) {
+        if home {
+            self.intentions.0 = intention;
+        } else {
+            self.intentions.1 = intention;
+        }
+    }
+
     /// The agent carrying the ball, if any.
     #[must_use]
     pub const fn carrier(&self) -> Option<PlayerId> {

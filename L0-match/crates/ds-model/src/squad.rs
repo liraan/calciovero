@@ -93,6 +93,30 @@ pub struct Substitution {
     pub incoming: ds_core::ids::PlayerId,
 }
 
+/// An instruction the coach gives during the match (ADR-059).
+///
+/// An input with its tick, which takes effect from the next tick for the
+/// whole team. The same seed, the same teams and the same instructions at the same ticks
+/// give the same match.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Instruction {
+    /// The tick at which he gives it (10 a second, the match's clock).
+    pub tick: u64,
+    /// What he asks.
+    pub order: Order,
+}
+
+/// What a coach asks during the match (ADR-059 §3).
+///
+/// A part of the team's intention, never a player's characteristic. The
+/// first one is the
+/// intention he can also set before the kick-off: the block and the width.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Order {
+    /// The team's intention from now on.
+    Intention(Intention),
+}
+
 /// The most substitutions a side may make (Law 3).
 pub const MAX_SUBSTITUTIONS: usize = 5;
 
@@ -115,6 +139,10 @@ pub struct Squad {
     /// The substitutions he plans (plan L0-CLOSE 10f).
     #[serde(default)]
     pub substitutions: Vec<Substitution>,
+    /// The instructions he gives during the match, in the order of their
+    /// ticks (ADR-059).
+    #[serde(default)]
+    pub instructions: Vec<Instruction>,
 }
 
 impl Squad {
@@ -149,6 +177,7 @@ impl Squad {
             formation,
             intention: Intention::default(),
             substitutions: Vec::new(),
+            instructions: Vec::new(),
         })
     }
 
@@ -177,6 +206,16 @@ impl Squad {
     #[must_use]
     pub const fn with_intention(mut self, intention: Intention) -> Self {
         self.intention = intention;
+        self
+    }
+
+    /// The same squad with the instructions its coach gives during the
+    /// match (ADR-059), put in the order of their ticks (two at the same
+    /// tick keep the order he gave them).
+    #[must_use]
+    pub fn with_instructions(mut self, mut instructions: Vec<Instruction>) -> Self {
+        instructions.sort_by_key(|i| i.tick);
+        self.instructions = instructions;
         self
     }
 }

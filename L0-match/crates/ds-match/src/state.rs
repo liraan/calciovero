@@ -198,6 +198,9 @@ pub struct MatchState {
     /// the segment from here to where it is now (ADR-058: a ball is
     /// received where it reaches a player, between two ticks too).
     ball_from: (i32, i32, i32),
+    /// How many of each coach's instructions have taken effect, home and
+    /// away (ADR-059).
+    instructed: (usize, usize),
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
     /// change? No: the actor's pace is his own, persistent across possessions.
@@ -667,6 +670,7 @@ impl MatchState {
             spatial: SpatialState::from_squads(&match_.pitch, &match_.home, &match_.away),
             pending: None,
             ball_from: (0, 0, 0),
+            instructed: (0, 0),
             scan_balance: crate::balance::ScanningBalance::load(),
             keeper_balance: crate::balance::KeeperBalance::load(),
             laws: crate::balance::LawsBalance::load(),
@@ -766,6 +770,61 @@ impl MatchState {
         }
     }
 
+    /// The coaches' instructions due (ADR-059): each takes effect at the
+    /// tick after the one he gave it at, for his whole team, at once; the
+    /// fact is told at its minute.
+    fn instruct_due(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        for home in [true, false] {
+            let squad = if home {
+                &ctx.match_.home
+            } else {
+                &ctx.match_.away
+            };
+            let done = if home {
+                self.instructed.0
+            } else {
+                self.instructed.1
+            };
+            let due: Vec<ds_model::Instruction> = squad
+                .instructions
+                .iter()
+                .skip(done)
+                .take_while(|i| i.tick < tick)
+                .copied()
+                .collect();
+            for i in &due {
+                let ds_model::Order::Intention(intention) = i.order;
+                self.spatial.set_intention(home, intention);
+                let name = |b: ds_model::BlockHeight| match b {
+                    ds_model::BlockHeight::High => "high",
+                    ds_model::BlockHeight::Mid => "mid",
+                    ds_model::BlockHeight::Low => "low",
+                };
+                let width = match intention.width {
+                    ds_model::Width::Narrow => "narrow",
+                    ds_model::Width::Normal => "normal",
+                    ds_model::Width::Wide => "wide",
+                };
+                self.emit_event(
+                    ctx,
+                    tick,
+                    None,
+                    EventType::Instruction,
+                    serde_json::json!({
+                        "side": if home { "home" } else { "away" },
+                        "block": name(intention.block),
+                        "width": width,
+                    }),
+                );
+            }
+            if home {
+                self.instructed.0 += due.len();
+            } else {
+                self.instructed.1 += due.len();
+            }
+        }
+    }
+
     /// Advances the time by one tick: the substrate of the match.
     ///
     /// Resolves the due pending (MD-37), advances the ball, checks the
@@ -784,6 +843,7 @@ impl MatchState {
     /// `tick()`. Making the tick a pure counter is a separate refactor,
     /// tracked in IDEA-DESIGN-011's implementation note (2026-11-09).
     pub fn tick(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
+        self.instruct_due(ctx, tick);
         for (outgoing, incoming) in std::mem::take(&mut self.to_announce) {
             self.emit_event(
                 ctx,

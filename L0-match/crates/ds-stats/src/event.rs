@@ -84,6 +84,8 @@ pub enum EventType {
     GoalKick,
     /// The ball hit a post or the crossbar (ADR-048 §1).
     Woodwork,
+    /// The coach gave an instruction (ADR-059): the fact, at its minute.
+    Instruction,
 }
 
 /// The half of the match an event belongs to (ADR-026).

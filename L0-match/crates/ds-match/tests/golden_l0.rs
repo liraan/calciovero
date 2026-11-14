@@ -43,3 +43,36 @@ fn golden_l0_is_deterministic() {
         "golden L0 hash changed: SIM_VERSION bump or a simulation regression"
     );
 }
+
+/// The expected hash with a fixed instruction stream (ADR-059 §1): the home
+/// coach asks for a high, wide block at the 30th minute, the away coach for
+/// a low, narrow one at the 60th. Regenerate when `SIM_VERSION` changes.
+const EXPECTED_INSTRUCTED: &str = "6e24be5a1052447df4e17143badcbd4838f0a3643f8b949eb373d89730a68cd87872a2fe7b402f08b6ea0d669f97407279ae85b7cdbdf5f5ff834e3f92f70849a224961b22dd09e723d7c444405a62e298a9db778cfcd4a80dc300798df2932f4bc4ffbbc8cc7321cb0361849be203e22373e53f66e96183b42ab27fd156d18962aff9f3626ddcebc54c240378c7702b551f1d7d564ebc7cd6e7207575310b197410c4ce92c777c7353cbecca2a9bf052f09bddc37a582aea24ffbec33f0a5d3069412e70ef21182c5851d5ce8ac08e8ed553232ff4336fcd1e571496ca298c18cbfda4190a053915598f8792f6bab430a2758edd96249b482360351391c37ccc7ab4420abbb30095093d35258a08f4dd5bfbce7cf9ffdba8f93d094d76caf2ee65095f5cb95609555cc7b9045e3ef7227fe61ce8ae87b5c0c2e1630c23f2c00";
+
+#[test]
+fn golden_l0_with_instructions_is_deterministic() {
+    use ds_model::{BlockHeight, Instruction, Intention, Order, Width};
+    let order = |block, width| Order::Intention(Intention { block, width });
+    let mut combined = String::new();
+    for i in 0..N {
+        let seed = SEED_START + i;
+        let mut m = match_fixture(seed).expect("fixture");
+        m.home = m.home.clone().with_instructions(vec![Instruction {
+            tick: 18_000,
+            order: order(BlockHeight::High, Width::Wide),
+        }]);
+        m.away = m.away.clone().with_instructions(vec![Instruction {
+            tick: 36_000,
+            order: order(BlockHeight::Low, Width::Narrow),
+        }]);
+        let result = simulate_from_seed(&m, seed, MatchConfig::default());
+        for b in result.state_hash.as_bytes() {
+            use std::fmt::Write as _;
+            let _ = write!(combined, "{b:02x}");
+        }
+    }
+    assert_eq!(
+        combined, EXPECTED_INSTRUCTED,
+        "golden L0 with instructions changed: SIM_VERSION bump or a regression"
+    );
+}

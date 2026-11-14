@@ -82,3 +82,4 @@ The step a quick instruction moves the intention (how many metres "higher line" 
 ## Dated notes
 
 - **2026-11-14 — accepted** by the maintainer (*"si ok"*). Implemented after ADR-058; the number is to be confirmed against `main` and the ADR-058 branch when the file enters `doctrine/adr/`.
+- **2026-11-14 — step 1 implemented** (the input stream): `Squad.instructions`, each `Instruction { tick, order }`; the first order is the team's intention, the block and the width the coach could already set before the kick-off (OI-27), so the stream has its consumer from the start (RULES D3). It takes effect from the next tick, it is told at its minute, saved with the match and played back by the replay; a second golden with a fixed stream, on glibc and musl. No `SIM_VERSION` bump: without instructions the match is unchanged. Next: step 2, the intention in the off-ball thought, with the discipline twin (§4).

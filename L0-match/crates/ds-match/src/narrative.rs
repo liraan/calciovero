@@ -192,6 +192,7 @@ const fn importance_for(event_type: EventType) -> Importance {
         | EventType::Save
         | EventType::Card
         | EventType::Substitution
+        | EventType::Instruction
         | EventType::Injury
         | EventType::Assist
         | EventType::KickOff
@@ -200,6 +201,23 @@ const fn importance_for(event_type: EventType) -> Importance {
         | EventType::FullTime => Importance::High,
         EventType::Penalty | EventType::Goal | EventType::MatchAbandoned => Importance::Critical,
     }
+}
+
+/// The fact of a coach's instruction, at its minute (ADR-059 §7).
+fn instruction_text(ev: &MatchEvent, minute: u8) -> String {
+    let field = |k: &str| {
+        ev.fields
+            .get(k)
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("?")
+            .to_string()
+    };
+    format!(
+        "The {} coach asks for a {} block, {} width, in the {minute}'",
+        field("side"),
+        field("block"),
+        field("width")
+    )
 }
 
 /// Renders the text in English (the default language).
@@ -275,6 +293,7 @@ fn render_text(
         }
         EventType::Penalty => format!("PENALTY! {player} in the {minute}'"),
         EventType::Substitution => format!("Substitution: {player} in the {minute}'"),
+        EventType::Instruction => instruction_text(ev, minute),
         EventType::Injury => format!("{player} is injured in the {minute}'"),
         EventType::Goal => {
             if ev

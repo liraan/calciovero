@@ -29,6 +29,9 @@ pub struct Choices {
     /// His substitutions: from this minute, this roster letter off, that
     /// one on (plan L0-CLOSE 10f).
     pub subs: Vec<(u16, char, char)>,
+    /// His instructions during the match (ADR-059): after this many minutes
+    /// of play, this intention.
+    pub instructions: Vec<(u16, Intention)>,
 }
 
 /// Parses an intention's block height.
@@ -111,6 +114,24 @@ pub fn parse_sub(s: &str) -> Result<(u16, char, char), String> {
     ))
 }
 
+/// Parses an instruction during the match, `MIN:BLOCK,WIDTH` (`30:high,wide`).
+///
+/// # Errors
+///
+/// Not in that form, or a block or width that does not exist.
+pub fn parse_instruct(s: &str) -> Result<(u16, Intention), String> {
+    let err = || format!("--instruct takes MIN:BLOCK,WIDTH, e.g. 30:high,wide, not {s}");
+    let (min, rest) = s.split_once(':').ok_or_else(err)?;
+    let (block, width) = rest.split_once(',').ok_or_else(err)?;
+    Ok((
+        min.trim().parse().map_err(|_| err())?,
+        Intention {
+            block: parse_block(block.trim())?,
+            width: parse_width(width.trim())?,
+        },
+    ))
+}
+
 /// The roster letter of a home player: `A`-`K` the eleven, `L`-`P` the
 /// bench, by squad slot.
 fn letter(id: PlayerId) -> char {
@@ -170,6 +191,19 @@ pub fn apply(mut m: Match, c: &Choices) -> Result<Match, String> {
     }
     m.home = m.home.with_intention(c.home);
     m.away = m.away.with_intention(c.away);
+    if !c.instructions.is_empty() {
+        // After MIN minutes of play: ten ticks a second (the match's clock,
+        // continuous across the halves; stoppage time is not counted).
+        let instructions = c
+            .instructions
+            .iter()
+            .map(|(minute, intention)| ds_model::Instruction {
+                tick: u64::from(*minute) * 600,
+                order: ds_model::Order::Intention(*intention),
+            })
+            .collect();
+        m.home = m.home.with_instructions(instructions);
+    }
     Ok(m)
 }
 
