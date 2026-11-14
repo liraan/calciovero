@@ -36,7 +36,7 @@
 
 <img src="assets/demo-match.gif" alt="A 2D pitch: twenty-two players and the ball; an away midfielder wins a cleared ball and scores from 31 metres" width="800">
 
-*Seed 42, engine version 102, 61'54" to 62'10": the home side clears, the away side wins it back and `g` scores from 31 metres, with no pass in between. Every frame is the engine's own tick record (where the twenty-two and the ball are, ten times a second), drawn by a script in the style of the coming interface. Home players are `A`-`K`, away `a`-`k`, the goalkeepers in their own colour, the ring is the man on the ball. The GUI as it is today ([ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)) is in [`assets/demo-gui.gif`](assets/demo-gui.gif) (recorded at engine version 95); the terminal view in [`assets/demo-2d.gif`](assets/demo-2d.gif).*
+*Seed 42, engine version 102, 61'54" to 62'10": the home side clears, the away side wins it back and `g` scores from 31 metres, with no pass in between. The positions are the engine's own tick record (where the twenty-two and the ball are, ten times a second), drawn by a script in the style of the coming interface at 30 frames a second: between two ticks the drawing moves everyone in a straight line, a smoothing for the eye, not the engine. Home players are `A`-`K`, away `a`-`k`, the goalkeepers in their own colour, the ring is the man on the ball. The GUI as it is today ([ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)) is in [`assets/demo-gui.gif`](assets/demo-gui.gif) (recorded at engine version 95); the terminal view in [`assets/demo-2d.gif`](assets/demo-2d.gif).*
 
 </div>
 
