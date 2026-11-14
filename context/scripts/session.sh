@@ -122,7 +122,7 @@ case "${1:-}" in
     capture pause "closing: C2 and gates $verdict -> none" || fail=1
     echo ""
     if [ "$fail" -eq 0 ]; then
-      echo "close: GREEN. Next: update STATE.md (LCV = HEAD), commit with Verified: C2-green, push to origin and codeberg."
+      echo "close: GREEN. Next: update STATE.md (LCV = HEAD), commit with Verified: C2-green, push to origin (the Mirror workflow copies main to codeberg; a manual push there is fine too)."
       exit 0
     fi
     echo "close: RED - fix before writing the bookmark"

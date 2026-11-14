@@ -1,0 +1,57 @@
+# Mirror -- copies main to the backup remote on Codeberg after every push.
+#
+# Why: RULES C1 wants every push on both remotes. An agent working in the
+# cloud can push to GitHub but has no Codeberg credentials; this workflow
+# closes the gap without putting a token in any session (maintainer,
+# 2026-11-14). The token is the repository secret CODEBERG_TOKEN (a
+# Codeberg access token with repository read and write).
+#
+# The push is a plain fast-forward, never forced: if Codeberg's main has a
+# commit GitHub lacks, the job fails red and a person decides. A push made
+# by hand to codeberg first makes this job a no-op.
+
+name: Mirror
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror
+  cancel-in-progress: false
+
+jobs:
+  codeberg:
+    name: Mirror to Codeberg
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check the secret
+        id: secret
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          if [ -z "$CODEBERG_TOKEN" ]; then
+            echo "::warning::CODEBERG_TOKEN is not set: main was not mirrored to Codeberg."
+            echo "set=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "set=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.secret.outputs.set == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push main to Codeberg (fast-forward only)
+        if: steps.secret.outputs.set == 'true'
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          git push "https://liraan:${CODEBERG_TOKEN}@codeberg.org/liraan/calciovero.git" "HEAD:refs/heads/main"
+          echo "Codeberg main is now $(git rev-parse --short HEAD)."
