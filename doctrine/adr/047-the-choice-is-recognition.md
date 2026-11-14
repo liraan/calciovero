@@ -95,3 +95,4 @@ All three claims confirmed 2026-11-11. The first and the third are the gaps this
 ## Dated notes
 
 - **2026-11-11.** Written after the maintainer's phrase and the "compreso il portiere" correction. The three code claims were verified before the writing (ADR-026's lesson: the ADR comes after reading the code it touches). The shape is derived, not chosen: the maintainer directive (2026-11-07) says the direction already resolves it.
+- **2026-11-14 — amended by ADR-060.** The training that changes the latents ("at L1 the training modulates the latents", and the coach's modulation of the repertoire) is L2: at L1 the latents are as derived, and the training changes only the body (recovery, preparation).

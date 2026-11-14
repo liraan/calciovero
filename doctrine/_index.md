@@ -110,6 +110,7 @@ Modules marked *(planned)* below do not have a file yet. Their links are intenti
 | L2.07 | L2-crowd/ | 🚧 planned |
 | L2.08 | L2-media/ | 🚧 planned |
 | L2.09 | L2-ai/ | 🚧 planned |
+| L2.10 | L2-manager/ | 🚧 planned (ADR-060) |
 
 **L2 is done when:** a full career is playable — transfers, budgets, youth intake, tactics, psychology, fans, media, AI.
 
@@ -304,5 +305,6 @@ These are components that are referenced across modules but are not crates. They
 | [057](adr/057-every-characteristic-can-be-read-back.md) | Every characteristic can be read back from real football | ✅ accepted | Complete, recognisable on its own (its twin), read back with a declared source and uncertainty; the way back is an estimate; real data only from the user. Step 10 of L0 closes on it. |
 | [058](adr/058-the-ball-is-received-where-it-arrives.md) | The ball is received where it arrives | ✅ accepted | No clock: the reception happens where the ball reaches a player, its difficulty (speed, opponent within a slide) against first_touch; a pass nobody reaches is lost; a pass on its way is anyone's. |
 | [059](adr/059-the-coach-speaks-during-the-match.md) | The coach speaks during the match | ✅ accepted | In-match instructions are recorded inputs with their tick (same seed, same instructions, same match); they take effect at the next tick and change the coach's intention, never a characteristic; each player follows them as his discipline and reading allow; team and individual; the evaluation comes from the staff. Implemented after ADR-058. |
+| [060](adr/060-the-season-is-true-the-career-builds.md) | The season is true, the career builds | ✅ accepted | L1 is a true season (every match by the same engine, the bodies and the rules carry it, every coach chooses for the match, training only recovers and prepares); L2 is the career (squad, club, people, tactics over time, the living world, the manager and his private life with caused effects). v1: Italy only, the real format as data, three tiers and a generated fourth, fictional names. Amends ADR-016 and ADR-047. |
 
-**Accepted:** 001, 003, 004, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 042, 043, 044, 045, 046, 047, 048, 049, 050, 051, 052, 053, 054, 055, 056, 057, 058, 059 (53). **Superseded:** 002 (by ADR-027), 005 (by ADR-055), 023 (by ADR-024). **Proposed:** none.
+**Accepted:** 001, 003, 004, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 042, 043, 044, 045, 046, 047, 048, 049, 050, 051, 052, 053, 054, 055, 056, 057, 058, 059, 060 (54). **Superseded:** 002 (by ADR-027), 005 (by ADR-055), 023 (by ADR-024). **Proposed:** none.
