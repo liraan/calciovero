@@ -244,18 +244,47 @@ pub fn why_conceded(m: &Match, events: &[MatchEvent]) -> String {
         if goal.event_type != EventType::Goal {
             continue;
         }
-        let Some(scorer) = player(goal).filter(|id| !is_home(m, *id)) else {
+        // A goal in the home goal (x = 0) is one you conceded, whoever
+        // put it there (Law 10: an own goal, or a ball nobody touched last).
+        let in_ours = goal
+            .fields
+            .get("x")
+            .and_then(serde_json::Value::as_i64)
+            .map_or_else(
+                || player(goal).is_some_and(|id| !is_home(m, id)),
+                |x| x < 5250,
+            );
+        if !in_ours {
             continue;
-        };
+        }
         any = true;
         let before = &events[..g];
-        let _ = writeln!(
-            out,
-            "\n {} {} scored{}.",
-            clock(goal),
-            who(m, scorer),
-            how_it_went_in(m, scorer, before)
-        );
+        match player(goal) {
+            Some(scorer) if !is_home(m, scorer) => {
+                let _ = writeln!(
+                    out,
+                    "\n {} {} scored{}.",
+                    clock(goal),
+                    who(m, scorer),
+                    how_it_went_in(m, scorer, before)
+                );
+            }
+            Some(own) => {
+                let _ = writeln!(
+                    out,
+                    "\n {} They scored: {} put it into his own goal.",
+                    clock(goal),
+                    who(m, own)
+                );
+            }
+            None => {
+                let _ = writeln!(
+                    out,
+                    "\n {} They scored: the ball rolled over your line, nobody reached it.",
+                    clock(goal)
+                );
+            }
+        }
         if let Some(line) = rebound(m, goal, before) {
             let _ = writeln!(out, "   {line}");
         }

@@ -539,3 +539,29 @@ fn the_players_tire_and_half_time_rests_them() {
     // run more than real ones (13 km, a third of the time above 4 m/s).
     assert!(last > second_start, "end {last}");
 }
+
+/// Law 10 for every ball (P1, plan L0-CLOSE 11, OI-98): whenever the score
+/// changes, the ball was just by a goal line, towards the goal.
+#[test]
+fn every_goal_is_a_ball_over_the_line_between_the_posts() {
+    let (_, records) = recorded();
+    let mut goals = 0;
+    for pair in records.windows(2) {
+        let (before, after) = (&pair[0], &pair[1]);
+        if (after.score.home, after.score.away) != (before.score.home, before.score.away) {
+            goals += 1;
+            let (bx, by, bz) = before.ball.position;
+            assert!(
+                !(1500..=9000).contains(&bx),
+                "near a goal line: {:?}",
+                before.ball.position
+            );
+            assert!(
+                (by - 3400).abs() < 1200 && bz < 400,
+                "towards the goal: {:?}",
+                before.ball.position
+            );
+        }
+    }
+    assert!(goals > 0, "the sample has goals");
+}

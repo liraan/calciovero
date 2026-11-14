@@ -86,7 +86,7 @@ pub const PASS_FREEDOM_CM: i64 = 300;
 /// fact of football, not a model choice.
 const GOAL_WIDTH_CM: i64 = 732;
 /// The ball's radius, cm (Law 2: a circumference of 68-70 cm).
-const BALL_RADIUS_CM: f64 = 11.0;
+pub const BALL_RADIUS_CM: f64 = 11.0;
 /// The post's radius, cm (Law 1: posts and bar at most 12 cm wide).
 const POST_RADIUS_CM: f64 = 6.0;
 
@@ -859,6 +859,39 @@ pub fn lead_point(
     to
 }
 
+/// Where a ground pass from `from` to `to` is lost if missed: in his own
+/// goal if it rolls on there (`runs_into_goal`), else where it was cut.
+fn missed_at(
+    scene: &PerceivedScene,
+    from: (i32, i32),
+    to: (i32, i32),
+    cut: (i32, i32),
+) -> (i32, i32) {
+    let run_on = mind().kick.pass_arrive_cm_per_tick / (1.0 - scene.ground_keep).max(0.001);
+    if runs_into_goal(from, to, scene.own_goal, run_on) {
+        scene.own_goal
+    } else {
+        cut
+    }
+}
+
+/// Whether a ground pass from `from` to `to`, missed there, rolls on into the
+/// goal at `goal` (its line crosses the goal line between the posts within
+/// `run_on` cm beyond `to`): the back pass that, missed, is a goal.
+#[allow(clippy::cast_precision_loss)] // cm on a pitch
+fn runs_into_goal(from: (i32, i32), to: (i32, i32), goal: (i32, i32), run_on: f64) -> bool {
+    let (dx, dy) = (f64::from(to.0 - from.0), f64::from(to.1 - from.1));
+    let towards = f64::from(goal.0 - to.0);
+    if dx.abs() < 1.0 || towards.signum() != dx.signum() {
+        return false;
+    }
+    // How far along the line beyond `to` it meets the goal line.
+    let s = towards / dx;
+    let beyond = s * dx.hypot(dy);
+    let y = s.mul_add(dy, f64::from(to.1));
+    beyond <= run_on && (y - f64::from(goal.1)).abs() <= GOAL_WIDTH_CM as f64 / 2.0
+}
+
 /// Where he plays a ground pass to `id`, standing at `here`: into his run
 /// if he sees him running (`lead_point`).
 fn into_the_run(
@@ -941,11 +974,14 @@ fn pass_candidates(
         } else {
             tpos
         };
+        // If his teammate misses it, the ball rolls on: into his own goal,
+        // if its line goes there before it stops (plan L0-CLOSE 11, OI-98).
+        let loss_at = missed_at(scene, pos, tpos, forecast.at);
         let geom = worth(
             scene,
             sure(players, &forecast),
             gain_at,
-            forecast.at,
+            loss_at,
             risk_appetite,
         );
         let _ = (
@@ -1397,6 +1433,17 @@ mod keeper_visibility_tests {
     #[cfg(test)]
     mod brings_tests {
         use super::*;
+
+        /// The back pass (P1, plan L0-CLOSE 11, OI-98): missed, a ground
+        /// pass whose line goes on into his own goal is a goal; played wide
+        /// of the goal, or from too far for it to roll there, it is not.
+        #[test]
+        fn a_back_pass_that_runs_into_the_goal_is_seen_as_a_goal() {
+            let goal = (0, 3400);
+            assert!(runs_into_goal((2000, 3000), (600, 3300), goal, 1400.0));
+            assert!(!runs_into_goal((2000, 1000), (600, 1200), goal, 1400.0));
+            assert!(!runs_into_goal((6000, 3400), (3000, 3400), goal, 1400.0));
+        }
 
         /// The clearance (P1, plan L0-CLOSE 11): pressed near his goal he
         /// kicks it where his side gets there first; with his teammate in

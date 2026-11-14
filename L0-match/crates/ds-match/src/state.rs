@@ -821,6 +821,14 @@ impl MatchState {
         self.spatial.advance_ball();
         let curr_ball = self.spatial.ball_3d();
         self.check_shot_crossing(ctx, tick, prev_ball, curr_ball);
+        // A ball the keeper has just met on that line (held, parried,
+        // tipped, or off the woodwork) is no longer where its flight took
+        // it: that crossing is decided, not counted again.
+        if self.spatial.ball_3d() == curr_ball
+            && self.spatial.ball_state() != crate::spatial::BallState::Possessed
+        {
+            self.check_goal_line(ctx, tick, prev_ball, curr_ball);
+        }
         self.restart_if_out(ctx, tick);
         self.spatial
             .set_home_in_possession(self.possession == Possession::Home);
@@ -833,24 +841,7 @@ impl MatchState {
             &self.scan_balance,
             &self.keeper_balance,
         );
-        let hold = self.in_hands.is_some() || self.restart_pass.is_some();
-        let keep_max = f64::from(self.reception_balance.first_touch_keep_max_milli) / 1000.0;
-        let radius = self.reception_balance.loose_control_radius_cm;
-        let reach = self
-            .spatial
-            .carrier()
-            .map_or(0, |c| ctx.hidden.ball_reach_cm(c, radius));
-        let hidden = &mut *ctx.hidden;
-        let periods = std::cell::RefCell::new(hidden);
-        self.spatial.follow_carrier(
-            tick,
-            hold,
-            |p, pace| periods.borrow_mut().touch_period_ticks(p, pace),
-            |p, incoming| periods.borrow_mut().control_spill(p, incoming, keep_max),
-            reach,
-        );
-        // The carried ball has moved with him: it may have crossed a line.
-        self.restart_if_out(ctx, tick);
+        self.carry_the_ball(ctx, tick);
         self.tire_players(ctx);
         self.meet_ball_in_air(ctx, tick);
         self.control_loose_ball(ctx, tick);
@@ -2099,12 +2090,21 @@ impl MatchState {
                     },
                     loose_ball: against.map_or_else(
                         || {
-                            ((ball_loose && sees_ball) || meets_pass == Some(id)).then(|| {
-                                ds_orchestrator::Target {
+                            // The keeper comes for their pass rolling into
+                            // his area, as for a loose ball (plan L0-CLOSE
+                            // 11): before, it was only its receiver's, and it
+                            // rolled past them into his goal.
+                            let sweep = keeper
+                                && ball_in_own_box
+                                && sees_ball
+                                && meets_pass.is_some()
+                                && home != passing_home;
+                            ((ball_loose && sees_ball) || meets_pass == Some(id) || sweep).then(
+                                || ds_orchestrator::Target {
                                     distance_cm: distance_squared(me, ball).isqrt(),
                                     rank: rank(ball),
-                                }
-                            })
+                                },
+                            )
                         },
                         |d| {
                             contests(rank(d) == 0).then(|| ds_orchestrator::Target {
@@ -3117,14 +3117,39 @@ impl MatchState {
                 );
                 let away = if y_at >= goal_center_y { 1 } else { -1 };
                 let rebound = |c: i16| i16::try_from(i32::from(c) * k / 1000).unwrap_or(0);
-                let side = i16::try_from(away * i32::from(v.0).abs() * k / 1000).unwrap_or(0);
-                let vx = if o.tipped {
-                    rebound(v.0)
+                if o.tipped {
+                    // Tipped round the post (plan L0-CLOSE 11): he meets it
+                    // where he stands, in front of his line, and turns it
+                    // sideways as much as it takes to pass outside the post
+                    // before it reaches the line, at most as fast as it came
+                    // (he adds nothing to it). Too near his line, it still
+                    // goes in. Before, it was turned on the line itself and
+                    // always crossed it inside the posts.
+                    let line = plane_x;
+                    let depth = self
+                        .spatial
+                        .agent(gk)
+                        .map_or(0, |a| (a.position.0 - line).abs())
+                        .max(1);
+                    let inward = if line == 0 { 1 } else { -1 };
+                    let meet_x = line + inward * depth;
+                    let post = goal_center_y + away * self.obstacle_balance.goal_half_width_cm;
+                    #[allow(clippy::cast_possible_truncation)]
+                    let r = ds_orchestrator::read::BALL_RADIUS_CM as i32;
+                    let gap = (post + away * r - y_at).abs();
+                    let vx = rebound(v.0);
+                    let speed = i32::from(v.0).abs().max(i32::from(v.1).abs());
+                    let wide = (i32::from(vx).abs() * gap / depth).min(speed);
+                    let side = i16::try_from(away * wide).unwrap_or(0);
+                    self.spatial
+                        .deflect_ball((meet_x, y_at, z_at), (vx, side, rebound(v.2).abs()));
                 } else {
-                    rebound(v.0).saturating_neg()
-                };
-                self.spatial
-                    .deflect_ball((plane_x, y_at, z_at), (vx, side, rebound(v.2).abs()));
+                    let side = i16::try_from(away * i32::from(v.0).abs() * k / 1000).unwrap_or(0);
+                    self.spatial.deflect_ball(
+                        (plane_x, y_at, z_at),
+                        (rebound(v.0).saturating_neg(), side, rebound(v.2).abs()),
+                    );
+                }
             }
         }
         true
@@ -3242,6 +3267,123 @@ impl MatchState {
         self.possession = defending;
         // Law 8: after a goal, the side that conceded kicks off. Before, the
         // ball stayed in the net for the rest of the match (OI-97).
+        let _ = self.apply_restart(
+            ctx,
+            crate::rules::kick_off(side_of(defending), pitch_cm(ctx)),
+        );
+    }
+
+    /// The carrier and the ball move together (plan L0-CLOSE 11): his
+    /// touches, his first touch, and the lines the ball may cross as he
+    /// takes it.
+    fn carry_the_ball(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        let before_carry = self.spatial.ball_3d();
+        let hold = self.in_hands.is_some() || self.restart_pass.is_some();
+        let keep_max = f64::from(self.reception_balance.first_touch_keep_max_milli) / 1000.0;
+        let radius = self.reception_balance.loose_control_radius_cm;
+        let reach = self
+            .spatial
+            .carrier()
+            .map_or(0, |c| ctx.hidden.ball_reach_cm(c, radius));
+        let hidden = &mut *ctx.hidden;
+        let periods = std::cell::RefCell::new(hidden);
+        self.spatial.follow_carrier(
+            tick,
+            hold,
+            |p, pace| periods.borrow_mut().touch_period_ticks(p, pace),
+            |p, incoming| periods.borrow_mut().control_spill(p, incoming, keep_max),
+            reach,
+        );
+        // The carried ball has moved with him: it may have crossed a line.
+        let after_carry = self.spatial.ball_3d();
+        self.check_goal_line(ctx, tick, before_carry, after_carry);
+        self.restart_if_out(ctx, tick);
+    }
+
+    /// Law 10 for every ball, not only a shot (plan L0-CLOSE 11, OI-98): a
+    /// ball that crosses a goal line between the posts and under the bar is
+    /// a goal for the side attacking that goal, whoever played it last; the
+    /// woodwork turns it back as for a shot. Played last by the defending
+    /// side, it is an own goal. A shot on its way is `check_shot_crossing`'s.
+    fn check_goal_line(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        prev: (i32, i32, i32),
+        curr: (i32, i32, i32),
+    ) {
+        if self.pending.as_ref().is_some_and(|p| p.shot.is_some()) {
+            return;
+        }
+        let (length, width) = pitch_cm(ctx);
+        // The whole ball over the line (Law 10): beyond it by its radius.
+        #[allow(clippy::cast_possible_truncation)]
+        let r = ds_orchestrator::read::BALL_RADIUS_CM as i32;
+        let (plane_x, defending) = if prev.0 <= length && curr.0 > length + r {
+            (length, Possession::Away)
+        } else if prev.0 >= 0 && curr.0 < -r {
+            (0, Possession::Home)
+        } else {
+            return;
+        };
+        let dx = i64::from(curr.0 - prev.0);
+        if dx == 0 {
+            return;
+        }
+        let t_num = i64::from(plane_x - prev.0);
+        let y_at = prev.1 + i32::try_from((i64::from(curr.1 - prev.1) * t_num) / dx).unwrap_or(0);
+        let z_at = prev.2 + i32::try_from((i64::from(curr.2 - prev.2) * t_num) / dx).unwrap_or(0);
+        let half = self.obstacle_balance.goal_half_width_cm;
+        let inside = (y_at - width / 2).abs() < half
+            && (0..self.obstacle_balance.goal_height_cm).contains(&z_at);
+        // Who played it last: the man on it, or the passer of a ball on its
+        // way, or the side that had it.
+        let last = self
+            .spatial
+            .carrier()
+            .or_else(|| self.pending.as_ref().and_then(|p| p.passer));
+        let impact = (plane_x, y_at, z_at);
+        if let Some(v) = Self::goal_plane_deflection(
+            impact,
+            width / 2,
+            self.spatial.ball_velocity(),
+            &self.obstacle_balance,
+        ) {
+            self.spatial.set_carrier(None);
+            self.spatial.deflect_ball(impact, v);
+            self.emit_event(
+                ctx,
+                tick,
+                last.map(ActorId::Player),
+                EventType::Woodwork,
+                serde_json::json!({ "x": plane_x, "y": y_at, "z": z_at }),
+            );
+            return;
+        }
+        if !inside {
+            return;
+        }
+        let home = |p: PlayerId| ctx.match_.home.players.iter().any(|q| q.id == p);
+        let own_goal = last.is_some_and(|p| home(p) == (defending == Possession::Home));
+        self.pending = None;
+        self.spatial.set_carrier(None);
+        let fact = crate::fact::Fact::GoalLineCrossing {
+            actor: last.map(ActorId::Player),
+            point: impact,
+        };
+        for mut c in crate::fact::classify(&fact) {
+            if own_goal {
+                if let Some(obj) = c.fields.as_object_mut() {
+                    obj.insert("own_goal".to_string(), serde_json::json!(true));
+                }
+            }
+            self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
+        }
+        match defending {
+            Possession::Home => self.score.away += 1,
+            Possession::Away => self.score.home += 1,
+        }
+        self.possession = defending;
         let _ = self.apply_restart(
             ctx,
             crate::rules::kick_off(side_of(defending), pitch_cm(ctx)),

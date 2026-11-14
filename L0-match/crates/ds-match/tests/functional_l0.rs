@@ -35,31 +35,18 @@ fn functional_l0_the_engine_emits_the_claimed_shape() {
         );
     }
 
-    // 3. Every Goal is preceded by a Shot of the same actor in the same half.
-    //    The `Goal` comes from a LineCrossing, not from the shot directly.
-    let mut saw_shot: std::collections::BTreeSet<(u32, u8)> = std::collections::BTreeSet::new();
-    for e in events {
-        use ds_core::ids::ActorId;
-        let actor_slot = match e.actor {
-            Some(ActorId::Player(p)) => Some(p.slot()),
-            _ => None,
-        };
-        if e.event_type == EventType::Shot {
-            if let Some(s) = actor_slot {
-                saw_shot.insert((s, e.timestamp_minute));
-            }
-        }
-        if e.event_type == EventType::Goal {
-            // The ball may cross the line in the minute after the strike.
-            let slot = actor_slot.unwrap_or(u32::MAX);
-            let m = e.timestamp_minute;
-            assert!(
-                saw_shot.contains(&(slot, m)) || saw_shot.contains(&(slot, m.saturating_sub(1))),
-                "Goal at minute {} by slot {:?} without a Shot at the same minute",
-                e.timestamp_minute,
-                actor_slot
-            );
-        }
+    // 3. Every Goal is a ball over a goal line between the posts (Law 10,
+    //    since `SIM_VERSION` 100: not only after a shot; before, a goal
+    //    needed a Shot of the same actor and any other ball in the net was
+    //    told as a corner or a goal kick).
+    for e in events.iter().filter(|e| e.event_type == EventType::Goal) {
+        let x = e.fields.get("x").and_then(serde_json::Value::as_i64);
+        let y = e.fields.get("y").and_then(serde_json::Value::as_i64);
+        assert!(
+            matches!(x, Some(0 | 10_500)) && y.is_some_and(|y| (y - 3400).abs() < 366),
+            "Goal not on a goal line between the posts: {:?}",
+            e.fields
+        );
     }
 
     // 4. Shots: F.3-b3 replaced `goal` with `from`/`to`/`initial_velocity`/`shot_type`.

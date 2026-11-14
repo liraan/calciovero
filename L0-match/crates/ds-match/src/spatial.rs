@@ -98,6 +98,22 @@ fn under_foot(off: (f64, f64), at: u64, step: f64) -> Touch {
     }
 }
 
+/// How far a man covers in `t` ticks from `speed`, accelerating at `accel`
+/// up to `top` (cm, cm/tick).
+fn run_in(t: f64, speed: f64, accel: f64, top: f64) -> f64 {
+    let top = top.max(speed).max(1.0);
+    if accel <= 0.0 {
+        return speed * t;
+    }
+    let to_top = ((top - speed) / accel).max(0.0);
+    if t <= to_top {
+        (0.5 * accel * t).mul_add(t, speed * t)
+    } else {
+        let d = (0.5 * accel * to_top).mul_add(to_top, speed * to_top);
+        top.mul_add(t - to_top, d)
+    }
+}
+
 /// How far a touch of speed `speed` has rolled after `t` ticks.
 #[must_use]
 pub fn rolled(speed: f64, t: f64, keep: f64) -> f64 {
@@ -501,13 +517,20 @@ impl SpatialState {
         }
     }
 
-    /// Where a player at `from` running at `pace` cm/tick first meets the
-    /// ball rolling on the grass, by the physics `advance_ball` applies (the
-    /// ground keeps `ground_friction_milli` of its speed each tick): the
-    /// first point of its path he reaches no later than it does, or where it
-    /// stops. `None` if the ball is not rolling on the ground.
+    /// Where a player at `from` first meets the ball rolling on the grass, by
+    /// the physics `advance_ball` applies (the ground keeps
+    /// `ground_friction_milli` of its speed each tick) and his own: from his
+    /// speed now he accelerates at `accel` up to `top` (cm/tick), and he
+    /// needs only to come within `reach` cm of it. The first point of its
+    /// path he gets to no later than it does, or where it stops. `None` if
+    /// the ball is not rolling on the ground.
     #[must_use]
-    pub fn intercept(&self, from: (i32, i32), pace: f64) -> Option<(i32, i32)> {
+    pub fn intercept(
+        &self,
+        from: (i32, i32),
+        (speed, accel, top): (f64, f64, f64),
+        reach: f64,
+    ) -> Option<(i32, i32)> {
         let rolling = match self.ball {
             // On the grass and not lifting off: a ball just struck upwards
             // is in the air, even before it leaves the ground.
@@ -539,8 +562,8 @@ impl SpatialState {
                 );
             }
             #[allow(clippy::cast_precision_loss)]
-            let mine = (distance_squared(from, at) as f64).sqrt();
-            if mine <= pace.max(1.0) * f64::from(t) {
+            let mine = ((distance_squared(from, at) as f64).sqrt() - reach).max(0.0);
+            if mine <= run_in(f64::from(t), speed, accel, top) {
                 return Some(at);
             }
         }
@@ -1022,7 +1045,10 @@ impl SpatialState {
             // circled the ball instead of winning it; a keeper chasing a
             // back pass let it roll past him into his goal).
             let target = if to_the_ball && Some(entry.0) != self.carrier {
-                self.intercept(entry.1, top).unwrap_or(target)
+                let speed = v_prev.0.hypot(v_prev.1);
+                let reach = f64::from(BODY_RADIUS_CM) * 2.0;
+                self.intercept(entry.1, (speed, accel, top), reach)
+                    .unwrap_or(target)
             } else {
                 target
             };
@@ -1474,11 +1500,19 @@ mod tests {
     fn a_rolling_ball_is_met_on_its_path() {
         let mut s = make_state();
         s.set_ball_in_flight((3000, 3400, 0), (60, 0, 0));
-        let fast = s.intercept((4000, 2400), 90.0).expect("rolling");
-        let slow = s.intercept((4000, 2400), 40.0).expect("rolling");
+        let fast = s
+            .intercept((4000, 2400), (0.0, 5.0, 90.0), 0.0)
+            .expect("rolling");
+        let slow = s
+            .intercept((4000, 2400), (0.0, 2.0, 40.0), 0.0)
+            .expect("rolling");
         assert!(fast.0 > 3000 && slow.0 > fast.0, "{fast:?} {slow:?}");
         s.set_ball_in_flight((3000, 3400, 0), (60, 0, 50));
-        assert_eq!(s.intercept((4000, 2400), 90.0), None, "in the air");
+        assert_eq!(
+            s.intercept((4000, 2400), (0.0, 5.0, 90.0), 0.0),
+            None,
+            "in the air"
+        );
     }
 
     #[test]
