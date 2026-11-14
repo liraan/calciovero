@@ -276,7 +276,18 @@ fn render_text(
         EventType::Penalty => format!("PENALTY! {player} in the {minute}'"),
         EventType::Substitution => format!("Substitution: {player} in the {minute}'"),
         EventType::Injury => format!("{player} is injured in the {minute}'"),
-        EventType::Goal => format!("GOAL! {player} scores in the {minute}'"),
+        EventType::Goal => {
+            if ev
+                .fields
+                .get("own_goal")
+                .and_then(serde_json::Value::as_bool)
+                == Some(true)
+            {
+                format!("GOAL! An own goal by {player} in the {minute}'")
+            } else {
+                format!("GOAL! {player} scores in the {minute}'")
+            }
+        }
         EventType::Assist => format!("Assist by {player} in the {minute}'"),
         EventType::ProgressiveCarry => format!("{player} carries forward in the {minute}'"),
         EventType::ProgressivePass => {
@@ -417,6 +428,28 @@ mod tests {
         let narrative = narrate(&m, &chain);
         assert_eq!(narrative[0].importance, Importance::Critical);
         assert!(narrative[0].text.contains("GOAL"));
+    }
+
+    #[test]
+    fn an_own_goal_is_told_as_one() {
+        // Law 10: the goal is the other side's, and the commentary says whose
+        // own goal it was, not that he scored (before, "Away 7 scores").
+        let m = make_match();
+        let mut chain = EventChain::new();
+        let mut ev = make_event(1, 29, EventType::Goal, PlayerId::new(0, 0));
+        ev.fields = serde_json::json!({ "own_goal": true });
+        chain.try_append(ev).unwrap();
+        let narrative = narrate(&m, &chain);
+        assert!(
+            narrative[0].text.contains("own goal"),
+            "{}",
+            narrative[0].text
+        );
+        assert!(
+            !narrative[0].text.contains("scores"),
+            "{}",
+            narrative[0].text
+        );
     }
 
     #[test]
