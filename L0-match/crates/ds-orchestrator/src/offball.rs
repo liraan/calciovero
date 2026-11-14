@@ -66,7 +66,8 @@ pub struct MateBall {
 /// The value of the spaces an attacker without the ball weighs.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SpaceValues {
-    /// Holding his space, as free as he is now.
+    /// Holding the place his coach's shape gives him, as free as he would
+    /// be there (ADR-059).
     pub hold: f64,
     /// Offering a line of pass where he would go, as free as he would be.
     pub offer: f64,
@@ -163,7 +164,7 @@ impl crate::GroundTruth {
         // interprets).
         let discipline = f64::from(l.psychological.discipline);
         let floor = f64::from(self.offball_balance().discipline_floor_milli) / 1000.0;
-        let held = th.held * (1.0 - floor).mul_add(discipline, floor);
+        let held = th.held * place_weight(discipline, floor);
         let mut best = (held, OffBallAct::Hold);
         let mut offer = |score: f64, act: OffBallAct| {
             if score > best.0 {
@@ -304,7 +305,11 @@ impl crate::GroundTruth {
             // against the one he believes the defender has).
             let thought = ds_calculator::thought::ThoughtBalance::load();
             let spaces = m.values;
-            let mut best = (spaces.hold, OffBallAct::Hold);
+            // How much the place in his coach's shape weighs for him: his
+            // discipline (ADR-059 §4, the same rule as without the ball).
+            let floor = milli(b.discipline_floor_milli);
+            let held = spaces.hold * place_weight(f64::from(l.psychological.discipline), floor);
+            let mut best = (held, OffBallAct::Hold);
             if spaces.offer > best.0 {
                 best = (spaces.offer, OffBallAct::Offer);
             }
@@ -327,6 +332,17 @@ impl crate::GroundTruth {
         }
         best.1
     }
+}
+
+/// How much the place his coach's shape gives him weighs for a player.
+///
+/// By his discipline (VISION §3: the psychology interprets the role;
+/// ADR-059 §4: how far he follows the coach's intention rather than his
+/// own reading). The least disciplined weighs it `floor` (`offball.json`
+/// `discipline_floor_milli`), the most disciplined fully.
+#[must_use]
+pub fn place_weight(discipline: f64, floor: f64) -> f64 {
+    (1.0 - floor).mul_add(discipline.clamp(0.0, 1.0), floor)
 }
 
 /// Whether a player goes for a ball nobody has.
@@ -387,6 +403,22 @@ mod tests {
             ..scene()
         };
         assert_eq!(choose(&far), OffBallAct::GoToBall);
+    }
+
+    /// Twin test (ADR-059 §4): two players equal but for discipline, the
+    /// same place in the coach's shape and the same space of their own:
+    /// the disciplined one takes up the coach's place, the other goes where
+    /// he sees the space.
+    #[test]
+    fn the_more_disciplined_follows_the_coachs_shape() {
+        let (place, own, floor) = (1.0, 0.8, 0.5);
+        assert!(
+            place * place_weight(0.9, floor) > own,
+            "disciplined: the place"
+        );
+        assert!(place * place_weight(0.2, floor) < own, "his own reading");
+        assert!((place_weight(1.0, floor) - 1.0).abs() < 1e-12);
+        assert!((place_weight(0.0, floor) - floor).abs() < 1e-12);
     }
 
     /// Twin test (ADR-051 §3): two players second nearest to a loose ball,

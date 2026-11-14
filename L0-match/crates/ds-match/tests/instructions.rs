@@ -78,3 +78,43 @@ fn a_saved_match_replays_its_instructions() {
     assert_eq!(loaded.match_.home.instructions, m.home.instructions);
     assert_eq!(replay(&loaded).state_hash, result.state_hash);
 }
+
+/// P1 (ADR-059 §3, step 2): the team reads the coach's shape with the ball.
+/// The same match, the coach asking at the first tick to play wide or
+/// narrow: his outfield players spread wider across the pitch when his side
+/// has the ball.
+#[test]
+#[allow(clippy::cast_precision_loss)] // ten players
+fn the_team_plays_wider_when_the_coach_asks() {
+    let spread = |width: Width| {
+        let mut m = match_fixture(45).expect("fixture");
+        m.home = m.home.clone().with_instructions(vec![Instruction {
+            tick: 0,
+            order: Order::Intention(Intention {
+                block: BlockHeight::Mid,
+                width,
+            }),
+        }]);
+        let home: Vec<_> = m.home.players.iter().skip(1).map(|p| p.id).collect();
+        let (_, records) = simulate_from_seed_recorded(&m, 45, MatchConfig::default());
+        let (mut sum, mut n) = (0.0_f64, 0.0_f64);
+        for r in records
+            .iter()
+            .filter(|r| r.carrier.is_some_and(|c| home.contains(&c)))
+        {
+            let ys: Vec<f64> = r
+                .agents
+                .iter()
+                .filter(|a| home.contains(&a.id))
+                .map(|a| f64::from(a.position.1))
+                .collect();
+            let mean = ys.iter().sum::<f64>() / ys.len().max(1) as f64;
+            sum += ys.iter().map(|y| (y - mean).abs()).sum::<f64>() / ys.len().max(1) as f64;
+            n += 1.0;
+        }
+        assert!(n > 100.0, "the home side has the ball");
+        sum / n
+    };
+    let (wide, narrow) = (spread(Width::Wide), spread(Width::Narrow));
+    assert!(wide > narrow, "wide {wide:.0} cm, narrow {narrow:.0} cm");
+}

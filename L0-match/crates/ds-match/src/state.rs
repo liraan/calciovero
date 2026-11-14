@@ -464,10 +464,11 @@ impl TeamView {
             .min_by_key(|o| distance_squared(*o, me))
     }
 
-    /// What a player at `me` sees of his teammate's ball at `c`.
+    /// What a player at `me` sees of his teammate's ball at `c`; `place` is
+    /// where his coach's shape puts him (the block with the ball, ADR-059).
     fn mate_ball(
         &self,
-        me: (i32, i32),
+        (me, place): ((i32, i32), (i32, i32)),
         c: (i32, i32),
         off: &ds_calculator::offball::OffBallBalance,
         (length, width): (i32, i32),
@@ -490,8 +491,10 @@ impl TeamView {
         let run_at = self
             .act_target(ds_orchestrator::OffBallAct::Run, me, off, (length, width))
             .unwrap_or(me);
+        // Holding is taking up the place his coach's shape gives him (ADR-059
+        // §3): worth what that place is, as free as he would be there.
         let values = ds_orchestrator::SpaceValues {
-            hold: worth(me) * free(me),
+            hold: worth(place) * free(place),
             offer: worth(offer_at) * free(offer_at),
             run: worth(run_at),
             run_cm: distance_squared(me, run_at).isqrt(),
@@ -2374,7 +2377,13 @@ impl MatchState {
                             rank: rank(c),
                         }),
                     carrier_in_reach: to_carrier.is_some_and(|d| d <= slide_reach),
-                    with_mate: carrier_mate.map(|c| view.mate_ball(me, c, &off, (length, width))),
+                    with_mate: carrier_mate.map(|c| {
+                        let place = self
+                            .spatial
+                            .block_target(id, ball, true, false)
+                            .unwrap_or(me);
+                        view.mate_ball((me, place), c, &off, (length, width))
+                    }),
                     to_mark: carrier_pos.and_then(|_| view.man_to_mark(me)).map(|m| {
                         ds_orchestrator::Target {
                             distance_cm: distance_squared(me, m).isqrt(),
