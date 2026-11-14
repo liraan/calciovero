@@ -184,6 +184,22 @@ pub enum BallState {
 // ground, stop threshold) are declared data, `balance/ball.json` (ADR-048
 // §4); they used to be four constants here.
 
+/// The last touches of the ball, as an observer tells them after a goal.
+///
+/// The last man who played it (had it at his feet or in his hands, or struck
+/// it on purpose: a pass, a shot, a header, a clearance), whether that was a
+/// shot, and the last man who only touched it on its way (a keeper's parry,
+/// a block, a ball that bounced off him) after it was played.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Touches {
+    /// The last man who played the ball.
+    pub played: Option<PlayerId>,
+    /// Whether his play was a shot.
+    pub shot: bool,
+    /// The last man it only touched on its way, after it was played.
+    pub deflected: Option<PlayerId>,
+}
+
 /// The spatial state of a match: every agent, plus the ball.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpatialState {
@@ -191,6 +207,9 @@ pub struct SpatialState {
     ball: BallState,
     ball_position: (i32, i32, i32),
     ball_velocity: (i16, i16, i16),
+    /// Who touched the ball last, and how (Law 10: who scored, or whose
+    /// own goal it was).
+    touches: Touches,
     /// The ball's declared physics (ADR-048 §4).
     ball_physics: crate::balance::BallBalance,
     /// The team block (VISION §3): where each outfield player stands
@@ -303,6 +322,7 @@ impl SpatialState {
             ball: BallState::Loose,
             ball_position: (length / 2, width / 2, 0),
             ball_velocity: (0, 0, 0),
+            touches: Touches::default(),
             ball_physics: crate::balance::BallBalance::load(),
             block: crate::balance::BlockBalance::load(),
             roles: crate::shape::roles(home, away),
@@ -621,9 +641,28 @@ impl SpatialState {
         let BallState::InFlight = self.ball else {
             return;
         };
-        let (mut vx, mut vy, mut vz) = self.ball_velocity;
-        let (mut x, mut y, mut z) = self.ball_position;
         let p = self.ball_physics;
+        let (position, velocity, stopped) =
+            Self::ball_step(&p, self.ball_position, self.ball_velocity);
+        self.ball_position = position;
+        self.ball_velocity = velocity;
+        if stopped {
+            self.ball = BallState::Loose;
+            self.ball_velocity = (0, 0, 0);
+        }
+    }
+
+    /// One tick of the ball's physics, pure: gravity, the friction of the air
+    /// or of the grass, and the stop threshold. `advance_ball` applies it,
+    /// and whoever imagines where a ball goes ([`Self::ball_at_line`]) uses
+    /// the same step, so what is foreseen is what happens. Returns the new
+    /// position, the new velocity and whether the ball has stopped.
+    #[must_use]
+    pub fn ball_step(
+        p: &crate::balance::BallBalance,
+        (mut x, mut y, mut z): (i32, i32, i32),
+        (mut vx, mut vy, mut vz): (i16, i16, i16),
+    ) -> ((i32, i32, i32), (i16, i16, i16), bool) {
         // On the ground the grass slows the ball more than the air does.
         let friction = if z == 0 && vz <= 0 {
             p.ground_friction_milli
@@ -640,20 +679,76 @@ impl SpatialState {
             z = 0;
             vz = 0;
         }
-        self.ball_position = (x, y, z);
-        self.ball_velocity = (vx, vy, vz);
-        if z == 0
+        let stopped = z == 0
             && vx.abs() <= p.stop_threshold_cm_per_tick
-            && vy.abs() <= p.stop_threshold_cm_per_tick
-        {
-            self.ball = BallState::Loose;
-            self.ball_velocity = (0, 0, 0);
-        }
+            && vy.abs() <= p.stop_threshold_cm_per_tick;
+        ((x, y, z), (vx, vy, vz), stopped)
     }
+
+    /// Where a ball struck from `from` with `velocity` crosses the line
+    /// `x = line_x`, by the same step the ball moves with: `(y, z)` at the
+    /// crossing, or `None` if it stops (or turns back) before reaching it.
+    #[must_use]
+    pub fn ball_at_line(
+        &self,
+        from: (i32, i32, i32),
+        velocity: (i16, i16, i16),
+        line_x: i32,
+    ) -> Option<(i32, i32)> {
+        let p = self.ball_physics;
+        let towards = (line_x - from.0).signum();
+        if towards == 0 {
+            return Some((from.1, from.2));
+        }
+        let (mut pos, mut vel) = (from, velocity);
+        for _ in 0..600 {
+            let (next, v, stopped) = Self::ball_step(&p, pos, vel);
+            if (line_x - next.0).signum() != towards {
+                let dx = i64::from(next.0 - pos.0).max(1);
+                let t = i64::from(line_x - pos.0);
+                let at = |a: i32, b: i32| a + i32::try_from(i64::from(b - a) * t / dx).unwrap_or(0);
+                return Some((at(pos.1, next.1), at(pos.2, next.2)));
+            }
+            if stopped || (next.0 - pos.0).signum() != towards {
+                return None;
+            }
+            pos = next;
+            vel = v;
+        }
+        None
+    }
+
     /// The agent carrying the ball, if any.
     #[must_use]
     pub const fn carrier(&self) -> Option<PlayerId> {
         self.carrier
+    }
+
+    /// The last touches of the ball.
+    #[must_use]
+    pub const fn touches(&self) -> Touches {
+        self.touches
+    }
+
+    /// `who` plays the ball on purpose without keeping it (a header, a
+    /// first-time clearance): he is now the last man who played it.
+    pub const fn played_by(&mut self, who: PlayerId) {
+        self.touches = Touches {
+            played: Some(who),
+            shot: false,
+            deflected: None,
+        };
+    }
+
+    /// The last man who played the ball has struck it at goal.
+    pub const fn struck_shot(&mut self) {
+        self.touches.shot = true;
+    }
+
+    /// The ball touched `who` on its way (a parry, a block, a ball he did
+    /// not control): it was not his play.
+    pub const fn deflected_by(&mut self, who: PlayerId) {
+        self.touches.deflected = Some(who);
     }
 
     /// Sets the carrier. `None` means the ball is loose.
@@ -662,7 +757,12 @@ impl SpatialState {
         self.carry_target = None;
         self.touch = None;
         self.won = None;
-        if carrier.is_some() {
+        if let Some(p) = carrier {
+            self.touches = Touches {
+                played: Some(p),
+                shot: false,
+                deflected: None,
+            };
             if !matches!(self.ball, BallState::Possessed) {
                 self.won = Some((self.ball_velocity.0, self.ball_velocity.1));
             }
@@ -1564,6 +1664,49 @@ mod tests {
             "the ball must come back: {:?}",
             s.ball_3d()
         );
+    }
+
+    #[test]
+    fn what_is_foreseen_of_the_ball_is_what_happens() {
+        // OI-98 (P1): `ball_at_line` imagines the path with the same step
+        // `advance_ball` applies, so the keeper turning a ball round the post
+        // turns it as much as the slowed ball really needs. Here a slow ball
+        // with a small sideways component: the straight line would put it
+        // 12 cm further out than the slowed ball really goes.
+        let mut s = make_state();
+        let (from, v, line) = ((10_090, 3660, 170), (46_i16, 12_i16, 5_i16), 10_500);
+        let foreseen = s.ball_at_line(from, v, line).expect("it reaches the line");
+        s.set_ball_in_flight(from, v);
+        let mut prev = s.ball_3d();
+        while s.ball_3d().0 < line {
+            prev = s.ball_3d();
+            s.advance_ball();
+        }
+        let now = s.ball_3d();
+        let y = prev.1 + (now.1 - prev.1) * (line - prev.0) / (now.0 - prev.0).max(1);
+        assert_eq!(foreseen.0, y, "foreseen {foreseen:?}, happened y = {y}");
+        let straight = from.1 + i32::from(v.1) * (line - from.0) / i32::from(v.0);
+        assert!(
+            straight > y,
+            "the straight line overstates the sideways run"
+        );
+    }
+
+    #[test]
+    fn the_last_touches_name_who_played_it_and_who_only_touched_it() {
+        // Law 10 (P1): the carrier is the man who played it; a touch on its
+        // way does not make it his play; a new carrier starts again.
+        let mut s = make_state();
+        let (a, b) = (PlayerId::new(1, 0), PlayerId::new(101, 0));
+        s.set_carrier(Some(a));
+        s.set_carrier(None);
+        s.struck_shot();
+        s.deflected_by(b);
+        let t = s.touches();
+        assert_eq!((t.played, t.shot, t.deflected), (Some(a), true, Some(b)));
+        s.set_carrier(Some(b));
+        let t = s.touches();
+        assert_eq!((t.played, t.shot, t.deflected), (Some(b), false, None));
     }
 
     #[test]

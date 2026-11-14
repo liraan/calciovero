@@ -114,3 +114,30 @@ fn functional_l0_agents_move_and_do_not_cluster() {
         assert!(e.fields.get("to").is_some(), "Pressure without to");
     }
 }
+
+/// Law 10 (OI-98): every goal has the man who put it there, from the last
+/// touches of the ball: the shooter of a parried or blocked shot, the
+/// defender whose own pass or touch went in (an own goal). Before
+/// `SIM_VERSION` 102, more than half the goals of seeds 42-71 had no
+/// scorer: the ball crossed the line with nobody recorded on it.
+#[test]
+fn every_goal_has_a_scorer() {
+    for seed in 42..52 {
+        let m = match_fixture(seed).expect("fixture");
+        let result = simulate_from_seed(&m, seed, MatchConfig::default());
+        for e in result
+            .events
+            .events()
+            .iter()
+            .filter(|e| e.event_type == EventType::Goal)
+        {
+            assert!(
+                e.actor.is_some(),
+                "seed {seed}: a goal at {}'{} with no scorer: {}",
+                e.timestamp_minute,
+                e.timestamp_second,
+                e.fields
+            );
+        }
+    }
+}

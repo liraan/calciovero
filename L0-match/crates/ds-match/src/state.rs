@@ -1308,6 +1308,7 @@ impl MatchState {
             self.spatial.set_carrier(None);
             self.spatial
                 .set_ball_in_flight(from, outcome.initial_velocity);
+            self.spatial.struck_shot();
             let fact = crate::fact::Fact::Trajectory {
                 actor: attacker,
                 kind: crate::fact::TrajectoryKind::Shot {
@@ -1487,6 +1488,8 @@ impl MatchState {
         #[allow(clippy::cast_possible_truncation)]
         let v = ((dx / len * speed) as i16, (dy / len * speed) as i16, 10);
         self.spatial.deflect_ball((bx, by, bz), v);
+        self.spatial.played_by(winner);
+        self.spatial.struck_shot();
         self.pending = Some(Pending {
             due_tick: tick + FLIGHT_TICKS,
             outcome: Self::other(self.possession),
@@ -1594,6 +1597,7 @@ impl MatchState {
             #[allow(clippy::cast_possible_truncation)]
             let v = ((forward * speed) as i16, 0, (speed * 0.3) as i16);
             self.spatial.deflect_ball((bx, by, bz), v);
+            self.spatial.played_by(winner);
             self.emit_event(
                 ctx,
                 tick,
@@ -1749,6 +1753,7 @@ impl MatchState {
             (bx, by, bz),
             ds_calculator::obstacle::reflect_off_body(vel, body, (bx, by), off.block_rebound_milli),
         );
+        self.spatial.deflected_by(blocker);
         self.pending = None;
         self.possession = if shooter_home {
             Possession::Away
@@ -1866,6 +1871,7 @@ impl MatchState {
                     let v = self.spatial.ball_velocity();
                     self.spatial
                         .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
+                    self.spatial.deflected_by(id);
                     let retry = ctx.hidden.duel_balance().retry_ticks;
                     self.challenges.insert(id, tick + retry);
                     return;
@@ -1942,6 +1948,7 @@ impl MatchState {
         let v = self.spatial.ball_velocity();
         self.spatial
             .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
+        self.spatial.deflected_by(id);
         let retry = ctx.hidden.duel_balance().retry_ticks;
         self.challenges.insert(id, tick + retry);
         self.emit_event(
@@ -3142,10 +3149,29 @@ impl MatchState {
                     let gap = (post + away * r - y_at).abs();
                     let vx = rebound(v.0);
                     let speed = i32::from(v.0).abs().max(i32::from(v.1).abs());
-                    let wide = (i32::from(vx).abs() * gap / depth).min(speed);
+                    let vz = rebound(v.2).abs();
+                    // As much as it takes: the first estimate is the straight
+                    // line, then the path the ball will really follow (the
+                    // same step that moves it, the air and the grass slowing
+                    // it) decides. Before, the straight line alone was used,
+                    // and the slowed ball still crossed inside the post.
+                    let mut wide = (i32::from(vx).abs() * gap / depth).min(speed);
+                    let clear =
+                        goal_center_y + away * (self.obstacle_balance.goal_half_width_cm + r);
+                    while wide < speed {
+                        let side = i16::try_from(away * wide).unwrap_or(0);
+                        let outside = self
+                            .spatial
+                            .ball_at_line((meet_x, y_at, z_at), (vx, side, vz), line)
+                            .is_none_or(|(y, _)| away * (y - clear) >= 0);
+                        if outside {
+                            break;
+                        }
+                        wide += 1;
+                    }
                     let side = i16::try_from(away * wide).unwrap_or(0);
                     self.spatial
-                        .deflect_ball((meet_x, y_at, z_at), (vx, side, rebound(v.2).abs()));
+                        .deflect_ball((meet_x, y_at, z_at), (vx, side, vz));
                 } else {
                     let side = i16::try_from(away * i32::from(v.0).abs() * k / 1000).unwrap_or(0);
                     self.spatial.deflect_ball(
@@ -3153,6 +3179,7 @@ impl MatchState {
                         (rebound(v.0).saturating_neg(), side, rebound(v.2).abs()),
                     );
                 }
+                self.spatial.deflected_by(gk);
             }
         }
         true
@@ -3339,12 +3366,16 @@ impl MatchState {
         let half = self.obstacle_balance.goal_half_width_cm;
         let inside = (y_at - width / 2).abs() < half
             && (0..self.obstacle_balance.goal_height_cm).contains(&z_at);
-        // Who played it last: the man on it, or the passer of a ball on its
-        // way, or the side that had it.
-        let last = self
-            .spatial
-            .carrier()
-            .or_else(|| self.pending.as_ref().and_then(|p| p.passer));
+        // Who scored (Law 10 gives the goal to the side; the scorer is who
+        // put it there): the man on it; else the last who only touched it on
+        // its way, unless it was a shot (a parried or blocked shot is the
+        // shooter's); else the last who played it. A defender's own play, or
+        // his touch on a ball that was not a shot, is an own goal.
+        let touches = self.spatial.touches();
+        let last = self.spatial.carrier().or(match touches.deflected {
+            Some(d) if !touches.shot => Some(d),
+            _ => touches.played,
+        });
         let impact = (plane_x, y_at, z_at);
         if let Some(v) = Self::goal_plane_deflection(
             impact,
