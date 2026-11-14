@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/calcio-vero-transparent.png" alt="Calcio Vero" width="280">
+<img src="assets/calcio-vero-transparent.png" alt="Calcio Vero - Deep Simulator" width="280">
 
-# Calcio Vero
+# Calcio Vero - Deep Simulator
 
 **An open football management game where the match tells you *why*.**<br>
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
@@ -27,7 +27,7 @@
 > pass that arrived on his weak foot? Somewhere a number knows. You will
 > never see it.
 >
-> **Calcio Vero is built on the opposite idea.**
+> **Calcio Vero - Deep Simulator is built on the opposite idea.**
 
 <div align="center">
 
@@ -41,10 +41,10 @@
 
 You already know what makes these games great: the squad you built
 yourself, the kid from the academy who made it, the season that
-turned in February. Calcio Vero keeps all of that. What it changes is
+turned in February. Calcio Vero - Deep Simulator keeps all of that. What it changes is
 **what you are allowed to understand**.
 
-| You know this feeling… | Calcio Vero's answer |
+| You know this feeling… | Calcio Vero - Deep Simulator's answer |
 |---|---|
 | "My team played badly" is the whole post-match analysis. | **Every event has a cause you can read.** "Their 8 pressed your 6 from his blind side four times; he lost the ball twice; the second one was the goal." |
 | A 4.5-star player turns out to be a 2-star player. | **The scout gives an estimate *and how sure he is*.** A narrow band is a safe signing. A wide band is a gamble, and you can see it is one. |
@@ -233,7 +233,7 @@ again.
 
 ## Build it with us
 
-Calcio Vero is not built by a studio. It is built by people who love
+Calcio Vero - Deep Simulator is not built by a studio. It is built by people who love
 football and want a manager they can read to the bottom, and **it is
 designed so that each of them can own a piece**. You do not need to
 know the whole project, and for most pieces you do not need to code.
@@ -301,20 +301,20 @@ Codeberg is the backup, with the same gate on Woodpecker
   [`LICENSE-APACHE`](LICENSE-APACHE)).
 - **Assets and documentation**: `CC-BY-NC-SA-4.0`
   ([`LICENSE-ASSETS`](LICENSE-ASSETS)).
-- **Trademarks**: the "Calcio Vero" name and logo are project
-  trademarks; the licences do not grant trademark rights.
+- **Trademarks**: the names "Calcio Vero" and "Deep Simulator", together or
+  apart, and the logo are project trademarks; the licences do not grant trademark rights.
 
-Calcio Vero uses no licensed data: no real squads, no real players, no
+Calcio Vero - Deep Simulator uses no licensed data: no real squads, no real players, no
 scraped databases. Players are fictional; the football is real.
 
-Football Manager is a trademark of Sports Interactive. Calcio Vero is
+Football Manager is a trademark of Sports Interactive. Calcio Vero - Deep Simulator is
 not affiliated with it.
 
 ## Support
 
 [![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/liraan)
 
-Calcio Vero is free and open. Donations are voluntary, one-off, and do
+Calcio Vero - Deep Simulator is free and open. Donations are voluntary, one-off, and do
 not buy influence over the roadmap.
 
 ## AI disclosure
