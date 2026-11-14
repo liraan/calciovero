@@ -506,6 +506,16 @@
 - **Prerequisite for the first commit.** L1 (seasons) and L2-scouting must exist. OI-7 (`ProjectionProfile`) and OI-8 (bias formula) must be closed. Foundations §2.7 (information is scarce and costly) and ADR-028 §4 (the method of estimation) are the sources. Do not open this before L1: D3.
 - **Critical note.** This is not an ADR. If the maintainer accepts it, the first commit is a dated note on foundations §2.7 and on ADR-028 §4 (the method of estimation becomes the selection criterion), followed by an ADR for the factor structure and the observer model when L2-scouting opens. The pool generation and the selection are two mechanisms with two responsibilities: they do not merge into one module.
 
+### IDEA-DESIGN-014 — The editor speaks football: real players brought in by the user
+
+- **Status:** sketch (L3-editor, L3-packs; not L0)
+- **Source:** the maintainer, 2026-11-14: *"when we implement the editor, how can we make it easier for users to enter real players (and logos, photos and so on)?"*
+- **What.** The user enters what a fan or a scout knows of a player, not hidden numbers: the body data (height, weight, foot, age), the role, and what he is seen to do, in the words of football ("quick off the mark", "cold at a penalty"), or real records he owns (tracking, event counts). The editor reads them back into characteristics with the model and the table of ADR-057 (`CHARACTERISTICS-AND-ABILITIES.md` §8), and shows each as a band with how sure it is (Plane C); the user can narrow a band he knows better. The result is written through the editor's door (`set()`, ADR-041), never by editing the hidden plane by hand.
+- **The pack.** Players, names, logos, kits and photos go into a user pack (L3-packs, ADR-012): a documented, versioned schema (one JSON per player, images beside it) with a field per asset for its source and licence, validated on install, quarantined if invalid (ADR-008), never in the repository and never redistributed by the project (IDEA-REJ-004, `00-foundations` §5). Import from a spreadsheet (CSV with the same columns) for whole squads; a tool outside the core can turn a provider's data into a pack (ADR-008).
+- **Determinism.** The pack and its version enter the identity of the world (ADR-013): the same save with the same pack gives the same match; another pack is another world.
+- **Open questions.** (a) Which words of football map to which characteristic, and with what band (the judged roots are the weak ones)? (b) Images: which formats and sizes, and how the UI shows a player without a photo (IDEA-REJ-003 is about the TUI, not the GUI)? (c) Sharing packs between users happens outside the project: does the project document a format only, or also a validator tool? (d) The real-records path needs the inverse model of ADR-057: where does it live (`ds-*` crate or external tool)?
+- **Prerequisites.** ADR-057's table filled; L1-roster's schema; L3-packs and L3-editor opened. Not before L1 (D3).
+
 ## Rejected ideas (for traceability)
 
 ### IDEA-REJ-001 — Drones over the pitch

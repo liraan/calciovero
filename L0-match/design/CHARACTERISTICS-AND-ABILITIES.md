@@ -171,3 +171,20 @@ them the first filter has no roots.
 | 5 | **Concentration** is cognitive (attention), **composure** psychological; the psychological family is split in modulating traits and dispositions | they fail for different reasons on the pitch: the lapse at the 70th is not the trembling at the penalty |
 | 6 | "Ability" named as the formula layer | L0.11 has characteristics and formulas, but no name for the branch |
 | 7 | The **dimmers** are a category of their own, in two kinds (wear down with time, swing with events), each governed by a root | L0.11 §7.6 has the states; here they get their dynamics and their root |
+
+## 8. The way back: from real football to the characteristics (ADR-057)
+
+Every characteristic must be read back from what a real player is seen to
+do: one row per characteristic, with the acts that read it (`ACTIONS.md`),
+its twin test, the real datum that reveals it and how directly
+(**measured**: a body datum or what tracking data give almost directly;
+**counted**: from event data, through a model; **judged**: seen only
+through its effects). A source is cited, never invented; a row without
+one says so. Reading back is an estimate (Plane C), never an extraction.
+
+| Characteristic | Acts that read it | Twin test | The real datum that reveals it | Uncertainty |
+|---|---|---|---|---|
+
+*To be filled, one row per characteristic of §1, before step 10 of
+L0-CLOSE closes (first action: the consumers and the twins from the code
+with `grep`; then the sources).*
