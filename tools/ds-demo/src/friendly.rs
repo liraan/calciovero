@@ -8,6 +8,7 @@
 //! events of the match. The reasons are the facts that led to the goal, in
 //! the order they happened, never a hidden number.
 
+use ds_core::dmath;
 use std::fmt::Write as _;
 
 use ds_core::ids::{ActorId, PlayerId};
@@ -320,7 +321,7 @@ fn how_it_went_in(m: &Match, scorer: PlayerId, before: &[MatchEvent]) -> String 
     let goal_x = if is_home(m, scorer) { 10_500 } else { 0 };
     #[allow(clippy::cast_precision_loss)] // centimetres on a pitch
     let dist = x.zip(y).map_or(0.0, |(x, y)| {
-        ((x - goal_x) as f64).hypot((y - 3400) as f64) / 100.0
+        dmath::hypot((x - goal_x) as f64, (y - 3400) as f64) / 100.0
     });
     let kind = match s
         .fields

@@ -6,6 +6,7 @@
 //! position gives*, derived from the engine's own shot and save, not from
 //! a table. No die (ADR-035), no weight per kind of option.
 
+use ds_core::dmath;
 use serde::Deserialize;
 
 use crate::kick::KickBalance;
@@ -148,7 +149,7 @@ pub fn ball_ticks(d: f64, v0: f64, keep: f64) -> Option<f64> {
     if d >= reach {
         return None;
     }
-    Some((1.0 - d / reach).log(keep))
+    Some(dmath::log(1.0 - d / reach, keep))
 }
 
 /// Who reaches the ball first along its path (ADR-052 §2).
@@ -166,7 +167,7 @@ pub fn who_first(
     step_cm: i32,
 ) -> Forecast {
     let (dx, dy) = (f64::from(to.0 - from.0), f64::from(to.1 - from.1));
-    let len = dx.hypot(dy);
+    let len = dmath::hypot(dx, dy);
     let step = f64::from(step_cm.max(1));
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let samples = (len / step).ceil() as usize;
@@ -184,7 +185,7 @@ pub fn who_first(
             from.1 + (dy * t).round() as i32,
         );
         let arrival = |p: &Imagined| {
-            let run = f64::from(p.at.0 - point.0).hypot(f64::from(p.at.1 - point.1));
+            let run = dmath::hypot(f64::from(p.at.0 - point.0), f64::from(p.at.1 - point.1));
             p.reaction + run / p.speed.max(1.0)
         };
         let mut best: Option<(usize, f64)> = None;

@@ -49,6 +49,7 @@ pub use outcome::{
     ShotOutcome, ShotType,
 };
 
+use ds_core::dmath;
 use std::fmt;
 
 use ds_core::ids::{MatchId, PlayerId};
@@ -378,7 +379,10 @@ impl GroundTruth {
             * (1.0 + ctx.across.clamp(0.0, 1.0))
             * (1.0 - f64::from(shooter.physical.body_control));
         let error = clean + on_the_run;
-        let distance = f64::from(ctx.to.0 - ctx.from.0).hypot(ctx.aim_y - f64::from(ctx.from.1));
+        let distance = dmath::hypot(
+            f64::from(ctx.to.0 - ctx.from.0),
+            ctx.aim_y - f64::from(ctx.from.1),
+        );
         #[allow(clippy::cast_possible_truncation)]
         let base_dy = (ctx.aim_y - f64::from(ctx.to.1)) as i32;
         // The side of the miss: the way his body is moving when he strikes
@@ -442,10 +446,10 @@ impl GroundTruth {
         // of what gravity takes away. Before `SIM_VERSION` 60 the aim
         // ignored gravity: a low shot hit the grass at once and rolled to
         // the keeper at half its speed.
-        let horizontal = f64::from(initial_velocity.0).hypot(f64::from(initial_velocity.1));
+        let horizontal = dmath::hypot(f64::from(initial_velocity.0), f64::from(initial_velocity.1));
         if horizontal > 0.0 {
-            let flight =
-                f64::from(to.0 - ctx.from.0).hypot(f64::from(to.1 - ctx.from.1)) / horizontal;
+            let flight = dmath::hypot(f64::from(to.0 - ctx.from.0), f64::from(to.1 - ctx.from.1))
+                / horizontal;
             #[allow(clippy::cast_possible_truncation)]
             let lift = (f64::from(ctx.gravity_cm_per_tick2) * flight / 2.0).round() as i16;
             initial_velocity.2 = initial_velocity.2.saturating_add(lift);
@@ -554,7 +558,7 @@ impl GroundTruth {
             f64::from(ctx.to.0 - ctx.from.0),
             f64::from(ctx.to.1 - ctx.from.1),
         );
-        let distance = dx.hypot(dy);
+        let distance = dmath::hypot(dx, dy);
         let loss = 1.0 - f64::from(ctx.ground_friction_milli) / 1000.0;
         let max = if ctx.throw {
             k.throw_speed_cm_per_tick
@@ -1589,7 +1593,7 @@ mod choice_filter_tests {
                     &crate::reception_tests::params(),
                 )
                 .initial_velocity;
-            f64::from(v.0).hypot(f64::from(v.1))
+            dmath::hypot(f64::from(v.0), f64::from(v.1))
         };
         let thrown = pass(&mut g, true);
         assert!(

@@ -13,6 +13,7 @@
 //! Moved from `ds-match::state` in A.1-bis: the functions are the same,
 //! the input is the scene instead of the engine's `SpatialState`.
 
+use ds_core::dmath;
 use std::collections::BTreeMap;
 
 use ds_core::geometry::distance_squared;
@@ -318,7 +319,7 @@ fn brings(
 /// the simulation path).
 fn carry_directions(pos: (i32, i32), goal: (i32, i32)) -> Vec<(f64, f64)> {
     let (gx, gy) = (f64::from(goal.0 - pos.0), f64::from(goal.1 - pos.1));
-    let len = gx.hypot(gy).max(1.0);
+    let len = dmath::hypot(gx, gy).max(1.0);
     let (ux, uy) = (gx / len, gy / len);
     let rot = |c: f64, s: f64| (ux.mul_add(c, -(uy * s)), ux.mul_add(s, uy * c));
     vec![
@@ -350,12 +351,12 @@ fn carry_salience(
         .iter()
         .filter_map(|o| {
             let (ox, oy) = (f64::from(o.0 - pos.0), f64::from(o.1 - pos.1));
-            let d = ox.hypot(oy);
+            let d = dmath::hypot(ox, oy);
             let along = ox.mul_add(dir.0, oy * dir.1);
             (along > std::f64::consts::FRAC_1_SQRT_2 * d).then_some(d)
         })
         .fold(reference, f64::min);
-    let goal_dist = f64::from(goal.0 - pos.0).hypot(f64::from(goal.1 - pos.1));
+    let goal_dist = dmath::hypot(f64::from(goal.0 - pos.0), f64::from(goal.1 - pos.1));
     let step = room.min(goal_dist);
     let (length, width) = ((goal.0 - own_goal.0).abs(), goal.1 * 2);
     let ahead = (
@@ -371,7 +372,7 @@ fn carry_salience(
     let theirs = opponents
         .iter()
         .map(|o| {
-            let run = f64::from(o.0 - ahead.0).hypot(f64::from(o.1 - ahead.1));
+            let run = dmath::hypot(f64::from(o.0 - ahead.0), f64::from(o.1 - ahead.1));
             m.thought.believed_reaction_ticks + run / m.thought.believed_speed_cm_per_tick
         })
         .fold(f64::INFINITY, f64::min);
@@ -447,7 +448,7 @@ fn keeper_off(d: f64) -> f64 {
 #[must_use]
 pub fn soon(from: (i32, i32), to: (i32, i32)) -> f64 {
     let t = &mind().thought;
-    let run = f64::from(from.0 - to.0).hypot(f64::from(from.1 - to.1));
+    let run = dmath::hypot(f64::from(from.0 - to.0), f64::from(from.1 - to.1));
     t.confidence(
         t.trust_ticks - t.believed_reaction_ticks - run / t.believed_speed_cm_per_tick.max(1.0),
     )
@@ -806,8 +807,10 @@ fn clear_candidate(
                     .iter()
                     .filter(|p| p.mate == mate)
                     .map(|p| {
-                        let run =
-                            f64::from(p.at.0 - landing.0).hypot(f64::from(p.at.1 - landing.1));
+                        let run = dmath::hypot(
+                            f64::from(p.at.0 - landing.0),
+                            f64::from(p.at.1 - landing.1),
+                        );
                         (p.reaction + run / p.speed.max(1.0)).max(flight)
                     })
                     .fold(f64::INFINITY, f64::min)
@@ -851,7 +854,7 @@ pub fn lead_point(
         #[allow(clippy::cast_precision_loss)]
         let d = (distance_squared(from, to) as f64).sqrt();
         let v0 = d.mul_add(1.0 - keep, arrive).min(strongest.max(arrive));
-        let ticks = (arrive / v0).log(keep);
+        let ticks = dmath::log(arrive / v0, keep);
         #[allow(clippy::cast_possible_truncation)]
         let ahead = |p: i32, v: i16| f64::from(v).mul_add(ticks, f64::from(p)).round() as i32;
         to = (ahead(at.0, motion.0), ahead(at.1, motion.1));
@@ -887,7 +890,7 @@ fn runs_into_goal(from: (i32, i32), to: (i32, i32), goal: (i32, i32), run_on: f6
     }
     // How far along the line beyond `to` it meets the goal line.
     let s = towards / dx;
-    let beyond = s * dx.hypot(dy);
+    let beyond = s * dmath::hypot(dx, dy);
     let y = s.mul_add(dy, f64::from(to.1));
     beyond <= run_on && (y - f64::from(goal.1)).abs() <= GOAL_WIDTH_CM as f64 / 2.0
 }
@@ -1008,7 +1011,7 @@ fn pass_candidates(
             let spread = d * m.kick.error_rad(0.5, 0.75, 0.6, pressure)
                 / m.thought.believed_speed_cm_per_tick;
             let arrival = |p: &ds_calculator::thought::Imagined| {
-                let run = f64::from(p.at.0 - tpos.0).hypot(f64::from(p.at.1 - tpos.1));
+                let run = dmath::hypot(f64::from(p.at.0 - tpos.0), f64::from(p.at.1 - tpos.1));
                 (p.reaction + run / p.speed.max(1.0)).max(flight)
             };
             let best = |mate: bool| {
@@ -1058,16 +1061,19 @@ fn through_candidates(
             continue;
         };
         let pace = m.thought.believed_speed_cm_per_tick.max(1.0);
-        let d = f64::from(run_to.0 - pos.0).hypot(f64::from(run_to.1 - pos.1));
+        let d = dmath::hypot(f64::from(run_to.0 - pos.0), f64::from(run_to.1 - pos.1));
         let v0 = d
             .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
             .min(m.kick.speed(1.0, 0.5));
         let ball_ticks =
             ds_calculator::thought::ball_ticks(d, v0, scene.ground_keep).unwrap_or(d / v0);
-        let his = f64::from(run_to.0 - at_now.0).hypot(f64::from(run_to.1 - at_now.1));
+        let his = dmath::hypot(
+            f64::from(run_to.0 - at_now.0),
+            f64::from(run_to.1 - at_now.1),
+        );
         let lead = (pace.mul_add(ball_ticks, -his)).clamp(0.0, 2000.0);
         let at = (forward.mul_add(lead, f64::from(run_to.0)) as i32, run_to.1);
-        let d_at = f64::from(at.0 - pos.0).hypot(f64::from(at.1 - pos.1));
+        let d_at = dmath::hypot(f64::from(at.0 - pos.0), f64::from(at.1 - pos.1));
         let v_at = d_at
             .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
             .min(m.kick.speed(1.0, 0.5));

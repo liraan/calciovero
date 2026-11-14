@@ -5,6 +5,7 @@
 //! obstacle is reversed and scaled by the combined elasticity. Integer,
 //! deterministic, no die (ADR-035, ADR-044 §5).
 
+use ds_core::dmath;
 /// A declared obstacle's reflection parameters (ADR-048 §1).
 ///
 /// The obstacle is a plane (a post's face, the crossbar's underside). The
@@ -62,7 +63,7 @@ pub fn reflect_off_body(
     rebound_milli: i32,
 ) -> (i16, i16, i16) {
     let (nx, ny) = (f64::from(ball.0 - body.0), f64::from(ball.1 - body.1));
-    let len = nx.hypot(ny);
+    let len = dmath::hypot(nx, ny);
     let k = f64::from(rebound_milli) / 1000.0;
     let (vx, vy) = (f64::from(velocity.0), f64::from(velocity.1));
     let (rx, ry) = if len > 0.0 {

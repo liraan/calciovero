@@ -29,6 +29,7 @@
 //! the leaf: without it, these fields have no renderer, and the 2D cannot
 //! show movement at all.
 
+use ds_core::dmath;
 use std::collections::BTreeMap;
 
 use ds_core::geometry::distance_squared;
@@ -78,7 +79,7 @@ impl Eq for Touch {}
 /// `u (1 - keep^t) / (1 - keep)`, he runs `pace t`; they meet at `period`.
 #[must_use]
 pub fn touch_speed(pace: f64, period: f64, keep: f64) -> f64 {
-    let lost = 1.0 - keep.powf(period);
+    let lost = 1.0 - dmath::powf(keep, period);
     if lost <= f64::EPSILON {
         return pace;
     }
@@ -94,7 +95,7 @@ fn under_foot(off: (f64, f64), at: u64, step: f64) -> Touch {
         speed: 0.0,
         at,
         period: step.max(1.0),
-        held_cm: off.0.hypot(off.1),
+        held_cm: dmath::hypot(off.0, off.1),
     }
 }
 
@@ -120,7 +121,7 @@ pub fn rolled(speed: f64, t: f64, keep: f64) -> f64 {
     if keep >= 1.0 {
         return speed * t;
     }
-    speed * (1.0 - keep.powf(t)) / (1.0 - keep)
+    speed * (1.0 - dmath::powf(keep, t)) / (1.0 - keep)
 }
 
 /// A player's position, velocity, heading and gaze on the pitch.
@@ -543,7 +544,7 @@ impl SpatialState {
             f64::from(self.ball_velocity.0),
             f64::from(self.ball_velocity.1),
         );
-        if !rolling || vx.hypot(vy) < 1.0 {
+        if !rolling || dmath::hypot(vx, vy) < 1.0 {
             return None;
         }
         let keep = f64::from(self.ball_physics.ground_friction_milli) / 1000.0;
@@ -732,7 +733,7 @@ impl SpatialState {
             // more of its speed it kills. What is left runs on, and he goes
             // after it; a dead ball he brings under his foot in a step.
             let (vx, vy) = (f64::from(v.0), f64::from(v.1));
-            let incoming = vx.hypot(vy);
+            let incoming = dmath::hypot(vx, vy);
             let spill = spill_of(carrier, incoming);
             let from = (
                 f64::from(self.ball_position.0),
@@ -765,7 +766,7 @@ impl SpatialState {
             let (vx, vy) = (f64::from(agent.velocity.0), f64::from(agent.velocity.1));
             let dir = self.carry_target.and_then(|to| {
                 let (dx, dy) = (f64::from(to.0 - pos.0), f64::from(to.1 - pos.1));
-                let len = dx.hypot(dy);
+                let len = dmath::hypot(dx, dy);
                 (len >= 1.0).then(|| (dx / len, dy / len))
             });
             let pace = dir.map_or(0.0, |d| vx.mul_add(d.0, vy * d.1));
@@ -905,7 +906,7 @@ impl SpatialState {
         ] {
             let delta_x = f64::from(ball.0) - goal_x;
             let delta_y = f64::from(ball.1) - goal_y;
-            let d = delta_x.hypot(delta_y);
+            let d = dmath::hypot(delta_x, delta_y);
             let t = (1.0 - d / range).clamp(0.0, 1.0);
             let y_target = f64::mul_add(f64::from(ball.1) - goal_y, t, goal_y);
             let sign = if goal_x == 0.0 { 1.0_f64 } else { -1.0_f64 };
@@ -1045,7 +1046,7 @@ impl SpatialState {
             // circled the ball instead of winning it; a keeper chasing a
             // back pass let it roll past him into his goal).
             let target = if to_the_ball && Some(entry.0) != self.carrier {
-                let speed = v_prev.0.hypot(v_prev.1);
+                let speed = dmath::hypot(v_prev.0, v_prev.1);
                 let reach = f64::from(BODY_RADIUS_CM) * 2.0;
                 self.intercept(entry.1, (speed, accel, top), reach)
                     .unwrap_or(target)
@@ -1056,7 +1057,7 @@ impl SpatialState {
                 f64::from(target.0 - entry.1.0),
                 f64::from(target.1 - entry.1.1),
             );
-            let dist = dx.hypot(dy);
+            let dist = dmath::hypot(dx, dy);
             // His pace is his (2026-11-13): he runs flat out when he
             // contests something; taking up his place he goes at the speed
             // that gets him there in time.
@@ -1074,7 +1075,8 @@ impl SpatialState {
                 top
             } else if defending {
                 // As much of it as his work rate gives (plan L0-CLOSE 10c).
-                let to_ball = f64::from(target.0 - ball.0).hypot(f64::from(target.1 - ball.1));
+                let to_ball =
+                    dmath::hypot(f64::from(target.0 - ball.0), f64::from(target.1 - ball.1));
                 top * (dist / to_ball.max(1.0)) * outcome.work_share
             } else {
                 dist / outcome.reposition_ticks.max(1.0)
@@ -1095,8 +1097,8 @@ impl SpatialState {
             // Towards the velocity he wants: speeding up by his
             // acceleration, slowing down or turning by his braking.
             let (cx, cy) = (wx - v_prev.0, wy - v_prev.1);
-            let change = cx.hypot(cy);
-            let now = v_prev.0.hypot(v_prev.1);
+            let change = dmath::hypot(cx, cy);
+            let now = dmath::hypot(v_prev.0, v_prev.1);
             // Turning by more than 60 degrees (plan L0-CLOSE 10e): he brakes
             // and turns with the share of his braking his joint mobility
             // gives him.
@@ -1112,7 +1114,7 @@ impl SpatialState {
             };
             let k = if change > limit { limit / change } else { 1.0 };
             let (mut vx, mut vy) = (cx.mul_add(k, v_prev.0), cy.mul_add(k, v_prev.1));
-            let speed = vx.hypot(vy);
+            let speed = dmath::hypot(vx, vy);
             if speed > top {
                 vx *= top / speed;
                 vy *= top / speed;
@@ -1176,8 +1178,10 @@ impl SpatialState {
                 continue;
             };
             // His stride moves on with the ground he covers.
-            let covered = f64::from(new_pos.0 - agent.position.0)
-                .hypot(f64::from(new_pos.1 - agent.position.1));
+            let covered = dmath::hypot(
+                f64::from(new_pos.0 - agent.position.0),
+                f64::from(new_pos.1 - agent.position.1),
+            );
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
             let advance = ((covered / step_cm) * 1000.0).round() as u32 % 1000;
             #[allow(clippy::cast_possible_truncation)]

@@ -3,6 +3,7 @@
 //! `MatchState` is mutated by the tick loop. At the end of the match, it
 //! produces a `MatchResult` via `finish`.
 
+use ds_core::dmath;
 use ds_core::ids::{ActorId, EventId, PlayerId};
 use ds_core::time::GameInstant;
 use ds_model::Squad;
@@ -499,7 +500,7 @@ impl TeamView {
                 // most open (plan L0-CLOSE 10c): straight away, or turned 45
                 // or 90 degrees, by fixed rotations.
                 let (dx, dy) = (f64::from(me.0 - o.0), f64::from(me.1 - o.1));
-                let len = dx.hypot(dy).max(1.0);
+                let len = dmath::hypot(dx, dy).max(1.0);
                 let (ux, uy) = (dx / len, dy / len);
                 let step = f64::from(off.offer_step_cm);
                 let spot = |c: f64, s: f64| {
@@ -552,7 +553,7 @@ impl TeamView {
                 // Goal-side of him: between him and the goal we defend.
                 let own_goal = (length - self.their_goal_x, width / 2);
                 let (dx, dy) = (f64::from(own_goal.0 - m.0), f64::from(own_goal.1 - m.1));
-                let len = dx.hypot(dy).max(1.0);
+                let len = dmath::hypot(dx, dy).max(1.0);
                 let gap = f64::from(off.mark_gap_cm);
                 #[allow(clippy::cast_possible_truncation)]
                 let t = (
@@ -598,7 +599,7 @@ fn step_towards(
     (length, width): (i32, i32),
 ) -> (i32, i32) {
     let (dx, dy) = (f64::from(to.0 - from.0), f64::from(to.1 - from.1));
-    let len = dx.hypot(dy).max(1.0);
+    let len = dmath::hypot(dx, dy).max(1.0);
     let s = f64::from(step);
     #[allow(clippy::cast_possible_truncation)]
     let p = (
@@ -973,7 +974,7 @@ impl MatchState {
         scene.strike_error_rad = ctx.hidden.strike_error_he_expects(
             attacker,
             self.spatial.agent(attacker).map_or(0.0, |a| {
-                f64::from(a.velocity.0).hypot(f64::from(a.velocity.1))
+                dmath::hypot(f64::from(a.velocity.0), f64::from(a.velocity.1))
             }),
             self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
         );
@@ -1286,12 +1287,12 @@ impl MatchState {
                     .agent(attacker)
                     .map_or(0.5, |a| f64::from(a.gait_milli) / 1000.0),
                 run_cm_per_tick: self.spatial.agent(attacker).map_or(0.0, |a| {
-                    f64::from(a.velocity.0).hypot(f64::from(a.velocity.1))
+                    dmath::hypot(f64::from(a.velocity.0), f64::from(a.velocity.1))
                 }),
                 across: self.spatial.agent(attacker).map_or(0.0, |a| {
                     let (vx, vy) = (f64::from(a.velocity.0), f64::from(a.velocity.1));
                     let (sx, sy) = (f64::from(to.0 - from.0), aim_y - f64::from(from.1));
-                    let (v, s) = (vx.hypot(vy), sx.hypot(sy));
+                    let (v, s) = (dmath::hypot(vx, vy), dmath::hypot(sx, sy));
                     if v < 1.0 || s < 1.0 {
                         0.0
                     } else {
@@ -1482,7 +1483,7 @@ impl MatchState {
     ) {
         let home = ctx.match_.home.players.iter().any(|p| p.id == winner);
         let (dx, dy) = (f64::from(goal.0 - bx), f64::from(goal.1 - by));
-        let len = dx.hypot(dy).max(1.0);
+        let len = dmath::hypot(dx, dy).max(1.0);
         #[allow(clippy::cast_possible_truncation)]
         let v = ((dx / len * speed) as i16, (dy / len * speed) as i16, 10);
         self.spatial.deflect_ball((bx, by, bz), v);
@@ -2345,7 +2346,9 @@ impl MatchState {
         let forward = if carrier_home { 1 } else { -1 };
         let from_behind = ch.is_some_and(|(p, _)| (p.0 - ball.0) * forward < -50);
         #[allow(clippy::cast_possible_truncation)]
-        let approach = ch.map_or(0, |(_, v)| f64::from(v.0).hypot(f64::from(v.1)) as i32);
+        let approach = ch.map_or(0, |(_, v)| {
+            dmath::hypot(f64::from(v.0), f64::from(v.1)) as i32
+        });
         (from_behind, approach)
     }
 
@@ -2354,7 +2357,7 @@ impl MatchState {
     fn loose_from_contact(&mut self, challenger: PlayerId, ball: (i32, i32), speed: i32) {
         let from = self.spatial.agent(challenger).map_or(ball, |a| a.position);
         let (dx, dy) = (f64::from(ball.0 - from.0), f64::from(ball.1 - from.1));
-        let len = dx.hypot(dy).max(1.0);
+        let len = dmath::hypot(dx, dy).max(1.0);
         let sp = f64::from(speed);
         #[allow(clippy::cast_possible_truncation)]
         let v = ((dx / len * sp) as i16, (dy / len * sp) as i16, 0);
@@ -2554,7 +2557,7 @@ impl MatchState {
             let Some(a) = self.spatial.agent(*id) else {
                 continue;
             };
-            let speed = f64::from(a.velocity.0).hypot(f64::from(a.velocity.1));
+            let speed = dmath::hypot(f64::from(a.velocity.0), f64::from(a.velocity.1));
             body.fatigue = ctx.hidden.tire(*id, body.fatigue, speed);
         }
     }
@@ -3075,7 +3078,7 @@ impl MatchState {
         let share = ctx.hidden.save_balance().standing_reach_share;
         let reach_cm = self.bodies.get(&gk).map_or(0.0, |b| b.height_cm * share);
         let v = self.spatial.ball_velocity();
-        let speed = f64::from(v.0).hypot(f64::from(v.1)).hypot(f64::from(v.2));
+        let speed = dmath::hypot3(f64::from(v.0), f64::from(v.1), f64::from(v.2));
         #[allow(clippy::cast_precision_loss)] // ticks of one match: far below 2^52
         let flight_ticks = tick.saturating_sub(struck) as f64;
         let outcome = self.spatial.agent(gk).map(|gk_agent| {
@@ -3086,7 +3089,7 @@ impl MatchState {
             ctx.hidden.resolve_save(&ds_orchestrator::SaveContext {
                 goalkeeper: gk,
                 point: (plane_x, y_at, z_at),
-                offset_cm: across.hypot(up),
+                offset_cm: dmath::hypot(across, up),
                 reach_cm,
                 flight_ticks: flight_ticks * share,
                 ball_speed_cm_per_tick: speed,

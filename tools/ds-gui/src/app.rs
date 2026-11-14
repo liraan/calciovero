@@ -273,6 +273,10 @@ impl App {
             painter.circle_filled(c, radius, fill);
             // Where he faces: a short tick on the rim.
             let a = f32::from(d.heading).to_radians();
+            #[allow(
+                clippy::disallowed_methods,
+                reason = "drawing only: the view never feeds the simulation"
+            )]
             let tip = c + Vec2::new(a.sin(), -a.cos()) * radius * 1.4;
             painter.line_segment([c, tip], Stroke::new(1.5_f32, fill));
             if d.carrier {

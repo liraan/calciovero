@@ -74,7 +74,10 @@ impl FatigueBalance {
         let change: f64 = raw
             .match_profile
             .iter()
-            .map(|[v, share]| share * (v / raw.effort_ref_cm_per_tick.max(1.0)).powi(2))
+            .map(|[v, share]| {
+                let r = v / raw.effort_ref_cm_per_tick.max(1.0);
+                share * (r * r)
+            })
             .sum::<f64>()
             - raw.rest_effort;
         // The first half tires him, the rest takes back a share, the second
@@ -94,7 +97,8 @@ impl FatigueBalance {
     /// the higher his endurance. In `[0, 1]`.
     #[must_use]
     pub fn after_tick(&self, fatigue: f64, speed: f64, endurance: f64) -> f64 {
-        let effort = (speed / self.effort_ref_cm_per_tick.max(1.0)).powi(2);
+        let r = speed / self.effort_ref_cm_per_tick.max(1.0);
+        let effort = r * r;
         let e = endurance.clamp(0.0, 1.0);
         let change = (1.5 - e).mul_add(effort, -(0.5 + e) * self.rest_effort);
         self.gain_per_tick.mul_add(change, fatigue).clamp(0.0, 1.0)

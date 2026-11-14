@@ -43,6 +43,9 @@ ds-calculator = { path = "L0-match/crates/ds-calculator", version = "0.1.0" }
 rand_chacha = "0.9"
 rand_core = "0.9"
 blake3 = "1"
+# Deterministic math (ds_core::dmath): pure Rust, the same bits on every
+# target. Pinned exactly: another version may round differently.
+libm = "=0.2.16"
 # Errors and serialisation
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }

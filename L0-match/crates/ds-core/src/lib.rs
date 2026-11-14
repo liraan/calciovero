@@ -13,9 +13,11 @@
 //! - [`ids`] — generational entity identifiers (L0.03 §3.1)
 //! - [`time`] — monotonic simulation clock
 //! - [`hash`] — 32-byte BLAKE3 digest
+//! - [`dmath`] — floating-point math with the same bits on every platform
 
 #![deny(missing_docs)]
 
+pub mod dmath;
 pub mod event_bus;
 pub mod geometry;
 pub mod hash;
