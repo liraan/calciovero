@@ -73,7 +73,7 @@ The single most important architectural rule. Violating it introduces systemic b
 - Latent psychological state (the six axes, unexposed raw)
 - Internal random seed (never exposed)
 
-**Who reads it:** only `pcfm-match` (the match engine) and the world generator (`pcfm-gen`).
+**Who reads it:** only through the vault (`ds-db`), by its one door: it is used by the calculator for the match engine and, in future, by the world generator (`ds-gen`, not written yet) (ADR-041).
 
 **Rule:** no external module may read Plane A. Ever. Not even for debugging.
 
@@ -157,14 +157,14 @@ Same save + same match + same plugin configuration → same result. Always. **De
 Operational rules:
 
 - **Generational IDs**, never hashes or pointers
-- **No die in simulation paths**: no `ChaCha20Rng` stream is consumed to decide an outcome. The `Rng` type stays in `ds-core` for the generator (`pcfm-gen`, not written yet), not for the engine. Derivation from a key — `hash(world_seed, ...)` for latents (OI-53) — is not a die: it is a deterministic function of the world and the identity, not a decision made in place of the actor. See [`doctrine/adr/035-no-dice-in-simulation.md`](adr/035-no-dice-in-simulation.md).
+- **No die in simulation paths**: no `ChaCha20Rng` stream is consumed to decide an outcome. The `Rng` type stays in `ds-core` for the generator (`ds-gen`, not written yet), not for the engine. Derivation from a key — `hash(world_seed, ...)` for latents (OI-53) — is not a die: it is a deterministic function of the world and the identity, not a decision made in place of the actor. See [`doctrine/adr/035-no-dice-in-simulation.md`](adr/035-no-dice-in-simulation.md).
 - **Each piece has a transition function**: a player perceives (cone, gaze, latency), decides among perceived options (MD-43, geometric), and moves (F.7 formula); the ball has a declared trajectory (`advance_ball`); the interaction is the composition, not a draw.
 - **No global decider**: there is no point in the engine where a single function reads the whole state and returns the outcome of an action. If such a point exists, it is a bug in the model, not a feature.
 - **Perception is derived, not noisy by hash**: the error of perception is a function of the characteristics (`vision`, `concentration_level`), the distance, and the angle. A player with low vision sees less; the same player in the same situation sees the same thing. The world is deterministic; the information is incomplete in a way the model explains (revises the noise half of ADR-029).
 - **No `HashMap`/`HashSet` in simulation paths**: `BTreeMap`, `BTreeSet`, or explicitly sorted `Vec`
 - **Portable transcendentals**: `libm` pinned, or fixed-point for the critical path
 - **Deterministic parallelism**: `rayon` with fixed partitioning and ordered reduction
-- **Golden tests**: at L0, N matches from a known seed range → concatenated state hash (`crates/pcfm-match/tests/golden_l0.rs`). At L1, 10 seasons → state hash. The 10-season form requires L1, which does not exist yet; the L0 form exists and is regenerated on every `SIM_VERSION` bump. The golden is less informative now (determinism is structural), but it still catches regressions in the local transitions.
+- **Golden tests**: at L0, N matches from a known seed range → concatenated state hash (`L0-match/crates/ds-match/tests/golden_l0.rs`). At L1, 10 seasons → state hash. The 10-season form requires L1, which does not exist yet; the L0 form exists and is regenerated on every `SIM_VERSION` bump. The golden is less informative now (determinism is structural), but it still catches regressions in the local transitions.
 - **`SIM_VERSION`**: bumped whenever simulation behaviour changes, with the five-step procedure documented in [`L0-match/CHANGELOG-SIM.md`](../L0-match/CHANGELOG-SIM.md)
 
 **Scope: local determinism (ADR-013, accepted).** The contract is: same save + same match + same plugin configuration = same result. Two saves with different plugin configurations are different worlds: their results are not comparable. Global determinism (same seed across different configurations) is no longer a requirement. See [`doctrine/adr/013-worlds.md`](adr/013-worlds.md).
@@ -176,7 +176,7 @@ These are not preferences. They are prohibitions.
 - **Coverage first, then discussion, never a die.** Every phenomenon the engine must explain is covered with the characteristics already declared in the model: exhaust what exists before adding anything. If a characteristic is missing, the case is discussed with the maintainer; it is not added alone, and it is not bypassed. The discussion has a filter, the real match: a datum a real match cannot explain is not a characteristic, and the case closes there. The die is not an option in either case: not when the characteristic exists (it is used), not when it is missing (it is discussed). It is the last resort, and it is never a resort. See ADR-035 Consequences.
 
 - **No CA/PA.** No `current_ability`, `potential_ability`, or equivalent scalar. Ever.
-- **No truth leakage.** No module outside `pcfm-match` and `pcfm-gen` reads Plane A.
+- **No truth leakage.** No module reads Plane A except through the vault's door (`ds-db`, ADR-041): the calculator for the engine, the generator (`ds-gen`, planned) for the world.
 - **No ratings from latents.** Ratings come from events.
 - **No Plane C → Plane A feedback.**
 - **No hardcoded rules, names, colours, or balance values.** Everything lives in files.
@@ -228,12 +228,12 @@ To keep scope honest, these are **not** in the core, and most are not in v1.0:
 - **Architecture:** [`L0-match/00-overview.md`](../L0-match/specs/00-overview.md) — how determinism and Plane A are enforced at L0
 - **Ground Truth API:** [`L0-match/10-ground-truth.md`](../L0-match/specs/10-ground-truth.md) — the `resolve_*` contract
 - **Index of all modules:** [`_index.md`](_index.md)
-- **Decisions:** [`../docs/adr/`](adr/) — every open question, every resolved one
-- **Structure:** [`../STRUCTURE.md`](STRUCTURE.md) — the rules of the repo
-- **Glossary:** [`../docs/GLOSSARY.md`](GLOSSARY.md) — the terms used across the spec
-- **Module developer guide:** [`../docs/PLUGIN_DEVELOPER_GUIDE.md`](PLUGIN_DEVELOPER_GUIDE.md) — how to write a module
-- **Crate naming:** crates use the `pcfm-` prefix (`ds-core`, `pcfm-hidden`, `pcfm-match`, ...). The historical `fmr-` prefix is deprecated. See `doctrine/STRUCTURE.md` §3.
-- **Modules and worlds:** [`../docs/adr/012-plugins.md`](adr/012-plugins.md) and [`../docs/adr/013-worlds.md`](adr/013-worlds.md) *(accepted)* — the plugin contract and the world system. ADR-013 revised pillar 1 (determinism, from global to local).
+- **Decisions:** [`doctrine/adr/`](adr/) — every open question, every resolved one
+- **Structure:** [`doctrine/STRUCTURE.md`](STRUCTURE.md) — the rules of the repo
+- **Glossary:** [`doctrine/GLOSSARY.md`](GLOSSARY.md) — the terms used across the spec
+- **Module developer guide:** [`doctrine/PLUGIN_DEVELOPER_GUIDE.md`](PLUGIN_DEVELOPER_GUIDE.md) — how to write a module
+- **Crate naming:** crates use the `ds-` prefix (`ds-core`, `ds-db`, `ds-match`, ...; ADR-032). The historical `pcfm-` and `fmr-` prefixes survive only in history (old ADRs, changelogs, commits). See `doctrine/STRUCTURE.md` §3.
+- **Modules and worlds:** [`doctrine/adr/012-plugins.md`](adr/012-plugins.md) and [`doctrine/adr/013-worlds.md`](adr/013-worlds.md) *(accepted)* — the plugin contract and the world system. ADR-013 revised pillar 1 (determinism, from global to local).
 
 ## 9. Concentric Structure (Nest Model)
 
@@ -260,6 +260,6 @@ L3 — META               Registry, packs, generator, editor, assets, UI, statis
 - The `00-foundations` doctrine applies at all levels.
 - The Three Planes apply at all levels.
 
-**Terminology.** In this project, "L0" denotes the **base**: the match engine and its contract. It is not a module or a plugin. "Module" (or "plugin") denotes an extension at **L1 and above**, subject to the contract in ADR-012. Consequently: `L0-match/` is the specification of the base; `ds-core`, `ds-model`, `pcfm-hidden`, `pcfm-stats`, `pcfm-match`, `pcfm-testkit`, `pcfm-test-runner` are the implementation of the base; specs/plugins live above.
+**Terminology.** In this project, "L0" denotes the **base**: the match engine and its contract. It is not a module or a plugin. "Module" (or "plugin") denotes an extension at **L1 and above**, subject to the contract in ADR-012. Consequently: `L0-match/` is the specification of the base; `ds-core`, `ds-model`, `ds-db`, `ds-calculator`, `ds-orchestrator`, `ds-stats`, `ds-match` are the implementation of the base, with `ds-testkit`, `ds-test-runner`, `ds-fixtures` and `ds-demo` as tools; specs/plugins live above.
 
 **The full map is in [`_index.md`](_index.md).**
