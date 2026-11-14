@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `7fb6419` - "fix(goal): the tip follows the ball's path; every goal has its scorer -- SIM_VERSION 102"
+**Last commit verified:** `312e14e` - "fix(narrative): an own goal is told as one, not as the defender scoring"
 
 ## Dove siamo (2026-11-14)
 
