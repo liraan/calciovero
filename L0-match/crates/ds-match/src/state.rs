@@ -106,6 +106,14 @@ fn nearest_on_path((a, b): ((i32, i32, i32), (i32, i32, i32)), p: (i32, i32)) ->
     ((at(a.0, b.0), at(a.1, b.1)), at(a.2, b.2))
 }
 
+/// His rank among his teammates for a ball nobody has: a pass played to
+/// him is his to meet first (0), however near the ball his teammates are
+/// (OI-98: a keeper ranked behind them held his place, and the back pass
+/// ran past him into his goal); otherwise how many are nearer.
+const fn rank_to_meet(played_to_him: bool, nearer: u32) -> u32 {
+    if played_to_him { 0 } else { nearer }
+}
+
 /// Info about a pending shot (F.3-b3). The crossing detection reads
 /// the attacker to attribute the Goal event.
 #[derive(Debug, Clone, Copy)]
@@ -2353,7 +2361,12 @@ impl MatchState {
                                     || sweep)
                                     .then(|| ds_orchestrator::Target {
                                         distance_cm: distance_squared(me, ball).isqrt(),
-                                        rank: rank(ball),
+                                        // A pass played to him is his to
+                                        // meet first, however near the ball
+                                        // his teammates are (OI-98: a keeper
+                                        // ranked behind them held his place
+                                        // and the back pass ran past him).
+                                        rank: rank_to_meet(meets_pass == Some(id), rank(ball)),
                                     })
                             })
                         },
@@ -3873,6 +3886,16 @@ mod tests {
 #[cfg(test)]
 mod intercept_tests {
     use super::*;
+
+    /// P1 (OI-98): the receiver of a pass is the first to meet it, even
+    /// with teammates nearer the ball; anyone else keeps his rank. How he
+    /// meets it is his body's (twin: `a_rolling_ball_is_met_on_its_path`).
+    #[test]
+    fn the_receiver_is_the_first_to_meet_his_pass() {
+        assert_eq!(rank_to_meet(true, 3), 0);
+        assert_eq!(rank_to_meet(false, 3), 3);
+        assert_eq!(rank_to_meet(false, 0), 0);
+    }
 
     /// A ball coming down fast is met where its path passes him, between
     /// two ticks (ADR-058, `SIM_VERSION` 103): its point nearest to him and
