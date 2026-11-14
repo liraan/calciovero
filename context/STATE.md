@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `095c6b2` - "feat(coach): holding is the coach's place, weighed by discipline -- ADR-059 step 2, SIM_VERSION 104"
+**Last commit verified:** `70c5c57` - "merge: ADR-060 and ADR-061, the season and the career; Android is the same game"
 
 ## Dove siamo (2026-11-14)
 
