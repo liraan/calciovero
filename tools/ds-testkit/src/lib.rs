@@ -1,6 +1,6 @@
-//! Public test harness for PCFM.
+//! Public test harness for Calcio Vero - Deep Simulator.
 //!
-//! This crate defines the *contract* for testable units in the PCFM
+//! This crate defines the *contract* for testable units in the Calcio Vero
 //! ecosystem. It deliberately has **no dependency** on any other `pcfm-*`
 //! crate: core, plugins, and tools all implement the same traits against
 //! this crate, and the runner (`ds-test-runner`) aggregates them.

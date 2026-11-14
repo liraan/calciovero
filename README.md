@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="assets/calcio-vero-transparent.png" alt="Calcio Vero - Deep Simulator" width="280">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="assets/calcio-vero-logo-dark.svg">
+<img src="assets/calcio-vero-logo-light.svg" alt="Calcio Vero - Deep Simulator" width="360">
+</picture>
 
 # Calcio Vero - Deep Simulator
 
@@ -31,9 +34,9 @@
 
 <div align="center">
 
-<img src="assets/demo-gui.gif" alt="The GUI: twenty-two players and the ball on a 2D pitch, the commentary beside it, a goal at the 4th minute" width="800">
+<img src="assets/demo-match.gif" alt="A 2D pitch: twenty-two players and the ball; an away midfielder wins a cleared ball and scores from 31 metres" width="800">
 
-*The GUI ([ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)), seed 42, from 2' to 8' at sixteen times real speed: the home goal at the 4th minute lights up the commentary. Home players are `A`-`K` in red, away `a`-`k` in blue, the goalkeepers in their own colour, the ring is the man on the ball. The terminal view is still there: [`assets/demo-2d.gif`](assets/demo-2d.gif).*
+*Seed 42, engine version 102, 61'54" to 62'10": the home side clears, the away side wins it back and `g` scores from 31 metres, with no pass in between. Every frame is the engine's own tick record (where the twenty-two and the ball are, ten times a second), drawn by a script in the style of the coming interface. Home players are `A`-`K`, away `a`-`k`, the goalkeepers in their own colour, the ring is the man on the ball. The GUI as it is today ([ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)) is in [`assets/demo-gui.gif`](assets/demo-gui.gif) (recorded at engine version 95); the terminal view in [`assets/demo-2d.gif`](assets/demo-2d.gif).*
 
 </div>
 
@@ -105,8 +108,14 @@ What exists today:
 - a **deterministic match engine** for one match, with players who
   perceive, choose and move, a ball that flies, a goalkeeper who
   positions himself, posts and crossbar that deflect the ball;
-- a **2D debug view** in the terminal that replays a match tick by tick,
-  and a text board and an HTML page with the result;
+- the **same match on every machine**: since engine version 101 the
+  engine's mathematics no longer goes through the operating system's C
+  library, and the golden match is checked with two of them;
+- a **desktop window** (egui) that replays the match on a 2D pitch with
+  the commentary, and a **2D debug view** in the terminal, a text board
+  and an HTML page with the result;
+- **every goal with its scorer**, own goals told as such, and *why* you
+  conceded each one;
 - a **friendly you can play** from the command line: choose your eleven
   from the squad and the bench, how high you defend and how wide you play,
   your substitutions, save the match, reload it, and read why you conceded each goal;

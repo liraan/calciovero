@@ -6,7 +6,7 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Plane B (Observation) for PCFM: MatchEvent, EventChain, append-only hash chain"
+description = "Plane B (Observation) for Calcio Vero - Deep Simulator: MatchEvent, EventChain, append-only hash chain"
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-match/05-match-events.md"
 
 [dependencies]

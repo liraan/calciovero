@@ -1,4 +1,4 @@
-//! `ds-test-runner` — run PCFM test scenarios.
+//! `ds-test-runner` — run Calcio Vero - Deep Simulator test scenarios.
 //!
 //! Formerly `pcfm-debug` (see ADR-020). The demo simulation was split into
 //! `ds-demo`; this crate only runs and inspects test scenarios.

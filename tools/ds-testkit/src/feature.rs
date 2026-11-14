@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 
-/// A feature of the PCFM framework that a [`Scenario`](crate::Scenario) can
+/// A feature of the Calcio Vero framework that a [`Scenario`](crate::Scenario) can
 /// exercise.
 ///
 /// The enum is `#[non_exhaustive]` so new variants can be added without

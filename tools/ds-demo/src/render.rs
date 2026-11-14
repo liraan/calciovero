@@ -133,7 +133,7 @@ fn sanitize_output_path(path: &str) -> std::io::Result<std::path::PathBuf> {
 pub fn write_html(result: &MatchResult, path: &str) -> std::io::Result<()> {
     let mut html = String::new();
     html.push_str("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\">");
-    html.push_str("<title>PCFM match</title>");
+    html.push_str("<title>Calcio Vero - Deep Simulator: match</title>");
     html.push_str("<style>");
     html.push_str(
         "body{font-family:system-ui,sans-serif;max-width:900px;margin:2em auto;\

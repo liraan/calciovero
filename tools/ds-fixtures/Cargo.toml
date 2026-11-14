@@ -6,7 +6,7 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Test fixtures for PCFM: hardcoded squads and match for scenarios and demos"
+description = "Test fixtures for Calcio Vero - Deep Simulator: hardcoded squads and match for scenarios and demos"
 
 [dependencies]
 ds-core.workspace = true

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Calcio Vero - Deep Simulator">
+<rect width="256" height="256" rx="56" fill="#0E1114"/>
+<rect x="40" y="40" width="176" height="176" rx="46" fill="none" stroke="#F0B04A" stroke-width="13"/>
+<line x1="128" y1="54" x2="128" y2="202" stroke="#F0B04A" stroke-width="11"/>
+<circle cx="128" cy="128" r="34" fill="none" stroke="#F0B04A" stroke-width="11"/>
+<circle cx="128" cy="128" r="10" fill="#E9ECEF"/>
+</svg>

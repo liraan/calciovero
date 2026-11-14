@@ -6,7 +6,7 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Core infrastructure for PCFM: RNG, event bus, IDs, deterministic math"
+description = "Core infrastructure for Calcio Vero - Deep Simulator: RNG, event bus, IDs, deterministic math"
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-match"
 
 [dependencies]

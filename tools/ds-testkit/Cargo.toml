@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Public test harness for PCFM: Scenario, Feature, TestRegistry."
+description = "Public test harness for Calcio Vero - Deep Simulator: Scenario, Feature, TestRegistry."
 publish = false
 
 [dependencies]

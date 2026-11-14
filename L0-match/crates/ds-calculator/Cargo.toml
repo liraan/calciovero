@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
-description = "The calculator of PCFM (ADR-028 section 5): applies a formula from L0-match/balance/*.json to a situation and a player"
+description = "The calculator of Calcio Vero - Deep Simulator (ADR-028 section 5): applies a formula from L0-match/balance/*.json to a situation and a player"
 
 [dependencies]
 ds-core.workspace = true

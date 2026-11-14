@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="72" viewBox="0 0 360 72" role="img" aria-label="Calcio Vero - Deep Simulator">
+<rect x="4" y="4" width="64" height="64" rx="17" fill="none" stroke="#B07510" stroke-width="5"/>
+<line x1="36" y1="9" x2="36" y2="63" stroke="#B07510" stroke-width="4"/>
+<circle cx="36" cy="36" r="12.5" fill="none" stroke="#B07510" stroke-width="4"/>
+<circle cx="36" cy="36" r="3.8" fill="#0E1114"/>
+<text x="88" y="38" font-family="Inter Tight, Inter, Segoe UI, Helvetica, Arial, sans-serif" font-weight="800" font-size="30" letter-spacing="2" fill="#0E1114">CALCIO VERO</text>
+<text x="89" y="60" font-family="JetBrains Mono, Menlo, Consolas, monospace" font-size="16" fill="#4A525C">deep simulator</text>
+</svg>

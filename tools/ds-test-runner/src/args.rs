@@ -109,7 +109,7 @@ where
 
 /// The help text.
 pub const HELP: &str = "\
-ds-test-runner — run PCFM test scenarios
+ds-test-runner — run Calcio Vero - Deep Simulator test scenarios
 
 USAGE:
     ds-test-runner [OPTIONS]

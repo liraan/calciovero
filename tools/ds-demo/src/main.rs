@@ -1,4 +1,4 @@
-//! `ds-demo` — simulate a PCFM match and print the result.
+//! `ds-demo` — simulate a Calcio Vero - Deep Simulator match and print the result.
 //!
 //! This is the demo binary split out of `pcfm-debug` (see ADR-020). It
 //! builds two hardcoded squads, simulates a match, and renders the result
@@ -21,7 +21,7 @@ use std::process::ExitCode;
 use ds_match::MatchConfig;
 
 const HELP: &str = "\
-ds-demo — simulate a PCFM match and print the result
+ds-demo — simulate a Calcio Vero - Deep Simulator match and print the result
 
 USAGE:
     ds-demo [OPTIONS]

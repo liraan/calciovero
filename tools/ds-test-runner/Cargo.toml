@@ -6,7 +6,7 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "CLI test runner for PCFM: run and inspect test scenarios"
+description = "CLI test runner for Calcio Vero - Deep Simulator: run and inspect test scenarios"
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/docs/PLUGIN_DEVELOPER_GUIDE.md"
 
 [[bin]]

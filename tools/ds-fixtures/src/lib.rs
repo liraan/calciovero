@@ -1,4 +1,4 @@
-//! Test fixtures for PCFM.
+//! Test fixtures for Calcio Vero - Deep Simulator.
 //!
 //! Hardcoded squads and a match builder, shared by `ds-demo` (to show a
 //! match) and `ds-test-runner` (to feed scenarios). They are *test data*,

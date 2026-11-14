@@ -6,7 +6,7 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Minimal entities for PCFM (L0.03): Player, Squad, Pitch, Referee, Match"
+description = "Minimal entities for Calcio Vero - Deep Simulator (L0.03): Player, Squad, Pitch, Referee, Match"
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-match"
 
 [dependencies]

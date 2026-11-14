@@ -6,7 +6,7 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Match engine for PCFM (L0.04): orchestrator, tick loop, micro-decisions"
+description = "Match engine for Calcio Vero - Deep Simulator (L0.04): orchestrator, tick loop, micro-decisions"
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-match/04-match-engine.md"
 
 [dependencies]

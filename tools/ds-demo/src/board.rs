@@ -27,7 +27,7 @@ pub fn render_board(vm: &MatchViewModel) -> Result<String, std::fmt::Error> {
     )?;
     writeln!(
         out,
-        "|                    PCFM -- MATCH BOARD                       |"
+        "|         CALCIO VERO - DEEP SIMULATOR -- MATCH BOARD          |"
     )?;
     writeln!(
         out,
@@ -149,7 +149,7 @@ mod tests {
     fn empty_board_renders_without_panic() {
         let vm = empty_vm();
         let rendered = render_board(&vm).expect("render");
-        assert!(rendered.contains("PCFM -- MATCH BOARD"));
+        assert!(rendered.contains("CALCIO VERO - DEEP SIMULATOR -- MATCH BOARD"));
         assert!(rendered.contains("(no events)"));
         assert!(rendered.contains("(no narrative)"));
     }

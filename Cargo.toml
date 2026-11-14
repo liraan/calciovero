@@ -1,4 +1,4 @@
-# Cargo.toml — PCFM workspace root
+# Cargo.toml — Calcio Vero - Deep Simulator workspace root
 
 [workspace]
 resolver = "3"
