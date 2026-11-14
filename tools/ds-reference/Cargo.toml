@@ -1,0 +1,26 @@
+[package]
+name = "ds-reference"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Real-football reference for Calcio Vero - Deep Simulator: per-match averages from open data, side by side with the engine"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "ds-reference"
+path = "src/main.rs"
+
+[dependencies]
+ds-stats.workspace = true
+ds-match.workspace = true
+ds-fixtures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

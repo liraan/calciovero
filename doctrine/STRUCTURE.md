@@ -114,6 +114,7 @@ calciovero/
 │   ├── specs/               the contract (L0.00 → L0.11)
 │   ├── design/              the notes that implement it, and the code maps
 │   ├── balance/             the declared parameters (`_source`, arbitrary until L3)
+│   ├── reference/           real football measured from open data (not parameters)
 │   ├── crates/              the engine, one responsibility per crate (below)
 │   └── CHANGELOG-SIM.md     every change of simulation behaviour
 │
@@ -124,7 +125,8 @@ calciovero/
 │   ├── ds-gui/              the desktop GUI (egui, ADR-055)
 │   ├── ds-fixtures/         the demo and test squads
 │   ├── ds-testkit/          the test contract (no dependency on any ds-* crate)
-│   └── ds-test-runner/      run the scenarios (`--check`)
+│   ├── ds-test-runner/      run the scenarios (`--check`)
+│   └── ds-reference/        real football beside the engine (open data, per match)
 │
 └── context/                 OUTSIDE THE RINGS: how the work is done
     ├── STATE.md             the bookmark: where we are, the plan, the open items
