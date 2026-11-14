@@ -194,7 +194,7 @@ These are not preferences. They are prohibitions.
 
 **Single-player first.** Hotseat and asynchronous multiplayer are separate modules (future).
 
-**Depth of FM24 + soul of PC Calcio:**
+**A football manager, the depth of Football Manager, better studied:**
 - Dense, readable interface
 - Textual radio commentary
 - Powerful editor
