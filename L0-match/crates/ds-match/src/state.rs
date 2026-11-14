@@ -1084,9 +1084,16 @@ impl MatchState {
             .collect();
         scene.shield_keep = ctx.hidden.shield_confidence(attacker);
         scene.foresight = ctx.hidden.foresight(attacker);
-        // How the players he sees are moving: he plays the pass into a run.
+        // How the players he sees are moving, and the teammates he may serve
+        // (a player looks at the teammate he plays to: the cone does not
+        // filter the pass target, SIM_VERSION 15, the maintainer 2026-11-04):
+        // he plays the pass into a run. Before, a teammate behind him was
+        // served where he stood, not where he was running (OI-98: a back
+        // pass in his own box that the running teammate could not get back
+        // to, and the ball rolled into the goal).
         scene.motion = crate::perception::visible_to(&self.spatial, attacker)
             .into_iter()
+            .chain(scene.teammates.iter().copied())
             .filter_map(|id| self.spatial.agent(id).map(|a| (id, a.velocity)))
             .collect();
         // The teammates he sees attacking the depth, and where they run to
