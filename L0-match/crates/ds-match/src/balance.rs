@@ -270,16 +270,6 @@ pub struct ReceptionBalance {
     pub speed_base_cm_per_tick: i32,
     /// Passing bonus on flight speed, cm/tick.
     pub speed_passing_bonus_cm_per_tick: i32,
-    /// Freedom reference distance, cm.
-    pub freedom_ref_cm: i64,
-    /// Max control bonus from freedom, milli.
-    pub freedom_bonus_max_milli: i64,
-    /// Distance reference for the control penalty, cm.
-    pub distance_ref_cm: i64,
-    /// Max control penalty from distance, milli.
-    pub distance_penalty_max_milli: i64,
-    /// Control threshold, milli.
-    pub control_threshold_milli: i64,
     /// A loose ball within this distance of a player is his (ADR-041 §5).
     pub loose_control_radius_cm: i32,
     /// The share of the ball's speed the worst first touch leaves it,
@@ -305,17 +295,20 @@ impl ReceptionBalance {
         Self::default()
     }
 
-    /// Converts to the `pcfm-hidden` type used by `resolve_reception`.
+    /// Converts to the type `resolve_reception` reads (ADR-058): the two
+    /// references come from where they are defined, the kick's reference
+    /// speed (`kick.json`) and the pressure radius (`influence.json`).
     #[must_use]
-    pub const fn to_params(self) -> ds_orchestrator::ReceptionParams {
+    pub const fn to_params(
+        self,
+        speed_ref_cm_per_tick: f64,
+        pressure_radius_cm: i32,
+    ) -> ds_orchestrator::ReceptionParams {
         ds_orchestrator::ReceptionParams {
             speed_base_cm_per_tick: self.speed_base_cm_per_tick,
             speed_passing_bonus_cm_per_tick: self.speed_passing_bonus_cm_per_tick,
-            freedom_ref_cm: self.freedom_ref_cm,
-            freedom_bonus_max_milli: self.freedom_bonus_max_milli,
-            distance_ref_cm: self.distance_ref_cm,
-            distance_penalty_max_milli: self.distance_penalty_max_milli,
-            control_threshold_milli: self.control_threshold_milli,
+            speed_ref_cm_per_tick,
+            pressure_radius_cm: pressure_radius_cm as i64,
         }
     }
 }

@@ -625,38 +625,29 @@ impl GroundTruth {
         PassOutcome { initial_velocity }
     }
 
-    /// Resolves the reception of a pass (REC). Geometric: no die
-    /// (ADR-035, foundation §5).
+    /// Resolves a reception where the ball reaches the player (ADR-058).
     ///
-    /// Control probability (milli) = `first_touch * 1000`
-    ///   + freedom bonus (up to `freedom_bonus_max_milli`)
-    ///   - distance penalty (up to `distance_penalty_max_milli`).
-    ///
-    /// Control succeeds if the value is >= `control_threshold_milli`.
-    /// Flight speed (cm/tick) = `speed_base + speed_passing_bonus * passing`.
-    #[must_use]
+    /// The difficulty is born at the arrival, as the keeper's catch:
+    /// `(speed / speed_ref + pressure) / 2`, with `pressure = 1 - distance /
+    /// pressure_radius` of the nearest opponent to the ball, clamped to
+    /// `[0, 1]`. He controls it when his `first_touch` reaches the
+    /// difficulty: together, at their references (the hardest ball, an
+    /// opponent on the ball), the two causes demand a perfect first touch.
+    /// No die (ADR-035).
     pub fn resolve_reception(
         &mut self,
         ctx: &ReceptionContext,
         params: &ReceptionParams,
     ) -> ReceptionOutcome {
         let receiver = self.latents_for(ctx.receiver);
-        // Control (milli).
-        #[allow(clippy::cast_possible_truncation)]
-        let first_touch_milli = (receiver.technical.first_touch * 1000.0) as i64;
-        let freedom_clamped = ctx.freedom_cm.max(0).min(params.freedom_ref_cm * 4);
-        let freedom_bonus =
-            params.freedom_bonus_max_milli * freedom_clamped / params.freedom_ref_cm.max(1);
-        let dist_over = (ctx.distance_cm - params.distance_ref_cm).max(0);
-        let distance_penalty =
-            params.distance_penalty_max_milli * dist_over / params.distance_ref_cm.max(1);
-        let distance_penalty = distance_penalty.min(params.distance_penalty_max_milli);
-        let control = first_touch_milli + freedom_bonus - distance_penalty;
-        let controlled = control >= params.control_threshold_milli;
-        // Flight speed (cm/tick), from the passer's passing.
-        // The passer's latents are read here (not in the context):
-        // the crate is the custodian (Plane A), the context carries only
-        // the geometry.
+        let speed =
+            (ctx.ball_speed_cm_per_tick.max(0.0) / params.speed_ref_cm_per_tick.max(1.0)).min(1.0);
+        #[allow(clippy::cast_precision_loss)]
+        let pressure = (1.0
+            - ctx.opponent_cm.max(0) as f64 / params.pressure_radius_cm.max(1) as f64)
+            .clamp(0.0, 1.0);
+        let difficulty = f64::midpoint(speed, pressure);
+        let controlled = f64::from(receiver.technical.first_touch) >= difficulty;
         self.observations.push(ObservationEvent::Reception {
             receiver: ctx.receiver,
             controlled,
@@ -1258,11 +1249,8 @@ mod reception_tests {
         ReceptionParams {
             speed_base_cm_per_tick: 150,
             speed_passing_bonus_cm_per_tick: 150,
-            freedom_ref_cm: 800,
-            freedom_bonus_max_milli: 250,
-            distance_ref_cm: 3000,
-            distance_penalty_max_milli: 300,
-            control_threshold_milli: 400,
+            speed_ref_cm_per_tick: 340.0,
+            pressure_radius_cm: 500,
         }
     }
 
@@ -1270,11 +1258,11 @@ mod reception_tests {
         GroundTruth::new(42, MatchId::new(0, 0))
     }
 
-    fn ctx(receiver: u32, distance_cm: i64, freedom_cm: i64) -> ReceptionContext {
+    fn ctx(receiver: u32, speed: f64, opponent_cm: i64) -> ReceptionContext {
         ReceptionContext {
             receiver: PlayerId::new(receiver, 0),
-            distance_cm,
-            freedom_cm,
+            ball_speed_cm_per_tick: speed,
+            opponent_cm,
         }
     }
 
@@ -1284,49 +1272,62 @@ mod reception_tests {
         let mut b = gt();
         let p = params();
         assert_eq!(
-            a.resolve_reception(&ctx(1, 2000, 800), &p).controlled,
-            b.resolve_reception(&ctx(1, 2000, 800), &p).controlled
+            a.resolve_reception(&ctx(1, 120.0, 200), &p).controlled,
+            b.resolve_reception(&ctx(1, 120.0, 200), &p).controlled
         );
     }
 
     #[test]
-    fn freedom_helps_control() {
-        // Same player, same distance: more freedom -> at least as good.
+    fn a_free_slow_ball_is_controlled_and_the_hardest_one_on_the_ball_is_not() {
+        // ADR-058 (P1): alone and slow, every first touch keeps it; the
+        // hardest ball with an opponent on it demands a perfect one.
         let mut g = gt();
         let p = params();
-        // Try many distances and pick one where the low-freedom case fails
-        // and the high-freedom case controls; if none, the test would be
-        // empty (P1), so we assert the set is non-empty.
-        let mut found = false;
-        for d in (500..8000).step_by(250) {
-            let tight = g.resolve_reception(&ctx(1, d, 100), &p).controlled;
-            let free = g.resolve_reception(&ctx(1, d, 3000), &p).controlled;
-            if !tight && free {
-                found = true;
-                break;
+        for r in 0..11 {
+            assert!(g.resolve_reception(&ctx(r, 0.0, 10_000), &p).controlled);
+            let ft = g.latents_for(PlayerId::new(r, 0)).technical.first_touch;
+            if ft < 1.0 {
+                assert!(!g.resolve_reception(&ctx(r, 340.0, 0), &p).controlled);
             }
         }
-        assert!(
-            found,
-            "no distance where freedom flips a failure to a success"
-        );
+    }
+
+    #[test]
+    fn pressure_and_speed_each_make_it_harder() {
+        // For one player: a ball he controls stays controlled when the
+        // opponent is farther or the ball slower, never the reverse.
+        let mut g = gt();
+        let p = params();
+        for d in (0..=500).step_by(50) {
+            for v in (0..=340).step_by(20) {
+                let here = g.resolve_reception(&ctx(3, f64::from(v), d), &p).controlled;
+                let freer = g
+                    .resolve_reception(&ctx(3, f64::from(v), d + 50), &p)
+                    .controlled;
+                let slower = g
+                    .resolve_reception(&ctx(3, f64::from(v.max(20) - 20), d), &p)
+                    .controlled;
+                assert!(!here || (freer && slower), "d={d} v={v}");
+            }
+        }
     }
 
     #[test]
     fn first_touch_is_read() {
-        // Two different players: at least one distance where they differ.
+        // Twin (ADR-051, ADR-058): two receivers with different first
+        // touches, the same ball and the same opponent; between their two
+        // values the better one controls it and the other does not.
         let mut g = gt();
         let p = params();
-        let mut diff = false;
-        for d in (500..8000).step_by(250) {
-            let a = g.resolve_reception(&ctx(1, d, 400), &p).controlled;
-            let b = g.resolve_reception(&ctx(2, d, 400), &p).controlled;
-            if a != b {
-                diff = true;
-                break;
-            }
-        }
-        assert!(diff, "two players never differ: first_touch not read");
+        let fa = g.latents_for(PlayerId::new(1, 0)).technical.first_touch;
+        let fb = g.latents_for(PlayerId::new(2, 0)).technical.first_touch;
+        assert!((fa - fb).abs() > 0.01, "the fixture players must differ");
+        let (better, worse) = if fa > fb { (1, 2) } else { (2, 1) };
+        // difficulty = (v/340 + 0)/2 halfway between the two first touches.
+        let mid = f64::from(fa + fb) / 2.0;
+        let v = mid * 2.0 * 340.0;
+        assert!(g.resolve_reception(&ctx(better, v, 10_000), &p).controlled);
+        assert!(!g.resolve_reception(&ctx(worse, v, 10_000), &p).controlled);
     }
 }
 
