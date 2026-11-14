@@ -14,6 +14,7 @@ members = [
     "tools/ds-gui",
     "tools/ds-fixtures",
     "tools/ds-testkit",   # ← NUOVO
+    "tools/ds-reference",
     "L0-match/crates/ds-calculator",
 ]
 

@@ -11,6 +11,7 @@ from the outside. Nothing in `L0-match/` depends on a crate here, except
 | `ds-fixtures` | the hardcoded squads used by the demo and the tests (test data, not production data) |
 | `ds-testkit` | the test contract (`Scenario`, `Feature`); no dependency on any `ds-*` crate |
 | `ds-test-runner` | run the scenarios; `--check` is the health check of every commit |
+| `ds-reference` | measure open real-match data (Wyscout soccer-logs, CC BY 4.0) and the engine the same way, per match; the averages go to `L0-match/reference/` |
 
 ## Contribute here
 
