@@ -22,6 +22,17 @@
 
 ---
 
+**Watch a match in 2D now** (Rust 1.85+ stable; on Windows, Git Bash or WSL):
+
+    git clone https://github.com/liraan/calciovero.git
+    cd calciovero
+    cargo run --release -p ds-gui                              # the window: 2D pitch, commentary, why you conceded
+    cargo run --release --bin ds-demo -- --seed 42 --tui       # the same match on a text pitch in the terminal
+
+More options in [Try the engine today](#try-the-engine-today).
+
+---
+
 > You have been here before. Your striker is "in superb form". The
 > scout gave him four and a half stars. You lose 3-0 at home, and the
 > match engine shrugs.
