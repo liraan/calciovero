@@ -8,7 +8,7 @@ Calcio Vero uses a **dual license** to balance openness (for code) with protecti
 |------|---------|------|
 | **Code** — `crates/`, executables, build scripts | **MIT OR Apache-2.0** (at your option) | [`LICENSE-MIT`](LICENSE-MIT), [`LICENSE-APACHE`](LICENSE-APACHE) |
 | **Assets and documentation** — `mods/`, `data/`, `assets/`, `locales/`, `docs/`, `specs/` | **CC BY-NC-SA 4.0** | [`LICENSE-ASSETS`](LICENSE-ASSETS) |
-| **Trademarks** — the "Calcio Vero" name and logo | Trademark rights reserved | This file |
+| **Trademarks** — the "Calcio Vero - Deep Simulator" name and logo | Trademark rights reserved | This file |
 
 ## Code — MIT OR Apache-2.0
 
@@ -38,12 +38,12 @@ The non-commercial clause is a **default, not a prohibition to negotiate**. For 
 
 ## Trademarks
 
-The name **"Calcio Vero"** and the project logo are trademarks of the Calcio Vero Team. The licenses above do **not** grant trademark rights.
+The name **"Calcio Vero - Deep Simulator"** (short form "Calcio Vero") and the project logo are trademarks of the Calcio Vero Team. The licenses above do **not** grant trademark rights.
 
 You may:
 
 - Use the name to refer to the project (nominative fair use).
-- State that your work is "built on" or "compatible with" Calcio Vero, provided it does not imply endorsement.
+- State that your work is "built on" or "compatible with" Calcio Vero - Deep Simulator, provided it does not imply endorsement.
 
 You may not:
 
