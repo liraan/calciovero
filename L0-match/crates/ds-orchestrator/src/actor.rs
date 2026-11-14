@@ -94,9 +94,24 @@ impl Actor {
                 .kick_balance()
                 .miss_reckoned(finishing, foot, reading)
         };
+        // What he reckons of his teammates' reception (ADR-058): their
+        // first touch, which he knows from playing with them, and the
+        // difficulty, as well as he reads the game.
+        let mut scene = scene.clone();
+        scene.reception.reading = hidden
+            .custodian(self.player)
+            .value(ds_calculator::Characteristic::GameReading);
+        scene.reception.speed_ref = hidden.kick_balance().speed_ref_cm_per_tick;
+        let duel = hidden.duel_balance();
+        scene.reception.reach_cm =
+            f64::from(duel.reach_cm) * f64::from(duel.slide_reach_milli) / 1000.0;
+        for id in &scene.teammates {
+            let touch = f64::from(hidden.latents_for(*id).technical.first_touch);
+            scene.reception.first_touch.insert(*id, touch);
+        }
         let balance = hidden.shot_choice_balance();
         let (ctx, freedoms) =
-            crate::read::build_choice(scene, preferred_foot, risk_appetite, own_error, balance);
+            crate::read::build_choice(&scene, preferred_foot, risk_appetite, own_error, balance);
         (hidden.resolve_choice(&ctx).chosen, freedoms)
     }
 }

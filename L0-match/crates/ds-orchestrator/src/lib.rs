@@ -640,13 +640,13 @@ impl GroundTruth {
         params: &ReceptionParams,
     ) -> ReceptionOutcome {
         let receiver = self.latents_for(ctx.receiver);
-        let speed =
-            (ctx.ball_speed_cm_per_tick.max(0.0) / params.speed_ref_cm_per_tick.max(1.0)).min(1.0);
-        #[allow(clippy::cast_precision_loss)]
-        let pressure = (1.0
-            - ctx.opponent_cm.max(0) as f64 / params.pressure_radius_cm.max(1) as f64)
-            .clamp(0.0, 1.0);
-        let difficulty = f64::midpoint(speed, pressure);
+        #[allow(clippy::cast_precision_loss)] // cm on a pitch
+        let difficulty = ds_calculator::control::reception_difficulty(
+            ctx.ball_speed_cm_per_tick,
+            params.speed_ref_cm_per_tick,
+            ctx.opponent_cm as f64,
+            params.pressure_radius_cm as f64,
+        );
         let controlled = f64::from(receiver.technical.first_touch) >= difficulty;
         self.observations.push(ObservationEvent::Reception {
             receiver: ctx.receiver,

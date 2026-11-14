@@ -9,7 +9,7 @@
 - **explained, no source**: the file explains what it does, without a source or a derivation.
 - **undocumented**: the file says nothing about this parameter. These come first in the work to do.
 
-**Today:** 225 parameters in 21 files: 17 sourced, 5 derived, 9 arbitrary and declared, 89 explained without a source, 105 undocumented.
+**Today:** 220 parameters in 21 files: 17 sourced, 5 derived, 6 arbitrary and declared, 89 explained without a source, 103 undocumented.
 
 **The rule from now on.** A change to a number in `balance/` updates its row here in the same commit, with the source (author, year, title, and the page or table) or the derivation, or the word *arbitrary*. A number chosen by looking at the statistic it produces is never a source. This file was generated from the JSON files on 2026-11-14 (the classification is read from their text and is a first pass: a row marked sourced still needs its full reference written here when the file gives only a name).
 
@@ -236,9 +236,9 @@ To be filled as each row is completed: full reference, what it measures, which p
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `hold_salience_milli` | 300 | undocumented | — |
+| `hold_salience_milli` | 300 | undocumented | Hold his place, the base the other acts are weighed against (ADR-049). Since SIM_VERSION 103 no longer against a loose ball, which the nearest always goes for (ADR-052 note, 2026-11-14). |
 | `proximity_ref_cm` | 1500 | undocumented | — |
-| `second_reader_milli` | 600 | undocumented | — |
+| `second_reader_milli` | 600 | undocumented | The rank factor of the second nearest for pressing and marking (ADR-049). Since SIM_VERSION 103 not for a loose ball: the second goes if his game_reading is above the middle of its scale and he wins the race to it (ADR-052 note, 2026-11-14; derived from the scale, no number). |
 | `challenge_salience_milli` | 1300 | undocumented | — |
 | `keeper_box_depth_cm` | 1650 | sourced | Arbitrary, declared, to be calibrated at L3, except keeper_box_depth_cm (16.5 m) and keeper_box_half_width_cm (20.16 m), Law 1. cover_depth_cm (7 m) and lane_step_cm (3 m): arbitrary, declared, coaching order of magnitude, to be sourced at L3. |
 | `keeper_box_half_width_cm` | 2016 | sourced | Arbitrary, declared, to be calibrated at L3, except keeper_box_depth_cm (16.5 m) and keeper_box_half_width_cm (20.16 m), Law 1. cover_depth_cm (7 m) and lane_step_cm (3 m): arbitrary, declared, coaching order of magnitude, to be sourced at L3. |
@@ -271,13 +271,8 @@ To be filled as each row is completed: full reference, what it measures, which p
 |---|---|---|---|
 | `speed_base_cm_per_tick` | 150 | explained, no source | Since SIM_VERSION 52 (ADR-051) speed_base_cm_per_tick and speed_passing_bonus_cm_per_tick are no longer read: the pass is weighed by the kick (kick.json). |
 | `speed_passing_bonus_cm_per_tick` | 150 | explained, no source | Since SIM_VERSION 52 (ADR-051) speed_base_cm_per_tick and speed_passing_bonus_cm_per_tick are no longer read: the pass is weighed by the kick (kick.json). |
-| `freedom_ref_cm` | 800 | arbitrary, declared | Speed base 150 and passing bonus 150 reproduce the old prototype's flight range (~150-300 cm/tick). freedom_ref_cm matches PASS_FREEDOM_CM in state.rs. distance_ref_cm is a typical pass length (~30 m). control_threshold_milli 400/1000: a player with first_touch >= 0.4 controls in neutral situations; higher first_touch or more freedom gives margin; a very long or contested reception fails. loose_control_radius_cm 100  |
-| `freedom_bonus_max_milli` | 250 | undocumented | — |
-| `distance_ref_cm` | 3000 | arbitrary, declared | Speed base 150 and passing bonus 150 reproduce the old prototype's flight range (~150-300 cm/tick). freedom_ref_cm matches PASS_FREEDOM_CM in state.rs. distance_ref_cm is a typical pass length (~30 m). control_threshold_milli 400/1000: a player with first_touch >= 0.4 controls in neutral situations; higher first_touch or more freedom gives margin; a very long or contested reception fails. loose_control_radius_cm 100  |
-| `distance_penalty_max_milli` | 300 | undocumented | — |
-| `control_threshold_milli` | 400 | arbitrary, declared | Speed base 150 and passing bonus 150 reproduce the old prototype's flight range (~150-300 cm/tick). freedom_ref_cm matches PASS_FREEDOM_CM in state.rs. distance_ref_cm is a typical pass length (~30 m). control_threshold_milli 400/1000: a player with first_touch >= 0.4 controls in neutral situations; higher first_touch or more freedom gives margin; a very long or contested reception fails. loose_control_radius_cm 100  |
-| `loose_control_radius_cm` | 100 | arbitrary, declared | Speed base 150 and passing bonus 150 reproduce the old prototype's flight range (~150-300 cm/tick). freedom_ref_cm matches PASS_FREEDOM_CM in state.rs. distance_ref_cm is a typical pass length (~30 m). control_threshold_milli 400/1000: a player with first_touch >= 0.4 controls in neutral situations; higher first_touch or more freedom gives margin; a very long or contested reception fails. loose_control_radius_cm 100  |
-| `first_touch_keep_max_milli` | 150 | arbitrary, declared | Speed base 150 and passing bonus 150 reproduce the old prototype's flight range (~150-300 cm/tick). freedom_ref_cm matches PASS_FREEDOM_CM in state.rs. distance_ref_cm is a typical pass length (~30 m). control_threshold_milli 400/1000: a player with first_touch >= 0.4 controls in neutral situations; higher first_touch or more freedom gives margin; a very long or contested reception fails. loose_control_radius_cm 100  |
+| `loose_control_radius_cm` | 100 | arbitrary, declared | A loose ball within about a stride of a player is his (ADR-041 §5, 2026-11-12); arbitrary, declared, to be calibrated at L3. Since SIM_VERSION 103 he meets it where its path this tick passes him below 1 m (ADR-058). |
+| `first_touch_keep_max_milli` | 150 | arbitrary, declared | The worst professional's control of a pass arriving at 6 m/s lets it run on about 2 m; to be sourced at L3. The reception's difficulty (ADR-058) has no number of its own: `(speed / kick.json speed_ref_cm_per_tick + pressure) / 2`, pressure from `duel.json` reach_cm x slide_reach_milli (derived). |
 
 ### `save.json`
 

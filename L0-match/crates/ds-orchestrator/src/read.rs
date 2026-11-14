@@ -78,10 +78,91 @@ pub struct PerceivedScene {
     /// How the players he sees are moving, cm/tick (plan L0-CLOSE 11): a
     /// pass is played where the man will be, not where he is.
     pub motion: BTreeMap<PlayerId, (i16, i16)>,
+    /// What he reckons of a teammate's reception (ADR-058): the same
+    /// difficulty the engine judges, as well as he reads the game.
+    pub reception: ReceptionReckoning,
 }
 
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
 pub const PASS_FREEDOM_CM: i64 = 300;
+
+/// What a passer reckons of the reception he plays to.
+///
+/// ADR-058, ADR-052: what he foresees is what happens. The default
+/// reckons every touch clean (a reading of zero), as before the reception
+/// had a difficulty.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ReceptionReckoning {
+    /// His reading of the game: a poor reader underrates how hard a ball
+    /// is to control (as the shooter his own miss, `SIM_VERSION` 90).
+    pub reading: f64,
+    /// His teammates' first touch, which he knows from playing with them.
+    pub first_touch: BTreeMap<PlayerId, f64>,
+    /// The hardest ball a kick produces, cm/tick (`kick.json`).
+    pub speed_ref: f64,
+    /// The farthest an opponent contests the ball, cm (`duel.json`).
+    pub reach_cm: f64,
+    /// The share of its speed a ball in the air keeps per tick (the air,
+    /// which he knows as he knows the grass, `ball.json`).
+    pub air_keep: f64,
+}
+
+/// A ground pass weighed to arrive rolling (`kick.json`), struck at `v0`
+/// over `d` cm: controlled where it reaches `receiver` (`controls`)?
+fn controls_ground(
+    scene: &PerceivedScene,
+    players: &[ds_calculator::thought::Imagined],
+    receiver: PlayerId,
+    (at, d, v0): ((i32, i32), f64, f64),
+) -> bool {
+    let arrive = mind().kick.pass_arrive_cm_per_tick.min(v0);
+    let ticks = if v0 > arrive {
+        dmath::log(arrive / v0, scene.ground_keep)
+    } else {
+        d / v0.max(1.0)
+    };
+    controls(scene, players, receiver, (at, arrive, ticks))
+}
+
+/// A lofted pass over `d` cm, `flight` ticks in the air: controlled where
+/// it comes down, at the speed the air left it (`controls`)?
+fn controls_lofted(
+    scene: &PerceivedScene,
+    players: &[ds_calculator::thought::Imagined],
+    receiver: PlayerId,
+    (at, d, flight): ((i32, i32), f64, f64),
+) -> bool {
+    let landing = d / flight.max(1.0) * dmath::powf(scene.reception.air_keep, flight);
+    controls(scene, players, receiver, (at, landing, flight))
+}
+
+/// Whether he imagines `receiver` controlling a ball that reaches `at` at
+/// `speed` cm/tick after `ticks`, with the opponents he imagines running
+/// to it meanwhile (ADR-058: the engine's own difficulty, against the
+/// receiver's first touch; a poor reader underrates it).
+#[allow(clippy::cast_precision_loss)] // cm on a pitch
+fn controls(
+    scene: &PerceivedScene,
+    players: &[ds_calculator::thought::Imagined],
+    receiver: PlayerId,
+    (at, speed, ticks): ((i32, i32), f64, f64),
+) -> bool {
+    let r = &scene.reception;
+    let Some(first_touch) = r.first_touch.get(&receiver).copied() else {
+        return true;
+    };
+    let opponent = players
+        .iter()
+        .filter(|p| !p.mate)
+        .map(|p| {
+            let run = (ticks - p.reaction).max(0.0) * p.speed;
+            ((distance_squared(p.at, at) as f64).sqrt() - run).max(0.0)
+        })
+        .fold(f64::INFINITY, f64::min);
+    let difficulty =
+        ds_calculator::control::reception_difficulty(speed, r.speed_ref, opponent, r.reach_cm);
+    first_touch >= r.reading * difficulty
+}
 
 /// Regulatory goal width, cm (7.32 m, Laws of the Game, Law 1). A real
 /// fact of football, not a model choice.
@@ -922,6 +1003,7 @@ fn into_the_run(
 /// read for his freedom, the lane, the distance and what the pass brings;
 /// and each receiver's freedom, carried to `resolve_pass`.
 #[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+#[allow(clippy::too_many_lines)] // one candidate per kind of pass, each imagined
 fn pass_candidates(
     scene: &PerceivedScene,
     pos: (i32, i32),
@@ -980,9 +1062,11 @@ fn pass_candidates(
         // If his teammate misses it, the ball rolls on: into his own goal,
         // if its line goes there before it stops (plan L0-CLOSE 11, OI-98).
         let loss_at = missed_at(scene, pos, tpos, forecast.at);
+        // He imagines the touch too, where the ball reaches him (ADR-058).
+        let clean = controls_ground(scene, players, *id, (tpos, d, v0));
         let geom = worth(
             scene,
-            sure(players, &forecast),
+            if clean { sure(players, &forecast) } else { 0.0 },
             gain_at,
             loss_at,
             risk_appetite,
@@ -1022,9 +1106,16 @@ fn pass_candidates(
                     .fold(f64::INFINITY, f64::min)
             };
             let margin = best(false) - best(true) - spread;
+            // Where it comes down he must control it at the speed the air
+            // left it, with whoever has run there meanwhile (ADR-058).
+            let clean = controls_lofted(scene, players, *id, (tpos, d, flight));
             let geom = worth(
                 scene,
-                m.thought.confidence(margin),
+                if clean {
+                    m.thought.confidence(margin)
+                } else {
+                    0.0
+                },
                 tpos,
                 tpos,
                 risk_appetite,
@@ -1292,6 +1383,7 @@ mod keeper_visibility_tests {
             shield_keep: 0.0,
             foresight: 1.0,
             motion: BTreeMap::new(),
+            reception: ReceptionReckoning::default(),
         }
     }
 
@@ -1543,6 +1635,7 @@ mod keeper_visibility_tests {
                 shield_keep: 0.0,
                 foresight: 1.0,
                 motion: BTreeMap::new(),
+                reception: ReceptionReckoning::default(),
             }
         }
 

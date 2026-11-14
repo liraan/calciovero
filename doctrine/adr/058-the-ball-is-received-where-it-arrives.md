@@ -1,6 +1,6 @@
 # ADR-058 — The ball is received where it arrives
 
-- **Status:** accepted (implementation in progress: branch `wip/adr-058-reception`)
+- **Status:** accepted (implemented in `SIM_VERSION` 103)
 - **Date:** 2026-11-14
 - **Supersedes:** —
 - **Amends:** ADR-051 (the act "receive": its roots and where it happens), ADR-053 (the ball is touched, not carried: now also when it arrives)
@@ -35,3 +35,7 @@ Partita vera. *How do the actors recognise it?* A pass is complete when a teamma
 - **Keep the clock and fix the formula only.** Rejected: the receiver would still be judged away from the ball, and the ball would still roll on with nobody going for it.
 - **A probability of control.** Rejected: ADR-035.
 - **A threshold chosen to reach a pass completion of about 82%.** Rejected: RULES A5-bis; the completion is measured after, never targeted.
+
+## Dated notes
+
+- **2026-11-14 — implemented in `SIM_VERSION` 103.** Three things the first implementation lacked, each found by measure, none by a number chosen (RULES A5-bis). (1) Without the clock nobody but the receiver went for a pass on its way, and the game stayed in its own third: a pass on its way is now anyone's to go for (ADR-052 note, the first aim is the ball). (2) A ball is met where its path this tick passes a player below the band of the header (1 m), not only where it is at the end of the tick: a lofted pass coming down at 15 m/s crossed a receiver's reach between two ticks; and a pass won in the air tells its outcome (complete if the passer's side wins it). (3) The passer imagines the reception with the same difficulty (`ds_calculator::control::reception_difficulty`), against his teammate's first touch, which a poor reader underrates (as the shooter his own miss, `SIM_VERSION` 90). (4) No clock ends a shot either: a shot is over when it meets the woodwork or stops short of the line, and the ball is anyone's (without it a shot back into play off the post stayed a shot nobody might go for, and the match froze for the rest of the half). Measured (30 seeds 42-71, a report): goals 4.67 (own goals 1.50), shots 32.7, crosses 15.0, passes 1116, completed 90%; at 102 goals 4.8 (own goals 1.70), shots 22.8, crosses 14.5.

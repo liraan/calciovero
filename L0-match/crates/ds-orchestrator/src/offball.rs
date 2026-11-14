@@ -99,6 +99,9 @@ pub struct OffBallScene {
     pub place: Place,
     /// A loose ball he sees, if any.
     pub loose_ball: Option<Target>,
+    /// How far the nearest opponent is from that ball, cm (a fact of the
+    /// scene, not yet filtered by what he sees).
+    pub loose_rival_cm: Option<i64>,
     /// The opposing carrier, if an opponent has the ball.
     pub carrier: Option<Target>,
     /// Whether the carrier is within the duel's reach.
@@ -248,11 +251,27 @@ impl crate::GroundTruth {
                 best = (score, act);
             }
         };
+        // The first aim is the ball (ADR-052 note, 2026-11-14): a ball
+        // nobody has is worth more than any place, at any distance.
         if let (Some(t), true) = (s.loose_ball, may_leave) {
-            offer(
-                proximity(t.distance_cm) * rank(t.rank),
-                OffBallAct::GoToBall,
+            // The second one's race: his own pace (movement.json, his
+            // max speed), against the nearest opponent at the pace he believes.
+            let mv = &self.movement_balance;
+            let pace = (mv.top_speed_max_cm_per_tick - mv.top_speed_min_cm_per_tick).mul_add(
+                f64::from(l.physical.max_speed),
+                mv.top_speed_min_cm_per_tick,
             );
+            #[allow(clippy::cast_precision_loss)] // cm on a pitch
+            let first = s.loose_rival_cm.is_none_or(|rival| {
+                ds_calculator::thought::ThoughtBalance::load().race(
+                    t.distance_cm.max(0) as f64,
+                    pace,
+                    rival.max(0) as f64,
+                ) > 0.5
+            });
+            if goes_for_loose_ball(t.rank, reading, first) {
+                return OffBallAct::GoToBall;
+            }
         }
         if let Some(c) = s.carrier {
             if !keeper {
@@ -310,6 +329,25 @@ impl crate::GroundTruth {
     }
 }
 
+/// Whether a player goes for a ball nobody has.
+///
+/// ADR-052 note, 2026-11-14: the first aim of every player is the ball, and
+/// how he seeks it is his. The nearest of his side (`rank` 0) always goes,
+/// at any distance: the ball is the whole possession, worth more than any
+/// place. The next one (`rank` 1) goes too if he reads the play better than
+/// an average player (`game_reading` above the middle of its scale), so he
+/// sees that the first may not win it, and if he would get there before the
+/// nearest opponent (`first`: his own race, his pace). The others keep
+/// their place.
+#[must_use]
+pub const fn goes_for_loose_ball(rank: u32, game_reading: f64, first: bool) -> bool {
+    match rank {
+        0 => true,
+        1 => game_reading > 0.5 && first,
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -321,6 +359,7 @@ mod tests {
             actor: PlayerId::new(6, 0),
             place: Place::Outfield,
             loose_ball: None,
+            loose_rival_cm: None,
             carrier: None,
             carrier_in_reach: false,
             with_mate: None,
@@ -336,6 +375,33 @@ mod tests {
 
     fn choose(s: &OffBallScene) -> OffBallAct {
         GroundTruth::new(42, MatchId::new(1, 0)).choose_off_ball(s)
+    }
+
+    /// The first aim is the ball (ADR-052 note, 2026-11-14): the nearest of
+    /// his side goes for a loose ball however far it is (before, beyond
+    /// about 35 m he held his place) (P1).
+    #[test]
+    fn the_nearest_goes_for_a_loose_ball_at_any_distance() {
+        let far = OffBallScene {
+            loose_ball: at(6000, 0),
+            ..scene()
+        };
+        assert_eq!(choose(&far), OffBallAct::GoToBall);
+    }
+
+    /// Twin test (ADR-051 §3): two players second nearest to a loose ball,
+    /// equal but for their reading of the play: the better reader goes too,
+    /// the poorer one keeps his place.
+    #[test]
+    fn the_better_reader_goes_second_for_a_loose_ball() {
+        assert!(goes_for_loose_ball(1, 0.8, true));
+        assert!(!goes_for_loose_ball(1, 0.3, true));
+        assert!(
+            !goes_for_loose_ball(1, 0.8, false),
+            "he would not get there first"
+        );
+        assert!(goes_for_loose_ball(0, 0.0, false));
+        assert!(!goes_for_loose_ball(2, 1.0, true));
     }
 
     /// The nearest player goes for a loose ball close to him; one with two

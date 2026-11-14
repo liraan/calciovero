@@ -525,6 +525,13 @@ impl SpatialState {
         self.ball_physics.ground_friction_milli
     }
 
+    /// The air's friction on the ball, thousandths per tick: what a passer
+    /// knows of a ball in flight (`ball.json`).
+    #[must_use]
+    pub const fn air_friction_milli(&self) -> i32 {
+        self.ball_physics.air_friction_milli
+    }
+
     /// Deflects the ball in flight (ADR-048 §1): the ball is put back at the
     /// impact point and keeps flying with the reflected velocity. The
     /// tick's integration may have carried the ball past the obstacle; the

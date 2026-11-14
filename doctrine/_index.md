@@ -68,7 +68,7 @@ Modules marked *(planned)* below do not have a file yet. Their links are intenti
 | L0.10 | [`L0-match/10-ground-truth.md`](../L0-match/specs/10-ground-truth.md) | ✅ ratified | 00, L0.01, L0.03 |
 | L0.11 | [`L0-match/11-player-characteristics.md`](../L0-match/specs/11-player-characteristics.md) | 🟡 draft | 00, L0.03, L0.10, ADR-003, ADR-028 |
 
-**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (12 crates, 421 tests). See `doctrine/STRUCTURE.md` §3.
+**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (12 crates, 426 tests). See `doctrine/STRUCTURE.md` §3.
 
 ---
 
@@ -302,5 +302,6 @@ These are components that are referenced across modules but are not crates. They
 | [055](adr/055-the-gui-is-egui-behind-the-view-model.md) | The GUI is egui, behind the view model | ✅ accepted | Supersedes ADR-005 (Qt): egui/eframe in `tools/ds-gui`, built now beside the TUI; the view model contract of ADR-022 §3 unchanged; colours in a theme file. |
 | [056](adr/056-every-choice-has-a-when.md) | Every choice has a when | ✅ accepted | Play now or keep the ball for the next decision, imagined from the motion he sees; worth what his shield keeps and his reading trusts. |
 | [057](adr/057-every-characteristic-can-be-read-back.md) | Every characteristic can be read back from real football | ✅ accepted | Complete, recognisable on its own (its twin), read back with a declared source and uncertainty; the way back is an estimate; real data only from the user. Step 10 of L0 closes on it. |
+| [058](adr/058-the-ball-is-received-where-it-arrives.md) | The ball is received where it arrives | ✅ accepted | No clock: the reception happens where the ball reaches a player, its difficulty (speed, opponent within a slide) against first_touch; a pass nobody reaches is lost; a pass on its way is anyone's. |
 
-**Accepted:** 001, 003, 004, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 042, 043, 044, 045, 046, 047, 048, 049, 050, 051, 052, 053, 054, 055, 056, 057 (51). **Superseded:** 002 (by ADR-027), 005 (by ADR-055), 023 (by ADR-024). **Proposed:** none.
+**Accepted:** 001, 003, 004, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 042, 043, 044, 045, 046, 047, 048, 049, 050, 051, 052, 053, 054, 055, 056, 057, 058 (52). **Superseded:** 002 (by ADR-027), 005 (by ADR-055), 023 (by ADR-024). **Proposed:** none.
