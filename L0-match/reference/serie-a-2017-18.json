@@ -1,0 +1,115 @@
+{
+  "label": "Serie A 2017-18",
+  "matches": 380,
+  "metrics": {
+    "aerial_duels": {
+      "mean": 38.138,
+      "note": "Wyscout records a duel once for each player; the count is halved to give one per contest.",
+      "sd": 12.983
+    },
+    "clearances": {
+      "mean": 29.532,
+      "sd": 8.651
+    },
+    "corners": {
+      "mean": 10.305,
+      "sd": 3.579
+    },
+    "crosses": {
+      "mean": 33.832,
+      "note": "Wyscout counts open-play crosses only; the engine marks every kick that is a cross by its geometry, corners included. Not comparable as they stand.",
+      "sd": 8.781
+    },
+    "fouls": {
+      "mean": 25.995,
+      "sd": 6.692
+    },
+    "free_kicks": {
+      "mean": 29.453,
+      "sd": 6.812
+    },
+    "goal_kicks": {
+      "mean": 17.153,
+      "sd": 4.199
+    },
+    "goals": {
+      "mean": 2.676,
+      "sd": 1.646
+    },
+    "ground_duels": {
+      "mean": 182.626,
+      "note": "Wyscout records a duel once for each player; the count is halved to give one per contest.",
+      "sd": 27.54
+    },
+    "interceptions": {
+      "mean": 89.855,
+      "note": "Wyscout tags 'interception' on many events (any pass read and cut); the engine counts each interception as a choice. Not comparable.",
+      "sd": 13.967
+    },
+    "offsides": {
+      "mean": 4.263,
+      "sd": 2.397
+    },
+    "own_goals": {
+      "mean": 0.097,
+      "sd": 0.314
+    },
+    "passes": {
+      "mean": 887.676,
+      "sd": 122.806
+    },
+    "passes_accurate": {
+      "mean": 739.168,
+      "sd": 124.791
+    },
+    "penalties": {
+      "mean": 0.332,
+      "sd": 0.562
+    },
+    "red_cards": {
+      "mean": 0.239,
+      "sd": 0.495
+    },
+    "saves": {
+      "mean": 9.371,
+      "sd": 3.37
+    },
+    "shots": {
+      "mean": 24.597,
+      "sd": 5.458
+    },
+    "shots_on_target": {
+      "mean": 8.687,
+      "sd": 3.221
+    },
+    "stoppage_first_half_min": {
+      "mean": 1.488,
+      "note": "Wyscout: the last recorded event of the half, so a lower bound of the time played after the 45th.",
+      "sd": 1.353
+    },
+    "stoppage_second_half_min": {
+      "mean": 4.083,
+      "note": "Wyscout: the last recorded event of the half, so a lower bound of the time played after the 45th.",
+      "sd": 1.609
+    },
+    "take_ons_won": {
+      "mean": 16.026,
+      "sd": 5.666
+    },
+    "throw_ins": {
+      "mean": 42.724,
+      "sd": 8.921
+    },
+    "yellow_cards": {
+      "mean": 3.968,
+      "sd": 1.963
+    }
+  },
+  "per": "match, both teams together",
+  "source": {
+    "data": "Wyscout soccer-logs, Pappalardo, L. and Massucco, E. (2019), figshare, doi:10.6084/m9.figshare.c.4415000",
+    "licence": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+    "made_by": "tools/ds-reference (the raw data is not in the repository)",
+    "paper": "Pappalardo, L., Cintia, P., Rossi, A. et al. (2019), A public data set of spatio-temporal match events in soccer competitions, Scientific Data 6, 236, doi:10.1038/s41597-019-0247-7"
+  }
+}

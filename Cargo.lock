@@ -883,6 +883,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-reference"
+version = "0.1.0"
+dependencies = [
+ "ds-fixtures",
+ "ds-match",
+ "ds-stats",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ds-stats"
 version = "0.1.0"
 dependencies = [

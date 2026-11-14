@@ -20,6 +20,7 @@ To be filled as each row is completed: full reference, what it measures, which p
 | Reference | What it gives | Parameters |
 |---|---|---|
 | IFAB, *Laws of the Game* | distances and rules of restarts, the goal and the pitch | `laws.json` |
+| Pappalardo, L., Cintia, P., Rossi, A. et al. (2019), *A public data set of spatio-temporal match events in soccer competitions*, Scientific Data 6, 236 (doi:10.1038/s41597-019-0247-7); data: Wyscout soccer-logs on figshare (doi:10.6084/m9.figshare.c.4415000), CC BY 4.0 | the real per-match reference the engine is measured against, Serie A 2017-18, 380 matches (`L0-match/reference/serie-a-2017-18.json`, made by `tools/ds-reference`); a measurement, not a parameter | none (step 11 reads it) |
 | [to complete] | | |
 
 ## Parameter by parameter
