@@ -11,6 +11,78 @@ This project does not use semantic versioning for the docs; the version of each 
 > **Terminology note (2026-10-25):** the terms are **module** (a directory of the specification, e.g. `L0-match`), **sub-module** (a file inside a module, e.g. `04-match-engine.md`), **plugin** (a Rust crate with a `sheet.toml`, defined in ADR-012). The term **cell** is deprecated. In entries **before** this date, 'cell' means 'module', and 'module' (in the plugin sense) means 'plugin'. In entries **from** this date onwards, the new terminology is used.
 
 ---
+## [2026-11-14] — From the end of the die to an engine that thinks (summary, 2026-11-07 → 2026-11-14)
+
+A summary of a week of work, written after the fact from `git log`
+(339 commits) and `L0-match/CHANGELOG-SIM.md`, where every step is
+recorded in detail. `SIM_VERSION` went from 24 to 101 and the tests from
+about 215 to more than 400. The direction stayed the one ADR-035 set: no
+die, every outcome comes from the actors.
+
+### The doctrine
+
+- **The last dice are gone.** `resolve_shot`, `resolve_save` and
+  `resolve_pass` lost their dice (2026-11-07). The dormant ones
+  (pressure, injury, set piece) were removed, and the ground duel became
+  a meeting of two choices with four outcomes (ADR-042).
+- **The actor decides, not the engine.** ADR-043, ADR-047 (the choice is
+  recognition), ADR-049 (every off-ball act is the player's) and
+  ADR-045 (the goalkeeper is an actor like the others).
+- **The chain characteristics → relations → acts** (ADR-044) became
+  pillar 11 of `00-foundations` (v4.0). A gesture has a shape (ADR-039)
+  and a contact (ADR-037), and the geometry of a choice is salience, not
+  probability (ADR-040).
+- **Every act has its roots and can be recognised** (ADR-051). There is a
+  catalogue of acts (`L0-match/design/ACTIONS.md`), a twin test for every
+  act, and a repertoire test showing that every act happens in the
+  golden seeds.
+- **Every player thinks** (ADR-052). He imagines his options and judges
+  them with one measure, with no weights per kind of option, and he
+  reads the pitch in lines and spaces (`GLOSSARY.md` §0). Every choice
+  has a "when" (ADR-056).
+- **The ball has declared physics.** It can be deflected (ADR-048), it is
+  touched rather than carried (ADR-053), and a shot is a spread whose
+  contact decides where the ball goes (ADR-054).
+- **The statistics are derived, never adjusted** (ADR-052 note, RULES
+  A5-bis). Values in `balance/` that had been chosen by looking at
+  statistics were given new foundations.
+- **The referee is the Laws, applied objectively** (ADR-021 note).
+  Offside, fouls, cards, advantage, set pieces and Law 10 now apply to
+  every ball.
+- **Every actor has his three planes** (`00-foundations` §3).
+  `VISION.md` 0.2 describes the manager's two nested cycles.
+- **Determinism on every platform** (`SIM_VERSION` 101). The engine's
+  floating-point math no longer depends on the system's C library
+  (`ds_core::dmath`, the `clippy.toml` ban, OI-99).
+
+### Structure
+
+- **The crates were renamed and split.** All crates are now `ds-*`
+  (ADR-032). There is one responsibility per crate (ADR-041): `ds-db`
+  holds the hidden plane, `ds-orchestrator` decides, `ds-calculator`
+  applies the formulas.
+- **The repository has a concentric layout**: `doctrine/`, `L0-match/`,
+  `tools/`, `context/`, and 26 superseded working documents were
+  deleted. ADR-038 sets the deployment boundary, checked by gate B9.
+
+### Tools
+
+- **The 2D debug view and the tick record** (`ds-demo --tui`).
+- **The playable friendly** (`ds-demo --xi --block --width --sub --save
+  --load --why`).
+- **The GUI** in egui (`ds-gui`, ADR-055). It replaces Qt (ADR-005).
+
+### Process
+
+- **The working rules** are in one file, `context/RULES.md`. The
+  bookmark is `context/STATE.md`, and `context/NEW-AI-PROMPT.md` starts
+  a new AI on the repository.
+- **Two remotes**: GitHub is the primary, Codeberg is the backup, with
+  the C2 gate on Woodpecker. Releases are built by
+  `.github/workflows/release.yml`.
+- **The project name** is Calcio Vero - Deep Simulator, in the README
+  and the licences. Football Manager is the reference.
+
 ## [2026-11-07] — ADR-035: no dice in simulation
 
 The project changes its doctrine of determinism. The die that every
