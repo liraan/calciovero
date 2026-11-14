@@ -118,10 +118,10 @@ pub struct PassContext {
 pub struct ReceptionContext {
     /// The receiver.
     pub receiver: PlayerId,
-    /// Distance covered by the pass, cm.
-    pub distance_cm: i64,
-    /// Receiver freedom at launch (cm, distance to nearest opponent).
-    pub freedom_cm: i64,
+    /// The ball's speed as it reaches him, cm/tick (ADR-058).
+    pub ball_speed_cm_per_tick: f64,
+    /// How far the nearest opponent is from the ball at that moment, cm.
+    pub opponent_cm: i64,
 }
 
 /// The context of a save resolution.
@@ -233,16 +233,12 @@ pub struct ReceptionParams {
     pub speed_base_cm_per_tick: i32,
     /// Passing bonus on flight speed, cm/tick.
     pub speed_passing_bonus_cm_per_tick: i32,
-    /// Freedom reference distance, cm.
-    pub freedom_ref_cm: i64,
-    /// Max control bonus from freedom, milli.
-    pub freedom_bonus_max_milli: i64,
-    /// Distance reference for the control penalty, cm.
-    pub distance_ref_cm: i64,
-    /// Max control penalty from distance, milli.
-    pub distance_penalty_max_milli: i64,
-    /// Control threshold, milli.
-    pub control_threshold_milli: i64,
+    /// The hardest ball a kick produces, cm/tick (`kick.json`
+    /// `speed_ref_cm_per_tick`): alone, it demands a perfect first touch.
+    pub speed_ref_cm_per_tick: f64,
+    /// Within this distance of the ball an opponent puts him under pressure,
+    /// cm (`influence.json` `pressure_radius_cm`); on the ball, full pressure.
+    pub pressure_radius_cm: i64,
 }
 
 /// The context of a latency resolution (IDEA-DESIGN-011, R.1-latency).
