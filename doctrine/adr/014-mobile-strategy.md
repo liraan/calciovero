@@ -1,9 +1,9 @@
 # ADR-014 — Mobile Strategy: Native UI, No Plugins, Data Packs Only
 
-- **Status:** accepted
+- **Status:** superseded
 - **Date:** 2026-10-25
 - **Supersedes:** none
-- **Superseded by:** none
+- **Superseded by:** ADR-061
 - **Depends on:** ADR-005 (Qt binding), ADR-012 (Plugins), ADR-013 (Worlds)
 - **Blocks:** the mobile UI (Phase 3+)
 
@@ -165,3 +165,7 @@ The golden tests must run on **both x86_64 and ARM64**. A simulation that is det
 - ADR-013 — Worlds: LOD, Manifest, and Local Determinism (LOD on mobile, see §"Scope")
 - `doctrine/00-foundations.md` §4 — Determinism (golden tests)
 - `doctrine/STRUCTURE.md` §3 — Crate naming
+
+## Dated notes
+
+- **2026-11-14 — superseded by ADR-061.** The GUI is egui (ADR-055), which runs on Android; the maintainer keeps the plugins on Android and drops iOS for now; the Android build is distributed outside Google Play.
