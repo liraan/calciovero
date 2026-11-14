@@ -236,3 +236,7 @@ All decisions are ratified (D1-D7). No open questions remain. Changes require an
 - `doctrine/00-foundations.md` §5 (banned things), §7 (non-goals)
 - `doctrine/_index.md` — the L1/L2/L3 module inventory
 - `process/PROJECT-IDEA-LOG.md` §4.4 — the three technical gaps (gap A is resolved in D1)
+
+## Dated notes
+
+- **2026-11-14 — amended by ADR-060.** D4: one nation, Italy, instead of five. D5: the squad selection leaves `L2-ai` and becomes the match-day coach of L1; a new module, `L2-manager` (the manager's career and private life), is listed.
