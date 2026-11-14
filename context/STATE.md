@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `f73333c` - "docs(readme): the chosen logo, a demo from the engine's own ticks, the name everywhere"
+**Last commit verified:** `de365f3` - "docs(balance): SOURCES.md, the status and source of every calibration"
 
 ## Dove siamo (2026-11-14)
 
