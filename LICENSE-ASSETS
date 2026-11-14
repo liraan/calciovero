@@ -1,8 +1,8 @@
 # Assets License — CC BY-NC-SA 4.0
 
-**Applies to:** `mods/`, `data/`, `assets/`, `locales/`, `docs/`, `modules/`, and any other non-code content in this repository.
+**Applies to:** `assets/`, `doctrine/`, `context/`, and in `L0-match/` the `specs/`, `design/` and `balance/` folders and the changelog, the future `mods/`, `data/`, `locales/`, and any other non-code content in this repository.
 
-**Does NOT apply to:** `crates/`, executables, and build scripts — those are licensed under MIT OR Apache-2.0 (see `LICENSE-MIT` and `LICENSE-APACHE`).
+**Does NOT apply to:** `L0-match/crates/`, `tools/`, executables, and build scripts — those are licensed under MIT OR Apache-2.0 (see `LICENSE-MIT` and `LICENSE-APACHE`).
 
 ---
 
@@ -56,13 +56,13 @@ Modifications: [describe changes, if any].
 
 ## Trademarks
 
-The names "Calcio Vero" (Italian) and "Deep Simulator" (English), together or apart, and the logo are trademarks of the project team. The CC BY-NC-SA 4.0 license does not grant trademark rights. You may not use the name or logo to imply endorsement, or in a way that suggests your work is an official Calcio Vero product, without explicit permission.
+The names "Calcio Vero" (Italian) and "Deep Simulator" (English), together or apart, and the logo are trademarks of the project team. The CC BY-NC-SA 4.0 license does not grant trademark rights. You may not use the name or logo to imply endorsement, or in a way that suggests your work is an official Calcio Vero - Deep Simulator product, without explicit permission.
 
 ---
 
 ## Rationale
 
-The dual-license choice (permissive for code, non-commercial + share-alike for assets) is documented in [ADR-006](docs/adr/006-license.md), which is **accepted**. In short:
+The dual-license choice (permissive for code, non-commercial + share-alike for assets) is documented in [ADR-006](doctrine/adr/006-license.md), which is **accepted**. In short:
 
 - **Code** must be forkable and embeddable → MIT/Apache-2.0.
 - **Assets** (data packs, images, sounds, documentation) must be shareable but protected from commercial repackaging → CC BY-NC-SA 4.0.
@@ -71,6 +71,6 @@ If you need a commercial license for the assets, contact the project team — th
 
 ---
 
-**© 2026 Calcio Vero Team**
+**© 2026 Calcio Vero - Deep Simulator Team**
 
 *This file is informational. In case of conflict, the legal code linked above prevails.*
