@@ -521,6 +521,15 @@
 - **Open questions.** (a) Which words of football map to which characteristic, and with what band (the judged roots are the weak ones)? (b) Images: which formats and sizes, and how the UI shows a player without a photo (IDEA-REJ-003 is about the TUI, not the GUI)? (c) Sharing packs between users happens outside the project: does the project document a format only, or also a validator tool? (d) The real-records path needs the inverse model of ADR-057: where does it live (`ds-*` crate or external tool)?
 - **Prerequisites.** ADR-057's table filled; L1-roster's schema; L3-packs and L3-editor opened. Not before L1 (D3).
 
+### IDEA-PERCEPTION-004 — What a player sees is not exact: positions and flights read with an error
+
+- **Status:** sketch (a model decision for the maintainer; prerequisite of several distances of step 11)
+- **Source:** the calibration of 2026-11-15 (SIM 107-111, ds-reference, seeds 42-101). Two distances share one root: offsides 1.1 against 4.3 (the passer reads the line perfectly) and throw-ins 5.6 against 42.7 (the players foresee every flight and meet nearly every ball before it goes out). Every player sees every position and every ball's path exactly.
+- **What the doctrine already says.** `00-foundations` §4: "perception is derived, not noisy by hash: the error of perception is a function of the characteristics (vision, concentration), the distance, and the angle"; ADR-035 revised the noise half of ADR-029 in this sense. It is built for the gaze and the cone (ADR-033, ADR-034), not for where a player believes a man is or where a ball will come down.
+- **The recommendation.** A deterministic error of perception for positions and flights, never a die (ADR-035): the farther, the more to the side of his gaze, the less he sees well (vision) and the more tired (concentration), the larger the error of where he believes a man stands or a ball lands; its direction from the geometry of the view (the depth along his line of sight is read worse than the side, as the eye does), so the same scene gives the same misreading. The passer misjudges the line by it; the man going for a ball misjudges its drop by it.
+- **Open questions.** (a) A source for the size of the human error in judging positions and offside (the literature on assistant referees and the flash-lag effect; Oudejans et al. on offside judgements) and depth from a distance: to be read before any number. (b) Whether the error is of the position only, or also of the speed (the flight). (c) How it composes with the scan (a man seen a moment ago is where he was).
+- **Prerequisites.** The maintainer's decision; an ADR before the code (it changes how every player perceives).
+
 ## Rejected ideas (for traceability)
 
 ### IDEA-REJ-001 — Drones over the pitch
