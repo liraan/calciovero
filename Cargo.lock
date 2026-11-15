@@ -860,6 +860,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-match-api"
+version = "0.1.0"
+
+[[package]]
 name = "ds-model"
 version = "0.1.0"
 dependencies = [

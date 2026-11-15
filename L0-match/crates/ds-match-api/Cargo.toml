@@ -1,0 +1,16 @@
+[package]
+name = "ds-match-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The contract of a match plugin for Calcio Vero - Deep Simulator: the tick phases, the plugin card, the plugin (ADR-063)."
+publish = false
+
+[dependencies]
+# Deliberately empty (ADR-063 §3): like ds-testkit, the contract depends on
+# no ds-* crate, so that the core, the official plugins and the external
+# ones learn one model, the same that ds-season-api will have in L1.
+
+[lints]
+workspace = true

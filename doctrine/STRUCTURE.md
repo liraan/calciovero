@@ -151,7 +151,8 @@ The dependency order is the reading order, from the inside out:
 | `ds-calculator` | a formula from `balance/`, applied to a player and a situation |
 | `ds-db` | the vault: the players' performances, derived by key, one door |
 | `ds-orchestrator` | the decision: which actor, when, with which scene; the contact |
-| `ds-match` | the engine: the tick, the ball, the effect, the events, the save (multi-responsibility, declared: OI-94) |
+| `ds-match-api` | the contract of a match plugin: the eight phases of the tick, the plugin card, the plugin (ADR-063); depends on no `ds-*` crate |
+| `ds-match` | the engine: the tick, the ball, the effect, the events, the save; being split into a core and plugins (ADR-063, `context/plans/PLUGINS.md`) |
 
 ### Naming
 

@@ -252,6 +252,7 @@ The Rust crates of the project (`pcfm-*` until ADR-032). Each has a single respo
 - `ds-calculator` — the formulas of the gestures and of the thought
 - `ds-orchestrator` — the decision: the scene, the read, the choice, `resolve_*`
 - `ds-stats` — Plane B storage (append-only)
+- `ds-match-api` — the contract of a match plugin (ADR-063)
 - `ds-match` — the match engine (L0.04)
 - the tools: `ds-demo`, `ds-gui`, `ds-reference`, `ds-test-runner`, `ds-testkit`, `ds-fixtures`
 

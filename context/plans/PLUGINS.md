@@ -10,7 +10,7 @@
 | # | Passo | Fatto quando |
 |---|---|---|
 | 1 | **fatto (120)** — Il controllo dell'ordine nel substrato (`MatchState::tick`): due giocatori che si muovono o si contrastano nello stesso tick dipendono dall'ordine in cui sono visitati? | un test che scambia l'ordine e trova lo stesso tick record, oppure la dipendenza scritta come OI con la sua correzione (un `SIM_VERSION`) |
-| 2 | Il crate `ds-match-api`: le otto fasi del tick (`Phase`), la scheda del plugin di ADR-012 (`PluginCard`: nome, versione, cosa legge, cosa scrive, peso, testi della cronaca), il contratto `MatchPlugin`; senza dipendenze dagli altri `ds-*` | il crate compila, ha i suoi test, `ds-match` non lo usa ancora |
+| 2 | **fatto** — Il crate `ds-match-api`: le otto fasi del tick (`Phase`), la scheda del plugin di ADR-012 (`PluginCard`: nome, versione, cosa legge, cosa scrive, peso, testi della cronaca), il contratto `MatchPlugin`; senza dipendenze dagli altri `ds-*` | il crate compila, ha i suoi test, `ds-match` non lo usa ancora |
 | 3 | Il registro nel nucleo: `ds-match` elenca i suoi plugin (ancora codice interno) con la loro scheda, e il tick li chiama per fase | il golden identico; un test che il registro ha gli undici obbligatori |
 | 4 | Un plugin per volta, dal più isolato: fatica, poi percezione, arbitro, palle inattive, panchina, portiere, duelli, gesti tecnici, pensiero, corpo, pallone | per ognuno: il modulo dietro il contratto, i suoi test spostati, golden identico |
 | 5 | La cronaca fuori dal motore: `narrative.rs` legge gli eventi, non scrive nella partita | il golden identico; `ds-match` non dipende più dalla cronaca |
@@ -18,4 +18,6 @@
 
 **Passo 1 (2026-11-15):** l'unica dipendenza dall'ordine trovata nel substrato era la separazione minima dei corpi, corretta nel 120. Il passo di ogni giocatore si calcola dalla fotografia, e il pensiero senza palla legge ciò che era deciso prima del suo giro.
 
-**Il prossimo:** il passo 2.
+**Passo 2 (2026-11-15):** `L0-match/crates/ds-match-api`: `Phase` (le otto fasi, in ordine), `PluginCard` e `Weight` (la scheda di ADR-012), `MatchPlugin` (per ora solo la scheda: i metodi di fase arrivano con il primo plugin spostato, RULES D3), i nomi degli undici obbligatori e dei tre facoltativi.
+
+**Il prossimo:** il passo 3, il registro nel nucleo.
