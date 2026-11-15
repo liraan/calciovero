@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `416f58e` - "build: opt-level 1 for the dev and test profile -- the suite from over 20 minutes to 3.5"
+**Last commit verified:** `a188205` - "refactor(plugins): referee, set pieces and bench behind the contract -- ADR-063"
 
 ## Dove siamo (2026-11-14)
 
@@ -64,7 +64,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
     2. i fuorigioco, circa sei a partita, anche su chi sembrava in linea (113-114);
     3. i tiri, ancora troppi (54 contro 25, OI-100), e le rimesse, troppo poche (OI-100);
     4. una partita di coppa ai rigori: `cargo test --release -p ds-match --test extra_time -- --nocapture`.
-- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; nel passo 4 sono dietro il contratto la fatica e la percezione; il prossimo è l'arbitro.
+- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; nel passo 4 sono dietro il contratto fatica, percezione, arbitro, palle inattive e panchina; il prossimo è il portiere.
 
 ## Decisioni prese da Claude, da rivedere
 
