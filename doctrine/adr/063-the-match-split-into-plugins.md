@@ -1,12 +1,12 @@
-# ADR-063 (proposto) — La partita divisa in plugin
+# ADR-063 — The match split into plugins
 
-- **Status:** proposto, non accettato, non implementato. Aspetta il sì del maintainer dopo la partita di prova di L0.
+- **Status:** accepted (maintainer, 2026-11-15: *"si inizia"*, *"sempre in autonomia"*), to implement one plugin at a time with identical goldens
 - **Date:** 2026-11-15
 - **Closes:** OI-94
 - **Amends:** ADR-041 (lo split di `ds-match`, rinviato), ADR-012 (la scheda del plugin)
 - **Depends on:** decisione A e decisione 4 di `plans/DECISIONS-2026-11-15.md`, ADR-035, ADR-052, ADR-059
 
-*Lo scrivo in `context/plans/`, non in `doctrine/adr/`, perché il gate B6 non ammette ADR proposti fra quelli della dottrina. Accettato, va in `doctrine/adr/063-...` con il suo indice.*
+*Written in Italian as it was proposed; the decision is binding as written.*
 
 ## Contesto
 
