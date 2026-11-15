@@ -567,6 +567,25 @@ impl MatchState {
             return;
         };
         let home = |who: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == who);
+        // A ball nobody played to him (loose from a contact, deflected,
+        // cleared, bouncing) is a reception like any other (ADR-058; OI-117,
+        // SIM 130): his first touch against its speed and the nearest
+        // opponent as it reaches him. Not mastered, it runs on, slower, for
+        // whoever. Before, whoever reached it first had it at his feet,
+        // whatever its speed.
+        if pass.is_none() && self.spatial.ball_state() == crate::spatial::BallState::InFlight {
+            let params = self.reception_params(ctx);
+            let rctx = self.arrival(ctx, id, !home(id));
+            if !ctx.hidden.resolve_reception(&rctx, &params).controlled {
+                let v = self.spatial.ball_velocity();
+                self.spatial
+                    .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
+                self.spatial.deflected_by(id);
+                let retry = ctx.hidden.duel_balance().retry_ticks;
+                self.challenges.insert(id, tick + retry);
+                return;
+            }
+        }
         if let Some((Some(by), through)) = pass {
             self.pending = None;
             if home(by) == home(id) && self.offside_at_pass.contains(&id) {

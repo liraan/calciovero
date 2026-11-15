@@ -1484,6 +1484,48 @@ mod control_tests {
 }
 
 #[cfg(test)]
+mod loose_reception_tests {
+    use super::*;
+    use ds_core::rng::RngRegistry;
+    use ds_orchestrator::GroundTruth;
+
+    /// Twin test (OI-117, SIM 130): the same player, the same ball nobody
+    /// played to him, rolling to his feet; only its speed changes. Slow, he
+    /// controls it; at the speed of the hardest ball (ADR-058) it gets
+    /// away from his touch and runs on.
+    #[test]
+    fn a_loose_ball_is_received_like_a_pass() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = GroundTruth::new(42, m.id);
+        let mut rng = RngRegistry::new(42);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            rng: &mut rng,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let away = m.away.players[5].id;
+        let at = (2000, 1500);
+        let roll = |s: &mut MatchState, ctx: &mut MatchContext<'_>, speed: i16| {
+            s.spatial.set_position(away, at);
+            s.spatial.set_carrier(None);
+            s.spatial
+                .set_ball_in_flight((at.0 - i32::from(speed), at.1, 0), (speed, 0, 0));
+            s.ball_from = s.spatial.ball_3d();
+            s.spatial.advance_ball();
+            s.control_loose_ball(ctx, 0);
+            s.spatial.carrier()
+        };
+        let mut slow = MatchState::new(&m);
+        assert_eq!(roll(&mut slow, &mut ctx, 20), Some(away), "slow: his");
+        let mut fast = MatchState::new(&m);
+        assert_eq!(roll(&mut fast, &mut ctx, 340), None, "fast: it gets away");
+    }
+}
+
+#[cfg(test)]
 mod memory_tests {
     use super::*;
 
