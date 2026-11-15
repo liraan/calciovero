@@ -501,6 +501,9 @@ pub struct BallBalance {
     pub ground_friction_milli: i32,
     /// A grounded ball slower than this comes to rest, cm/tick.
     pub stop_threshold_cm_per_tick: i16,
+    /// The share of its downward speed a ball keeps upwards when it lands,
+    /// thousandths (the FIFA vertical rebound, SIM 128).
+    pub restitution_milli: i32,
 }
 
 impl Default for BallBalance {

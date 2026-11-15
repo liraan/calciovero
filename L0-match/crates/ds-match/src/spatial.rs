@@ -599,7 +599,7 @@ impl SpatialState {
                 z += vz;
                 if z < 0 {
                     z = 0;
-                    vz = 0;
+                    vz = Self::bounce(&p, vz);
                 }
             }
             // Within his height: coming down to his head or lower, or on the
@@ -678,6 +678,21 @@ impl SpatialState {
         }
     }
 
+    /// The ball meets the grass coming down at `vz` (negative, cm/tick) and
+    /// leaves it upwards at `restitution_milli` of that speed (SIM 128,
+    /// the FIFA vertical rebound); a bounce lower than one tick of gravity
+    /// is no bounce: it rolls. The horizontal speed is kept (no source yet
+    /// for what the grass takes at the bounce, `ball.json`).
+    #[must_use]
+    pub fn bounce(p: &crate::balance::BallBalance, vz: i32) -> i32 {
+        let up = -vz * p.restitution_milli / 1000;
+        if up > i32::from(p.gravity_cm_per_tick2) {
+            up
+        } else {
+            0
+        }
+    }
+
     /// One tick of the ball's physics, pure: gravity, the friction of the air
     /// or of the grass, and the stop threshold. `advance_ball` applies it,
     /// and whoever imagines where a ball goes ([`Self::ball_at_line`]) uses
@@ -703,7 +718,7 @@ impl SpatialState {
         z = z.saturating_add(i32::from(vz));
         if z < 0 {
             z = 0;
-            vz = 0;
+            vz = i16::try_from(Self::bounce(p, i32::from(vz))).unwrap_or(0);
         }
         let stopped = z == 0
             && vx.abs() <= p.stop_threshold_cm_per_tick
@@ -1854,6 +1869,43 @@ mod tests {
         s.advance_ball();
         assert_eq!(s.ball_3d(), before);
         assert_eq!(s.ball_state(), BallState::Possessed);
+    }
+
+    /// Twin test (SIM 128, OI-100): the same ball dropped from 2 m on the
+    /// same grass, with and without the bounce. With it, it leaves the
+    /// grass at the speed ratio of FIFA's good natural pitch (the middle of
+    /// 0.60-1.00 m from 2.00 m, 0.632) and comes back up; with no
+    /// restitution it stays on the grass. (The rebound's height is lower
+    /// than FIFA's 0.80 m because the tick of 0.1 s loses part of the fall
+    /// at the landing: the ratio is the source's, the step is the engine's.)
+    #[test]
+    fn a_ball_dropped_from_two_metres_bounces_as_on_a_good_pitch() {
+        let drop = |p: &crate::balance::BallBalance| {
+            let (mut pos, mut vel) = ((0, 0, 200), (0_i16, 0_i16, 0_i16));
+            let (mut impact, mut away, mut top) = (0, 0, 0);
+            for _ in 0..60 {
+                let falling = vel.2 - p.gravity_cm_per_tick2;
+                let (next, v, _) = SpatialState::ball_step(p, pos, vel);
+                if next.2 == 0 && impact == 0 {
+                    (impact, away) = (-i32::from(falling), i32::from(v.2));
+                }
+                if impact > 0 {
+                    top = top.max(next.2);
+                }
+                (pos, vel) = (next, v);
+            }
+            (impact, away, top)
+        };
+        let p = crate::balance::BallBalance::load();
+        let (impact, away, top) = drop(&p);
+        assert_eq!(away, impact * p.restitution_milli / 1000);
+        assert!(top > 0, "it comes back up");
+        let dead = crate::balance::BallBalance {
+            restitution_milli: 0,
+            ..p
+        };
+        let (_, away, top) = drop(&dead);
+        assert_eq!((away, top), (0, 0));
     }
 
     #[test]

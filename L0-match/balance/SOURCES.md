@@ -9,7 +9,7 @@
 - **explained, no source**: the file explains what it does, without a source or a derivation.
 - **undocumented**: the file says nothing about this parameter. These come first in the work to do.
 
-**Today:** 209 parameters in 21 files: 23 sourced, 5 derived, 5 arbitrary and declared, 82 explained without a source, 94 undocumented (2026-11-15: the four parameters of the old choice formula removed, SIM 126, OI-85; the block's width measured on tracking data, SIM 127, OI-100).
+**Today:** 210 parameters in 21 files: 23 sourced, 6 derived, 5 arbitrary and declared, 82 explained without a source, 94 undocumented (2026-11-15: the four parameters of the old choice formula removed, SIM 126, OI-85; the block's width measured on tracking data, SIM 127, OI-100; the bounce derived from FIFA's vertical rebound, SIM 128).
 
 **The rule from now on.** A change to a number in `balance/` updates its row here in the same commit, with the source (author, year, title, and the page or table) or the derivation, or the word *arbitrary*. A number chosen by looking at the statistic it produces is never a source. This file was generated from the JSON files on 2026-11-14 (the classification is read from their text and is a first pass: a row marked sourced still needs its full reference written here when the file gives only a name).
 
@@ -30,6 +30,7 @@ To be filled as each row is completed: full reference, what it measures, which p
 | Craig, C. M., Berton, E., Rao, G., Fernandez, L. & Bootsma, R. J. (2006), *Judging where a ball will go: the case of curved free kicks in football*, Naturwissenschaften 93, 97; Craig, C. M., Goulon, C., Berton, E., Rao, G., Fernandez, L. & Bootsma, R. J. (2009), *Optic variables used to judge future ball arrival position in expert and novice soccer players*, Atten. Percept. Psychophys. 71, 515 (abstracts) | the errors in judging where a ball goes come from its spin | none (the engine has no spin) |
 | Pappalardo, L., Cintia, P., Rossi, A. et al. (2019), *A public data set of spatio-temporal match events in soccer competitions*, Scientific Data 6, 236 (doi:10.1038/s41597-019-0247-7); data: Wyscout soccer-logs on figshare (doi:10.6084/m9.figshare.c.4415000), CC BY 4.0 | the real per-match reference the engine is measured against, Serie A 2017-18, 380 matches (`L0-match/reference/serie-a-2017-18.json`, made by `tools/ds-reference`); a measurement, not a parameter | none (step 11 reads it) |
 | Metrica Sports, *Sample Data* (github.com/metrica-sports/sample-data, read 2026-11-15), Sample Games 1 and 2: anonymised tracking, 25 frames a second, with synchronised events; the source asks to be acknowledged | the real width of a side with and without the ball, and how far it shifts to the ball's side | `block.json` `width_in_possession_cm`, `width_out_of_possession_cm`, `ball_side_shift_milli` |
+| FIFA, *Natural-Pitch Rating System* (Natural Playing Surfaces Quality Programme, May 2022, version 1.0; digitalhub.fifa.com, read 2026-11-15), the rating table: vertical ball rebound, 'excellent quality' 0.60-1.00 m; ball roll, 'excellent quality' 4.0-10.0 m. FIFA, *Quality Programme for Football Turf, Test Manual I: Test Methods* (2024), the vertical ball rebound (release from 2.00 +/- 0.01 m), the ball roll (a ramp 1,000 +/- 5 mm high at 45 degrees) and the angle ball rebound (30 +/- 2 degrees at 50 +/- 2 km/h; its requirement is in Test Manual II, not read) | how a ball bounces and rolls on a good pitch | `ball.json` `restitution_milli`; `ground_friction_milli` can be checked against the ball roll |
 | [to complete] | | |
 
 ## Parameter by parameter
@@ -42,6 +43,7 @@ To be filled as each row is completed: full reference, what it measures, which p
 | `air_friction_milli` | 990 | undocumented | — |
 | `ground_friction_milli` | 957 | undocumented | — |
 | `stop_threshold_cm_per_tick` | 1 | undocumented | — |
+| `restitution_milli` | 632 | derived | FIFA Natural-Pitch Rating System, vertical ball rebound, 'excellent' band 0.60-1.00 m from a 2.00 m drop: sqrt(0.80 / 2.00) = 0.632 (SIM 128, OI-100); the horizontal loss at the bounce waits for FIFA Test Manual II |
 
 ### `block.json`
 
