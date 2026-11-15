@@ -436,6 +436,38 @@ mod tests {
         assert_eq!(b.contact(defender, b.carrier_force(&weak, 0.6)), Some(true));
     }
 
+    /// Twin test (ADR-057, tackling): two defenders identical but for
+    /// their tackling, the same carrier; the better tackler goes in with
+    /// more force, and wins the ball the poorer one cannot.
+    #[test]
+    fn the_better_tackler_wins_what_the_poorer_cannot() {
+        let b = DuelBalance::load();
+        let carrier = b.carrier_force(&AVERAGE, 0.5);
+        let (good, poor) = (
+            b.defender_force(&AVERAGE, 0.95, false),
+            b.defender_force(&AVERAGE, 0.05, false),
+        );
+        assert!(good > poor);
+        assert_ne!(b.contact(good, carrier), b.contact(poor, carrier));
+    }
+
+    /// Twin test (ADR-057, body control): two carriers identical but for
+    /// their body control, the same defender; the steadier one holds off
+    /// the challenge with more force.
+    #[test]
+    fn the_steadier_body_holds_off_the_challenge() {
+        let b = DuelBalance::load();
+        let steady = DuelBody {
+            body_control: 0.95,
+            ..AVERAGE
+        };
+        let unsteady = DuelBody {
+            body_control: 0.05,
+            ..AVERAGE
+        };
+        assert!(b.carrier_force(&steady, 0.5) > b.carrier_force(&unsteady, 0.5));
+    }
+
     /// Twin test (ADR-051 §3): two players identical but for heading; the
     /// better header wins the ball in the air.
     #[test]

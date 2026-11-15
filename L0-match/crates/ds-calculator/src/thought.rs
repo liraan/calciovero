@@ -288,6 +288,19 @@ pub fn lob_chance(
 
 #[cfg(test)]
 mod tests {
+
+    /// Twin test (ADR-057, risk management): the same uncertain option, a
+    /// space worth more if it comes off, the opponents' if it does not; the
+    /// bolder player values it more than the cautious one, and a sure
+    /// option the same.
+    #[test]
+    fn the_bold_player_values_the_gamble_more() {
+        let gamble = |appetite| ThoughtBalance::expected(0.5, 3.0, 2.0, appetite);
+        assert!(gamble(0.9) > gamble(0.1));
+        let sure = |appetite| ThoughtBalance::expected(1.0, 3.0, 2.0, appetite);
+        assert!((sure(0.9) - sure(0.1)).abs() < 1e-12);
+    }
+
     use super::*;
 
     /// A keeper far off his line can be lobbed; one on his line cannot

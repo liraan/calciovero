@@ -1569,6 +1569,64 @@ mod choice_filter_tests {
         (PlayerId::new(weak.0, 0), PlayerId::new(strong.0, 0))
     }
 
+    /// Twin test (ADR-057, goalkeeping): the same shots at the same keeper's
+    /// reach; the best hands hold some that the poorest only parry, and
+    /// never the other way round.
+    #[test]
+    fn the_better_hands_hold_what_the_poorer_parry() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (weak, strong) = ends(&mut g, |l| l.technical.goalkeeping);
+        let mut held = |k: PlayerId, offset: f64| {
+            g.resolve_save(&SaveContext {
+                goalkeeper: k,
+                point: (10500, 3400, 100),
+                offset_cm: offset,
+                reach_cm: 95.0,
+                flight_ticks: 10.0,
+                ball_speed_cm_per_tick: 250.0,
+            })
+            .held
+        };
+        let mut only_strong = false;
+        for o in 0..95 {
+            let (w, st) = (held(weak, f64::from(o)), held(strong, f64::from(o)));
+            assert!(
+                !w || st,
+                "at {o} cm the poorer hands held and the better did not"
+            );
+            only_strong |= st && !w;
+        }
+        assert!(only_strong, "the better hands hold something more");
+    }
+
+    /// Twin test (ADR-057, passing): the same long pass on the ground,
+    /// struck at the worst moment of the stride; the best passer strays
+    /// less from his line than the poorest.
+    #[test]
+    fn the_better_passer_strays_less_from_his_line() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (weak, strong) = ends(&mut g, |l| l.technical.passing);
+        let mut drift = |p: PlayerId| {
+            g.resolve_pass(
+                &PassContext {
+                    passer: p,
+                    from: (500, 3400, 0),
+                    to: (3500, 3400, 0),
+                    ground_friction_milli: 957,
+                    air_friction_milli: 990,
+                    gait: 0.0,
+                    lofted: None,
+                    throw: false,
+                },
+                &crate::reception_tests::params(),
+            )
+            .initial_velocity
+            .1
+            .abs()
+        };
+        assert!(drift(strong) < drift(weak));
+    }
+
     /// Twin test (plan L0-CLOSE 10b, creativity): among players who read
     /// the game alike, the least creative does not notice the through ball
     /// and plays the obvious pass; the most creative sees it and plays it.

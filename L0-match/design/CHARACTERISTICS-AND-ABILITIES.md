@@ -184,32 +184,32 @@ one says so. Reading back is an estimate (Plane C), never an extraction.
 
 | Characteristic | Acts that read it | Twin test | The real datum that reveals it | Uncertainty |
 |---|---|---|---|---|
-| `explosive_force` | Run, sprint; Jump; Dribble past a man; Long pass, switch, through ball | — | his acceleration over the first metres of a sprint, from tracking data; no source read yet | measured |
-| `max_speed` | Run, sprint | — | his top speed in the match, from tracking data; no source read yet | measured |
+| `explosive_force` | Run, sprint; Jump; Dribble past a man; Long pass, switch, through ball | `the_explosive_twin_kicks_harder`, `the_explosive_twin_dives_farther` | his acceleration over the first metres of a sprint, from tracking data; no source read yet | measured |
+| `max_speed` | Run, sprint | `the_fast_twin_wins_the_race` | his top speed in the match, from tracking data; no source read yet | measured |
 | `injury_proneness` | none yet (its consumer is in L1: OI-110) | — | his injuries per thousand hours played, from the club records (UEFA ECIS, Ekstrand et al.); no source read yet | measured |
 | `reactivity` | Intercept; Block a shot or pass; Get set; Dive, stop the shot | `the_reactive_twin_reaches_farther` | the time from a cue to his first movement (a keeper's reaction to a shot), from video or tracking; no source read yet | measured |
-| `maximal_force` | Shield; Challenge, tackle; Aerial duel (defend) | — | the duels he wins against the body, from event data with the opponent's weight; no source read yet | measured |
-| `body_control` | Turn, change direction; Stop, decelerate; Receive, control; Dribble past a man | — | his deceleration and the duels he stays on his feet in, from tracking and event data; no source read yet | measured |
+| `maximal_force` | Shield; Challenge, tackle; Aerial duel (defend) | `the_strong_twin_shields_the_ball`, `the_strong_twin_keeps_the_ball` | the duels he wins against the body, from event data with the opponent's weight; no source read yet | measured |
+| `body_control` | Turn, change direction; Stop, decelerate; Receive, control; Dribble past a man | `the_steadier_body_holds_off_the_challenge` | his deceleration and the duels he stays on his feet in, from tracking and event data; no source read yet | measured |
 | `endurance` | Endure the 90 minutes | `the_enduring_twin_tires_less` | the decay of his running from the first to the last quarter hour, from tracking data; no source read yet | measured |
 | `joint_mobility` | Turn, change direction; Jump; Dribble past a man; Dive, stop the shot | `the_mobile_player_turns_quicker` | the time and the speed kept in a turn, from tracking data; no source read yet | measured |
-| `finishing` | Shoot; Free kick, penalty | — | his goals against the chance of his shots (expected goals), from event data; no source read yet | counted |
-| `passing` | Short pass; Long pass, switch, through ball; Cross; Clear | — | his passes completed against their difficulty (expected completion), from event data with freeze frames; no source read yet | counted |
-| `first_touch` | Receive, control; Shield; Challenge, tackle; Block a shot or pass | — | the receptions he keeps, against the speed of the ball and the pressure, from tracking and event data; no source read yet | counted |
-| `tackling` | Challenge, tackle | — | his tackles won per attempt, from event data; no source read yet | counted |
+| `finishing` | Shoot; Free kick, penalty | `the_better_shooter_and_the_good_foot_miss_by_less` | his goals against the chance of his shots (expected goals), from event data; no source read yet | counted |
+| `passing` | Short pass; Long pass, switch, through ball; Cross; Clear | `the_better_passer_strays_less_from_his_line` | his passes completed against their difficulty (expected completion), from event data with freeze frames; no source read yet | counted |
+| `first_touch` | Receive, control; Shield; Challenge, tackle; Block a shot or pass | `the_better_first_touch_keeps_the_ball_closer` | the receptions he keeps, against the speed of the ball and the pressure, from tracking and event data; no source read yet | counted |
+| `tackling` | Challenge, tackle | `the_better_tackler_wins_what_the_poorer_cannot` | his tackles won per attempt, from event data; no source read yet | counted |
 | `heading` | Head (attack); Aerial duel (defend) | `the_better_header_wins_in_the_air` | his headers on target and aerial duels won, from event data; no source read yet | counted |
 | `dribbling` | Carry; Dribble past a man | `the_dribbler_twin_beats_his_man` | his take-ons completed per attempt, from event data; no source read yet | counted |
-| `goalkeeping` | Catch or parry | — | his saves against the chance of the shots faced (post-shot expected goals), from event data; no source read yet | counted |
-| `left_foot` | — | — | the share and the quality of his actions with the left foot, from event data with the body part; no source read yet | counted |
-| `right_foot` | — | — | the share and the quality of his actions with the right foot, from event data with the body part; no source read yet | counted |
+| `goalkeeping` | Catch or parry | `the_better_hands_hold_what_the_poorer_parry` | his saves against the chance of the shots faced (post-shot expected goals), from event data; no source read yet | counted |
+| `left_foot` | Shoot; every pass and cross, kicked with that foot | `the_better_shooter_and_the_good_foot_miss_by_less` | the share and the quality of his actions with the left foot, from event data with the body part; no source read yet | counted |
+| `right_foot` | Shoot; every pass and cross, kicked with that foot | `the_better_shooter_and_the_good_foot_miss_by_less` | the share and the quality of his actions with the right foot, from event data with the body part; no source read yet | counted |
 | `aggressiveness` | Press; Challenge, tackle | `the_aggressive_twin_slides` | the duels he goes into and how (slides, fouls), from event data; no source read yet | judged |
 | `emotional_control` | — | `the_hothead_twin_fouls` | his fouls and cards in contact, against the contacts he goes into, from event data; no source read yet | judged |
 | `work_rate` | Press; Cover, recovery run | `the_generous_player_runs_more_for_the_team` | his running without the ball, from tracking data; no source read yet | judged |
 | `discipline` | Hold the place | `the_more_disciplined_follows_the_coachs_shape`, `the_disciplined_player_keeps_his_place` | how far he keeps the place of his team's shape, from tracking data; no source read yet | judged |
 | `courage` | Head (attack); Block a shot or pass; Come out | `the_braver_goes_up_against_the_heavier_man` | the high balls he contests against heavier men, from event data with the players' weights; no source read yet | judged |
-| `composure` | Shoot; Free kick, penalty | — | his finishing with a defender close against without, from event data with freeze frames; no source read yet | judged |
+| `composure` | Shoot; Free kick, penalty | `the_calm_kicker_misses_less_under_pressure` | his finishing with a defender close against without, from event data with freeze frames; no source read yet | judged |
 | `game_reading` | Scan, look around; Read the play; Short pass; Long pass, switch, through ball | `the_poorer_reader_underrates_his_miss` | where he plays the ball against the best option on the pitch, from tracking and event data; no source read yet | judged |
 | `decision_making` | Decide; Offer for a pass; Come out; Claim a cross | `the_unfocused_player_decides_slower_when_tired` | how long he takes to play and how often the choice was the better one, from tracking; no source read yet | judged |
-| `risk_management` | — | — | how often he plays the risky option, against its outcome, from event data; no source read yet | judged |
+| `risk_management` | Decide (the worth of an uncertain option, `ThoughtBalance::expected`); the carrier's answer to a challenge | `the_bold_player_values_the_gamble_more` | how often he plays the risky option, against its outcome, from event data; no source read yet | judged |
 | `vision` | Scan, look around; Short pass | `the_player_with_vision_looks_around_more` | how often he looks around before receiving (Jordet, Bloomfield and Heijmerikx 2013; McGuckian et al. 2018), from video | judged |
 | `anticipation` | — | `the_anticipating_player_imagines_farther` | how early he moves to where the ball will be, from tracking data; no source read yet | judged |
 | `creativity` | — | `the_creative_player_sees_the_through_ball` | the passes he plays that few would see (line-breaking, through balls), from event data; no source read yet | judged |

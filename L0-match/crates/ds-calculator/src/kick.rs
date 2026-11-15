@@ -171,8 +171,14 @@ mod tests {
         assert!(b.error_rad(0.7, 0.9, 0.35, 0.0) < b.error_rad(0.7, 0.2, 0.35, 0.0));
         assert!(b.error_rad(0.7, 0.8, 0.35, 0.0) < b.error_rad(0.7, 0.8, 0.85, 0.0));
         assert!(b.error_rad(0.7, 0.8, 0.35, 0.0) < b.error_rad(0.7, 0.8, 0.35, 1.0));
-        // The twin of composure (ADR-057): under the same pressure the calm
-        // kicker misses less than the nervous one; middling, as before.
+    }
+
+    /// The twin of composure (ADR-057, OI-109): under the same pressure
+    /// the calm kicker misses less than the nervous one; middling, as
+    /// before; without pressure composure changes nothing.
+    #[test]
+    fn the_calm_kicker_misses_less_under_pressure() {
+        let b = KickBalance::load();
         let calm = b.error_rad_composed(0.7, 0.8, 0.35, 1.0, 0.9);
         let nervous = b.error_rad_composed(0.7, 0.8, 0.35, 1.0, 0.1);
         assert!(calm < nervous);
