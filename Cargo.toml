@@ -17,6 +17,7 @@ members = [
     "tools/ds-reference",
     "L0-match/crates/ds-calculator",
     "L0-match/crates/ds-match-api",
+    "L0-match/crates/ds-narrative",
 ]
 
 [workspace.package]
@@ -42,6 +43,7 @@ ds-testkit = { path = "tools/ds-testkit", version = "0.1.0" }
 ds-fixtures = { path = "tools/ds-fixtures", version = "0.1.0" }
 ds-calculator = { path = "L0-match/crates/ds-calculator", version = "0.1.0" }
 ds-match-api = { path = "L0-match/crates/ds-match-api", version = "0.1.0" }
+ds-narrative = { path = "L0-match/crates/ds-narrative", version = "0.1.0" }
 # RNG
 rand_chacha = "0.9"
 rand_core = "0.9"

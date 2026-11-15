@@ -853,6 +853,7 @@ dependencies = [
  "ds-fixtures",
  "ds-match-api",
  "ds-model",
+ "ds-narrative",
  "ds-orchestrator",
  "ds-stats",
  "serde",
@@ -872,6 +873,17 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "ds-narrative"
+version = "0.1.0"
+dependencies = [
+ "ds-core",
+ "ds-model",
+ "ds-stats",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

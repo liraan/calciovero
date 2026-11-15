@@ -1,0 +1,18 @@
+[package]
+name = "ds-narrative"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The commentary of Calcio Vero - Deep Simulator: the events told as a story, outside the engine (ADR-063)."
+publish = false
+
+[dependencies]
+ds-core.workspace = true
+ds-model.workspace = true
+ds-stats.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

@@ -13,7 +13,7 @@
 | 2 | **fatto** — Il crate `ds-match-api`: le otto fasi del tick (`Phase`), la scheda del plugin di ADR-012 (`PluginCard`: nome, versione, cosa legge, cosa scrive, peso, testi della cronaca), il contratto `MatchPlugin`; senza dipendenze dagli altri `ds-*` | il crate compila, ha i suoi test, `ds-match` non lo usa ancora |
 | 3 | **le schede fatte; la chiamata per fase arriva con il passo 4** — Il registro nel nucleo: `ds-match` elenca i suoi plugin (ancora codice interno) con la loro scheda, e il tick li chiama per fase | il golden identico; un test che il registro ha gli undici obbligatori |
 | 4 | **fatto** — Un plugin per volta, dal più isolato: fatica, poi percezione, arbitro, palle inattive, panchina, portiere, duelli, gesti tecnici, pensiero, corpo, pallone | per ognuno: il modulo dietro il contratto, i suoi test spostati, golden identico |
-| 5 | La cronaca fuori dal motore: `narrative.rs` legge gli eventi, non scrive nella partita | il golden identico; `ds-match` non dipende più dalla cronaca |
+| 5 | **fatto** — La cronaca fuori dal motore: `narrative.rs` legge gli eventi, non scrive nella partita | il golden identico; `ds-match` non dipende più dalla cronaca |
 | 6 | I tre plugin che si spengono (psicologia, ambiente, colpi): la scheda dichiara le letture facoltative, il validatore le controlla (decisione B) | spento ognuno, la partita gira e i test lo provano |
 
 **Passo 1 (2026-11-15):** l'unica dipendenza dall'ordine trovata nel substrato era la separazione minima dei corpi, corretta nel 120. Il passo di ogni giocatore si calcola dalla fotografia, e il pensiero senza palla legge ciò che era deciso prima del suo giro.
@@ -30,4 +30,6 @@
 
 **Passo 4, completo (2026-11-15):** gli undici obbligatori sono moduli di `ds-match/src/plugins/`, ognuno con il suo tipo e la sua scheda: pallone, corpo, percezione, pensiero, gesti tecnici, duelli, portiere, arbitro, palle inattive, panchina, fatica. Un test (`every_mandatory_plugin_is_behind_the_contract`) controlla che siano gli undici del contratto. `state.rs` è sceso da 4.074 a circa 1.585 righe: resta il nucleo (orologio, stato, eventi, risultato) e un `prelude` che i plugin condividono. Il corpo ha la sua scheda, ma il movimento resta in `spatial.rs`, perché agisce sullo stato spaziale. Golden identico.
 
-**Il prossimo:** il passo 5, la cronaca fuori dal motore.
+**Passo 5 (2026-11-15):** la cronaca è il crate `ds-narrative`, che dipende solo da `ds-core`, `ds-model` e `ds-stats`. In `ds-match` resta ciò che la unisce al tick record (`NarratedTick`, `narrate_ticks`), e `ds_match::narrate` è lo stesso di prima. Golden identico.
+
+**Il prossimo:** il passo 6, i tre plugin che si spengono (psicologia, ambiente, colpi).

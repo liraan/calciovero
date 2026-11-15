@@ -152,7 +152,8 @@ The dependency order is the reading order, from the inside out:
 | `ds-db` | the vault: the players' performances, derived by key, one door |
 | `ds-orchestrator` | the decision: which actor, when, with which scene; the contact |
 | `ds-match-api` | the contract of a match plugin: the eight phases of the tick, the plugin card, the plugin (ADR-063); depends on no `ds-*` crate |
-| `ds-match` | the engine: the tick, the ball, the effect, the events, the save; being split into a core and plugins (ADR-063, `context/plans/PLUGINS.md`) |
+| `ds-match` | the engine: the core (the tick, the state, the events, the save) and its plugins in `src/plugins/` (ADR-063, `context/plans/PLUGINS.md`) |
+| `ds-narrative` | the commentary: the events told as a story, after them; the engine does not depend on its texts (ADR-063) |
 
 ### Naming
 

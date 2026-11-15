@@ -6,7 +6,7 @@
 
 How the crates of L0 work together, how a match flows through them, and the two patterns that hold (the simulation/rendering split, the testkit contract). The architectural counterpart of [`doctrine/STRUCTURE.md`](../../doctrine/STRUCTURE.md); the reading path is [`CODE_TOUR.md`](CODE_TOUR.md).
 
-## 1. The fourteen crates
+## 1. The fifteen crates
 
 | Crate | Role | Depends on |
 |---|---|---|
@@ -16,6 +16,7 @@ How the crates of L0 work together, how a match flows through them, and the two 
 | `ds-calculator` | the formulas of the gestures and of the thought, each reading its `balance/` file | `ds-core` |
 | `ds-orchestrator` | the decision: the scene a player perceives, how he reads it, what he chooses; the `resolve_*` functions | `ds-core`, `ds-model`, `ds-db`, `ds-calculator` |
 | `ds-stats` | Plane B: `MatchEvent`, the append-only `EventChain` | `ds-core`, `ds-model` |
+| `ds-narrative` | the commentary, the events told as a story, outside the engine (ADR-063) | `ds-core`, `ds-model`, `ds-stats` |
 | `ds-match-api` | the contract of a match plugin: the eight tick phases, the plugin card, the plugin (ADR-063) | — |
 | `ds-match` | the match engine: tick, movement, perception, Laws, events, save, replay, record, commentary | `ds-core`, `ds-model`, `ds-calculator`, `ds-orchestrator`, `ds-stats` |
 | `ds-fixtures` | the test squads | `ds-core`, `ds-model` |
