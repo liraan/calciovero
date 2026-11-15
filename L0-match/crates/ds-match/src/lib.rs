@@ -34,6 +34,7 @@ mod fact;
 pub mod narrative;
 pub mod perception;
 pub mod record;
+pub mod registry;
 pub mod result;
 pub mod rules;
 pub mod save;

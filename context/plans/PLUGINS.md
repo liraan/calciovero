@@ -11,7 +11,7 @@
 |---|---|---|
 | 1 | **fatto (120)** — Il controllo dell'ordine nel substrato (`MatchState::tick`): due giocatori che si muovono o si contrastano nello stesso tick dipendono dall'ordine in cui sono visitati? | un test che scambia l'ordine e trova lo stesso tick record, oppure la dipendenza scritta come OI con la sua correzione (un `SIM_VERSION`) |
 | 2 | **fatto** — Il crate `ds-match-api`: le otto fasi del tick (`Phase`), la scheda del plugin di ADR-012 (`PluginCard`: nome, versione, cosa legge, cosa scrive, peso, testi della cronaca), il contratto `MatchPlugin`; senza dipendenze dagli altri `ds-*` | il crate compila, ha i suoi test, `ds-match` non lo usa ancora |
-| 3 | Il registro nel nucleo: `ds-match` elenca i suoi plugin (ancora codice interno) con la loro scheda, e il tick li chiama per fase | il golden identico; un test che il registro ha gli undici obbligatori |
+| 3 | **le schede fatte; la chiamata per fase arriva con il passo 4** — Il registro nel nucleo: `ds-match` elenca i suoi plugin (ancora codice interno) con la loro scheda, e il tick li chiama per fase | il golden identico; un test che il registro ha gli undici obbligatori |
 | 4 | Un plugin per volta, dal più isolato: fatica, poi percezione, arbitro, palle inattive, panchina, portiere, duelli, gesti tecnici, pensiero, corpo, pallone | per ognuno: il modulo dietro il contratto, i suoi test spostati, golden identico |
 | 5 | La cronaca fuori dal motore: `narrative.rs` legge gli eventi, non scrive nella partita | il golden identico; `ds-match` non dipende più dalla cronaca |
 | 6 | I tre plugin che si spengono (psicologia, ambiente, colpi): la scheda dichiara le letture facoltative, il validatore le controlla (decisione B) | spento ognuno, la partita gira e i test lo provano |
@@ -20,4 +20,6 @@
 
 **Passo 2 (2026-11-15):** `L0-match/crates/ds-match-api`: `Phase` (le otto fasi, in ordine), `PluginCard` e `Weight` (la scheda di ADR-012), `MatchPlugin` (per ora solo la scheda: i metodi di fase arrivano con il primo plugin spostato, RULES D3), i nomi degli undici obbligatori e dei tre facoltativi.
 
-**Il prossimo:** il passo 3, il registro nel nucleo.
+**Passo 3 (2026-11-15):** `ds-match/src/registry.rs` tiene le schede degli undici obbligatori, lette dal codice di oggi (le fasi, cosa leggono e scrivono, i testi della cronaca), con un test che sono gli undici del contratto. Il tick le chiamerà per fase quando il primo plugin sarà dietro il contratto: un metodo entra solo con il suo consumatore (RULES D3).
+
+**Il prossimo:** il passo 4, il primo plugin, la fatica (il più isolato: legge le velocità, scrive la fatica dei corpi).

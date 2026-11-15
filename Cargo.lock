@@ -851,6 +851,7 @@ dependencies = [
  "ds-calculator",
  "ds-core",
  "ds-fixtures",
+ "ds-match-api",
  "ds-model",
  "ds-orchestrator",
  "ds-stats",

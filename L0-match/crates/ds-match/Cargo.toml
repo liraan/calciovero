@@ -14,6 +14,7 @@ ds-core.workspace = true
 ds-model.workspace = true
 ds-orchestrator.workspace = true
 ds-calculator.workspace = true
+ds-match-api.workspace = true
 ds-stats.workspace = true
 serde.workspace = true
 serde_json.workspace = true
