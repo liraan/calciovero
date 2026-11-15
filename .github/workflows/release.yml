@@ -97,7 +97,7 @@ jobs:
             echo "What changed in the engine: \`L0-match/CHANGELOG-SIM.md\`."
           } > notes.md
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.TAG }}
           target_commitish: ${{ github.sha }}
