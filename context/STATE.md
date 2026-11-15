@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `c38eb1b` - "feat(thought): the choice is the best option the player sees -- ADR-052, SIM_VERSION 126"
+**Last commit verified:** `8ab25c0` - "docs(state): bookmark after SIM 126, the choice of ADR-052; OI-85 and OI-115 closed"
 
 ## Dove siamo (2026-11-14)
 
@@ -83,6 +83,8 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
   - `ACTIONS.md` aggiornato.
 - Provato e tolto: l'ampiezza dell'attenzione (OI-108; fuorigioco a 11.7).
 - In banda al 124: 8 metriche su 22, ognuna fuori banda con il suo OI.
+- Poi, sempre nella notte: la spazzata in fallo laterale (125) e la scelta dell'ADR-052 (126): il giocatore gioca la migliore opzione che vede, anche cattiva. Tolta la vecchia formula di `choice.json` e la soglia di chiarezza; chiusi OI-85 e OI-115. Al 126 sono in banda 9 metriche su 22, con i gol a 3.65 (reale 2.68).
+- **Prossima azione esatta:** la causa delle rimesse (4.7 contro 42.7). La spazzata in fallo è ancora un'opzione che perde contro un passaggio rischioso; guardare dove va il pallone dopo i contrasti (`loose_from_contact`) e dopo le respinte, e i palloni che nessuno raggiunge vicino alle linee (OI-100).
 
 ## Decisioni prese da Claude, da rivedere
 
