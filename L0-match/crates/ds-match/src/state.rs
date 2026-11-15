@@ -222,6 +222,9 @@ pub struct MatchState {
     pub(crate) fatigue_plugin: crate::plugins::fatigue::Fatigue,
     /// The bench plugin, called at a stoppage (ADR-063).
     pub(crate) bench_plugin: crate::plugins::bench::Bench,
+    /// The men of a wall, holding their places until the free kick is
+    /// taken (Law 13).
+    pub(crate) wall: Vec<PlayerId>,
     pub(crate) scan_balance: crate::balance::ScanningBalance,
     pub(crate) keeper_balance: crate::balance::KeeperBalance,
     /// The Laws' thresholds (Law 12, `balance/laws.json`).
@@ -748,6 +751,7 @@ impl MatchState {
             perception: crate::plugins::perception::Perception::default(),
             fatigue_plugin: crate::plugins::fatigue::Fatigue::default(),
             bench_plugin: crate::plugins::bench::Bench,
+            wall: Vec::new(),
             keeper_balance: crate::balance::KeeperBalance::load(),
             laws: crate::balance::LawsBalance::load(),
             cautioned: BTreeSet::new(),
@@ -814,6 +818,7 @@ impl MatchState {
     /// `tick()`. Making the tick a pure counter is a separate refactor,
     /// tracked in IDEA-DESIGN-011's implementation note (2026-11-09).
     pub fn tick(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
+        self.release_wall();
         self.instruct_due(ctx, tick);
         for (outgoing, incoming) in std::mem::take(&mut self.to_announce) {
             self.emit_event(

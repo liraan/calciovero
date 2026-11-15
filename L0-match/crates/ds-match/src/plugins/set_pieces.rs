@@ -11,6 +11,7 @@ use ds_match_api::{MatchPlugin, PluginCard};
 use crate::context::MatchContext;
 use crate::perception::distance_squared;
 use crate::state::{MatchState, Possession, nearest_in_squad, pitch_cm};
+use ds_core::dmath;
 
 /// The set pieces.
 #[derive(Debug, Clone, Copy, Default)]
@@ -113,7 +114,7 @@ impl MatchState {
     /// the posts.
     pub(crate) fn clear_the_spot(
         &mut self,
-        ctx: &MatchContext<'_>,
+        ctx: &mut MatchContext<'_>,
         restart: &crate::rules::Restart,
         taker: PlayerId,
     ) {
@@ -164,6 +165,9 @@ impl MatchState {
                             .clamp(0, width),
                     );
                     self.spatial.set_position(id, to);
+                }
+                if restart.kind == RestartKind::FreeKick {
+                    self.form_wall(ctx, restart, restarting_home);
                 }
             }
             RestartKind::Penalty => {
@@ -277,11 +281,172 @@ impl MatchState {
                     .restart_pass
                     .is_some_and(|k| k != crate::rules::RestartKind::Penalty))
     }
+
+    /// The wall (Law 13, OI-105, OI-109): at a free kick the shooter can
+    /// score from, the defenders cover the part of the goal their keeper
+    /// cannot reach, shoulder to shoulder, 9.15 m from the ball on the
+    /// line to the near post. How many: that part of the goal, seen from
+    /// the ball, measured at the wall, over the width of a body. Who: the
+    /// outfield defenders nearest to the places. They hold there until the
+    /// kick. No number of its own: the keeper's reach and dive
+    /// (`save.json`), the goal (`obstacles.json`), the distance of the Law,
+    /// the body (`BODY_RADIUS_CM`), the shooter's range (`shot_choice.json`).
+    pub(crate) fn form_wall(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        restart: &crate::rules::Restart,
+        restarting_home: bool,
+    ) {
+        const DISTANCE_CM: f64 = 915.0;
+        let (length, width) = pitch_cm(ctx);
+        let goal = (if restarting_home { length } else { 0 }, width / 2);
+        let dist = dmath::hypot(
+            f64::from(restart.spot.0 - goal.0),
+            f64::from(restart.spot.1 - goal.1),
+        );
+        let range = ds_orchestrator::ShotChoiceBalance::load().shot_range_cm;
+        #[allow(clippy::cast_precision_loss)]
+        if dist > range as f64 || dist <= DISTANCE_CM {
+            return;
+        }
+        let defenders = if restarting_home {
+            &ctx.match_.away
+        } else {
+            &ctx.match_.home
+        };
+        let keeper = defenders.players.first().map(|p| p.id);
+        let save = ctx.hidden.save_balance();
+        let cover = keeper.map_or(0.0, |k| {
+            let height = self.bodies.get(&k).map_or(0.0, |b| b.height_cm);
+            let ef = ctx
+                .hidden
+                .characteristic(k, "explosive_force")
+                .unwrap_or(0.5);
+            height.mul_add(
+                save.standing_reach_share,
+                save.dive_max_cm * 0.5f64.mul_add(ef, 0.5),
+            )
+        });
+        let half = f64::from(self.obstacle_balance.goal_half_width_cm);
+        // The keeper at the middle covers `cover` on each side: what is left
+        // of the goal, measured at the wall.
+        let gap = 2.0f64.mul_add(half, -2.0 * cover).max(0.0) * DISTANCE_CM / dist;
+        let body = f64::from(2 * crate::spatial::BODY_RADIUS_CM);
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let men = (gap / body).ceil() as usize;
+        if men == 0 {
+            return;
+        }
+        // The near post, and the line from the ball to it, cut at 9.15 m.
+        let near: f64 = if restart.spot.1 <= goal.1 { -1.0 } else { 1.0 };
+        let post = (f64::from(goal.0), near.mul_add(half, f64::from(goal.1)));
+        let (bx, by) = (f64::from(restart.spot.0), f64::from(restart.spot.1));
+        let to_post = (post.0 - bx, post.1 - by);
+        let len = dmath::hypot(to_post.0, to_post.1).max(1.0);
+        let (ux, uy) = (to_post.0 / len, to_post.1 / len);
+        let first = (ux.mul_add(DISTANCE_CM, bx), uy.mul_add(DISTANCE_CM, by));
+        // Inward, across the line of the shot, towards the middle of goal.
+        let (mut px, mut py) = (-uy, ux);
+        if (f64::from(goal.1) - first.1) * py < 0.0 {
+            (px, py) = (-px, -py);
+        }
+        #[allow(clippy::cast_precision_loss)]
+        let places: Vec<(i32, i32)> = (0..men)
+            .map(|k| {
+                let off = body * (k as f64 + 0.5);
+                #[allow(clippy::cast_possible_truncation)]
+                (
+                    (px.mul_add(off, first.0).round() as i32).clamp(0, length),
+                    (py.mul_add(off, first.1).round() as i32).clamp(0, width),
+                )
+            })
+            .collect();
+        let mut free: Vec<PlayerId> = defenders
+            .players
+            .iter()
+            .map(|p| p.id)
+            .filter(|id| Some(*id) != keeper && self.spatial.agent(*id).is_some())
+            .collect();
+        for place in places {
+            let Some((i, id)) = free
+                .iter()
+                .enumerate()
+                .filter_map(|(i, id)| {
+                    self.spatial
+                        .agent(*id)
+                        .map(|a| (distance_squared(a.position, place), i, *id))
+                })
+                .min()
+                .map(|(_, i, id)| (i, id))
+            else {
+                break;
+            };
+            free.remove(i);
+            self.spatial.set_position(id, place);
+            self.spatial.set_act(id, ds_orchestrator::OffBallAct::Cover);
+            self.spatial.set_act_target(id, place);
+            self.offball_due.insert(id, u64::MAX);
+            self.wall.push(id);
+        }
+    }
+
+    /// The wall breaks up once the free kick is taken: its men choose again.
+    pub(crate) fn release_wall(&mut self) {
+        if self.restart_pass.is_none() {
+            for id in std::mem::take(&mut self.wall) {
+                self.offball_due.remove(&id);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::context::MatchContext;
+    use crate::state::MatchState;
+    use ds_core::rng::RngRegistry;
     use ds_match_api::MatchPlugin;
+    use ds_orchestrator::GroundTruth;
+    use ds_stats::EventChain;
+
+    /// The wall of a free kick at `spot` for the home side: its men and
+    /// where they stand.
+    fn wall_at(spot: (i32, i32)) -> Vec<(i32, i32)> {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = GroundTruth::for_match(42, &m);
+        let mut rng = RngRegistry::new(42);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            rng: &mut rng,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let mut s = MatchState::new(&m);
+        let _ = s.apply_restart(
+            &mut ctx,
+            crate::rules::free_kick(crate::rules::Side::Home, spot),
+        );
+        s.wall
+            .iter()
+            .filter_map(|id| s.spatial.agent(*id).map(|a| a.position))
+            .collect()
+    }
+
+    /// P1 (Law 13, OI-109): a free kick within the shooter's range has its
+    /// wall, about 9.15 m from the ball; the twin, a free kick from the
+    /// middle of the pitch, has none.
+    #[test]
+    fn a_free_kick_in_range_has_its_wall() {
+        let near = wall_at((8700, 3000));
+        assert!(!near.is_empty(), "a wall at 18 m");
+        for p in &near {
+            let d = crate::perception::distance_squared(*p, (8700, 3000)).isqrt();
+            assert!((860..=980).contains(&d), "{d} cm from the ball");
+        }
+        assert!(wall_at((5250, 3400)).is_empty(), "no wall from the middle");
+    }
 
     #[test]
     fn the_plugin_has_its_card() {
