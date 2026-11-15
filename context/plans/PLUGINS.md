@@ -22,4 +22,6 @@
 
 **Passo 3 (2026-11-15):** `ds-match/src/registry.rs` tiene le schede degli undici obbligatori, lette dal codice di oggi (le fasi, cosa leggono e scrivono, i testi della cronaca), con un test che sono gli undici del contratto. Il tick le chiamerà per fase quando il primo plugin sarà dietro il contratto: un metodo entra solo con il suo consumatore (RULES D3).
 
-**Il prossimo:** il passo 4, il primo plugin, la fatica (il più isolato: legge le velocità, scrive la fatica dei corpi).
+**Passo 4, la fatica (2026-11-15):** `ds-match/src/plugins/fatigue.rs`, il primo plugin dietro il contratto: la sua scheda dal registro, il suo `run` (legge le velocità, scrive la fatica dei corpi), chiamato dal tick dove prima c'era `tire_players`; golden identico. La chiamata uniforme per fase (un metodo di `MatchPlugin` per fase) aspetta il tipo dello stato osservabile in `ds-match-api`, che si scrive quando due plugin lo condividono.
+
+**Il prossimo:** il passo 4, la percezione (`perception.rs` e la memoria).

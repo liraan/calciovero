@@ -113,6 +113,26 @@ pub const CARDS: [PluginCard; 11] = [
     },
 ];
 
+/// The card of the plugin called `name`; for a name the registry does not
+/// hold, a card with no phase, which `PluginCard::is_valid` refuses (the
+/// test below proves the eleven of the contract are all here).
+#[must_use]
+pub fn card(name: &str) -> PluginCard {
+    CARDS
+        .iter()
+        .find(|c| c.name == name)
+        .cloned()
+        .unwrap_or(PluginCard {
+            name: "unknown",
+            version: "0",
+            phases: &[],
+            reads: &[],
+            writes: &[],
+            weight: Weight::Detail,
+            narrative: &[],
+        })
+}
+
 #[cfg(test)]
 mod tests {
     use super::CARDS;

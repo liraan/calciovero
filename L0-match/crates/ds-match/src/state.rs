@@ -3064,13 +3064,7 @@ impl MatchState {
     /// player on the pitch tires by the effort of this tick, his speed,
     /// against his endurance, and recovers when he walks.
     fn tire_players(&mut self, ctx: &mut MatchContext<'_>) {
-        for (id, body) in &mut self.bodies {
-            let Some(a) = self.spatial.agent(*id) else {
-                continue;
-            };
-            let speed = dmath::hypot(f64::from(a.velocity.0), f64::from(a.velocity.1));
-            body.fatigue = ctx.hidden.tire(*id, body.fatigue, speed);
-        }
+        crate::plugins::fatigue::Fatigue::run(&mut self.bodies, &self.spatial, ctx.hidden);
     }
 
     /// The kick-off (Law 8): the home side kicks off the first half, the

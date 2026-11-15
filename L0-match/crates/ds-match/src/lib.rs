@@ -33,6 +33,7 @@ pub mod engine;
 mod fact;
 pub mod narrative;
 pub mod perception;
+pub mod plugins;
 pub mod record;
 pub mod registry;
 pub mod result;
