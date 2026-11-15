@@ -138,10 +138,7 @@ fn narrate_event(
     // The broadcast clock: the second half starts at 45' (the event's own
     // timestamp restarts at each half, ADR-026). Before, a goal at the 89th
     // minute read "in the 44'" while the 2D clock said 89'.
-    let minute = match ev.half {
-        ds_stats::Half::First => ev.timestamp_minute,
-        ds_stats::Half::Second => ev.timestamp_minute.saturating_add(45),
-    };
+    let minute = ev.timestamp_minute.saturating_add(ev.half.offset_minutes());
 
     let text = render_text(ev, player, minute, slot_map);
 

@@ -121,6 +121,9 @@ fn format_time(event: &EventRow) -> String {
     let label = match event.half {
         ds_stats::Half::First => "1T",
         ds_stats::Half::Second => "2T",
+        ds_stats::Half::ExtraFirst => "1TS",
+        ds_stats::Half::ExtraSecond => "2TS",
+        ds_stats::Half::Shootout => "R",
     };
     if event.minute > 45 {
         format!("{label} 45'+{}'", event.minute - 45)

@@ -99,6 +99,38 @@ pub enum Half {
     First,
     /// Second half.
     Second,
+    /// The first period of extra time (Law 7, Law 10: two equal periods of
+    /// at most 15 minutes each).
+    ExtraFirst,
+    /// The second period of extra time.
+    ExtraSecond,
+    /// The penalty shoot-out, after the match has ended (Law 10).
+    Shootout,
+}
+
+impl Half {
+    /// The minutes of the match before this half starts: 0, 45, 90, 105.
+    #[must_use]
+    pub const fn offset_minutes(self) -> u8 {
+        match self {
+            Self::First => 0,
+            Self::Second => 45,
+            Self::ExtraFirst => 90,
+            Self::ExtraSecond => 105,
+            Self::Shootout => 120,
+        }
+    }
+
+    /// The minutes this half lasts before its stoppage time: 45, or 15 in
+    /// extra time.
+    #[must_use]
+    pub const fn regulation_minutes(self) -> u8 {
+        match self {
+            Self::First | Self::Second => 45,
+            Self::ExtraFirst | Self::ExtraSecond => 15,
+            Self::Shootout => 0,
+        }
+    }
 }
 /// A `MatchEvent` — the atomic unit of Plane B.
 ///

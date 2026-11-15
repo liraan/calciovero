@@ -76,3 +76,23 @@ fn golden_l0_with_instructions_is_deterministic() {
         "golden L0 with instructions changed: SIM_VERSION bump or a regression"
     );
 }
+
+/// The expected hash of a cup match that goes to extra time and to
+/// penalties (Laws 7 and 10, plan L0-CLOSE 10h): seed 45, level after 120
+/// minutes, decided by the shoot-out. SIM 117.
+const EXPECTED_CUP: &str = "6af94d6675d159ee2cc45527f48c2d39a832f2539c2dcfe18161bf8ba45782ee";
+
+#[test]
+fn golden_l0_cup_is_deterministic() {
+    let mut m = match_fixture(45).expect("fixture");
+    m.rules.extra_time = true;
+    m.rules.penalty_shootout = true;
+    let result = simulate_from_seed(&m, 45, MatchConfig::default());
+    assert!(result.shootout.is_some(), "the cup match goes to penalties");
+    let mut hash = String::new();
+    for b in result.state_hash.as_bytes() {
+        use std::fmt::Write as _;
+        let _ = write!(hash, "{b:02x}");
+    }
+    assert_eq!(hash, EXPECTED_CUP, "golden L0 cup hash changed");
+}

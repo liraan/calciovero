@@ -222,6 +222,8 @@ pub struct MatchState {
     home_possession_ticks: u64,
     away_possession_ticks: u64,
     shots: (u16, u16),
+    /// The penalty shoot-out's goals, home and away, when there was one.
+    shootout: Option<(u8, u8)>,
     next_event_slot: u32,
     /// Which half is currently being played (ADR-026).
     half: Half,
@@ -269,6 +271,8 @@ pub struct MatchState {
     /// The restart that put the ball back in play, until its first pass:
     /// there is no offside from a throw-in, a goal kick or a corner.
     restart_pass: Option<crate::rules::RestartKind>,
+    /// The kicker the team has sent to the mark in the shoot-out (Law 10).
+    shootout_taker: Option<PlayerId>,
     pending: Option<Pending>,
     /// Where the ball was at the start of this tick: its path this tick is
     /// the segment from here to where it is now (ADR-058: a ball is
@@ -754,6 +758,7 @@ impl MatchState {
             home_possession_ticks: 0,
             away_possession_ticks: 0,
             shots: (0, 0),
+            shootout: None,
             next_event_slot: 0,
             half: Half::First,
             half_start_tick: 0,
@@ -775,6 +780,7 @@ impl MatchState {
             offball_due: BTreeMap::new(),
             offside_at_pass: BTreeSet::new(),
             restart_pass: None,
+            shootout_taker: None,
             bodies: {
                 let mut m = BTreeMap::new();
                 for p in match_.home.players.iter().chain(match_.away.players.iter()) {
@@ -819,10 +825,7 @@ impl MatchState {
         }
         let tps = u64::from(ticks_per_second).max(1);
         let in_half = tick.saturating_sub(self.half_start_tick) / tps / 60;
-        let minute = match self.half {
-            Half::First => in_half,
-            Half::Second => in_half + 45,
-        };
+        let minute = in_half + u64::from(self.half.offset_minutes());
         let carrier = self.spatial.carrier();
         for squad in [&mut live.home, &mut live.away] {
             let due: Vec<ds_model::Substitution> = squad
@@ -1268,6 +1271,19 @@ impl MatchState {
         let dead_ball = self.restart_pass.is_some();
         // The ball leaves the keeper's hands as he plays it.
         let from_hands = self.in_hands.take() == Some(attacker);
+        // A penalty is a kick at the goal and nothing else (Law 14): a taker
+        // who weighed anything else strikes it hard at the middle.
+        let chosen = if self.restart_pass == Some(crate::rules::RestartKind::Penalty)
+            && !matches!(chosen, ChosenAction::Shoot { .. })
+        {
+            ChosenAction::Shoot {
+                aim_y: f64::from(goal.1),
+                power: ds_orchestrator::ShotChoiceBalance::load().power_strong,
+                contact_height: 0.0,
+            }
+        } else {
+            chosen
+        };
         if !matches!(chosen, ChosenAction::Pass { .. }) {
             self.restart_pass = None;
         }
@@ -2973,9 +2989,20 @@ impl MatchState {
                 b.fatigue = f.after_half_time(b.fatigue);
             }
         }
-        let side = match half {
-            Half::First => crate::rules::Side::Home,
-            Half::Second => crate::rules::Side::Away,
+        // Law 8: the team that wins the toss chooses; it takes the kick-off,
+        // the possession being worth more than an end on a neutral pitch;
+        // the other team kicks off the next half (`Match.tosses`, an input
+        // of the match, as the seed is: 2026-11-15).
+        let tosses = ctx.match_.tosses;
+        let winner = match half {
+            Half::First | Half::Second => tosses.kick_off_home,
+            Half::ExtraFirst | Half::ExtraSecond | Half::Shootout => tosses.extra_time_home,
+        };
+        let first = matches!(half, Half::First | Half::ExtraFirst);
+        let side = if winner == first {
+            crate::rules::Side::Home
+        } else {
+            crate::rules::Side::Away
         };
         let _ = self.apply_restart(ctx, crate::rules::kick_off(side, pitch_cm(ctx)));
     }
@@ -3028,6 +3055,11 @@ impl MatchState {
             crate::rules::Side::Home => &ctx.match_.home,
             crate::rules::Side::Away => &ctx.match_.away,
         };
+        if restart.kind == RestartKind::Penalty {
+            if let Some(t) = self.shootout_taker {
+                return Some(t);
+            }
+        }
         let nearest = nearest_in_squad(&self.spatial, squad, restart.spot);
         let keeper = squad
             .players
@@ -3199,6 +3231,110 @@ impl MatchState {
         }
     }
 
+    /// The order in which `side` takes its kicks in the shoot-out (Law 10):
+    /// the players on the pitch at the end, best taker first, by the same
+    /// measure the team uses for a penalty in the match; `count` of them
+    /// (the larger team leaves out its last, to equal the other).
+    pub(crate) fn shootout_order(
+        &self,
+        ctx: &mut MatchContext<'_>,
+        home: bool,
+        count: usize,
+    ) -> Vec<PlayerId> {
+        let squad = if home {
+            &ctx.match_.home
+        } else {
+            &ctx.match_.away
+        };
+        let mut left: Vec<PlayerId> = squad
+            .players
+            .iter()
+            .map(|p| p.id)
+            .filter(|id| self.spatial.agent(*id).is_some())
+            .collect();
+        let mut order = Vec::new();
+        while order.len() < count {
+            let Some(best) = ctx.hidden.set_piece_taker(&left, true) else {
+                break;
+            };
+            left.retain(|id| *id != best);
+            order.push(best);
+        }
+        order
+    }
+
+    /// How many players `home`'s side has on the pitch.
+    pub(crate) fn on_pitch_count(&self, ctx: &MatchContext<'_>, home: bool) -> usize {
+        let squad = if home {
+            &ctx.match_.home
+        } else {
+            &ctx.match_.away
+        };
+        squad
+            .players
+            .iter()
+            .filter(|p| self.spatial.agent(p.id).is_some())
+            .count()
+    }
+
+    /// Sends `taker` to the mark for one kick of the shoot-out (Law 10).
+    pub(crate) fn place_shootout_kick(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        home: bool,
+        taker: PlayerId,
+    ) {
+        let (length, width) = pitch_cm(ctx);
+        let (side, goal) = if home {
+            (crate::rules::Side::Home, (length, width / 2))
+        } else {
+            (crate::rules::Side::Away, (0, width / 2))
+        };
+        let restart = crate::rules::foul_restart(side, goal, true, goal, self.laws.penalty_spot_cm);
+        self.shootout_taker = Some(taker);
+        let _ = self.apply_restart(ctx, restart);
+        self.shootout_taker = None;
+    }
+
+    /// Whether the kick of `taker` is completed (Law 10): the ball has left
+    /// his foot and stopped, gone out, or been played by someone else.
+    pub(crate) fn shootout_kick_done(&self, taker: PlayerId, struck: bool) -> bool {
+        struck
+            && (self.spatial.carrier().is_some_and(|c| c != taker)
+                || self.spatial.ball_state() == crate::spatial::BallState::Loose
+                || self
+                    .restart_pass
+                    .is_some_and(|k| k != crate::rules::RestartKind::Penalty))
+    }
+
+    /// Whether the ball has left `taker`'s foot.
+    pub(crate) fn ball_left(&self, taker: PlayerId) -> bool {
+        self.spatial.carrier() != Some(taker)
+    }
+
+    /// The goals and shots so far, to put back after a kick of the
+    /// shoot-out: its goals are not the match's (Law 10).
+    pub(crate) const fn tally(&self) -> (Score, (u16, u16)) {
+        (self.score, self.shots)
+    }
+
+    /// Puts the tally back (see `tally`).
+    pub(crate) const fn restore_tally(&mut self, (score, shots): (Score, (u16, u16))) {
+        self.score = score;
+        self.shots = shots;
+    }
+
+    /// Records the shoot-out's result.
+    pub(crate) const fn set_shootout(&mut self, result: Option<(u8, u8)>) {
+        self.shootout = result;
+    }
+
+    /// Whether the two teams have scored the same number of goals (Law 10).
+    #[must_use]
+    pub const fn score_is_level(&self) -> bool {
+        self.score.home == self.score.away
+    }
+
     /// Produces the final result.
     #[must_use]
     #[allow(clippy::cast_precision_loss)]
@@ -3221,6 +3357,7 @@ impl MatchState {
                 shots: self.shots,
                 goals: (self.score.home, self.score.away),
             },
+            shootout: self.shootout,
             state_hash,
             narrative: Vec::new(),
         }

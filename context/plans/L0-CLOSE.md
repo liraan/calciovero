@@ -19,8 +19,8 @@
 |---|---|---|---|
 | 1 | **fatto (115)** — La memoria minima di ciò che si è visto: l'ultimo sguardo (ADR-034, MD-40) | — | per ogni giocatore, dove ha visto ogni altro al suo ultimo sguardo; nel salvataggio e nell'hash |
 | 2 | **fatto (115)** — La scena solo dal cono e dalla memoria (OI-106) | 1 | il test anti-fuga, rosso; poi `rank`, `loose_rival_cm`, `cutters` dalla memoria |
-| 3 | ADR-062 (a) e (c): l'ampiezza dell'attenzione come `vision`, la linea letta dall'ultimo sguardo (fonti in OI-104, `SOURCES.md`); rimisurare fuorigioco e palloni che escono (OI-98, OI-100) | 1, 2 | il gemello su `vision` |
-| 4 | Supplementari e rigori finali (Regole 7 e 10, testo 2026/27), quando la competizione li chiede; la monetina come input della partita (approvata il 2026-11-15) | — | un `Match` di coppa finito pari: i supplementari, poi la serie |
+| 3 | **(c) fatto (116, dalla memoria); (a) aperto, OI-108** — ADR-062 (a) e (c): l'ampiezza dell'attenzione come `vision`, la linea letta dall'ultimo sguardo (fonti in OI-104, `SOURCES.md`); rimisurare fuorigioco e palloni che escono (OI-98, OI-100) | 1, 2 | il gemello su `vision` |
+| 4 | **fatto (117)** — Supplementari e rigori finali (Regole 7 e 10, testo 2026/27), quando la competizione li chiede; la monetina come input della partita (approvata il 2026-11-15) | — | un `Match` di coppa finito pari: i supplementari, poi la serie |
 | 5 | La barriera: la somma di corpi, ognuno sceglie se entrarci e dove, resta o si gira secondo il coraggio (OI-105) | 8 (il coraggio) | la distanza della Regola 13 e il metro dalla barriera |
 | 6 | L'allenatore avversario che reagisce in partita (ADR-059 passo 3, poi cambi e istruzioni dallo stato) | ADR-059 passo 3 | il passo 3: istruzioni rapide e transizioni |
 | 7 | Il colpo che fa uscire un giocatore: `Injury` emesso dalla forza del contatto, `injury_proneness` col suo consumatore | — | la fonte (studio UEFA, Ekstrand) e la misura del contatto nel duello |

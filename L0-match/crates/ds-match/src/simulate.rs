@@ -20,9 +20,6 @@ use crate::result::MatchResult;
 use crate::state::MatchState;
 use ds_stats::{EventType, Half};
 
-/// The regulation duration of one half, in minutes.
-const REGULATION_MINUTES: u64 = 45;
-
 /// The guard: a recovery above the regulation length means the engine is
 /// divergent (contribution rate >= 1). Panic in debug, clamp in release.
 const GUARD_MINUTES: u64 = 45;
@@ -147,12 +144,143 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
         rec,
     );
 
+    // --- Extra time (Laws 7 and 10): when the competition asks for a winner
+    // and the score is level, two periods of 15 minutes, each with its
+    // stoppage; the coin before them (`Match.tosses`). The same boundaries
+    // as the halves, told with the period they belong to.
+    let mut end = tick_after_second;
+    if ctx.match_.rules.extra_time && state.score_is_level() {
+        state.begin_half(Half::ExtraFirst, end);
+        state.kick_off(ctx, Half::ExtraFirst);
+        state.emit_boundary(ctx, end, EventType::KickOff);
+        let after = run_half(
+            &mut state,
+            (ctx, &mut live),
+            end,
+            Half::ExtraFirst,
+            tps,
+            &table,
+            rec,
+        );
+        state.emit_boundary(ctx, after, EventType::HalfTime);
+        state.begin_half(Half::ExtraSecond, after);
+        state.kick_off(ctx, Half::ExtraSecond);
+        state.emit_boundary(ctx, after, EventType::SecondHalf);
+        end = run_half(
+            &mut state,
+            (ctx, &mut live),
+            after,
+            Half::ExtraSecond,
+            tps,
+            &table,
+            rec,
+        );
+    }
+
     // --- Full-time ---
-    state.emit_boundary(ctx, tick_after_second, EventType::FullTime);
+    state.emit_boundary(ctx, end, EventType::FullTime);
+
+    // --- Penalties (Law 10): after the match has ended, when the
+    // competition asks for a winner and the score is still level.
+    if ctx.match_.rules.penalty_shootout && state.score_is_level() {
+        state.begin_half(Half::Shootout, end);
+        let result = shootout(&mut state, (ctx, &mut live), end, rec);
+        state.set_shootout(Some(result));
+    }
     rec.close(ctx);
 
     let chain = std::mem::take(ctx.chain);
     state.finish(chain)
+}
+
+/// The most ticks a kick of the shoot-out may take: thirty seconds, far
+/// longer than any kick (Law 10: the kick is completed when the ball
+/// stops, goes out or is played by another).
+const KICK_TICKS: u64 = 300;
+
+/// The penalty shoot-out (Law 10, 2026/27): five kicks each, taken
+/// alternately, by different players in the order each team chose, until
+/// one team has scored more than the other could reach; then one kick each
+/// until one scores and the other does not. Each kick is a penalty of the
+/// match: the kicker strikes, the keeper reads. The team that won the toss
+/// kicks first (`Match.tosses`); its goals are not the match's.
+fn shootout(
+    state: &mut MatchState,
+    (ctx, live): (&mut MatchContext<'_>, &mut ds_model::Match),
+    start: u64,
+    rec: &mut Recorder<'_>,
+) -> (u8, u8) {
+    let n = state
+        .on_pitch_count(ctx, true)
+        .min(state.on_pitch_count(ctx, false));
+    let first_home = ctx.match_.tosses.shootout_home;
+    let orders = [
+        state.shootout_order(ctx, first_home, n),
+        state.shootout_order(ctx, !first_home, n),
+    ];
+    // Index 0 kicks first, 1 second.
+    let mut goals = [0u8, 0u8];
+    let mut kicks = [0usize, 0usize];
+    let result = |g: [u8; 2]| {
+        let [first, second] = g;
+        if first_home {
+            (first, second)
+        } else {
+            (second, first)
+        }
+    };
+    let mut t = start;
+    loop {
+        for side in 0..2 {
+            let home = (side == 0) == first_home;
+            let order = &orders[side];
+            let Some(&kicker) = order.get(kicks[side] % order.len().max(1)) else {
+                return result(goals);
+            };
+            let before = state.tally();
+            state.place_shootout_kick(ctx, home, kicker);
+            let mut struck = false;
+            let told = ctx.chain.events().len();
+            for _ in 0..KICK_TICKS {
+                step(state, ctx, live, t, rec);
+                t += 1;
+                struck |= state.ball_left(kicker);
+                // Completed (Law 10): saved, in, out, or played by another.
+                let ended = ctx.chain.events()[told..].iter().any(|e| {
+                    matches!(
+                        e.event_type,
+                        EventType::Save
+                            | EventType::Goal
+                            | EventType::Corner
+                            | EventType::GoalKick
+                            | EventType::ThrowIn
+                    ) || (e.event_type != EventType::Shot
+                        && e.actor != Some(ds_core::ids::ActorId::Player(kicker)))
+                        && !matches!(e.event_type, EventType::Pressure | EventType::Woodwork)
+                });
+                if ended || state.tally().0 != before.0 || state.shootout_kick_done(kicker, struck)
+                {
+                    break;
+                }
+            }
+            if state.tally().0 != before.0 {
+                goals[side] = goals[side].saturating_add(1);
+            }
+            state.restore_tally(before);
+            kicks[side] += 1;
+            // Decided within the five: one side cannot be reached any more.
+            let reach = |s: usize| usize::from(goals[s]) + 5usize.saturating_sub(kicks[s]);
+            if kicks[0] <= 5
+                && kicks[1] <= 5
+                && (usize::from(goals[0]) > reach(1) || usize::from(goals[1]) > reach(0))
+            {
+                return result(goals);
+            }
+        }
+        if kicks[0] >= 5 && goals[0] != goals[1] {
+            return result(goals);
+        }
+    }
 }
 
 /// Runs one half from `start_tick`. Returns the tick after the half, i.e.
@@ -169,7 +297,7 @@ fn run_half(
     table: &StoppageTime,
     rec: &mut Recorder<'_>,
 ) -> u64 {
-    let regulation_ticks = REGULATION_MINUTES * 60 * tps;
+    let regulation_ticks = u64::from(half.regulation_minutes()) * 60 * tps;
     let regulation_end = start_tick + regulation_ticks;
 
     let mut t = start_tick;

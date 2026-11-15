@@ -35,6 +35,9 @@ pub struct MatchStatistics {
 pub struct MatchResult {
     /// The score.
     pub score: Score,
+    /// The penalty shoot-out's goals, home and away, when the match went
+    /// to one (Law 10); not part of the score.
+    pub shootout: Option<(u8, u8)>,
     /// The append-only event chain.
     pub events: EventChain,
     /// The statistics.

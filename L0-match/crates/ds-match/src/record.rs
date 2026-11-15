@@ -73,10 +73,7 @@ impl TickRecord {
     /// second half starting at 45'.
     #[must_use]
     pub const fn clock(&self) -> (u32, u32) {
-        let offset = match self.half {
-            Half::First => 0,
-            Half::Second => 45 * 60,
-        };
+        let offset = (self.half.offset_minutes() as u32) * 60;
         let s = self.half_seconds + offset;
         (s / 60, s % 60)
     }

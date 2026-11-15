@@ -63,6 +63,38 @@ impl Default for MatchRules {
     }
 }
 
+/// The coin tosses of a match (Law 8 and Law 10).
+///
+/// For each, whether the home team won it. An input of the match, like its seed (maintainer,
+/// 2026-11-15: the coin stays, as the Laws want, and no die is thrown in
+/// the simulation): the competition or the caller tosses the coin, the
+/// save keeps the result, the replay reads it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Tosses {
+    /// The toss before the kick-off (Law 8).
+    pub kick_off_home: bool,
+    /// The toss before extra time (Law 8).
+    pub extra_time_home: bool,
+    /// The toss for who kicks first in the penalty shoot-out (Law 10).
+    pub shootout_home: bool,
+}
+
+impl Tosses {
+    /// The home team wins every toss: the engine's order before the coin
+    /// existed (the home side kicked off).
+    pub const HOME: Self = Self {
+        kick_off_home: true,
+        extra_time_home: true,
+        shootout_home: true,
+    };
+}
+
+impl Default for Tosses {
+    fn default() -> Self {
+        Self::HOME
+    }
+}
+
 /// A match, as seen by the match engine.
 ///
 /// See `L0-match/specs/03-entities-minimal.md` §2.7.
@@ -82,6 +114,9 @@ pub struct Match {
     pub seed: MatchSeed,
     /// The rules of the match.
     pub rules: MatchRules,
+    /// The coin tosses (Laws 8 and 10), an input of the match.
+    #[serde(default)]
+    pub tosses: Tosses,
 }
 
 impl Match {
@@ -108,6 +143,7 @@ impl Match {
             referee,
             seed,
             rules,
+            tosses: Tosses::HOME,
         }
     }
 
