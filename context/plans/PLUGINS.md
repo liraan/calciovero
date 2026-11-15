@@ -24,4 +24,6 @@
 
 **Passo 4, la fatica (2026-11-15):** `ds-match/src/plugins/fatigue.rs`, il primo plugin dietro il contratto: la sua scheda dal registro, il suo `run` (legge le velocità, scrive la fatica dei corpi), chiamato dal tick dove prima c'era `tire_players`; golden identico. La chiamata uniforme per fase (un metodo di `MatchPlugin` per fase) aspetta il tipo dello stato osservabile in `ds-match-api`, che si scrive quando due plugin lo condividono.
 
-**Il prossimo:** il passo 4, la percezione (`perception.rs` e la memoria).
+**Passo 4, la percezione (2026-11-15):** `plugins/perception.rs`: la memoria dell'ultimo sguardo (`Memory`), uscita da `state.rs`, con la sua scheda; la geometria del cono e dello sguardo resta in `crate::perception` (pubblico, letto dagli esempi). Golden identico.
+
+**Il prossimo:** il passo 4, l'arbitro (`rules.rs`, i falli e i cartellini).

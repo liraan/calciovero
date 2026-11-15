@@ -3,3 +3,4 @@
 //! with its card, the goldens identical at every step.
 
 pub mod fatigue;
+pub mod perception;

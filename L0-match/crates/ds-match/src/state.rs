@@ -106,47 +106,6 @@ fn nearest_on_path((a, b): ((i32, i32, i32), (i32, i32, i32)), p: (i32, i32)) ->
     ((at(a.0, b.0), at(a.1, b.1)), at(a.2, b.2))
 }
 
-/// What every player has seen of the others: where he last saw each one
-/// (ADR-034, MD-40, OI-106). A square table over the players, by a fixed
-/// order of their ids, rebuilt (keeping what was seen) when a substitute
-/// comes on.
-#[derive(Debug, Clone, Default)]
-struct Memory {
-    ids: Vec<PlayerId>,
-    at: Vec<Option<(i32, i32)>>,
-}
-
-impl Memory {
-    /// Each player looks: the men in his cone are where they are now.
-    fn see(&mut self, agents: &[(PlayerId, (i32, i32), u16)]) {
-        if self.ids.len() != agents.len() || self.ids.iter().zip(agents).any(|(a, b)| *a != b.0) {
-            let old = std::mem::take(self);
-            self.ids = agents.iter().map(|a| a.0).collect();
-            let n = self.ids.len();
-            self.at = vec![None; n * n];
-            for (i, &o) in self.ids.clone().iter().enumerate() {
-                for (j, &x) in self.ids.clone().iter().enumerate() {
-                    self.at[i * n + j] = old.get(o, x);
-                }
-            }
-        }
-        let n = self.ids.len();
-        for (i, &(_, origin, gaze)) in agents.iter().enumerate() {
-            for (j, &(_, pos, _)) in agents.iter().enumerate() {
-                if i != j && crate::perception::in_cone(origin, gaze, pos) {
-                    self.at[i * n + j] = Some(pos);
-                }
-            }
-        }
-    }
-
-    fn get(&self, observer: PlayerId, other: PlayerId) -> Option<(i32, i32)> {
-        let i = self.ids.iter().position(|id| *id == observer)?;
-        let j = self.ids.iter().position(|id| *id == other)?;
-        self.at.get(i * self.ids.len() + j).copied().flatten()
-    }
-}
-
 /// Whether a player of `courage` and `weight` goes up for a high ball a
 /// rival of `rival` kilos can reach (ADR-057, OI-109): always against a
 /// man no heavier than him; against a heavier one, if his courage is at
@@ -255,7 +214,7 @@ pub struct MatchState {
     /// What each player has seen of the others, where he last saw them
     /// (ADR-034, MD-40: the memory of the last look). His scene reads the
     /// pitch through it, never the pitch itself (OI-106).
-    seen: Memory,
+    seen: crate::plugins::perception::Memory,
     scan_balance: crate::balance::ScanningBalance,
     keeper_balance: crate::balance::KeeperBalance,
     /// The Laws' thresholds (Law 12, `balance/laws.json`).
@@ -775,7 +734,7 @@ impl MatchState {
             ball_from: (0, 0, 0),
             instructed: (0, 0),
             scan_balance: crate::balance::ScanningBalance::load(),
-            seen: Memory::default(),
+            seen: crate::plugins::perception::Memory::default(),
             keeper_balance: crate::balance::KeeperBalance::load(),
             laws: crate::balance::LawsBalance::load(),
             cautioned: BTreeSet::new(),
