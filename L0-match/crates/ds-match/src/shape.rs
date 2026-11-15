@@ -33,6 +33,10 @@ const GRID_4_4_2: [(i32, i32); 11] = [
     (75, 62),
 ];
 
+/// The widest outfield slots of the grid, in percent.
+const GRID_MIN_Y: i32 = 15;
+const GRID_MAX_Y: i32 = 85;
+
 /// A player's place in the block, in thousandths: `depth` 0 for the
 /// defensive line and 1000 for the forward line; `width` 0 on the left
 /// and 1000 on the right.
@@ -51,17 +55,22 @@ pub fn roles(home: &Squad, away: &Squad) -> BTreeMap<PlayerId, Role> {
     let mut out = BTreeMap::new();
     for squad in [home, away] {
         for (i, player) in squad.players.iter().enumerate().skip(1) {
-            let (px, py) = GRID_4_4_2[i.min(10)];
-            out.insert(
-                player.id,
-                Role {
-                    depth: ((px - 25) * 1000 / 50).clamp(0, 1000),
-                    width: py * 10,
-                },
-            );
+            out.insert(player.id, slot_role(i));
         }
     }
     out
+}
+
+/// The role of the formation's slot `i` (1 to 10).
+fn slot_role(i: usize) -> Role {
+    let (px, py) = GRID_4_4_2[i.min(10)];
+    Role {
+        depth: ((px - 25) * 1000 / 50).clamp(0, 1000),
+        // The block's own edges (OI-100, SIM 127): the widest slots stand
+        // on the block's sides, so the block's width is the distance
+        // between its widest players.
+        width: ((py - GRID_MIN_Y) * 1000 / (GRID_MAX_Y - GRID_MIN_Y)).clamp(0, 1000),
+    }
 }
 
 /// The situation the block answers to.
@@ -170,6 +179,24 @@ mod tests {
             kick_off: false,
             intention: ds_model::Intention::default(),
         }
+    }
+
+    /// Twin test (OI-100, SIM 127): the same wide man, the same block,
+    /// with the ball; only the ball's side changes. With the ball on his
+    /// touchline he stands in the outer tenth of the pitch (a real side's
+    /// nearest man to a touchline with the ball: median 4 m, Metrica
+    /// sample game 1); with the ball across he stands well inside.
+    #[test]
+    fn the_wide_man_holds_the_touchline_on_the_ball_side() {
+        let blk = BlockBalance::load();
+        let wing = Role {
+            depth: 500,
+            width: 0,
+        };
+        let near = place(wing, at((6000, 200), true), &blk).1;
+        let far = place(wing, at((6000, PITCH.1 - 200), true), &blk).1;
+        assert!(near < PITCH.1 / 10, "near the ball {near}");
+        assert!(far > near + 1000, "near {near} far {far}");
     }
 
     /// Twin test (OI-27): two teams identical but for the coach's

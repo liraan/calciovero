@@ -9,7 +9,7 @@
 - **explained, no source**: the file explains what it does, without a source or a derivation.
 - **undocumented**: the file says nothing about this parameter. These come first in the work to do.
 
-**Today:** 209 parameters in 21 files: 20 sourced, 5 derived, 5 arbitrary and declared, 82 explained without a source, 97 undocumented (2026-11-15: the four parameters of the old choice formula removed, SIM 126, OI-85).
+**Today:** 209 parameters in 21 files: 23 sourced, 5 derived, 5 arbitrary and declared, 82 explained without a source, 94 undocumented (2026-11-15: the four parameters of the old choice formula removed, SIM 126, OI-85; the block's width measured on tracking data, SIM 127, OI-100).
 
 **The rule from now on.** A change to a number in `balance/` updates its row here in the same commit, with the source (author, year, title, and the page or table) or the derivation, or the word *arbitrary*. A number chosen by looking at the statistic it produces is never a source. This file was generated from the JSON files on 2026-11-14 (the classification is read from their text and is a first pass: a row marked sourced still needs its full reference written here when the file gives only a name).
 
@@ -29,6 +29,7 @@ To be filled as each row is completed: full reference, what it measures, which p
 | Put, K., Baldo, M. V. C., Cravo, A. M., Wagemans, J. & Helsen, W. F. (2013), *Experts in offside decision making learn to compensate for their illusory perceptions*, J. Sport Exerc. Psychol. 35, 576 (abstract) | experts do not see better than amateurs; they decide differently | none (the threshold is the same for everybody) |
 | Craig, C. M., Berton, E., Rao, G., Fernandez, L. & Bootsma, R. J. (2006), *Judging where a ball will go: the case of curved free kicks in football*, Naturwissenschaften 93, 97; Craig, C. M., Goulon, C., Berton, E., Rao, G., Fernandez, L. & Bootsma, R. J. (2009), *Optic variables used to judge future ball arrival position in expert and novice soccer players*, Atten. Percept. Psychophys. 71, 515 (abstracts) | the errors in judging where a ball goes come from its spin | none (the engine has no spin) |
 | Pappalardo, L., Cintia, P., Rossi, A. et al. (2019), *A public data set of spatio-temporal match events in soccer competitions*, Scientific Data 6, 236 (doi:10.1038/s41597-019-0247-7); data: Wyscout soccer-logs on figshare (doi:10.6084/m9.figshare.c.4415000), CC BY 4.0 | the real per-match reference the engine is measured against, Serie A 2017-18, 380 matches (`L0-match/reference/serie-a-2017-18.json`, made by `tools/ds-reference`); a measurement, not a parameter | none (step 11 reads it) |
+| Metrica Sports, *Sample Data* (github.com/metrica-sports/sample-data, read 2026-11-15), Sample Games 1 and 2: anonymised tracking, 25 frames a second, with synchronised events; the source asks to be acknowledged | the real width of a side with and without the ball, and how far it shifts to the ball's side | `block.json` `width_in_possession_cm`, `width_out_of_possession_cm`, `ball_side_shift_milli` |
 | [to complete] | | |
 
 ## Parameter by parameter
@@ -48,14 +49,14 @@ To be filled as each row is completed: full reference, what it measures, which p
 |---|---|---|---|
 | `depth_in_possession_cm` | 4500 | undocumented | — |
 | `depth_out_of_possession_cm` | 3200 | undocumented | — |
-| `width_in_possession_cm` | 6000 | undocumented | — |
-| `width_out_of_possession_cm` | 4000 | undocumented | — |
+| `width_in_possession_cm` | 4200 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean 42.2 m with the ball |
+| `width_out_of_possession_cm` | 3700 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean 37.4 m without it |
 | `line_behind_ball_in_possession_cm` | 3000 | undocumented | — |
 | `line_behind_ball_out_of_possession_cm` | 1500 | undocumented | — |
 | `line_min_cm` | 1000 | undocumented | — |
 | `line_max_in_possession_cm` | 5800 | undocumented | — |
 | `line_max_out_of_possession_cm` | 4500 | undocumented | — |
-| `ball_side_shift_milli` | 600 | undocumented | — |
+| `ball_side_shift_milli` | 270 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean slope 0.27 |
 | `high_block_line_cm` | 1200 | explained, no source | A high block pushes the line high_block_line_cm up and closer to the ball out of possession (the line behind the ball shrinks by half as much); a low block drops it low_block_line_cm and sits further behind the ball; a wide team stretches its width with the ball by width_change_milli, a narrow one shrinks it. |
 | `low_block_line_cm` | 1500 | explained, no source | A high block pushes the line high_block_line_cm up and closer to the ball out of possession (the line behind the ball shrinks by half as much); a low block drops it low_block_line_cm and sits further behind the ball; a wide team stretches its width with the ball by width_change_milli, a narrow one shrinks it. |
 | `width_change_milli` | 200 | explained, no source | A high block pushes the line high_block_line_cm up and closer to the ball out of possession (the line behind the ball shrinks by half as much); a low block drops it low_block_line_cm and sits further behind the ball; a wide team stretches its width with the ball by width_change_milli, a narrow one shrinks it. |
