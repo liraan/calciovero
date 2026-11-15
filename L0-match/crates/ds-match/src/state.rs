@@ -218,6 +218,8 @@ pub struct MatchState {
     /// (ADR-034, MD-40: the memory of the last look). His scene reads the
     /// pitch through it, never the pitch itself (OI-106).
     pub(crate) seen: crate::plugins::perception::Memory,
+    /// The fatigue plugin, called in the move phase (ADR-063).
+    pub(crate) fatigue_plugin: crate::plugins::fatigue::Fatigue,
     pub(crate) scan_balance: crate::balance::ScanningBalance,
     pub(crate) keeper_balance: crate::balance::KeeperBalance,
     /// The Laws' thresholds (Law 12, `balance/laws.json`).
@@ -742,6 +744,7 @@ impl MatchState {
             instructed: (0, 0),
             scan_balance: crate::balance::ScanningBalance::load(),
             seen: crate::plugins::perception::Memory::default(),
+            fatigue_plugin: crate::plugins::fatigue::Fatigue::default(),
             keeper_balance: crate::balance::KeeperBalance::load(),
             laws: crate::balance::LawsBalance::load(),
             cautioned: BTreeSet::new(),
@@ -935,7 +938,14 @@ impl MatchState {
     /// player on the pitch tires by the effort of this tick, his speed,
     /// against his endurance, and recovers when he walks.
     pub(crate) fn tire_players(&mut self, ctx: &mut MatchContext<'_>) {
-        crate::plugins::fatigue::Fatigue::run(&mut self.bodies, &self.spatial, ctx.hidden);
+        use ds_match_api::MatchPlugin as _;
+        let mut world = crate::plugins::fatigue::MoveWorld {
+            bodies: &mut self.bodies,
+            spatial: &self.spatial,
+            hidden: ctx.hidden,
+        };
+        self.fatigue_plugin
+            .run(ds_match_api::Phase::Move, &mut world);
     }
 
     /// The kick-off (Law 8): the home side kicks off the first half, the

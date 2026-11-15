@@ -37,7 +37,7 @@ pub fn all() -> Vec<Box<dyn MatchPlugin>> {
         Box::new(Referee),
         Box::new(SetPieces),
         Box::new(Bench),
-        Box::new(Fatigue),
+        Box::new(Fatigue::default()),
     ]
 }
 

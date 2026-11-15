@@ -38,4 +38,6 @@
 - fatto: il contratto, gli undici plugin obbligatori come moduli con la loro scheda, la cronaca fuori dal motore, un plugin che si spegne;
 - resta, per portare il contratto da "dichiarato" a "chiamato": il tipo dello stato osservabile in `ds-match-api` e un metodo di `MatchPlugin` per fase, perché il tick chiami i plugin attraverso il registro invece che per nome. È un passo che tocca ogni plugin, da fare a golden identico.
 
-**Il prossimo:** lo stato osservabile in `ds-match-api` (`PitchView`: posizioni, velocità, pallone, possesso, tempo) e il primo metodo di fase sul plugin della fatica.
+**Il contratto chiamato (2026-11-15):** `ds-match-api` ha `World`, lo stato osservabile come lo vede un plugin (oggi: i giocatori, la velocità, la fatica, una caratteristica per nome), e `MatchPlugin::run(phase, world)`. La fatica è il primo plugin che agisce solo attraverso il contratto: il tick la chiama nella fase `Move`; un test la fa girare su un campo finto di due giocatori, senza motore. Golden identico. `World` cresce con il plugin che ne ha bisogno (RULES D3).
+
+**Il prossimo:** gli altri dieci attraverso `World`, uno per volta, ciascuno a golden identico, a cominciare dalla percezione (le posizioni, lo sguardo, la memoria).

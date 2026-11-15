@@ -889,13 +889,45 @@ impl GroundTruth {
         self.fatigue_balance
     }
 
-    /// A player's fatigue after a tick at `speed` cm/tick (plan L0-CLOSE
-    /// step 6): his effort, against his endurance. Plane A stays here; the
-    /// fatigue that comes out is Plane B (what an observer sees).
-    #[must_use]
-    pub fn tire(&mut self, player: PlayerId, fatigue: f64, speed: f64) -> f64 {
-        let endurance = f64::from(self.latents_for(player).physical.endurance);
-        self.fatigue_balance.after_tick(fatigue, speed, endurance)
+    /// One of `player`'s characteristics by its name in the catalogue, for
+    /// the plugins (ADR-063, `ds_match_api::World::characteristic`); a name
+    /// the catalogue does not hold gives nothing.
+    pub fn characteristic(&mut self, player: PlayerId, name: &str) -> Option<f64> {
+        let l = self.latents_for(player);
+        let v = match name {
+            "explosive_force" => l.physical.explosive_force,
+            "max_speed" => l.physical.max_speed,
+            "injury_proneness" => l.physical.injury_proneness,
+            "reactivity" => l.physical.reactivity,
+            "maximal_force" => l.physical.maximal_force,
+            "body_control" => l.physical.body_control,
+            "endurance" => l.physical.endurance,
+            "joint_mobility" => l.physical.joint_mobility,
+            "finishing" => l.technical.finishing,
+            "passing" => l.technical.passing,
+            "first_touch" => l.technical.first_touch,
+            "tackling" => l.technical.tackling,
+            "heading" => l.technical.heading,
+            "dribbling" => l.technical.dribbling,
+            "goalkeeping" => l.technical.goalkeeping,
+            "left_foot" => l.technical.left_foot,
+            "right_foot" => l.technical.right_foot,
+            "aggressiveness" => l.psychological.aggressiveness,
+            "emotional_control" => l.psychological.emotional_control,
+            "work_rate" => l.psychological.work_rate,
+            "discipline" => l.psychological.discipline,
+            "courage" => l.psychological.courage,
+            "composure" => l.psychological.composure,
+            "game_reading" => l.cognitive.game_reading,
+            "decision_making" => l.cognitive.decision_making,
+            "risk_management" => l.cognitive.risk_management,
+            "vision" => l.cognitive.vision,
+            "anticipation" => l.cognitive.anticipation,
+            "creativity" => l.cognitive.creativity,
+            "concentration" => l.cognitive.concentration,
+            _ => return None,
+        };
+        Some(f64::from(v))
     }
 
     /// The save's declared parameters (`balance/save.json`).

@@ -1,16 +1,22 @@
 //! The match plugin (ADR-063 §1, §4).
 
-use crate::PluginCard;
+use crate::{Phase, PluginCard, World};
 
 /// A part of the match that is not the core: it says what it is with its
 /// card.
 ///
-/// The methods it acts with in each phase arrive with the first
-/// plugin moved behind the contract (plan `PLUGINS.md`, step 3), so that
-/// no method enters without its consumer (RULES D3).
+/// It acts in the phases of its card through `run`, on the observable
+/// state (`World`); the core calls it in the order of the phases.
 pub trait MatchPlugin {
     /// Its card.
     fn card(&self) -> PluginCard;
+
+    /// What it does in `phase`, on the world as the previous phase left
+    /// it. A plugin acts only in the phases of its card; the others are no
+    /// work.
+    fn run(&mut self, phase: Phase, world: &mut dyn World) {
+        let _ = (phase, world);
+    }
 }
 
 /// The eleven plugins every match has (ADR-063 §4).
