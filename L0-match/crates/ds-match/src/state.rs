@@ -1026,6 +1026,25 @@ impl MatchState {
         self.seen.see(&agents);
     }
 
+    /// The men of a scene placed where `observer` has seen them; himself
+    /// where he is; a man he never saw left out (OI-106).
+    fn as_seen_by(
+        &self,
+        observer: PlayerId,
+        positions: BTreeMap<PlayerId, (i32, i32)>,
+    ) -> BTreeMap<PlayerId, (i32, i32)> {
+        positions
+            .into_keys()
+            .filter_map(|id| {
+                if id == observer {
+                    self.spatial.agent(id).map(|a| (id, a.position))
+                } else {
+                    self.perceived(observer, id).map(|at| (id, at))
+                }
+            })
+            .collect()
+    }
+
     /// Where `observer` believes `other` is: where he last saw him, or
     /// nothing if he never has (OI-106).
     fn perceived(&self, observer: PlayerId, other: PlayerId) -> Option<(i32, i32)> {
@@ -1148,6 +1167,9 @@ impl MatchState {
             (gk, keeper_reach_cm),
             can_carry,
         );
+        // He places every man where he has seen him, not where he is: a man
+        // he never saw is not in his scene (OI-106, decision A).
+        scene.positions = self.as_seen_by(attacker, std::mem::take(&mut scene.positions));
         scene.penalty_kick = self.restart_pass == Some(crate::rules::RestartKind::Penalty);
         scene.horizon_cm = ctx.hidden.horizon_cm(attacker);
         scene.strike_error_rad = ctx.hidden.strike_error_he_expects(
@@ -4206,6 +4228,28 @@ mod memory_tests {
             s.remember();
             assert_eq!(s.perceived(o, x), Some(was));
         }
+    }
+
+    /// P1 (OI-106, `SIM_VERSION` 116): the carrier's scene holds the men
+    /// he has seen, where he saw them, and himself; nobody else.
+    #[test]
+    fn the_carriers_scene_holds_whom_he_has_seen() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut s = MatchState::new(&m);
+        s.remember();
+        let all: BTreeMap<PlayerId, (i32, i32)> = s
+            .spatial
+            .on_pitch()
+            .map(|(id, a)| (*id, a.position))
+            .collect();
+        let me = m.home.players[9].id;
+        let cone = crate::perception::visible_to(&s.spatial, me);
+        let scene = s.as_seen_by(me, all.clone());
+        assert_eq!(scene.get(&me), all.get(&me), "he knows where he is");
+        for id in all.keys().filter(|id| **id != me) {
+            assert_eq!(scene.contains_key(id), cone.contains(id), "{id:?}");
+        }
+        assert!(scene.len() < all.len(), "some men are out of his cone");
     }
 
     /// The twin of the cut-out (OI-106): a teammate nearer the ball's path
