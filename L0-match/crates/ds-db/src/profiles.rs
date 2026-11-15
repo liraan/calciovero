@@ -110,6 +110,8 @@ impl Profiles {
                 emotional_control: value("emotional_control", "family:psychological"),
                 work_rate: value("work_rate", "family:psychological"),
                 discipline: value("discipline", "family:psychological"),
+                courage: value("courage", "family:psychological"),
+                composure: value("composure", "family:psychological"),
             },
             cognitive: CognitiveLatents {
                 game_reading: value("game_reading", "family:cognitive"),

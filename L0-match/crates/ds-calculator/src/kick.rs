@@ -88,6 +88,27 @@ impl KickBalance {
             .mul_add(1.0, self.error_pressure_rad * pressure.clamp(0.0, 1.0))
     }
 
+    /// The angular error of a kick under pressure as the kicker's composure
+    /// lets it disturb him (ADR-057, OI-109): the pressure term of
+    /// `error_rad` is scaled by `2 (1 - composure)`, so that a player of
+    /// middling composure (0.5) misses as before, a calm one less, a
+    /// nervous one up to twice as much. No number of its own.
+    #[must_use]
+    pub fn error_rad_composed(
+        &self,
+        shooting: f32,
+        foot: f32,
+        power: f64,
+        pressure: f64,
+        composure: f32,
+    ) -> f64 {
+        let nerves = 2.0 * (1.0 - f64::from(composure.clamp(0.0, 1.0)));
+        self.error_rad(shooting, foot, power, 0.0).mul_add(
+            1.0,
+            self.error_pressure_rad * pressure.clamp(0.0, 1.0) * nerves,
+        )
+    }
+
     /// The base of his miss as he reckons it, radians (ADR-052, plan
     /// L0-CLOSE 11): the error angle for his finishing and his better foot,
     /// as well as he reads the game. A poor reader underrates it.
@@ -150,5 +171,20 @@ mod tests {
         assert!(b.error_rad(0.7, 0.9, 0.35, 0.0) < b.error_rad(0.7, 0.2, 0.35, 0.0));
         assert!(b.error_rad(0.7, 0.8, 0.35, 0.0) < b.error_rad(0.7, 0.8, 0.85, 0.0));
         assert!(b.error_rad(0.7, 0.8, 0.35, 0.0) < b.error_rad(0.7, 0.8, 0.35, 1.0));
+        // The twin of composure (ADR-057): under the same pressure the calm
+        // kicker misses less than the nervous one; middling, as before.
+        let calm = b.error_rad_composed(0.7, 0.8, 0.35, 1.0, 0.9);
+        let nervous = b.error_rad_composed(0.7, 0.8, 0.35, 1.0, 0.1);
+        assert!(calm < nervous);
+        assert!(
+            (b.error_rad_composed(0.7, 0.8, 0.35, 1.0, 0.5) - b.error_rad(0.7, 0.8, 0.35, 1.0))
+                .abs()
+                < 1e-12
+        );
+        assert!(
+            (b.error_rad_composed(0.7, 0.8, 0.35, 0.0, 0.1) - b.error_rad(0.7, 0.8, 0.35, 0.0))
+                .abs()
+                < 1e-12
+        );
     }
 }

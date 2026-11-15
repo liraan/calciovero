@@ -147,6 +147,14 @@ impl Memory {
     }
 }
 
+/// Whether a player of `courage` and `weight` goes up for a high ball a
+/// rival of `rival` kilos can reach (ADR-057, OI-109): always against a
+/// man no heavier than him; against a heavier one, if his courage is at
+/// least the rival's share of their two weights. No number of its own.
+fn goes_up(courage: f64, weight: f64, rival: f64) -> bool {
+    rival <= weight || courage >= rival / (rival + weight)
+}
+
 /// Where `id` cuts out a pass on the grass, and how many teammates he
 /// believes get there before him, judged from what he has seen (OI-106):
 /// he goes if he meets it before the receiver, when he has seen the
@@ -2497,7 +2505,24 @@ impl MatchState {
                     .or_else(|| ball_loose.then(|| self.spatial.drop_point(180)).flatten());
                 let drop_in_box =
                     against.is_some_and(|d| in_keeper_box(d, home, (length, width), &off));
-                let contests = |rank0: bool| (keeper && drop_in_box) || (!keeper && rank0);
+                // Courage (ADR-057, OI-109): he goes up for a high ball where a
+                // heavier man he has seen can reach it only if his courage is
+                // at least that man's share of their two weights; against a
+                // man no heavier than him he always goes.
+                let courage = ctx.hidden.courage(id);
+                let my_weight = self.bodies.get(&id).map_or(0.0, |b| b.weight_kg);
+                let brave = against.is_none_or(|d| {
+                    other
+                        .players
+                        .iter()
+                        .filter_map(|q| self.perceived(id, q.id).map(|at| (q.id, at)))
+                        .filter(|(_, at)| {
+                            distance_squared(*at, d) <= i64::from(duel.reach_cm).pow(2)
+                        })
+                        .filter_map(|(q, _)| self.bodies.get(&q).map(|b| b.weight_kg))
+                        .all(|w| goes_up(courage, my_weight, w))
+                });
+                let contests = |rank0: bool| (keeper && drop_in_box) || (!keeper && rank0 && brave);
                 let rank_drop = against.map(|d| {
                     let mine = distance_squared(me, d);
                     squad
@@ -4458,6 +4483,16 @@ mod memory_tests {
             assert_eq!(scene.contains_key(id), cone.contains(id), "{id:?}");
         }
         assert!(scene.len() < all.len(), "some men are out of his cone");
+    }
+
+    /// The twin of courage (ADR-057, OI-109): two players equal but for
+    /// courage, the same heavier rival; the braver goes up, the other does
+    /// not; against a lighter rival both go.
+    #[test]
+    fn the_braver_goes_up_against_the_heavier_man() {
+        assert!(goes_up(0.6, 75.0, 90.0));
+        assert!(!goes_up(0.4, 75.0, 90.0));
+        assert!(goes_up(0.1, 80.0, 70.0));
     }
 
     /// The twin of the cut-out (OI-106): a teammate nearer the ball's path

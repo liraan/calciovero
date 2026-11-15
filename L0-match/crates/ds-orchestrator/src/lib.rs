@@ -368,11 +368,12 @@ impl GroundTruth {
             .fatigue_coefficient
             .mul_add(-ctx.fatigue.clamp(0.0, 1.0), 1.0)
             .max(self.movement_balance.fatigue_floor) as f32;
-        let clean = k.error_rad(
+        let clean = k.error_rad_composed(
             shooter.technical.finishing * tired,
             foot * tired,
             ctx.power,
             pressure,
+            shooter.psychological.composure,
         );
         let on_the_run = k.run_error_rad
             * run
@@ -1028,6 +1029,12 @@ impl GroundTruth {
     /// The method is idempotent: the second call returns an empty `Vec`.
     pub fn drain_observations(&mut self) -> Vec<ObservationEvent> {
         std::mem::take(&mut self.observations)
+    }
+
+    /// His courage (ADR-057, OI-109): what the engine reads when he decides
+    /// whether to go up against a heavier man.
+    pub fn courage(&mut self, player: PlayerId) -> f64 {
+        f64::from(self.latents_for(player).psychological.courage)
     }
 
     /// How fast `player` can run now, cm a tick, as tired as `fatigue`: the

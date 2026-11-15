@@ -83,7 +83,7 @@
 
 ## 7. I parametri di `balance/` e il loro grado (decisione 5)
 
-Parametri di `SOURCES.md`: 213 (dopo la fase 2, che ha tolto otto parametri senza lettore); foglie dei profili dei ruoli: 168, tutte grado 3. **Totale: 381 parametri; grado 1: 25; grado 2: 0; grado 3: 356.**
+Parametri di `SOURCES.md`: 213 (dopo la fase 2, che ha tolto otto parametri senza lettore); foglie dei profili dei ruoli: 168, tutte grado 3. **Totale: 381 parametri; grado 1: 25; grado 2: 0; grado 3: 356.** (SIM 119: più 12 foglie, `courage` e `composure` nei sei ruoli, grado 3: 393 e 368.)
 
 | file | parametro | valore | stato in SOURCES.md | grado |
 |---|---|---|---|---|

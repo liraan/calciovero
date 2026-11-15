@@ -126,6 +126,13 @@ pub struct PsychologicalLatents {
     /// Discipline: how strictly he keeps his place in the team's shape
     /// (plan L0-CLOSE 10c; consumed by the defender's thought).
     pub discipline: f32,
+    /// Courage: whether he puts his body where it may be hurt (ADR-057,
+    /// OI-109; consumed by the contest of a high ball against a heavier
+    /// man).
+    pub courage: f32,
+    /// Composure: how little the pressure of the moment disturbs his
+    /// technique (ADR-057, OI-109; consumed by the shot under pressure).
+    pub composure: f32,
 }
 
 /// Cognitive traits (L0.11 §7.4).
@@ -190,6 +197,8 @@ impl PlayerLatents {
                 emotional_control: unit_from_key(world_seed, player, "emotional_control"),
                 work_rate: unit_from_key(world_seed, player, "work_rate"),
                 discipline: unit_from_key(world_seed, player, "discipline"),
+                courage: unit_from_key(world_seed, player, "courage"),
+                composure: unit_from_key(world_seed, player, "composure"),
             },
             cognitive: CognitiveLatents {
                 game_reading: unit_from_key(world_seed, player, "game_reading"),

@@ -184,6 +184,8 @@ one says so. Reading back is an estimate (Plane C), never an extraction.
 
 | Characteristic | Acts that read it | Twin test | The real datum that reveals it | Uncertainty |
 |---|---|---|---|---|
+| `courage` (SIM 119) | going up for a high ball a heavier rival can reach (`state.rs` `goes_up`) | `the_braver_goes_up_against_the_heavier_man` | the aerial duels he contests against heavier men, from event data with the players' weights; no source read yet | judged |
+| `composure` (SIM 119) | the shot under pressure (`kick.rs` `error_rad_composed`) | in `kick.rs` tests: the calm kicker misses less under the same pressure | his finishing under pressure against without it, from event data with the defenders' distance (StatsBomb freeze frames); no source read yet | judged |
 
 *To be filled, one row per characteristic of §1, before step 10 of
 L0-CLOSE closes (first action: the consumers and the twins from the code

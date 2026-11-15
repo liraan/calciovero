@@ -270,7 +270,7 @@ To be filled as each row is completed: full reference, what it measures, which p
 | `left_footed_share` | 0.25 | explained, no source | The strong foot follows the passing profile; the weak foot is a fraction of it (weak_foot_ratio); left_footed_share of the players are left-footed. |
 | `weak_foot_ratio` | [0.6, 0.15] | explained, no source | The strong foot follows the passing profile; the weak foot is a fraction of it (weak_foot_ratio); left_footed_share of the players are left-footed. |
 | `family_weight` | 0.4 | derived | A characteristic is derived by key, so the same world gives the same player: value = mean + spread * z, clamped to [0.02, 0.98], with z in [-1, 1] mixing the player's own key (1 - family_weight) and a key shared by his family of characteristics (family_weight), so that what goes together goes together (an explosive player is usually fast). |
-| `roles` | … | undocumented | — |
+| `roles` | … | undocumented | — (2026-11-15: `courage` and `composure` added, [0.5, 0.15] for every role, grade 3 declared, OI-109 option A) |
 
 ### `reception.json`
 
