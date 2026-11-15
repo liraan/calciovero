@@ -12,7 +12,7 @@
 | 1 | **fatto (120)** — Il controllo dell'ordine nel substrato (`MatchState::tick`): due giocatori che si muovono o si contrastano nello stesso tick dipendono dall'ordine in cui sono visitati? | un test che scambia l'ordine e trova lo stesso tick record, oppure la dipendenza scritta come OI con la sua correzione (un `SIM_VERSION`) |
 | 2 | **fatto** — Il crate `ds-match-api`: le otto fasi del tick (`Phase`), la scheda del plugin di ADR-012 (`PluginCard`: nome, versione, cosa legge, cosa scrive, peso, testi della cronaca), il contratto `MatchPlugin`; senza dipendenze dagli altri `ds-*` | il crate compila, ha i suoi test, `ds-match` non lo usa ancora |
 | 3 | **le schede fatte; la chiamata per fase arriva con il passo 4** — Il registro nel nucleo: `ds-match` elenca i suoi plugin (ancora codice interno) con la loro scheda, e il tick li chiama per fase | il golden identico; un test che il registro ha gli undici obbligatori |
-| 4 | Un plugin per volta, dal più isolato: fatica, poi percezione, arbitro, palle inattive, panchina, portiere, duelli, gesti tecnici, pensiero, corpo, pallone | per ognuno: il modulo dietro il contratto, i suoi test spostati, golden identico |
+| 4 | **fatto** — Un plugin per volta, dal più isolato: fatica, poi percezione, arbitro, palle inattive, panchina, portiere, duelli, gesti tecnici, pensiero, corpo, pallone | per ognuno: il modulo dietro il contratto, i suoi test spostati, golden identico |
 | 5 | La cronaca fuori dal motore: `narrative.rs` legge gli eventi, non scrive nella partita | il golden identico; `ds-match` non dipende più dalla cronaca |
 | 6 | I tre plugin che si spengono (psicologia, ambiente, colpi): la scheda dichiara le letture facoltative, il validatore le controlla (decisione B) | spento ognuno, la partita gira e i test lo provano |
 
@@ -28,4 +28,6 @@
 
 **Passo 4, arbitro, palle inattive e panchina (2026-11-15):** `plugins/referee.rs` (era `rules.rs`; `crate::rules` resta lo stesso modulo), `plugins/set_pieces.rs` (`apply_restart`, `restart_taker`, `clear_the_spot`, la serie dei rigori), `plugins/bench.rs` (i cambi pianificati e decisi, le istruzioni). Sono metodi di `MatchState` in file loro; i campi di `MatchState` sono `pub(crate)`. Golden identico.
 
-**Il prossimo:** il passo 4, il portiere, poi duelli, gesti tecnici, pensiero, corpo, pallone.
+**Passo 4, completo (2026-11-15):** gli undici obbligatori sono moduli di `ds-match/src/plugins/`, ognuno con il suo tipo e la sua scheda: pallone, corpo, percezione, pensiero, gesti tecnici, duelli, portiere, arbitro, palle inattive, panchina, fatica. Un test (`every_mandatory_plugin_is_behind_the_contract`) controlla che siano gli undici del contratto. `state.rs` è sceso da 4.074 a circa 1.585 righe: resta il nucleo (orologio, stato, eventi, risultato) e un `prelude` che i plugin condividono. Il corpo ha la sua scheda, ma il movimento resta in `spatial.rs`, perché agisce sullo stato spaziale. Golden identico.
+
+**Il prossimo:** il passo 5, la cronaca fuori dal motore.

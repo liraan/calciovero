@@ -249,6 +249,245 @@ pub fn offside_position(
     in_their_half && depth(player_x) < depth(ball_x) && depth(player_x) < second_last
 }
 
+/// The Laws applied to the match in progress: offside, the foul, the
+/// ball out of play (moved from `state.rs`, 2026-11-15).
+use crate::state::prelude::*;
+
+impl MatchState {
+    /// Law 11: `offender` was in an offside position when the ball was
+    /// played, and now he plays it. A free kick to the defenders where he
+    /// is.
+    pub(crate) fn call_offside(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        offender: PlayerId,
+        offender_home: bool,
+        ball: (i32, i32),
+    ) {
+        self.offside_at_pass.clear();
+        let spot = self.spatial.agent(offender).map_or(ball, |a| a.position);
+        let side = if offender_home {
+            crate::rules::Side::Away
+        } else {
+            crate::rules::Side::Home
+        };
+        if let Some(taker) = self.apply_restart(ctx, crate::rules::free_kick(side, spot)) {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(taker)),
+                EventType::FreeKick,
+                serde_json::json!({ "reason": "offside", "offender": offender.slot(), "x": spot.0, "y": spot.1 }),
+            );
+        }
+    }
+
+    /// Law 11: when `passer` plays the ball from `ball_x`, which of his
+    /// teammates are in an offside position. Not from a throw-in, a goal
+    /// kick or a corner (the first pass after such a restart).
+    pub(crate) fn mark_offside_at_pass(
+        &mut self,
+        ctx: &MatchContext<'_>,
+        passer: PlayerId,
+        ball_x: i32,
+    ) {
+        self.offside_at_pass.clear();
+        let restart = self.restart_pass.take();
+        if matches!(
+            restart,
+            Some(
+                crate::rules::RestartKind::ThrowIn
+                    | crate::rules::RestartKind::GoalKick
+                    | crate::rules::RestartKind::Corner
+            )
+        ) {
+            return;
+        }
+        let m = ctx.match_;
+        let home = m.home.players.iter().any(|p| p.id == passer);
+        let (mates, others) = if home {
+            (&m.home, &m.away)
+        } else {
+            (&m.away, &m.home)
+        };
+        let length = i32::from(m.pitch.length_m) * 100;
+        let goal_x = if home { length } else { 0 };
+        let opponents_x: Vec<i32> = others
+            .players
+            .iter()
+            .filter_map(|q| self.spatial.agent(q.id))
+            .map(|a| a.position.0)
+            .collect();
+        for q in &mates.players {
+            if q.id == passer {
+                continue;
+            }
+            if let Some(a) = self.spatial.agent(q.id) {
+                if crate::rules::offside_position(
+                    a.position.0,
+                    ball_x,
+                    &opponents_x,
+                    goal_x,
+                    length,
+                ) {
+                    self.offside_at_pass.insert(q.id);
+                }
+            }
+        }
+    }
+
+    /// Law 12, applied objectively (ADR-021 note, ADR-042 step b): the foul
+    /// is called; its card follows the facts (a second yellow is a red, a
+    /// red sends the player off); then the advantage, or the free kick where
+    /// it happened, or a penalty if it happened in the penalty area.
+    pub(crate) fn apply_foul(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        (fouled, offender): (PlayerId, PlayerId),
+        mut facts: crate::rules::FoulFacts,
+        kept: bool,
+    ) {
+        let (length, width) = pitch_cm(ctx);
+        let spot = self
+            .spatial
+            .agent(fouled)
+            .map_or_else(|| self.spatial.ball(), |a| a.position);
+        let fouled_home = ctx.match_.home.players.iter().any(|p| p.id == fouled);
+        let goal = (if fouled_home { length } else { 0 }, width / 2);
+        let depth = |p: (i32, i32)| (goal.0 - p.0).abs();
+        let laws = self.laws;
+        let in_area = depth(spot) <= laws.penalty_area_depth_cm
+            && (spot.1 - goal.1).abs() <= laws.penalty_area_half_width_cm;
+        // An obvious goal-scoring opportunity (Law 12: the distance to the
+        // goal, the location and number of defenders): near the goal he
+        // attacks, and no outfield defender but the offender nearer to it.
+        // The keeper alone does not take it away: he is the man the
+        // attacker through on goal had to beat (SIM_VERSION 112; before, the
+        // keeper counted as cover, and since he nearly always stands nearer
+        // the goal, the opportunity almost never was one).
+        let defenders = if fouled_home {
+            &ctx.match_.away
+        } else {
+            &ctx.match_.home
+        };
+        let their_keeper = defenders.players.first().map(|p| p.id);
+        let cover: Vec<i32> = defenders
+            .players
+            .iter()
+            .filter(|q| q.id != offender && Some(q.id) != their_keeper)
+            .filter_map(|q| self.spatial.agent(q.id))
+            .map(|a| depth(a.position))
+            .collect();
+        facts.denies_obvious_chance =
+            crate::rules::obvious_chance(spot, goal, laws.dogso_distance_cm, &cover);
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(offender)),
+            EventType::Foul,
+            serde_json::json!({ "against": fouled.slot(), "x": spot.0, "y": spot.1, "slide": facts.slide, "from_behind": facts.from_behind }),
+        );
+        let card = crate::rules::card_for(
+            &facts,
+            laws.reckless_speed_milli,
+            laws.excessive_speed_milli,
+        );
+        let card = match card {
+            Some(crate::rules::Card::Yellow) if !self.cautioned.insert(offender) => {
+                Some(crate::rules::Card::Red)
+            }
+            c => c,
+        };
+        if let Some(c) = card {
+            let red = c == crate::rules::Card::Red;
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(offender)),
+                EventType::Card,
+                serde_json::json!({ "color": if red { "red" } else { "yellow" } }),
+            );
+            if red {
+                // Off the pitch: to the bench, by the halfway line.
+                self.spatial.send_off(offender, (length / 2, -300));
+            }
+        }
+        // Advantage: the side that suffered it keeps the ball in the
+        // opponents' half, outside the area; play goes on.
+        if kept && !in_area && depth(spot) < length / 2 {
+            return;
+        }
+        let side = if fouled_home {
+            crate::rules::Side::Home
+        } else {
+            crate::rules::Side::Away
+        };
+        // Laws 13-14: a penalty in the area, a free kick elsewhere.
+        let restart = crate::rules::foul_restart(side, spot, in_area, goal, laws.penalty_spot_cm);
+        let kind = if restart.kind == crate::rules::RestartKind::Penalty {
+            EventType::Penalty
+        } else {
+            EventType::FreeKick
+        };
+        if let Some(taker) = self.apply_restart(ctx, restart) {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(taker)),
+                kind,
+                serde_json::json!({ "reason": "foul", "x": restart.spot.0, "y": restart.spot.1 }),
+            );
+        }
+    }
+
+    /// The ball out of play gets a restart (Laws 15-17, `crate::rules`):
+    /// the rule decides who restarts, from where and how; the engine
+    /// applies it. Before, a ball that left the pitch elsewhere than into
+    /// the goal stayed out for the rest of the match (OI-97).
+    pub(crate) fn restart_if_out(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        // Out is where the ball is (Laws 9, 15-17), whoever has it: rolling
+        // ahead of him between two touches, or under his foot as he takes it
+        // (plan L0-CLOSE 11). At his feet it is where he is, on the pitch.
+        let (x, y, _) = self.spatial.ball_3d();
+        // The last to touch it: the man who has it, if anyone (the side in
+        // possession can lag a tick behind a ball just won).
+        let last = self.spatial.carrier().map_or_else(
+            || side_of(self.possession),
+            |c| {
+                if ctx.match_.home.players.iter().any(|p| p.id == c) {
+                    crate::rules::Side::Home
+                } else {
+                    crate::rules::Side::Away
+                }
+            },
+        );
+        let Some(restart) = crate::rules::out_of_play((x, y), last, pitch_cm(ctx)) else {
+            return;
+        };
+        if let Some(taker) = self.apply_restart(ctx, restart) {
+            // Every time the ball leaves the pitch the restart is told
+            // (Laws 15-17): throw-in, goal kick, corner.
+            let kind = match restart.kind {
+                crate::rules::RestartKind::Corner => Some(EventType::Corner),
+                crate::rules::RestartKind::ThrowIn => Some(EventType::ThrowIn),
+                crate::rules::RestartKind::GoalKick => Some(EventType::GoalKick),
+                _ => None,
+            };
+            if let Some(kind) = kind {
+                self.emit_event(
+                    ctx,
+                    tick,
+                    Some(ActorId::Player(taker)),
+                    kind,
+                    serde_json::json!({ "x": restart.spot.0, "y": restart.spot.1 }),
+                );
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

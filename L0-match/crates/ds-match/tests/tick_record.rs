@@ -302,9 +302,11 @@ fn the_engine_does_not_pick_the_chaser() {
         !source.contains(concat!("let ", "chasers")),
         "move_agents picks a chaser"
     );
-    let state = include_str!("../src/state.rs");
+    // The off-ball thought and the duel, plugins since ADR-063.
+    let thought = include_str!("../src/plugins/thought.rs");
+    let duels = include_str!("../src/plugins/duels.rs");
     assert!(
-        state.contains("OffBallAct::Challenge"),
+        thought.contains("OffBallAct::Challenge") && duels.contains("OffBallAct::Challenge"),
         "the duel follows the player's choice"
     );
 }

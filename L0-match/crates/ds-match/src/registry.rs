@@ -3,10 +3,11 @@
 //!
 //! Each of the eleven mandatory plugins has its card here, with the
 //! phase it acts in and what of the observable state it reads and
-//! writes, read from the code of today. The code itself is still inside
-//! this crate; the plugins move behind the contract one at a time (step
-//! 4), and the tick will then call them through this registry, phase by
-//! phase.
+//! writes, read from the code. Each plugin is a module of
+//! `crate::plugins` with its type and its card (step 4, done 2026-11-15);
+//! the tick calls them in the order of its phases (`MatchState::tick`,
+//! `MatchState::decide`), and a uniform call per phase through the
+//! registry waits for the observable state as a type of `ds-match-api`.
 
 use ds_match_api::{Phase, PluginCard, Weight};
 
