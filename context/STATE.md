@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `2695162` - "docs(state): OI-99, the golden is the same on Windows"
+**Last commit verified:** `de71d3e` - "merge: the L1 plan, the ideal L0 compared, the decisions of 2026-11-15"
 
 ## Dove siamo (2026-11-14)
 
