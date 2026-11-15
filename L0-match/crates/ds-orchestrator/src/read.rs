@@ -894,9 +894,6 @@ fn clear_candidate(
     };
     let x = pos.0 + forward * m.kick.clear_length_cm;
     let players = imagined(scene);
-    // What it takes away: the danger of losing the ball here, as much as he
-    // is pressed (the same danger a defender reads, ADR-052 §5).
-    let danger = pressure * space_value(pos, own_goal, goal);
     [near, own_goal.1, far]
         .into_iter()
         .map(|y| {
@@ -921,9 +918,13 @@ fn clear_candidate(
             let sure = m.thought.confidence(first(false) - first(true) - spread);
             let gain = space_value(landing, goal, own_goal);
             let loss = space_value(landing, own_goal, goal);
+            // The same measure as every other option (ADR-052 §3, §6): what
+            // it gains where it comes down, what it loses if they get there
+            // first. Before, a clearance also earned the danger of losing
+            // the ball where he stood, a bonus no other option had, though a
+            // pass that arrives takes the ball away from there too.
             let worth =
-                (ds_calculator::thought::ThoughtBalance::expected(sure, gain, loss, risk_appetite)
-                    + danger)
+                ds_calculator::thought::ThoughtBalance::expected(sure, gain, loss, risk_appetite)
                     .max(0.0);
             (worth, landing)
         })
@@ -1611,6 +1612,24 @@ mod keeper_visibility_tests {
                 _ => None,
             });
             assert_eq!(to.map(|p| p.1), Some(3400), "{to:?}");
+        }
+
+        /// The clearance by the same measure (P1, `SIM_VERSION` 108, ADR-052
+        /// §6): how pressed he is makes it an option near his goal, it does
+        /// not add to what it is worth; before, it earned the danger of
+        /// losing the ball where he stood, a bonus no other option had.
+        #[test]
+        fn the_clearance_earns_no_bonus_for_the_pressure() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let s = scene((5000, 3400), Some((1100, 1500)));
+            let worth =
+                |p: f64| clear_candidate(&s, (1000, 1500), (0.5, p), &b).map(|c| c.geometric);
+            let (light, heavy) = (
+                worth(0.2).expect("an option"),
+                worth(0.9).expect("an option"),
+            );
+            assert!((light - heavy).abs() < 1e-12, "{light} {heavy}");
+            assert_eq!(worth(0.0), None, "not pressed: no clearance");
         }
 
         /// The pass into the run (P1, plan L0-CLOSE 11): standing, it goes
