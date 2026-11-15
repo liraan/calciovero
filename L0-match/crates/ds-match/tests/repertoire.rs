@@ -15,10 +15,17 @@ use ds_stats::EventType;
 /// not required here, guarded elsewhere (2026-11-13: about one red card in
 /// fifteen matches in the engine, about one in seven in real football).
 /// The test fails if one is listed both here and as expected.
-const RARE: &[(&str, &str)] = &[(
-    "red card",
-    "about one match in seven; guarded by `rules::tests::the_card_follows_the_facts`",
-)];
+const RARE: &[(&str, &str)] = &[
+    (
+        "red card",
+        "about one match in seven; guarded by `rules::tests::the_card_follows_the_facts`",
+    ),
+    (
+        "penalty",
+        "about one match in seven since SIM_VERSION 107 (real: one in three, a distance \
+         to explain); guarded by `rules::tests::a_foul_in_the_area_is_a_penalty`",
+    ),
+];
 
 /// The post and the bar are not acts: they are the ball meeting the frame
 /// (ADR-048); the catalogue lists what players do.
@@ -153,7 +160,6 @@ fn every_act_of_the_catalogue_shows() {
         "yellow card",
         "offside",
         "free kick",
-        "penalty",
         "corner",
         "throw-in",
         "goal kick",

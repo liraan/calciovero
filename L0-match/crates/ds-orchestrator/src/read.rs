@@ -124,6 +124,28 @@ fn controls_ground(
     controls(scene, players, receiver, (at, arrive, ticks))
 }
 
+/// Whether a teammate at `at` is in an offside position as the passer at
+/// `from` sees it (Law 11, as the engine's `rules::offside_position`
+/// applies it): in the opponents' half, nearer their goal line than both
+/// the ball and the second-last opponent he sees. A pass to him is a free
+/// kick for them: lost where he stands (`SIM_VERSION` 107; before, nearly
+/// every offside flagged was the receiver the passer chose).
+fn offside_to(scene: &PerceivedScene, from: (i32, i32), at: (i32, i32)) -> bool {
+    let depth = |x: i32| (scene.goal.0 - x).abs();
+    let mut opp: Vec<i32> = scene
+        .opponents
+        .iter()
+        .filter_map(|o| scene.positions.get(o))
+        .map(|p| depth(p.0))
+        .collect();
+    opp.sort_unstable();
+    let Some(second_last) = opp.get(1).copied() else {
+        return false;
+    };
+    let half = (scene.goal.0 - scene.own_goal.0).abs() / 2;
+    depth(at.0) < half && depth(at.0) < depth(from.0) && depth(at.0) < second_last
+}
+
 /// A lofted pass over `d` cm, `flight` ticks in the air: controlled where
 /// it comes down, at the speed the air left it (`controls`)?
 fn controls_lofted(
@@ -1063,7 +1085,8 @@ fn pass_candidates(
         // if its line goes there before it stops (plan L0-CLOSE 11, OI-98).
         let loss_at = missed_at(scene, pos, tpos, forecast.at);
         // He imagines the touch too, where the ball reaches him (ADR-058).
-        let clean = controls_ground(scene, players, *id, (tpos, d, v0));
+        let clean =
+            controls_ground(scene, players, *id, (tpos, d, v0)) && !offside_to(scene, pos, here);
         let geom = worth(
             scene,
             if clean { sure(players, &forecast) } else { 0.0 },
@@ -1108,7 +1131,8 @@ fn pass_candidates(
             let margin = best(false) - best(true) - spread;
             // Where it comes down he must control it at the speed the air
             // left it, with whoever has run there meanwhile (ADR-058).
-            let clean = controls_lofted(scene, players, *id, (tpos, d, flight));
+            let clean = controls_lofted(scene, players, *id, (tpos, d, flight))
+                && !offside_to(scene, pos, here);
             let geom = worth(
                 scene,
                 if clean {
@@ -1175,9 +1199,15 @@ fn through_candidates(
             players,
             m.thought.forecast_step_cm,
         );
+        // Offside is judged where he is as the ball is played (Law 11).
+        let onside = !offside_to(scene, pos, at_now);
         let geom = worth(
             scene,
-            sure(players, &forecast),
+            if onside {
+                sure(players, &forecast)
+            } else {
+                0.0
+            },
             at,
             forecast.at,
             risk_appetite,
@@ -1385,6 +1415,26 @@ mod keeper_visibility_tests {
             motion: BTreeMap::new(),
             reception: ReceptionReckoning::default(),
         }
+    }
+
+    /// P1 (Law 11, `SIM_VERSION` 107): the passer sees the line. A teammate
+    /// beyond the second-last opponent, nearer the goal than the ball, in
+    /// their half, is offside; level with that opponent, or behind the
+    /// ball, or in his own half, he is not.
+    #[test]
+    fn the_passer_sees_the_offside_line() {
+        let mut s = scene_with(Some(3400));
+        let defender = PlayerId::new(101, 0);
+        s.opponents.push(defender);
+        s.positions.insert(defender, (8000, 3000));
+        let from = (6000, 3400);
+        assert!(offside_to(&s, from, (8500, 3000)), "beyond the line");
+        assert!(!offside_to(&s, from, (8000, 3600)), "level with him");
+        assert!(!offside_to(&s, from, (5500, 3000)), "behind the ball");
+        assert!(
+            !offside_to(&s, (2000, 3400), (4000, 3000)),
+            "in his own half"
+        );
     }
 
     fn shot_visibility(scene: &PerceivedScene) -> f64 {

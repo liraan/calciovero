@@ -160,6 +160,35 @@ pub const fn free_kick(side: Side, spot: (i32, i32)) -> Restart {
     }
 }
 
+/// Laws 13-14: the restart of a foul.
+///
+/// Inside the defending side's penalty area, a penalty from the mark `penalty_spot_cm` from the goal line at
+/// `goal`; elsewhere a free kick where it happened. `side` is the side
+/// that suffered it.
+#[must_use]
+pub const fn foul_restart(
+    side: Side,
+    spot: (i32, i32),
+    in_area: bool,
+    goal: (i32, i32),
+    penalty_spot_cm: i32,
+) -> Restart {
+    if in_area {
+        let x = if goal.0 == 0 {
+            penalty_spot_cm
+        } else {
+            goal.0 - penalty_spot_cm
+        };
+        Restart {
+            side,
+            spot: (x, goal.1),
+            kind: RestartKind::Penalty,
+        }
+    } else {
+        free_kick(side, spot)
+    }
+}
+
 /// Law 11: whether a player is in an offside position.
 ///
 /// The player attacks towards `goal_x`; the ball is played from `ball_x`.
@@ -190,6 +219,20 @@ mod tests {
     use super::*;
 
     const PITCH: (i32, i32) = (10_500, 6_800);
+
+    /// Law 14 (P1, the guard of the penalty, a rare act in the repertoire
+    /// test): a foul in the area is a penalty from the mark of the goal it
+    /// was committed in front of; outside it, a free kick where it happened.
+    #[test]
+    fn a_foul_in_the_area_is_a_penalty() {
+        let r = foul_restart(Side::Home, (9800, 3000), true, (10_500, 3400), 1100);
+        assert_eq!(r.kind, RestartKind::Penalty);
+        assert_eq!(r.spot, (9400, 3400));
+        let r = foul_restart(Side::Away, (700, 3000), true, (0, 3400), 1100);
+        assert_eq!(r.spot, (1100, 3400));
+        let r = foul_restart(Side::Home, (6000, 3000), false, (10_500, 3400), 1100);
+        assert_eq!((r.kind, r.spot), (RestartKind::FreeKick, (6000, 3000)));
+    }
 
     /// Law 12 (P1): a careless foul is no card; a slide from behind,
     /// yellow; a slide from behind at a sprint, red; denying an obvious

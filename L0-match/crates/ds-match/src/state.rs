@@ -545,11 +545,25 @@ impl TeamView {
                 let len = dmath::hypot(dx, dy).max(1.0);
                 let (ux, uy) = (dx / len, dy / len);
                 let step = f64::from(off.offer_step_cm);
+                // Onside (Law 11): never beyond the last defender's line, the
+                // margin short of it the run keeps too. A man offered beyond
+                // it cannot be played to (before, three in four of the
+                // players flagged offside were offering for a pass there).
+                let onside = |x: i32| {
+                    self.last_line.map_or(x, |l| {
+                        let line = l - self.forward * off.onside_margin_cm;
+                        if (x - line) * self.forward > 0 {
+                            line
+                        } else {
+                            x
+                        }
+                    })
+                };
                 let spot = |c: f64, s: f64| {
                     let (vx, vy) = (ux.mul_add(c, -(uy * s)), ux.mul_add(s, uy * c));
                     #[allow(clippy::cast_possible_truncation)]
                     let p = (
-                        (me.0 + (vx * step) as i32).clamp(0, length),
+                        onside(me.0 + (vx * step) as i32).clamp(0, length),
                         (me.1 + (vy * step) as i32).clamp(0, width),
                     );
                     p
@@ -2727,23 +2741,12 @@ impl MatchState {
         } else {
             crate::rules::Side::Away
         };
-        let (restart, kind) = if in_area {
-            let x = goal.0
-                - if fouled_home {
-                    laws.penalty_spot_cm
-                } else {
-                    -laws.penalty_spot_cm
-                };
-            (
-                crate::rules::Restart {
-                    side,
-                    spot: (x, goal.1),
-                    kind: crate::rules::RestartKind::Penalty,
-                },
-                EventType::Penalty,
-            )
+        // Laws 13-14: a penalty in the area, a free kick elsewhere.
+        let restart = crate::rules::foul_restart(side, spot, in_area, goal, laws.penalty_spot_cm);
+        let kind = if restart.kind == crate::rules::RestartKind::Penalty {
+            EventType::Penalty
         } else {
-            (crate::rules::free_kick(side, spot), EventType::FreeKick)
+            EventType::FreeKick
         };
         if let Some(taker) = self.apply_restart(ctx, restart) {
             self.emit_event(
