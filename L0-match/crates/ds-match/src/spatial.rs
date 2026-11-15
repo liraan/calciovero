@@ -1258,39 +1258,18 @@ impl SpatialState {
             entry.1 = (nx, ny);
         }
 
-        // Minimal separation (MD-12), on the snapshot: no map lookups.
-        let min_d = i64::from(2 * BODY_RADIUS_CM);
-        let n = work.len();
-        for i in 0..n {
-            for j in (i + 1)..n {
-                let (ax, ay) = work[i].1;
-                let (bx, by) = work[j].1;
-                let ddx = i64::from(bx - ax);
-                let ddy = i64::from(by - ay);
-                let d2 = ddx * ddx + ddy * ddy;
-                if d2 > 0 && d2 < min_d * min_d {
-                    let push = i32::try_from(((min_d - d2.isqrt()) / 2).max(1)).unwrap_or(1);
-                    let nx = if ddx == 0 {
-                        0
-                    } else {
-                        i32::try_from(ddx.signum()).unwrap_or(0)
-                    };
-                    let ny = if ddy == 0 {
-                        0
-                    } else {
-                        i32::try_from(ddy.signum()).unwrap_or(0)
-                    };
-                    // The separation never pushes anyone off the pitch.
-                    work[i].1 = (
-                        (ax - nx * push).clamp(0, pitch_length_cm),
-                        (ay - ny * push).clamp(0, pitch_width_cm),
-                    );
-                    work[j].1 = (
-                        (bx + nx * push).clamp(0, pitch_length_cm),
-                        (by + ny * push).clamp(0, pitch_width_cm),
-                    );
-                }
-            }
+        // Minimal separation (MD-12): every push is computed from where the
+        // players' own steps took them, then all are applied together, so
+        // that no pair sees the result of another pair in the same phase
+        // (ADR-063: within a phase nobody reads what another writes; before
+        // `SIM_VERSION` 120 the pairs were pushed one after the other, in
+        // the order of the ids).
+        let stepped: Vec<(i32, i32)> = work.iter().map(|w| w.1).collect();
+        for (entry, at) in work
+            .iter_mut()
+            .zip(separate(&stepped, (pitch_length_cm, pitch_width_cm)))
+        {
+            entry.1 = at;
         }
 
         self.write_back(&work, ball, (tick, hidden), scan_balance);
@@ -1403,8 +1382,51 @@ impl SpatialState {
     }
 }
 
+/// The minimal separation of the bodies (MD-12, ADR-063): every push is
+/// computed from `at`, then all are applied together, so the result does
+/// not depend on the order of the players; nobody is pushed off the pitch.
+fn separate(at: &[(i32, i32)], (length, width): (i32, i32)) -> Vec<(i32, i32)> {
+    let min_d = i64::from(2 * BODY_RADIUS_CM);
+    let n = at.len();
+    let mut shift = vec![(0i32, 0i32); n];
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let (ax, ay) = at[i];
+            let (bx, by) = at[j];
+            let ddx = i64::from(bx - ax);
+            let ddy = i64::from(by - ay);
+            let d2 = ddx * ddx + ddy * ddy;
+            if d2 > 0 && d2 < min_d * min_d {
+                let push = i32::try_from(((min_d - d2.isqrt()) / 2).max(1)).unwrap_or(1);
+                let nx = i32::try_from(ddx.signum()).unwrap_or(0);
+                let ny = i32::try_from(ddy.signum()).unwrap_or(0);
+                shift[i] = (shift[i].0 - nx * push, shift[i].1 - ny * push);
+                shift[j] = (shift[j].0 + nx * push, shift[j].1 + ny * push);
+            }
+        }
+    }
+    at.iter()
+        .zip(shift)
+        .map(|(p, (sx, sy))| ((p.0 + sx).clamp(0, length), (p.1 + sy).clamp(0, width)))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
+    /// P1 (ADR-063, `SIM_VERSION` 120): the separation of three bodies
+    /// pressed together does not depend on the order they are visited in.
+    #[test]
+    fn the_separation_does_not_depend_on_the_order() {
+        let pitch = (10_500, 6_800);
+        let a = [(5000, 3000), (5020, 3010), (5010, 3030)];
+        let ab = super::separate(&a, pitch);
+        let rev: Vec<(i32, i32)> = a.iter().rev().copied().collect();
+        let mut ba = super::separate(&rev, pitch);
+        ba.reverse();
+        assert_eq!(ab, ba);
+        assert_ne!(ab, a.to_vec(), "they are pushed apart");
+    }
+
     /// The touch (P1, plan L0-CLOSE 11): weighed to come back to his foot
     /// after the period at his pace, ahead of him in between.
     #[test]
