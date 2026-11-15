@@ -9,7 +9,7 @@
 - **explained, no source**: the file explains what it does, without a source or a derivation.
 - **undocumented**: the file says nothing about this parameter. These come first in the work to do.
 
-**Today:** 213 parameters in 21 files: 20 sourced, 5 derived, 5 arbitrary and declared, 82 explained without a source, 101 undocumented (2026-11-15: eight parameters nothing read were removed, OI-85, OI-90).
+**Today:** 209 parameters in 21 files: 20 sourced, 5 derived, 5 arbitrary and declared, 82 explained without a source, 97 undocumented (2026-11-15: the four parameters of the old choice formula removed, SIM 126, OI-85).
 
 **The rule from now on.** A change to a number in `balance/` updates its row here in the same commit, with the source (author, year, title, and the page or table) or the derivation, or the word *arbitrary*. A number chosen by looking at the statistic it produces is never a source. This file was generated from the JSON files on 2026-11-14 (the classification is read from their text and is a first pass: a row marked sourced still needs its full reference written here when the file gives only a name).
 
@@ -71,11 +71,7 @@ To be filled as each row is completed: full reference, what it measures, which p
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `reading_weight` | 0.5 | undocumented | — |
-| `risk_weight` | 0.5 | undocumented | — |
 | `decision_bias` | 0.2 | arbitrary, declared | Arbitrary and declared until calibration (D6). game_reading and risk_management enter the formula (`ds-calculator/src/choice.rs`); decision_making does not (it is a threshold on the *choice*, ADR-039 read/choose split): in `resolve_choice` a poorly deciding actor accepts the second-best candidate if `second.score * (1 + (1 - decision_making) * decision_bias) > best.score`. A strong decider (decision_making = 1) falls |
-| `floor` | 0.5 | undocumented | — |
-| `clarity_threshold` | 0.25 | undocumented | — |
 
 ### `duel.json`
 

@@ -1166,28 +1166,41 @@ mod no_room_tests {
     use super::{ChoiceCandidate, ChoiceContext, ChoiceKind, GroundTruth};
     use ds_core::ids::{MatchId, PlayerId};
 
-    fn choose(can_carry: bool) -> ChoiceKind {
+    fn choose(candidates: Vec<ChoiceCandidate>) -> ChoiceKind {
         let mut g = GroundTruth::new(42, MatchId::new(1, 0));
         g.resolve_choice(&ChoiceContext {
             actor: PlayerId::new(9, 0),
-            can_carry,
-            candidates: vec![ChoiceCandidate {
-                kind: ChoiceKind::Pass(PlayerId::new(7, 0)),
-                geometric: 0.05,
-                risk: 0.1,
-                visibility: 1.0,
-            }],
+            can_carry: true,
+            candidates,
         })
         .chosen
     }
 
-    /// OI-97 (P1): below the clarity threshold a player with room carries
-    /// the ball; a player with no room left plays his best option, he does
-    /// not hold the ball forever.
+    fn option(kind: ChoiceKind, geometric: f64) -> ChoiceCandidate {
+        ChoiceCandidate {
+            kind,
+            geometric,
+            risk: 0.1,
+            visibility: 1.0,
+        }
+    }
+
+    /// P1 (ADR-052, OI-115, `SIM_VERSION` 126): he plays the best option he
+    /// sees, even a poor one, even a bad one; he carries the ball when
+    /// carrying is worth more, not because nothing reached a threshold.
     #[test]
-    fn without_room_the_best_option_is_played() {
-        assert_eq!(choose(true), ChoiceKind::Advance);
-        assert_eq!(choose(false), ChoiceKind::Pass(PlayerId::new(7, 0)));
+    fn he_plays_the_best_option_he_sees_even_when_it_is_bad() {
+        let pass = ChoiceKind::Pass(PlayerId::new(7, 0));
+        assert_eq!(choose(vec![option(pass, 0.05)]), pass);
+        assert_eq!(
+            choose(vec![option(pass, -0.4), option(ChoiceKind::Advance, -0.9)]),
+            pass,
+            "the least bad"
+        );
+        assert_eq!(
+            choose(vec![option(pass, 0.05), option(ChoiceKind::Advance, 0.3)]),
+            ChoiceKind::Advance
+        );
     }
 }
 

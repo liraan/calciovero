@@ -541,8 +541,7 @@ fn carry_salience(
     let gain = space_value(ahead, goal, own_goal);
     let loss = space_value(pos, own_goal, goal);
     (
-        ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, risk_appetite)
-            .max(0.0),
+        ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, risk_appetite),
         ahead,
     )
 }
@@ -645,7 +644,7 @@ fn worth(
     let gain = space_value(gain_at, scene.goal, scene.own_goal);
     let loss = space_value(loss_at, scene.own_goal, scene.goal);
     let confidence = foresee(scene, confidence, gain_at);
-    ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, appetite).max(0.0)
+    ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, appetite)
 }
 
 /// His confidence in an option that ends at `at`, through his horizon
@@ -730,7 +729,6 @@ fn shot_candidates(
             let scores = clear * chance;
             ((1.0 - scores) * loss)
                 .mul_add(-(1.5 - risk_appetite), scores / m.thought.possession_value)
-                .max(0.0)
         };
         // ADR-046 §1, ADR-047: the shot is a complete phrase; both posts,
         // the keeper hiding the side he covers (ADR-047 §3).
@@ -1001,7 +999,6 @@ fn clear_candidate(
         // The least bad of his landings, before the worth is cut at nothing
         // (a clearance is chosen when nothing better is left).
         .max_by(|a, b| a.0.total_cmp(&b.0))
-        .map(|(worth, to)| (worth.max(0.0), to))
         .map(|(geometric, to)| ChoiceCandidate {
             kind: ChoiceKind::Clear { to },
             geometric,

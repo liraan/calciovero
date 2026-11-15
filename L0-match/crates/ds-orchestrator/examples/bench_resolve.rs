@@ -181,7 +181,7 @@ fn main() {
     let start = Instant::now();
     for _ in 0..N_CHOICE {
         let b = ds_calculator::choice::ChoiceBalance::load();
-        acc7 += b.clarity_threshold;
+        acc7 += b.decision_bias;
     }
     let t_load = start.elapsed();
     std::hint::black_box(acc7);

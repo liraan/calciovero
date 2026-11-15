@@ -16,7 +16,7 @@
 //! Plane A values it cannot. See L0.11 §4.6 for the situation terms the
 //! calculator will read once OI-84 lands.
 
-use ds_calculator::{Calculator, Characteristic, Custodian, Datum, Situation};
+use ds_calculator::{Characteristic, Custodian};
 use ds_core::ids::PlayerId;
 
 use crate::GroundTruth;
@@ -120,21 +120,6 @@ pub struct ChoiceOutcome {
     pub scores: Vec<f64>,
 }
 
-/// A `Situation` for the choice: Plane B data only. The choice formula
-/// reads no datum from it today (the geometric and risk values are
-/// `Const`, OI-84), but the type is the door the situation terms will
-/// come through when the calculator extension lands.
-struct ChoiceSituation;
-
-impl Situation for ChoiceSituation {
-    fn datum(&self, _datum: Datum) -> f64 {
-        // No situation term yet (OI-84). A formula that declared one
-        // would be rejected at load time by the calculator's catalogue;
-        // this branch is unreachable until OI-84 lands.
-        0.0
-    }
-}
-
 impl GroundTruth {
     /// Resolves the choice among the candidates the engine sees.
     ///
@@ -149,16 +134,18 @@ impl GroundTruth {
     /// has at least `Duel`).
     pub fn resolve_choice(&mut self, ctx: &ChoiceContext) -> ChoiceOutcome {
         let balance = self.choice_balance.clone();
-        let situation = ChoiceSituation;
         let n = ctx.candidates.len();
         let mut scores = Vec::with_capacity(n);
         let mut order: Vec<usize> = (0..n).collect();
         let mut tiebreaks: Vec<u32> = Vec::with_capacity(n);
 
         for candidate in &ctx.candidates {
-            let formula = balance.formula(candidate.geometric, candidate.risk);
-            let mut custodian = self.custodian(ctx.actor);
-            let score = Calculator::apply(&formula, &mut custodian, &situation);
+            // The worth the player imagines (ADR-052: one measure, his own
+            // reading and his own appetite for risk already in it), good or
+            // bad: the least bad option is still an option (OI-115). Before
+            // `SIM_VERSION` 126 a formula weighted it again by his reading
+            // and his risk (`choice.json`, OI-85) and cut it at zero.
+            let score = candidate.geometric;
             scores.push(score);
             let tiebreak = match candidate.kind {
                 ChoiceKind::Pass(p) | ChoiceKind::Loft(p) | ChoiceKind::Through { to: p, .. } => {
@@ -202,7 +189,7 @@ impl GroundTruth {
                 candidate.visibility
             };
             if visibility < perception_threshold && !matches!(candidate.kind, ChoiceKind::Advance) {
-                effective[i] = 0.0;
+                effective[i] = f64::NEG_INFINITY;
             }
         }
 
@@ -227,26 +214,19 @@ impl GroundTruth {
         // is `1 + decision_bias` and a 20%-worse option is still accepted.
         let mut chosen_index = order[0];
         if n > 1 {
-            let accept_factor = (1.0 - decision_making).mul_add(balance.decision_bias, 1.0);
+            // Within `(1 - decision_making) * decision_bias` of the top, as a
+            // share of its size, a weak decider takes the next one.
             let top_score = effective[chosen_index];
             let second_score = effective[order[1]];
-            if second_score * accept_factor > top_score {
+            let margin = (1.0 - decision_making) * balance.decision_bias * top_score.abs();
+            if second_score.is_finite() && top_score - second_score < margin {
                 chosen_index = order[1];
             }
         }
-
-        // Clarity threshold (ADR-040 note 2026-11-09, IDEA-DESIGN-010):
-        // if the chosen candidate's score does not exceed the threshold,
-        // no option is clear enough, and the actor carries the ball
-        // (`Advance`). The threshold is in L0-match/balance/choice.json; arbitrary
-        // and declared until calibration (L3).
-        let chosen_kind = if effective[chosen_index] < balance.clarity_threshold
-            && (ctx.can_carry || effective[chosen_index] <= 0.0)
-        {
-            ChoiceKind::Advance
-        } else {
-            ctx.candidates[chosen_index].kind
-        };
+        // The best he sees, even when it is bad (OI-115): before `SIM_VERSION`
+        // 126, below a clarity threshold he carried the ball, whatever else
+        // was on, and a pressed defender near his goal never put it out.
+        let chosen_kind = ctx.candidates[chosen_index].kind;
         debug_assert!(
             !scores.is_empty(),
             "resolve_choice requires at least one candidate"
