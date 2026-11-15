@@ -10,7 +10,7 @@ It is outside the rings: nothing in `doctrine/`, `L0-match/` or `tools/` reads i
 | [`STATE.md`](STATE.md) | the bookmark: last commit verified, where we are, the plan, the open items |
 | [`RULES.md`](RULES.md) | how we work: the pact, the filters (luna, partita vera), honesty, git, the sessions |
 | [`IDEAS.md`](IDEAS.md) | ideas still alive, not decisions; the rejected ones, so they are not discussed again |
-| [`plans/`](plans/) | the plan of the current task (`L0-CLOSE.md`); the next level (`L1.md`); the ideal L0 compared with today's (`L0-IDEAL-COMPARISON.md`) |
+| [`plans/`](plans/) | the plan of the current task (`L0-CLOSE.md`); the next level (`L1.md`); the ideal L0 compared with today's (`L0-IDEAL-COMPARISON.md`); the decisions on the whole-game plan (`DECISIONS-2026-11-15.md`) |
 | [`captures/`](captures/) | what was said at each pause or task boundary, written by `session.sh capture` |
 | [`scripts/gates.sh`](scripts/gates.sh) | the mechanical checks (docs coherence, bookmark, platform-free engine); run by CI and the pre-push hook |
 | [`scripts/session.sh`](scripts/session.sh) | `start`, `close`, `capture`: the rituals of a session, in one script |
