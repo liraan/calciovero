@@ -222,6 +222,9 @@ pub struct SpatialState {
     intentions: (ds_model::Intention, ds_model::Intention),
     /// The pitch, in centimetres: `(length, width)`.
     pitch_cm: (i32, i32),
+    /// Half the distance between the posts, cm (Law 1): the keeper covers
+    /// the angle the ball makes with them.
+    goal_half_width_cm: i32,
     /// Whether the home side has the ball (set by the match each tick).
     home_in_possession: bool,
     /// Each player's off-ball act, as he chose it (ADR-049).
@@ -328,6 +331,7 @@ impl SpatialState {
             roles: crate::shape::roles(home, away),
             intentions: (home.intention, away.intention),
             pitch_cm: (length, width),
+            goal_half_width_cm: crate::balance::LawsBalance::load().goal_half_width_cm,
             home_in_possession: true,
             carry_target: None,
             touch: None,
@@ -1040,7 +1044,6 @@ impl SpatialState {
             let delta_y = f64::from(ball.1) - goal_y;
             let d = dmath::hypot(delta_x, delta_y);
             let t = (1.0 - d / range).clamp(0.0, 1.0);
-            let y_target = f64::mul_add(f64::from(ball.1) - goal_y, t, goal_y);
             let sign = if goal_x == 0.0 { 1.0_f64 } else { -1.0_f64 };
             // Never deeper than a share of the ball's depth: he stays
             // between the ball and his goal, on his line when the ball is
@@ -1048,6 +1051,17 @@ impl SpatialState {
             let depth_cap = delta_x.abs() * f64::from(keeper_balance.depth_share_milli) / 1000.0;
             let off_line = f64::mul_add(advance, t, f64::from(GK_LINE_OFFSET_CM)).min(depth_cap);
             let x_target = f64::mul_add(sign, off_line, goal_x);
+            // Across, he stands on the bisector of the angle the ball makes
+            // with his two posts, at his depth (SIM_VERSION 124): there he
+            // covers the near and the far side alike. Before, he stood on the
+            // line from the ball to the middle of the goal, and a ball out
+            // wide left him nearer the far post than the angle wanted.
+            let y_target = keeper_across(
+                (f64::from(ball.0), f64::from(ball.1)),
+                (goal_x, goal_y),
+                f64::from(self.goal_half_width_cm),
+                x_target,
+            );
             #[allow(clippy::cast_possible_truncation)]
             let mut tx = (x_target.round() as i32).clamp(0, pitch_length_cm);
             // With the ball his side moves up and so does he: he follows the
@@ -1411,8 +1425,52 @@ fn separate(at: &[(i32, i32)], (length, width): (i32, i32)) -> Vec<(i32, i32)> {
         .collect()
 }
 
+/// Where across the keeper stands at depth `x` (`SIM_VERSION` 124).
+///
+/// On the bisector of the angle the ball makes with the two posts of the
+/// goal at `goal` (`half` the distance between them). Geometry, no number
+/// of its own. A ball on the goal line itself leaves him at the middle.
+#[must_use]
+pub fn keeper_across(ball: (f64, f64), goal: (f64, f64), half: f64, x: f64) -> f64 {
+    let posts = [(goal.0, goal.1 - half), (goal.0, goal.1 + half)];
+    let mut dir = (0.0, 0.0);
+    for p in posts {
+        let (dx, dy) = (p.0 - ball.0, p.1 - ball.1);
+        let len = dmath::hypot(dx, dy);
+        if len > 0.0 {
+            dir = (dir.0 + dx / len, dir.1 + dy / len);
+        }
+    }
+    if dir.0.abs() < 1e-9 {
+        return goal.1;
+    }
+    let s = (x - ball.0) / dir.0;
+    s.mul_add(dir.1, ball.1)
+}
+
 #[cfg(test)]
 mod tests {
+    /// P1 (`SIM_VERSION` 124): the keeper stands on the bisector of the
+    /// angle the ball makes with his posts: in the middle for a central
+    /// ball, towards the near post for a wide one, the two posts at equal
+    /// angles from the ball's line through him.
+    #[test]
+    fn the_keeper_splits_the_angle_of_his_posts() {
+        let goal = (0.0, 3400.0);
+        let centre = super::keeper_across((1800.0, 3400.0), goal, 366.0, 200.0);
+        assert!((centre - 3400.0).abs() < 1e-6);
+        let ball = (1100.0, 5400.0);
+        let y = super::keeper_across(ball, goal, 366.0, 200.0);
+        assert!(y > 3400.0, "towards the near post: {y}");
+        let angle = |p: (f64, f64)| {
+            let (ax, ay) = (200.0 - ball.0, y - ball.1);
+            let (bx, by) = (p.0 - ball.0, p.1 - ball.1);
+            ax.mul_add(bx, ay * by)
+                / (ds_core::dmath::hypot(ax, ay) * ds_core::dmath::hypot(bx, by))
+        };
+        assert!((angle((0.0, 3034.0)) - angle((0.0, 3766.0))).abs() < 1e-9);
+    }
+
     /// P1 (ADR-063, `SIM_VERSION` 120): the separation of three bodies
     /// pressed together does not depend on the order they are visited in.
     #[test]
