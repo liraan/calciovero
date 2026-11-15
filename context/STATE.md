@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `23e806d` - "feat(api): World and MatchPlugin::run; fatigue acts through the contract -- ADR-063"
+**Last commit verified:** `fe673a3` - "refactor(plugins): perception acts through the contract -- ADR-063"
 
 ## Dove siamo (2026-11-14)
 
@@ -64,7 +64,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
     2. i fuorigioco, circa sei a partita, anche su chi sembrava in linea (113-114);
     3. i tiri, ancora troppi (54 contro 25, OI-100), e le rimesse, troppo poche (OI-100);
     4. una partita di coppa ai rigori: `cargo test --release -p ds-match --test extra_time -- --nocapture`.
-- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; passo 4 completo: gli undici plugin obbligatori sono moduli di `ds-match/src/plugins/`, `state.rs` da 4.074 a circa 1.585 righe; passi 5 (la cronaca nel crate `ds-narrative`) e 6 (la psicologia si spegne, SIM 121) fatti; la fatica è chiamata dal tick attraverso il contratto (`World`, `MatchPlugin::run`); il prossimo è portare gli altri dieci attraverso `World`, uno per volta, a golden identico.
+- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; passo 4 completo: gli undici plugin obbligatori sono moduli di `ds-match/src/plugins/`, `state.rs` da 4.074 a circa 1.585 righe; passi 5 (la cronaca nel crate `ds-narrative`) e 6 (la psicologia si spegne, SIM 121) fatti; fatica e percezione sono chiamate dal tick attraverso il contratto (`World`, `MatchPlugin::run`); il prossimo è portare gli altri nove attraverso `World`, uno per volta, a golden identico.
 
 ## Decisioni prese da Claude, da rivedere
 
