@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `a188205` - "refactor(plugins): referee, set pieces and bench behind the contract -- ADR-063"
+**Last commit verified:** `2ea074b` - "refactor(plugins): the eleven mandatory plugins behind the contract -- ADR-063, plan PLUGINS step 4"
 
 ## Dove siamo (2026-11-14)
 
@@ -64,7 +64,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
     2. i fuorigioco, circa sei a partita, anche su chi sembrava in linea (113-114);
     3. i tiri, ancora troppi (54 contro 25, OI-100), e le rimesse, troppo poche (OI-100);
     4. una partita di coppa ai rigori: `cargo test --release -p ds-match --test extra_time -- --nocapture`.
-- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; nel passo 4 sono dietro il contratto fatica, percezione, arbitro, palle inattive e panchina; il prossimo è il portiere.
+- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; passo 4 completo: gli undici plugin obbligatori sono moduli di `ds-match/src/plugins/`, `state.rs` da 4.074 a circa 1.585 righe; il prossimo è il passo 5, la cronaca fuori dal motore.
 
 ## Decisioni prese da Claude, da rivedere
 
