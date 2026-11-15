@@ -101,9 +101,9 @@ pub struct PassContext {
     /// The ball's ground friction, thousandths per tick: the passer weighs
     /// the pass so that it reaches the receiver still rolling.
     pub ground_friction_milli: i32,
-    /// The centre of the pitch, cm: the passer's body is open to the play,
-    /// and a pass that drifts drifts that way.
-    pub pitch_centre: (i32, i32),
+    /// Where the passer's stride is when his foot meets the ball, `[0, 1)`
+    /// (ADR-054, as for the shot): it picks the side the pass drifts to.
+    pub gait: f64,
     /// A lofted pass (over the opponents), and gravity for its flight,
     /// cm/tick².
     pub lofted: Option<i32>,

@@ -586,19 +586,25 @@ impl GroundTruth {
         ) * k.pass_error_ref_rad
             / k.error_ref_rad.max(1e-6);
         let speed = (weighed * (1.0 + error)).min(max);
-        // The drift: across the line, by the error, towards the centre of
-        // the pitch (his body is open to the play; a declared placeholder,
-        // the body's angle is not read yet). Before `SIM_VERSION` 55 it was
-        // always to the left of the line: a passer on his own goal line
-        // kicked it out every time, and seed 48 played 1,495 corners.
+        // The line of the pass, a unit vector. (Before `SIM_VERSION` 55 the
+        // drift was always to the left of it: a passer on his own goal line
+        // kicked it out every time, and seed 48 played 1,495 corners.)
         let (ux, uy) = if distance > 0.0 {
             (dx / distance, dy / distance)
         } else {
             (1.0, 0.0)
         };
-        let to_centre = f64::from(ctx.pitch_centre.1 - ctx.to.1)
-            .mul_add(ux, f64::from(ctx.pitch_centre.0 - ctx.to.0) * -uy);
-        let drift = distance * error * if to_centre >= 0.0 { 1.0 } else { -1.0 };
+        // The drift across the line (ADR-054, as for the shot; SIM_VERSION
+        // 109): where his stride is at the contact picks the side, which he
+        // cannot see as he decides. Met late in the step the foot opens and
+        // the ball runs to the side of the foot he kicks with (left of the
+        // line for the left foot, right for the right); met early it is
+        // pulled back across; in the middle of the step, clean. Before, it
+        // always drifted towards the centre of the pitch (a declared
+        // placeholder): a misplaced pass never ran out over a touchline.
+        let contact = ctx.gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
+        let foot_side = if dy >= 0.0 { 1.0 } else { -1.0 };
+        let drift = distance * error * contact * foot_side;
         #[allow(clippy::cast_possible_truncation)]
         let aim = (
             ctx.to.0 + (-uy * drift) as i32,
@@ -1575,6 +1581,34 @@ mod choice_filter_tests {
     /// The keeper's throw (P1, plan L0-CLOSE 10d): from his hands the ball
     /// leaves no faster than his arm throws it, where his foot would kick
     /// a long ball harder.
+    /// The pass's contact (P1, `SIM_VERSION` 109, ADR-054 as for the shot):
+    /// met in the middle of the step it goes straight; met late or early it
+    /// drifts to opposite sides of its line; never always to the same side.
+    #[test]
+    fn the_pass_drifts_where_its_contact_takes_it() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let mut vy = |gait: f64| {
+            g.resolve_pass(
+                &PassContext {
+                    passer: PlayerId::new(0, 0),
+                    from: (500, 3400, 0),
+                    to: (4000, 3400, 0),
+                    receiver_freedom_cm: 800,
+                    ground_friction_milli: 957,
+                    gait,
+                    lofted: None,
+                    throw: false,
+                },
+                &crate::reception_tests::params(),
+            )
+            .initial_velocity
+            .1
+        };
+        let (early, clean, late) = (vy(0.0), vy(0.5), vy(1.0));
+        assert_eq!(clean, 0, "the middle of the step: straight");
+        assert!(early * late < 0, "opposite sides: {early} {late}");
+    }
+
     #[test]
     fn the_throw_leaves_at_the_arm_speed() {
         let mut g = GroundTruth::new(42, MatchId::new(1, 0));
@@ -1587,7 +1621,7 @@ mod choice_filter_tests {
                         to: (4000, 3400, 0),
                         receiver_freedom_cm: 800,
                         ground_friction_milli: 957,
-                        pitch_centre: (5250, 3400),
+                        gait: 0.5,
                         lofted: None,
                         throw,
                     },

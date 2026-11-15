@@ -1274,10 +1274,10 @@ impl MatchState {
                 throw,
                 receiver_freedom_cm: freedom_cm,
                 ground_friction_milli: self.spatial.ground_friction_milli(),
-                pitch_centre: (
-                    i32::from(ctx.match_.pitch.length_m) * 50,
-                    i32::from(ctx.match_.pitch.width_m) * 50,
-                ),
+                gait: self
+                    .spatial
+                    .agent(attacker)
+                    .map_or(0.5, |a| f64::from(a.gait_milli) / 1000.0),
                 lofted: lofted.then(|| self.spatial.gravity_cm_per_tick2()),
             };
             let outcome = ctx.hidden.resolve_pass(&ctx_pass, &params);
