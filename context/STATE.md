@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `8afc9f6` - "docs(state): bookmark after the bench through the contract"
+**Last commit verified:** `2bf547b` - "docs(plans,state): the rule of run for services; the next exact step for the night"
 
 ## Dove siamo (2026-11-14)
 
@@ -64,7 +64,15 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
     2. i fuorigioco, circa sei a partita, anche su chi sembrava in linea (113-114);
     3. i tiri, ancora troppi (54 contro 25, OI-100), e le rimesse, troppo poche (OI-100);
     4. una partita di coppa ai rigori: `cargo test --release -p ds-match --test extra_time -- --nocapture`.
-- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; passo 4 completo: gli undici plugin obbligatori sono moduli di `ds-match/src/plugins/`, `state.rs` da 4.074 a circa 1.585 righe; passi 5 (la cronaca nel crate `ds-narrative`) e 6 (la psicologia si spegne, SIM 121) fatti; fatica, percezione e i cambi della panchina sono chiamati dal tick attraverso il contratto (`World`, `MatchPlugin::run`, lo schema di `StateWorld`); il prossimo passo esatto è in `plans/PLUGINS.md`: i duelli attraverso `World`, poi arbitro, pallone e corpo, pensiero.
+- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; passo 4 completo: gli undici plugin obbligatori sono moduli di `ds-match/src/plugins/`, `state.rs` da 4.074 a circa 1.585 righe; passi 5 (la cronaca nel crate `ds-narrative`) e 6 (la psicologia si spegne, SIM 121) fatti; fatica, percezione e i cambi della panchina sono chiamati dal tick attraverso il contratto (`World`, `MatchPlugin::run`, lo schema di `StateWorld`); la divisione di L0 è chiusa (`plans/PLUGINS.md`): duelli, pensiero, gesti tecnici, portiere, arbitro e pallone restano plugin ufficiali compilati dentro, nei loro moduli, perché decidono con i tipi del motore.
+
+**La divisione in plugin (2026-11-15, ADR-063, chiusa per L0).**
+- Il contratto è `ds-match-api`.
+- Gli undici plugin obbligatori sono moduli di `ds-match/src/plugins/`; i tre facoltativi hanno la scheda, e la psicologia si spegne.
+- La cronaca è nel crate `ds-narrative`.
+- Fatica, percezione e i cambi della panchina sono chiamati attraverso `World`; gli altri restano plugin ufficiali nei loro moduli (decisione 21).
+- `state.rs` è sceso da 4.074 a circa 1.600 righe. Il golden è identico a ogni passo; 469 test.
+- I test durano circa 4 minuti a commit invece di più di 20, e si lavora su un ramo solo, `main`.
 
 ## Decisioni prese da Claude, da rivedere
 
@@ -90,6 +98,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 | 18 | OI-110, il colpo, rinviato a L1 | salute del progetto: una soglia inventata andrebbe rifatta; il colpo e lo stop sono un fatto solo | SIM 119 |
 | 19 | La compostezza scala il termine di pressione con 2 (1 - c): il giocatore medio resta com'era | l'effetto medio non cambia, cambia solo come si distribuisce fra i giocatori; nessuna statistica si sposta in media per costruzione | SIM 119 |
 | 20 | `run` del contratto solo per i plugin con una fase loro; portiere, palle inattive e gesti tecnici restano servizi chiamati dal passo che li contiene | il loro lavoro avviene dentro il passo di un altro plugin; come un plugin esterno chiami un servizio lo deciderà un ADR con i plugin esterni | dopo la panchina |
+| 21 | Il confine del contratto per L0: attraverso `World` solo i plugin che il contratto sa dire senza i tipi del motore (fatica, percezione, panchina); gli altri restano plugin ufficiali nei loro moduli | rifare `DuelContext`, la scena e la parata nel contratto sarebbe un secondo modello del calcio da tenere allineato (luna); i tipi per i plugin esterni li decide il loro ADR | dopo la panchina |
 
 ## Plan
 

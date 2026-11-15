@@ -46,10 +46,6 @@
 
 **Una regola del contratto (decisione di Claude, 2026-11-15):** `run` serve ai plugin che agiscono in una fase loro. Un plugin che lavora dentro il passo di un altro (il portiere nel pallone che attraversa la linea, le palle inattive nella ripresa dell'arbitro, i gesti tecnici nelle scelte del pensiero) resta un servizio, chiamato da quel passo. Come un plugin esterno chiami il servizio di un altro lo deciderà un ADR, quando ci saranno plugin esterni (decisione 4).
 
-**Restano attraverso `World`, in quest'ordine, uno per volta e a golden identico:**
-1. i duelli (`challenge_carrier`, fase `ResolveContacts`);
-2. l'arbitro (il fuorigioco, il fallo, la palla fuori, fase `Referee`);
-3. il pallone e il corpo (fase `Move`);
-4. il pensiero (fasi `DecideOffBall` e `DecideOnBall`, il più grande).
+**Il confine del contratto per L0 (decisione di Claude, 2026-11-15, con i filtri luna e partita vera):** passano attraverso `World` i plugin che leggono e scrivono cose che il contratto sa dire senza i tipi del motore: fatica, percezione, i cambi della panchina (fatti). Duelli, pensiero, gesti tecnici, portiere, arbitro e pallone decidono con i tipi del motore (`DuelContext` e l'esito del contatto, la scena percepita, la parata), che vivono in `ds-orchestrator`; portarli nel contratto vorrebbe dire rifare quei tipi in `ds-match-api`, un secondo modello del calcio da tenere allineato al primo. Restano plugin ufficiali compilati dentro (decisione 4), ognuno nel suo modulo con la sua scheda, chiamati dal tick nell'ordine delle fasi. Quali tipi vedrà un plugin esterno lo deciderà l'ADR dei plugin esterni, con il primo plugin esterno.
 
-**Il prossimo passo esatto:** i duelli. Leggere `plugins/duels.rs` `challenge_carrier`; aggiungere a `World` ciò che legge (atti, portatore, distanze, corpi, caratteristiche del duello) e ciò che scrive (l'esito del contatto, la palla libera, il fallo come fatto per l'arbitro); chiamarlo da `MatchState::tick` con `StateWorld`; il golden identico.
+**La divisione di L0 è chiusa:** il contratto, i quattordici plugin (undici obbligatori come moduli, tre facoltativi con la scheda, uno già spegnibile), la cronaca fuori dal motore, la separazione dei corpi senza dipendenza dall'ordine, tre plugin chiamati attraverso il contratto, il golden identico a ogni passo.
