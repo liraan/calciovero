@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `e6b3c1c` - "SIM 127: the block's width measured on tracking data (OI-100)"
+**Last commit verified:** `91dad94` - "docs(state): bookmark after SIM 127, the block's width measured; the next action"
 
 ## Dove siamo (2026-11-14)
 
@@ -85,7 +85,8 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - In banda al 124: 8 metriche su 22, ognuna fuori banda con il suo OI.
 - Poi, sempre nella notte: la spazzata in fallo laterale (125) e la scelta dell'ADR-052 (126): il giocatore gioca la migliore opzione che vede, anche cattiva. Tolta la vecchia formula di `choice.json` e la soglia di chiarezza; chiusi OI-85 e OI-115. Al 126 sono in banda 9 metriche su 22, con i gol a 3.65 (reale 2.68).
 - Poi (127): l'ampiezza del gioco misurata. Reale: il 20,3% dei passaggi Wyscout parte dal decimo esterno della larghezza; con la palla l'uomo più vicino alla linea laterale ne dista 4 m (Metrica, partite campione 1 e 2). Motore 126: l'1,6%, e le ali non arrivavano sotto i 9 m, perché la griglia 4-4-2 era letta come frazione del blocco. Corretto, con l'ampiezza misurata (fonte in `balance/SOURCES.md`). Le rimesse non salgono (3.85): 43 su 44 seguono un passaggio, e il passaggio del motore va fuori di rado. Gol 4.67 e falli 18.5 escono dalla banda; nulla ritoccato (A5-bis).
-- **Prossima azione esatta:** da dove nascono le rimesse vere. Negli eventi Wyscout (`scratchpad`, da riscaricare da figshare se serve) contare cosa precede ogni rimessa (passaggio sbagliato, duello, spazzata, contrasto) e dove; confrontarlo con il motore (43 su 44 dopo un passaggio). Poi la causa: il passaggio troppo preciso (OI-100, l'errore senza fonte in `kick.json`, da fondare sui freeze frame StatsBomb open data) o il pallone conteso che non esce mai dai duelli.
+- Poi: da dove nascono le rimesse vere. Wyscout Serie A 2017-18 (16.235 rimesse, 42,7 a partita), l'evento prima della rimessa: spazzata 21,5%, tocco o deviazione 19,7%, duello a terra 26,2%, duello aereo 5,0%, passaggio sbagliato 23,7%. Nel motore (semi 42-51) 43 rimesse su 44 seguono un passaggio, e nessuna delle circa 300 spazzate finisce fuori: dopo una spazzata vengono un passaggio (98), un duello (72), un intercetto (48), un'altra spazzata (38). Una causa trovata nel codice: **il pallone non rimbalza**. Quando atterra (`spatial.rs` `ball_step`) perde tutta la velocità verticale e scorre a terra alla velocità del volo (circa 22 m/s per una spazzata), quindi chiunque sia sulla sua linea lo raggiunge e lo controlla. Un pallone vero rimbalza e, mentre rimbalza, resta lontano dai piedi.
+- **Prossima azione esatta:** fondare il rimbalzo su una fonte e poi implementarlo (`ball.json`, `ball_step`, e la stessa fisica in `ball_at_line`, quindi un `SIM_VERSION`). La fonte candidata è lo standard FIFA Quality per i campi: rimbalzo verticale da 2 m, la banda più alta 0,60-1,00 m (*FIFA natural pitch rating system*, digitalhub.fifa.com), e il rimbalzo ad angolo (*FIFA Test Manual I*, 2024, metodi 2024-01 e 2024-14). Gli host sono stati aggiunti all'ambiente il 2026-11-15, ma questa sessione non li raggiunge ancora (DNS): li leggerà la prossima sessione. Nessun numero scelto a memoria. Poi rimisurare le rimesse, i duelli aerei (OI-102) e le spazzate.
 
 ## Decisioni prese da Claude, da rivedere
 
