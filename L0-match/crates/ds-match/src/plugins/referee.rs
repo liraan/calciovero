@@ -10,6 +10,22 @@
 //! application as code, a versioned ruleset in the save). Until then the
 //! laws are written as code, declared, and "played it last" is read as
 //! "the side in possession", an approximation.
+//!
+//! The referee plugin (ADR-063 §4): the Laws applied, objectively (ADR-021
+//! note). Moved here from `rules.rs` (2026-11-15); `crate::rules` is the
+//! same module, kept as a name for the code that reads it.
+
+use ds_match_api::{MatchPlugin, PluginCard};
+
+/// The referee: the Laws of the Game, applied.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Referee;
+
+impl MatchPlugin for Referee {
+    fn card(&self) -> PluginCard {
+        crate::registry::card("referee")
+    }
+}
 
 /// A side of the match.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -235,6 +251,13 @@ pub fn offside_position(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_referee_plugin_has_its_card() {
+        use ds_match_api::MatchPlugin;
+        assert_eq!(super::Referee.card().name, "referee");
+        assert!(super::Referee.card().is_valid());
+    }
+
     use super::*;
 
     const PITCH: (i32, i32) = (10_500, 6_800);

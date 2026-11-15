@@ -184,85 +184,85 @@ pub(crate) struct Pending {
 }
 /// The in-progress state of a match.
 pub struct MatchState {
-    score: Score,
-    possession: Possession,
-    home_possession_ticks: u64,
-    away_possession_ticks: u64,
-    shots: (u16, u16),
+    pub(crate) score: Score,
+    pub(crate) possession: Possession,
+    pub(crate) home_possession_ticks: u64,
+    pub(crate) away_possession_ticks: u64,
+    pub(crate) shots: (u16, u16),
     /// The penalty shoot-out's goals, home and away, when there was one.
-    shootout: Option<(u8, u8)>,
-    next_event_slot: u32,
+    pub(crate) shootout: Option<(u8, u8)>,
+    pub(crate) next_event_slot: u32,
     /// Which half is currently being played (ADR-026).
-    half: Half,
+    pub(crate) half: Half,
     /// The absolute tick at which the current half started.
-    half_start_tick: u64,
+    pub(crate) half_start_tick: u64,
     /// The spatial state: positions, ball, carrier (slice B2).
-    spatial: SpatialState,
+    pub(crate) spatial: SpatialState,
     /// The pending flight, if any (MD-37). At most one at a time today.
     /// F.5: the opponents currently covering the carrier. The set is
     /// persistent across ticks; `update_coverage` diffs it and emits
     /// `RelationEnterExit` for the new members (MD-04). Discarded on
     /// possession change: the previous coverage referred to the other
     /// team.
-    coverage: BTreeSet<PlayerId>,
+    pub(crate) coverage: BTreeSet<PlayerId>,
     /// The possession the current `coverage` set refers to.
-    coverage_possession: Possession,
+    pub(crate) coverage_possession: Possession,
     /// The body of each player (height, weight, fatigue). Built once
     /// in `new` from the squads; read by `resolve_movement` each tick.
-    bodies: BTreeMap<PlayerId, PlayerBody>,
+    pub(crate) bodies: BTreeMap<PlayerId, PlayerBody>,
     /// Scanning parameters (ADR-034), loaded once at construction.
     /// What each player has seen of the others, where he last saw them
     /// (ADR-034, MD-40: the memory of the last look). His scene reads the
     /// pitch through it, never the pitch itself (OI-106).
-    seen: crate::plugins::perception::Memory,
-    scan_balance: crate::balance::ScanningBalance,
-    keeper_balance: crate::balance::KeeperBalance,
+    pub(crate) seen: crate::plugins::perception::Memory,
+    pub(crate) scan_balance: crate::balance::ScanningBalance,
+    pub(crate) keeper_balance: crate::balance::KeeperBalance,
     /// The Laws' thresholds (Law 12, `balance/laws.json`).
-    laws: crate::balance::LawsBalance,
+    pub(crate) laws: crate::balance::LawsBalance,
     /// The players cautioned once (Law 12): a second yellow is a red.
-    cautioned: BTreeSet<PlayerId>,
-    obstacle_balance: crate::balance::ObstacleBalance,
-    reception_balance: crate::balance::ReceptionBalance,
-    carry_balance: crate::balance::CarryBalance,
-    pressure_balance: crate::balance::PressureBalance,
+    pub(crate) cautioned: BTreeSet<PlayerId>,
+    pub(crate) obstacle_balance: crate::balance::ObstacleBalance,
+    pub(crate) reception_balance: crate::balance::ReceptionBalance,
+    pub(crate) carry_balance: crate::balance::CarryBalance,
+    pub(crate) pressure_balance: crate::balance::PressureBalance,
     /// Where the carrier was at his last decision: if he has not got
     /// anywhere since, he is blocked (OI-97).
-    last_decision: Option<(PlayerId, (i32, i32))>,
+    pub(crate) last_decision: Option<(PlayerId, (i32, i32))>,
     /// When a player who lost the ball may challenge again (ADR-042).
-    challenges: BTreeMap<PlayerId, u64>,
+    pub(crate) challenges: BTreeMap<PlayerId, u64>,
     /// When each player without the ball chooses again (ADR-049).
-    offball_due: BTreeMap<PlayerId, u64>,
+    pub(crate) offball_due: BTreeMap<PlayerId, u64>,
     /// Law 11: the passer's teammates in an offside position when the
     /// ball was played; one who then plays it commits the offence.
-    offside_at_pass: BTreeSet<PlayerId>,
+    pub(crate) offside_at_pass: BTreeSet<PlayerId>,
     /// The restart that put the ball back in play, until its first pass:
     /// there is no offside from a throw-in, a goal kick or a corner.
-    restart_pass: Option<crate::rules::RestartKind>,
+    pub(crate) restart_pass: Option<crate::rules::RestartKind>,
     /// The kicker the team has sent to the mark in the shoot-out (Law 10).
-    shootout_taker: Option<PlayerId>,
-    pending: Option<Pending>,
+    pub(crate) shootout_taker: Option<PlayerId>,
+    pub(crate) pending: Option<Pending>,
     /// Where the ball was at the start of this tick: its path this tick is
     /// the segment from here to where it is now (ADR-058: a ball is
     /// received where it reaches a player, between two ticks too).
-    ball_from: (i32, i32, i32),
+    pub(crate) ball_from: (i32, i32, i32),
     /// How many of each coach's instructions have taken effect, home and
     /// away (ADR-059).
-    instructed: (usize, usize),
+    pub(crate) instructed: (usize, usize),
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
     /// change? No: the actor's pace is his own, persistent across possessions.
     /// A weak decider who wins the ball back carries his own delay with him.
-    latencies: BTreeMap<PlayerId, u64>,
+    pub(crate) latencies: BTreeMap<PlayerId, u64>,
     /// The keeper holding the ball in his hands (plan L0-CLOSE 10d): he
     /// throws it, and nobody may challenge him for it (Law 12).
-    in_hands: Option<PlayerId>,
+    pub(crate) in_hands: Option<PlayerId>,
     /// The substitutions made, by the player who came off (plan L0-CLOSE
     /// 10f), and those still to announce: `(outgoing, incoming)`.
-    substituted: BTreeSet<PlayerId>,
-    to_announce: Vec<(PlayerId, PlayerId)>,
+    pub(crate) substituted: BTreeSet<PlayerId>,
+    pub(crate) to_announce: Vec<(PlayerId, PlayerId)>,
     /// The ball went dead since the last tick (a restart was given): the
     /// moment a substitution may be made (Law 3).
-    stoppage: bool,
+    pub(crate) stoppage: bool,
 }
 
 /// The action an agent chooses from its point of view (MD-01, MD-43).
@@ -702,7 +702,7 @@ fn step_towards(
 }
 
 /// The pitch in centimetres, `(length, width)`.
-fn pitch_cm(ctx: &MatchContext<'_>) -> (i32, i32) {
+pub(crate) fn pitch_cm(ctx: &MatchContext<'_>) -> (i32, i32) {
     (
         i32::from(ctx.match_.pitch.length_m) * 100,
         i32::from(ctx.match_.pitch.width_m) * 100,
@@ -781,180 +781,6 @@ impl MatchState {
     pub const fn begin_half(&mut self, half: Half, start_tick: u64) {
         self.half = half;
         self.half_start_tick = start_tick;
-    }
-    /// The substitutions due (Law 3, plan L0-CLOSE 10f): from its minute,
-    /// at the next stoppage (the ball dead before a restart), the player
-    /// from the bench takes the place of the one coming off, in the live
-    /// squad and on the pitch, fresh. The caller plays on with `live`.
-    pub fn substitute_due(
-        &mut self,
-        live: &mut ds_model::Match,
-        hidden: &mut ds_orchestrator::GroundTruth,
-        tick: u64,
-        ticks_per_second: u8,
-    ) {
-        if !std::mem::take(&mut self.stoppage) {
-            return;
-        }
-        let tps = u64::from(ticks_per_second).max(1);
-        let in_half = tick.saturating_sub(self.half_start_tick) / tps / 60;
-        let minute = in_half + u64::from(self.half.offset_minutes());
-        let carrier = self.spatial.carrier();
-        let allowed = usize::from(live.rules.subs_allowed);
-        for squad in [&mut live.home, &mut live.away] {
-            let mut due: Vec<ds_model::Substitution> = squad
-                .substitutions
-                .iter()
-                .copied()
-                .filter(|s| u64::from(s.minute) <= minute)
-                .filter(|s| !self.substituted.contains(&s.outgoing))
-                // Not the taker of the restart: he is on the ball.
-                .filter(|s| Some(s.outgoing) != carrier)
-                .collect();
-            if squad.coach_reacts {
-                due.extend(self.tired_for_fresh(squad, hidden, carrier, minute, allowed));
-            }
-            for s in due {
-                let (Some(i), Some(j)) = (
-                    squad.players.iter().position(|p| p.id == s.outgoing),
-                    squad.bench.iter().position(|p| p.id == s.incoming),
-                ) else {
-                    continue;
-                };
-                if !self.spatial.substitute(s.outgoing, s.incoming) {
-                    continue;
-                }
-                let incoming = squad.bench.remove(j);
-                self.bodies.insert(
-                    incoming.id,
-                    PlayerBody {
-                        height_cm: f64::from(incoming.height_cm),
-                        weight_kg: f64::from(incoming.weight_kg),
-                        fatigue: f64::from(incoming.physical.fatigue),
-                    },
-                );
-                let outgoing = std::mem::replace(&mut squad.players[i], incoming);
-                squad.bench.push(outgoing);
-                self.substituted.insert(s.outgoing);
-                self.to_announce.push((s.outgoing, s.incoming));
-            }
-        }
-    }
-
-    /// The changes a coach decides from what he sees (plan L0-CLOSE
-    /// 10h-c, Law 3): an outfield player is replaced by a substitute of
-    /// the same role who, fresh, runs faster than he can now, while he was
-    /// the faster of the two fresh (the coach chose him to start); within
-    /// the substitutions the Laws allow. No number of its own: the speeds
-    /// are the movement's, dimmed by fatigue.
-    fn tired_for_fresh(
-        &self,
-        squad: &ds_model::Squad,
-        hidden: &mut ds_orchestrator::GroundTruth,
-        carrier: Option<PlayerId>,
-        minute: u64,
-        allowed: usize,
-    ) -> Vec<ds_model::Substitution> {
-        let made = squad
-            .players
-            .iter()
-            .chain(squad.bench.iter())
-            .filter(|p| self.substituted.contains(&p.id))
-            .count();
-        let mut left = allowed.saturating_sub(made);
-        let mut used: BTreeSet<PlayerId> = BTreeSet::new();
-        let mut out = Vec::new();
-        for p in squad.players.iter().skip(1) {
-            if left == 0 {
-                break;
-            }
-            if Some(p.id) == carrier || self.substituted.contains(&p.id) {
-                continue;
-            }
-            let Some(body) = self.bodies.get(&p.id) else {
-                continue;
-            };
-            let now = hidden.top_speed_now(p.id, body.fatigue);
-            let fresh = hidden.top_speed_now(p.id, 0.0);
-            let best = squad
-                .bench
-                .iter()
-                .filter(|b| b.role == p.role && !used.contains(&b.id))
-                .filter(|b| !self.substituted.contains(&b.id))
-                .map(|b| {
-                    (
-                        hidden.top_speed_now(b.id, f64::from(b.physical.fatigue)),
-                        b.id,
-                    )
-                })
-                .filter(|(v, _)| *v > now && *v <= fresh)
-                .max_by(|a, b| a.0.total_cmp(&b.0).then(b.1.cmp(&a.1)));
-            if let Some((_, incoming)) = best {
-                used.insert(incoming);
-                left -= 1;
-                out.push(ds_model::Substitution {
-                    outgoing: p.id,
-                    incoming,
-                    minute: u16::try_from(minute).unwrap_or(u16::MAX),
-                });
-            }
-        }
-        out
-    }
-
-    /// The coaches' instructions due (ADR-059): each takes effect at the
-    /// tick after the one he gave it at, for his whole team, at once; the
-    /// fact is told at its minute.
-    fn instruct_due(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
-        for home in [true, false] {
-            let squad = if home {
-                &ctx.match_.home
-            } else {
-                &ctx.match_.away
-            };
-            let done = if home {
-                self.instructed.0
-            } else {
-                self.instructed.1
-            };
-            let due: Vec<ds_model::Instruction> = squad
-                .instructions
-                .iter()
-                .skip(done)
-                .take_while(|i| i.tick < tick)
-                .copied()
-                .collect();
-            for i in &due {
-                let ds_model::Order::Intention(intention) = i.order;
-                self.spatial.set_intention(home, intention);
-                let name = |b: ds_model::BlockHeight| match b {
-                    ds_model::BlockHeight::High => "high",
-                    ds_model::BlockHeight::Mid => "mid",
-                    ds_model::BlockHeight::Low => "low",
-                };
-                let width = match intention.width {
-                    ds_model::Width::Narrow => "narrow",
-                    ds_model::Width::Normal => "normal",
-                    ds_model::Width::Wide => "wide",
-                };
-                self.emit_event(
-                    ctx,
-                    tick,
-                    None,
-                    EventType::Instruction,
-                    serde_json::json!({
-                        "side": if home { "home" } else { "away" },
-                        "block": name(intention.block),
-                        "width": width,
-                    }),
-                );
-            }
-            if home {
-                self.instructed.0 += due.len();
-            } else {
-                self.instructed.1 += due.len();
-            }
-        }
     }
 
     /// Advances the time by one tick: the substrate of the match.
@@ -3056,185 +2882,6 @@ impl MatchState {
         let _ = self.apply_restart(ctx, crate::rules::kick_off(side, pitch_cm(ctx)));
     }
 
-    /// Applies a restart: the nearest player of the restarting side goes to
-    /// the spot, the ball is placed at rest at his feet, and it is his.
-    /// Returns the taker.
-    fn apply_restart(
-        &mut self,
-        ctx: &mut MatchContext<'_>,
-        restart: crate::rules::Restart,
-    ) -> Option<PlayerId> {
-        let taker = self.restart_taker(ctx, &restart)?;
-        self.stoppage = true;
-        self.pending = None;
-        self.offside_at_pass.clear();
-        self.restart_pass = Some(restart.kind);
-        self.spatial.set_position(taker, restart.spot);
-        // Out of play nobody has it, even if it went out under his foot.
-        self.spatial.set_carrier(None);
-        self.spatial
-            .set_ball_in_flight((restart.spot.0, restart.spot.1, 0), (0, 0, 0));
-        self.spatial.advance_ball();
-        self.spatial.set_carrier(Some(taker));
-        self.possession = match restart.side {
-            crate::rules::Side::Home => Possession::Home,
-            crate::rules::Side::Away => Possession::Away,
-        };
-        self.clear_the_spot(ctx, &restart, taker);
-        if restart.kind == crate::rules::RestartKind::Penalty {
-            // He kicks before anyone can come back into the area (Law 14:
-            // they stay out until the ball is kicked).
-            self.latencies.remove(&taker);
-        }
-        Some(taker)
-    }
-
-    /// Who takes a restart (plan L0-CLOSE step 7): the keeper takes his goal
-    /// kick; a corner, a free kick or a penalty goes to the best kicker of
-    /// that ball among the outfield players within `TAKER_RADIUS_CM`; the
-    /// others to the nearest.
-    fn restart_taker(
-        &self,
-        ctx: &mut MatchContext<'_>,
-        restart: &crate::rules::Restart,
-    ) -> Option<PlayerId> {
-        const TAKER_RADIUS_CM: i64 = 3000;
-        use crate::rules::RestartKind;
-        let squad = match restart.side {
-            crate::rules::Side::Home => &ctx.match_.home,
-            crate::rules::Side::Away => &ctx.match_.away,
-        };
-        if restart.kind == RestartKind::Penalty {
-            if let Some(t) = self.shootout_taker {
-                return Some(t);
-            }
-        }
-        let nearest = nearest_in_squad(&self.spatial, squad, restart.spot);
-        let keeper = squad
-            .players
-            .first()
-            .map(|p| p.id)
-            .filter(|id| self.spatial.agent(*id).is_some());
-        match restart.kind {
-            RestartKind::GoalKick => keeper.or(nearest),
-            RestartKind::Corner | RestartKind::FreeKick | RestartKind::Penalty => {
-                let mut near: Vec<(i64, PlayerId)> = squad
-                    .players
-                    .iter()
-                    .skip(1)
-                    .filter_map(|p| {
-                        self.spatial
-                            .agent(p.id)
-                            .map(|a| (distance_squared(a.position, restart.spot), p.id))
-                    })
-                    .filter(|(d, _)| *d <= TAKER_RADIUS_CM * TAKER_RADIUS_CM)
-                    .collect();
-                near.sort_by(|x, y| x.0.cmp(&y.0).then(x.1.slot().cmp(&y.1.slot())));
-                let ids: Vec<PlayerId> = near.into_iter().map(|(_, id)| id).collect();
-                ctx.hidden
-                    .set_piece_taker(&ids, restart.kind == RestartKind::Penalty)
-                    .or(nearest)
-            }
-            RestartKind::KickOff | RestartKind::ThrowIn => nearest,
-        }
-    }
-
-    /// The distances of the Laws (Laws 13-14), applied to the players: at
-    /// a free kick or a corner the opponents stand at least 9.15 m from the
-    /// ball; at a penalty everyone but the taker and the defending keeper
-    /// leaves the penalty area, and the keeper stands on his line between
-    /// the posts.
-    fn clear_the_spot(
-        &mut self,
-        ctx: &MatchContext<'_>,
-        restart: &crate::rules::Restart,
-        taker: PlayerId,
-    ) {
-        const DISTANCE_CM: i64 = 915;
-        use crate::rules::RestartKind;
-        let (length, width) = pitch_cm(ctx);
-        let restarting_home = restart.side == crate::rules::Side::Home;
-        let ids: Vec<(PlayerId, bool)> = ctx
-            .match_
-            .home
-            .players
-            .iter()
-            .map(|p| (p.id, true))
-            .chain(ctx.match_.away.players.iter().map(|p| (p.id, false)))
-            .collect();
-        match restart.kind {
-            RestartKind::FreeKick | RestartKind::Corner => {
-                for (id, home) in ids {
-                    if home == restarting_home {
-                        continue;
-                    }
-                    let Some(p) = self.spatial.agent(id).map(|a| a.position) else {
-                        continue;
-                    };
-                    let d2 = distance_squared(p, restart.spot);
-                    if d2 >= DISTANCE_CM * DISTANCE_CM {
-                        continue;
-                    }
-                    // Back along the line from the ball, or towards his
-                    // goal if he stands on it.
-                    let (dx, dy) = (
-                        i64::from(p.0 - restart.spot.0),
-                        i64::from(p.1 - restart.spot.1),
-                    );
-                    let len = d2.isqrt();
-                    let (ux, uy) = if len == 0 {
-                        (if home { -1 } else { 1 }, 0)
-                    } else {
-                        (dx, dy)
-                    };
-                    let l = if len == 0 { 1 } else { len };
-                    let to = (
-                        i32::try_from(i64::from(restart.spot.0) + ux * DISTANCE_CM / l)
-                            .unwrap_or(restart.spot.0)
-                            .clamp(0, length),
-                        i32::try_from(i64::from(restart.spot.1) + uy * DISTANCE_CM / l)
-                            .unwrap_or(restart.spot.1)
-                            .clamp(0, width),
-                    );
-                    self.spatial.set_position(id, to);
-                }
-            }
-            RestartKind::Penalty => {
-                // The goal the penalty is kicked at.
-                let goal_x = if restarting_home { length } else { 0 };
-                // Outside the area and 9.15 m behind the mark.
-                let back = self
-                    .laws
-                    .penalty_area_depth_cm
-                    .max(self.laws.penalty_spot_cm + 915)
-                    + 100;
-                let edge = if restarting_home { length - back } else { back };
-                let defending_keeper = if restarting_home {
-                    ctx.match_.away.players.first().map(|p| p.id)
-                } else {
-                    ctx.match_.home.players.first().map(|p| p.id)
-                };
-                for (id, _) in ids {
-                    if id == taker {
-                        continue;
-                    }
-                    if Some(id) == defending_keeper {
-                        self.spatial.set_position(id, (goal_x, width / 2));
-                        continue;
-                    }
-                    let Some(p) = self.spatial.agent(id).map(|a| a.position) else {
-                        continue;
-                    };
-                    let inside = (p.0 - goal_x).abs() < (edge - goal_x).abs();
-                    if inside {
-                        self.spatial.set_position(id, (edge, p.1));
-                    }
-                }
-            }
-            RestartKind::KickOff | RestartKind::ThrowIn | RestartKind::GoalKick => {}
-        }
-    }
-
     /// What the pitch looks like after `tick` (the tick record,
     /// IDEA-INFRA-018). Observable facts only: positions, ball, carrier,
     /// score, clock. `events` is the range of the chain born in this tick.
@@ -3278,82 +2925,6 @@ impl MatchState {
             score: self.score,
             events,
         }
-    }
-
-    /// The order in which `side` takes its kicks in the shoot-out (Law 10):
-    /// the players on the pitch at the end, best taker first, by the same
-    /// measure the team uses for a penalty in the match; `count` of them
-    /// (the larger team leaves out its last, to equal the other).
-    pub(crate) fn shootout_order(
-        &self,
-        ctx: &mut MatchContext<'_>,
-        home: bool,
-        count: usize,
-    ) -> Vec<PlayerId> {
-        let squad = if home {
-            &ctx.match_.home
-        } else {
-            &ctx.match_.away
-        };
-        let mut left: Vec<PlayerId> = squad
-            .players
-            .iter()
-            .map(|p| p.id)
-            .filter(|id| self.spatial.agent(*id).is_some())
-            .collect();
-        let mut order = Vec::new();
-        while order.len() < count {
-            let Some(best) = ctx.hidden.set_piece_taker(&left, true) else {
-                break;
-            };
-            left.retain(|id| *id != best);
-            order.push(best);
-        }
-        order
-    }
-
-    /// How many players `home`'s side has on the pitch.
-    pub(crate) fn on_pitch_count(&self, ctx: &MatchContext<'_>, home: bool) -> usize {
-        let squad = if home {
-            &ctx.match_.home
-        } else {
-            &ctx.match_.away
-        };
-        squad
-            .players
-            .iter()
-            .filter(|p| self.spatial.agent(p.id).is_some())
-            .count()
-    }
-
-    /// Sends `taker` to the mark for one kick of the shoot-out (Law 10).
-    pub(crate) fn place_shootout_kick(
-        &mut self,
-        ctx: &mut MatchContext<'_>,
-        home: bool,
-        taker: PlayerId,
-    ) {
-        let (length, width) = pitch_cm(ctx);
-        let (side, goal) = if home {
-            (crate::rules::Side::Home, (length, width / 2))
-        } else {
-            (crate::rules::Side::Away, (0, width / 2))
-        };
-        let restart = crate::rules::foul_restart(side, goal, true, goal, self.laws.penalty_spot_cm);
-        self.shootout_taker = Some(taker);
-        let _ = self.apply_restart(ctx, restart);
-        self.shootout_taker = None;
-    }
-
-    /// Whether the kick of `taker` is completed (Law 10): the ball has left
-    /// his foot and stopped, gone out, or been played by someone else.
-    pub(crate) fn shootout_kick_done(&self, taker: PlayerId, struck: bool) -> bool {
-        struck
-            && (self.spatial.carrier().is_some_and(|c| c != taker)
-                || self.spatial.ball_state() == crate::spatial::BallState::Loose
-                || self
-                    .restart_pass
-                    .is_some_and(|k| k != crate::rules::RestartKind::Penalty))
     }
 
     /// Whether the ball has left `taker`'s foot.
@@ -4006,7 +3577,7 @@ impl MatchState {
         );
     }
 
-    fn emit_event(
+    pub(crate) fn emit_event(
         &mut self,
         ctx: &mut MatchContext<'_>,
         tick: u64,
@@ -4050,7 +3621,11 @@ impl MatchState {
 /// construction, and the caller decides how to degrade. A regression
 /// would make the caller skip the action, and `golden_l0` would see it.
 /// D2: no panic in a simulation path.
-fn nearest_in_squad(spatial: &SpatialState, squad: &Squad, point: (i32, i32)) -> Option<PlayerId> {
+pub(crate) fn nearest_in_squad(
+    spatial: &SpatialState,
+    squad: &Squad,
+    point: (i32, i32),
+) -> Option<PlayerId> {
     squad
         .players
         .iter()

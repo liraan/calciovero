@@ -26,4 +26,6 @@
 
 **Passo 4, la percezione (2026-11-15):** `plugins/perception.rs`: la memoria dell'ultimo sguardo (`Memory`), uscita da `state.rs`, con la sua scheda; la geometria del cono e dello sguardo resta in `crate::perception` (pubblico, letto dagli esempi). Golden identico.
 
-**Il prossimo:** il passo 4, l'arbitro (`rules.rs`, i falli e i cartellini).
+**Passo 4, arbitro, palle inattive e panchina (2026-11-15):** `plugins/referee.rs` (era `rules.rs`; `crate::rules` resta lo stesso modulo), `plugins/set_pieces.rs` (`apply_restart`, `restart_taker`, `clear_the_spot`, la serie dei rigori), `plugins/bench.rs` (i cambi pianificati e decisi, le istruzioni). Sono metodi di `MatchState` in file loro; i campi di `MatchState` sono `pub(crate)`. Golden identico.
+
+**Il prossimo:** il passo 4, il portiere, poi duelli, gesti tecnici, pensiero, corpo, pallone.

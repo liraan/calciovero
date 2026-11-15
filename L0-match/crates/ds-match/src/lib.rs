@@ -37,7 +37,7 @@ pub mod plugins;
 pub mod record;
 pub mod registry;
 pub mod result;
-pub mod rules;
+pub use plugins::referee as rules;
 pub mod save;
 pub mod shape;
 pub mod simulate;
