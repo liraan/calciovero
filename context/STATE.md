@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `73a485e` - "feat(registry): the cards of the eleven mandatory plugins -- ADR-063, plan PLUGINS step 3"
+**Last commit verified:** `1572434` - "refactor(plugins): fatigue, the first plugin behind the contract -- ADR-063, plan PLUGINS step 4"
 
 ## Dove siamo (2026-11-14)
 
@@ -64,7 +64,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
     2. i fuorigioco, circa sei a partita, anche su chi sembrava in linea (113-114);
     3. i tiri, ancora troppi (54 contro 25, OI-100), e le rimesse, troppo poche (OI-100);
     4. una partita di coppa ai rigori: `cargo test --release -p ds-match --test extra_time -- --nocapture`.
-- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; il prossimo è il passo 4, il primo plugin dietro il contratto, la fatica.
+- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; il passo 4 è cominciato con la fatica (il primo plugin dietro il contratto); il prossimo è la percezione.
 
 ## Decisioni prese da Claude, da rivedere
 
