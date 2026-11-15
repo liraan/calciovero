@@ -952,6 +952,18 @@ fn clear_candidate(
     };
     let x = pos.0 + forward * m.kick.clear_length_cm;
     let players = imagined(scene);
+    // Into touch on his side (SIM_VERSION 125): the ball goes out where he
+    // kicks it, and the throw-in is theirs, for sure; it is worth what they
+    // gain with the ball there, against what the others would give.
+    let touch_y = if pos.1 < own_goal.1 { 0 } else { width };
+    let touch = {
+        let spot = (x, touch_y);
+        let loss = space_value(spot, own_goal, goal);
+        (
+            ds_calculator::thought::ThoughtBalance::expected(0.0, 0.0, loss, risk_appetite),
+            (x, if touch_y == 0 { -300 } else { width + 300 }),
+        )
+    };
     [near, own_goal.1, far]
         .into_iter()
         .map(|y| {
@@ -982,11 +994,14 @@ fn clear_candidate(
             // the ball where he stood, a bonus no other option had, though a
             // pass that arrives takes the ball away from there too.
             let worth =
-                ds_calculator::thought::ThoughtBalance::expected(sure, gain, loss, risk_appetite)
-                    .max(0.0);
+                ds_calculator::thought::ThoughtBalance::expected(sure, gain, loss, risk_appetite);
             (worth, landing)
         })
+        .chain(std::iter::once(touch))
+        // The least bad of his landings, before the worth is cut at nothing
+        // (a clearance is chosen when nothing better is left).
         .max_by(|a, b| a.0.total_cmp(&b.0))
+        .map(|(worth, to)| (worth.max(0.0), to))
         .map(|(geometric, to)| ChoiceCandidate {
             kind: ChoiceKind::Clear { to },
             geometric,
@@ -1746,6 +1761,33 @@ mod keeper_visibility_tests {
             );
             assert!((light - heavy).abs() < 1e-12, "{light} {heavy}");
             assert_eq!(worth(0.0), None, "not pressed: no clearance");
+        }
+
+        /// P1 and twin (`SIM_VERSION` 125): pressed near his own goal with an
+        /// opponent first to every landing up the pitch, he puts the ball
+        /// into touch on his side; with his teammate free where it would come
+        /// down, he clears it to him.
+        #[test]
+        fn pressed_with_nothing_on_he_puts_it_into_touch() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let from = (1000, 1500);
+            let x = from.0 + mind().kick.clear_length_cm;
+            let mut s = scene((9000, 6000), Some((1100, 1500)));
+            for (k, y) in [680, 3400, 6120].into_iter().enumerate() {
+                let o = PlayerId::new(110 + u32::try_from(k).expect("k"), 0);
+                s.opponents.push(o);
+                s.positions.insert(o, (x, y));
+            }
+            let to = |s: &PerceivedScene| match clear_candidate(s, from, (0.5, 0.9), &b) {
+                Some(ChoiceCandidate {
+                    kind: ChoiceKind::Clear { to },
+                    ..
+                }) => to,
+                _ => (0, 3400),
+            };
+            assert!(to(&s).1 < 0, "into touch: {:?}", to(&s));
+            let free = scene((x, 680), Some((1100, 1500)));
+            assert!(to(&free).1 >= 0, "to his free teammate: {:?}", to(&free));
         }
 
         /// The pass into the run (P1, plan L0-CLOSE 11): standing, it goes
