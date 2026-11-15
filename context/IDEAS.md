@@ -523,7 +523,7 @@
 
 ### IDEA-PERCEPTION-004 — What a player sees is not exact: positions and flights read with an error
 
-- **Status:** sketch (a model decision for the maintainer; prerequisite of several distances of step 11)
+- **Status:** accepted as ADR-062 (the maintainer, 2026-11-15); the size of the error waits for its source
 - **Source:** the calibration of 2026-11-15 (SIM 107-111, ds-reference, seeds 42-101). Two distances share one root: offsides 1.1 against 4.3 (the passer reads the line perfectly) and throw-ins 5.6 against 42.7 (the players foresee every flight and meet nearly every ball before it goes out). Every player sees every position and every ball's path exactly.
 - **What the doctrine already says.** `00-foundations` §4: "perception is derived, not noisy by hash: the error of perception is a function of the characteristics (vision, concentration), the distance, and the angle"; ADR-035 revised the noise half of ADR-029 in this sense. It is built for the gaze and the cone (ADR-033, ADR-034), not for where a player believes a man is or where a ball will come down.
 - **The recommendation.** A deterministic error of perception for positions and flights, never a die (ADR-035): the farther, the more to the side of his gaze, the less he sees well (vision) and the more tired (concentration), the larger the error of where he believes a man stands or a ball lands; its direction from the geometry of the view (the depth along his line of sight is read worse than the side, as the eye does), so the same scene gives the same misreading. The passer misjudges the line by it; the man going for a ball misjudges its drop by it.
