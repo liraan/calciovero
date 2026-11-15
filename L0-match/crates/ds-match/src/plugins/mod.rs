@@ -9,6 +9,7 @@ pub mod duels;
 pub mod fatigue;
 pub mod keeper;
 pub mod perception;
+pub mod psychology;
 pub mod referee;
 pub mod set_pieces;
 pub mod technique;

@@ -117,6 +117,14 @@ pub struct Match {
     /// The coin tosses (Laws 8 and 10), an input of the match.
     #[serde(default)]
     pub tosses: Tosses,
+    /// Whether the psychology plugin is on (ADR-063 §4, the plugin
+    /// configuration of ADR-013): courage and composure move the players.
+    #[serde(default = "on")]
+    pub psychology: bool,
+}
+
+const fn on() -> bool {
+    true
 }
 
 impl Match {
@@ -144,6 +152,7 @@ impl Match {
             seed,
             rules,
             tosses: Tosses::HOME,
+            psychology: true,
         }
     }
 

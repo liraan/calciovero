@@ -14,7 +14,7 @@
 | 3 | **le schede fatte; la chiamata per fase arriva con il passo 4** — Il registro nel nucleo: `ds-match` elenca i suoi plugin (ancora codice interno) con la loro scheda, e il tick li chiama per fase | il golden identico; un test che il registro ha gli undici obbligatori |
 | 4 | **fatto** — Un plugin per volta, dal più isolato: fatica, poi percezione, arbitro, palle inattive, panchina, portiere, duelli, gesti tecnici, pensiero, corpo, pallone | per ognuno: il modulo dietro il contratto, i suoi test spostati, golden identico |
 | 5 | **fatto** — La cronaca fuori dal motore: `narrative.rs` legge gli eventi, non scrive nella partita | il golden identico; `ds-match` non dipende più dalla cronaca |
-| 6 | I tre plugin che si spengono (psicologia, ambiente, colpi): la scheda dichiara le letture facoltative, il validatore le controlla (decisione B) | spento ognuno, la partita gira e i test lo provano |
+| 6 | **fatto per la psicologia; ambiente e colpi con la sola scheda** — I tre plugin che si spengono (psicologia, ambiente, colpi): la scheda dichiara le letture facoltative, il validatore le controlla (decisione B) | spento ognuno, la partita gira e i test lo provano |
 
 **Passo 1 (2026-11-15):** l'unica dipendenza dall'ordine trovata nel substrato era la separazione minima dei corpi, corretta nel 120. Il passo di ogni giocatore si calcola dalla fotografia, e il pensiero senza palla legge ciò che era deciso prima del suo giro.
 
@@ -32,4 +32,10 @@
 
 **Passo 5 (2026-11-15):** la cronaca è il crate `ds-narrative`, che dipende solo da `ds-core`, `ds-model` e `ds-stats`. In `ds-match` resta ciò che la unisce al tick record (`NarratedTick`, `narrate_ticks`), e `ds_match::narrate` è lo stesso di prima. Golden identico.
 
-**Il prossimo:** il passo 6, i tre plugin che si spengono (psicologia, ambiente, colpi).
+**Passo 6 (2026-11-15, SIM 121):** la psicologia si spegne con `Match.psychology`: il coraggio non trattiene più nessuno e la compostezza lascia la pressione com'è. Ambiente e colpi hanno la loro scheda (`registry::OPTIONAL_CARDS`) e non ancora codice; i colpi aspettano L1 (OI-110).
+
+**La divisione, a che punto è:**
+- fatto: il contratto, gli undici plugin obbligatori come moduli con la loro scheda, la cronaca fuori dal motore, un plugin che si spegne;
+- resta, per portare il contratto da "dichiarato" a "chiamato": il tipo dello stato osservabile in `ds-match-api` e un metodo di `MatchPlugin` per fase, perché il tick chiami i plugin attraverso il registro invece che per nome. È un passo che tocca ogni plugin, da fare a golden identico.
+
+**Il prossimo:** lo stato osservabile in `ds-match-api` (`PitchView`: posizioni, velocità, pallone, possesso, tempo) e il primo metodo di fase sul plugin della fatica.

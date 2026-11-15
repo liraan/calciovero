@@ -114,6 +114,41 @@ pub const CARDS: [PluginCard; 11] = [
     },
 ];
 
+/// The cards of the plugins that may be switched off (ADR-063 §4).
+///
+/// In the order of `ds_match_api::OPTIONAL`. The environment and the knocks have no
+/// code yet: their cards say what they will read and write (the weather and
+/// the pitch; the force of a contact and the player's body, OI-110).
+pub const OPTIONAL_CARDS: [PluginCard; 3] = [
+    PluginCard {
+        name: "psychology",
+        version: "1",
+        phases: &[Phase::DecideOffBall, Phase::Act],
+        reads: &["courage", "composure", "bodies", "pressure"],
+        writes: &["contest", "error"],
+        weight: Weight::Detail,
+        narrative: &[],
+    },
+    PluginCard {
+        name: "environment",
+        version: "0",
+        phases: &[Phase::Move],
+        reads: &["pitch", "weather"],
+        writes: &["ball"],
+        weight: Weight::Detail,
+        narrative: &[],
+    },
+    PluginCard {
+        name: "knocks",
+        version: "0",
+        phases: &[Phase::ResolveContacts],
+        reads: &["contacts", "bodies"],
+        writes: &["squads"],
+        weight: Weight::Detail,
+        narrative: &["injury"],
+    },
+];
+
 /// The card of the plugin called `name`; for a name the registry does not
 /// hold, a card with no phase, which `PluginCard::is_valid` refuses (the
 /// test below proves the eleven of the contract are all here).
@@ -121,6 +156,7 @@ pub const CARDS: [PluginCard; 11] = [
 pub fn card(name: &str) -> PluginCard {
     CARDS
         .iter()
+        .chain(OPTIONAL_CARDS.iter())
         .find(|c| c.name == name)
         .cloned()
         .unwrap_or(PluginCard {
@@ -145,5 +181,12 @@ mod tests {
         let names: Vec<&str> = CARDS.iter().map(|c| c.name).collect();
         assert_eq!(names, ds_match_api::MANDATORY);
         assert!(CARDS.iter().all(ds_match_api::PluginCard::is_valid));
+        let optional: Vec<&str> = super::OPTIONAL_CARDS.iter().map(|c| c.name).collect();
+        assert_eq!(optional, ds_match_api::OPTIONAL);
+        assert!(
+            super::OPTIONAL_CARDS
+                .iter()
+                .all(|c| c.is_valid() && c.weight == ds_match_api::Weight::Detail)
+        );
     }
 }

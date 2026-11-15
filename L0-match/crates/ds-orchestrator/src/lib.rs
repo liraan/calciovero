@@ -58,6 +58,9 @@ use ds_db::latents::PlayerLatents;
 
 /// Plane A. The actual state of the world, never exposed.
 pub struct GroundTruth {
+    /// Whether the psychology plugin is on (ADR-063 §4): off, courage and
+    /// composure are read as those of a player they do not move.
+    psychology: bool,
     world_seed: u64,
     match_id: MatchId,
     duel_balance: ds_calculator::duel::DuelBalance,
@@ -84,6 +87,7 @@ impl GroundTruth {
     #[must_use]
     pub fn new(world_seed: u64, match_id: MatchId) -> Self {
         Self {
+            psychology: true,
             world_seed,
             match_id,
             duel_balance: ds_calculator::duel::DuelBalance::load(),
@@ -108,6 +112,7 @@ impl GroundTruth {
     #[must_use]
     pub fn for_match(world_seed: u64, match_: &ds_model::Match) -> Self {
         let mut g = Self::new(world_seed, match_.id);
+        g.psychology = match_.psychology;
         g.vault.register_roles(
             match_
                 .home
@@ -373,7 +378,12 @@ impl GroundTruth {
             foot * tired,
             ctx.power,
             pressure,
-            shooter.psychological.composure,
+            if self.psychology {
+                shooter.psychological.composure
+            } else {
+                // Off: the composure that leaves the pressure as it is.
+                0.5
+            },
         );
         let on_the_run = k.run_error_rad
             * run
@@ -1034,6 +1044,10 @@ impl GroundTruth {
     /// His courage (ADR-057, OI-109): what the engine reads when he decides
     /// whether to go up against a heavier man.
     pub fn courage(&mut self, player: PlayerId) -> f64 {
+        if !self.psychology {
+            // Off: nothing holds him back (the contest as before courage).
+            return 1.0;
+        }
         f64::from(self.latents_for(player).psychological.courage)
     }
 
