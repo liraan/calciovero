@@ -54,7 +54,7 @@ pub fn match_fixture(seed: u64) -> Result<Match, String> {
         make_squad(1, "Home", HOME_SLOT_BASE, seed)?,
         make_squad(2, "Away", AWAY_SLOT_BASE, seed)?,
         Pitch::default(),
-        Referee::try_new(RefereeId::new(1, 0), 0.5, 0.7).map_err(|e| e.to_string())?,
+        Referee::new(RefereeId::new(1, 0)),
         MatchSeed::from_raw(seed),
         MatchRules::default(),
     ))

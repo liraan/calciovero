@@ -12,6 +12,9 @@ referenced_by: ["L0.06", "L2-psyche"]
 conforms_to: "00-foundations (v2.0)"
 ---
 
+> **Superseded in the engine (note 2026-11-15, OI-49).** Since ADR-035 (no dice) the match draws no random number: every outcome is a cause of the players' characteristics, the scene and the Laws. This module is kept as the history of the decision and for the world generator, which derives values by key from the world seed (`ds-db`), not by stream. Read ADR-035 first.
+
+
 <!--
   MAINTAINER NOTE: ADR-003 is accepted (option B). This cell is now `ratified`.
 

@@ -31,8 +31,6 @@ pub struct ShotChoiceBalance {
     pub risk_weight: f64,
     /// The shot is an option within this distance of the goal, cm (ADR-050).
     pub shot_range_cm: i64,
-    /// The distance at which the shot's distance factor halves, cm (ADR-050).
-    pub shot_distance_ref_cm: i64,
     /// How much a pass's progression counts, for a full appetite (ADR-050).
     pub progression_gain: f64,
     /// The least a backward pass's salience is multiplied by (ADR-050).
@@ -42,11 +40,6 @@ pub struct ShotChoiceBalance {
     /// An outfield opponent within this distance hurries the kick, less the
     /// farther he is, cm: the same in the engine and in the shooter's mind.
     pub kick_pressure_radius_cm: i64,
-    /// The goal's visible width from the penalty spot (the sine of the
-    /// angle): a goal seen this well is a whole goal (ADR-051).
-    pub shot_cone_ref: f64,
-    /// The salience of carrying the ball with full room in front (ADR-051).
-    pub carry_salience: f64,
     /// The room in front (to the nearest opponent ahead) that is full room
     /// for a carry, cm.
     pub carry_room_ref_cm: i64,
@@ -55,16 +48,10 @@ pub struct ShotChoiceBalance {
     pub clear_salience: f64,
     /// Within this distance of his own goal a defender may clear, cm.
     pub clear_zone_cm: i64,
-    /// How much less natural a shot to the side of his other foot is.
-    pub other_side_factor: f64,
     /// The power of a lob, 0..1 (soft and high, ADR-052).
     pub power_lob: f64,
-    /// The salience of a lofted pass, against a ground one (ADR-051).
-    pub loft_salience: f64,
     /// A lofted pass is an option from this distance, cm.
     pub loft_min_cm: i64,
-    /// ... and fades out at this one, cm.
-    pub loft_max_cm: i64,
 }
 
 impl ShotChoiceBalance {

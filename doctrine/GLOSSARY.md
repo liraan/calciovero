@@ -42,7 +42,7 @@ The non-negotiable architectural separation of data into three layers. Plane A (
 
 ### Plane A — Ground Truth
 
-The actual state of the world: the hidden performances (strength, passing, vision, reading), the physiological and psychological traits, the internal RNG seed. Lives in `pcfm-hidden` (the **custodian**). Never exposed. Read only through the custodian API, one characteristic at a time, by the **calculator** (ADR-028). The engine never sees a value: it calls the **orchestrator** (`resolve_*`), which calls the calculator. See [`doctrine/00-foundations.md`](00-foundations.md) §3, [`doctrine/adr/003-plane-a-enforcement.md`](adr/003-plane-a-enforcement.md), ADR-028.
+The actual state of the world: the hidden performances (strength, passing, vision, reading), the physiological and psychological traits. Lives in `ds-db` (the **custodian**). Never exposed. Read only through the custodian API, one characteristic at a time, by the **calculator** (ADR-028). The engine never sees a value: it calls the **orchestrator** (`resolve_*`), which calls the calculator. See [`doctrine/00-foundations.md`](00-foundations.md) §3, [`doctrine/adr/003-plane-a-enforcement.md`](adr/003-plane-a-enforcement.md), ADR-028.
 
 ### Plane B — Observation
 
@@ -66,10 +66,10 @@ a performance is something the player does.
 |---|---|---|---|---|
 | **Dimension** | height, weight, preferred foot | **B** (measured) | `ds-model` (`Player`) | measured, then estimated |
 | **State** | fatigue, confidence, concentration, composure | **B** (computed or held) | `ds-model` (`PhysicalStateMinimal`, `PsychologicalStateMinimal`) | estimated from effects |
-| **Performance** | strength, passing, tackling, vision, game reading | **A** (hidden) | `pcfm-hidden` | **nobody directly**: an estimate in Plane C |
+| **Performance** | strength, passing, tackling, vision, game reading | **A** (hidden) | `ds-db` | **nobody directly**: an estimate in Plane C |
 | **Estimate** | "his passing is good, with low confidence" | **C** | the scouting crate (does not exist yet) | the manager |
 
-- **"Hidden" is a crate, not a meaning.** `pcfm-hidden` contains the
+- **"Hidden" is a crate, not a meaning.** `ds-db` contains the
   hidden performances, plus the RNG and the observations buffer (mechanics,
   not player properties). "hidden = the attributes" confuses the container
   with the content.
@@ -93,14 +93,14 @@ a performance is something the player does.
   "latent skill" row said "nobody, ever"; the correct statement is
   "nobody directly, an estimate in Plane C".
 
-- **The engine reads truth, the manager reads estimates.** The engine reads a performance through the custodian (inside `pcfm-hidden`) and a dimension or a state directly (`Player`, `MatchState`), and returns an outcome. The manager reads an estimate in Plane C for every datum: a measurement for a dimension, a test for a physical performance, many matches for a technical skill. No true value reaches him.
+- **The engine reads truth, the manager reads estimates.** The engine reads a performance through the custodian (inside `ds-db`) and a dimension or a state directly (`Player`, `MatchState`), and returns an outcome. The manager reads an estimate in Plane C for every datum: a measurement for a dimension, a test for a physical performance, many matches for a technical skill. No true value reaches him.
 ### Dimension
 
 A property of the body that exists whether the player moves or not: height, weight, preferred foot. Measured with a simple instrument, it does not change during a match, and it is not something the player *does*. Plane B, in `Player` (`ds-model`). It enters the formulas as an input. See ADR-028, L0.11 §2 and §7.5.
 
 ### Performance
 
-Something the player *does*, and it exists only when he expresses it: strength, passing, vision, game reading. Hidden, stable over months, Plane A, in `pcfm-hidden`, read through the custodian. Measured with a test (strength, acceleration, vision) or observed over many matches (passing, reading) — but the method of estimation does not change the kind. See ADR-028, L0.11 §2 and §7.
+Something the player *does*, and it exists only when he expresses it: strength, passing, vision, game reading. Hidden, stable over months, Plane A, in `ds-db`, read through the custodian. Measured with a test (strength, acceleration, vision) or observed over many matches (passing, reading) — but the method of estimation does not change the kind. See ADR-028, L0.11 §2 and §7.
 
 ### Modulator
 
@@ -108,7 +108,7 @@ A datum that changes how a characteristic behaves without producing a result of 
 
 ### Custodian
 
-The component that holds the hidden performances. It is `pcfm-hidden`. It answers one question at a time: "what is the value of this characteristic for this player?". It has no "give me all the values" door. It does not calculate and does not decide. See ADR-028, L0.11 §4.
+The component that holds the hidden performances. It is `ds-db`. It answers one question at a time: "what is the value of this characteristic for this player?". It has no "give me all the values" door. It does not calculate and does not decide. See ADR-028, L0.11 §4.
 
 ### Calculator
 
@@ -164,13 +164,13 @@ The structured explanation carried by every `MatchEvent`, describing why the eve
 
 ### `GroundTruth`
 
-The opaque type exposed by `pcfm-hidden`. Contains Plane A. Has no public fields; only the `resolve_*` methods. See [`doctrine/adr/003-plane-a-enforcement.md`](adr/003-plane-a-enforcement.md) and [`L0-match/specs/03-entities-minimal.md`](../L0-match/specs/03-entities-minimal.md) §3.2.
+The opaque type of the prototype (`pcfm-hidden`, before ADR-041): Plane A with only `resolve_*` methods. Today Plane A is in `ds-db` and the `resolve_*` are in `ds-orchestrator`. See [`doctrine/adr/003-plane-a-enforcement.md`](adr/003-plane-a-enforcement.md) and [`L0-match/specs/03-entities-minimal.md`](../L0-match/specs/03-entities-minimal.md) §3.2.
 
 ### `resolve_*`
 
-The public API of `pcfm-hidden`: `resolve_duel`, `resolve_shot`, `resolve_pass`, `resolve_pressure`, `resolve_injury_risk`, `resolve_save`, `resolve_set_piece`, `drain_observations`. The match engine calls these; it never reads a latent value. See [`L0-match/specs/03-entities-minimal.md`](../L0-match/specs/03-entities-minimal.md) §3.2.
+The public API of the prototype (`pcfm-hidden`; today in `ds-orchestrator`): `resolve_duel`, `resolve_shot`, `resolve_pass`, `resolve_pressure`, `resolve_injury_risk`, `resolve_save`, `resolve_set_piece`, `drain_observations`. The match engine calls these; it never reads a latent value. See [`L0-match/specs/03-entities-minimal.md`](../L0-match/specs/03-entities-minimal.md) §3.2.
 
-> **Note (2026-11-08) — the seven `resolve_*` are the prototype's API.** ADR-028 §5 (rewritten 2026-11-05) supersedes the single `resolve_*`: a **custodian** (`pcfm-hidden`) that holds the performances and answers one characteristic at a time, a **calculator** (`pcfm-calculator`) that applies a formula from `L0-match/balance/*.json`, an **orchestrator** (`resolve_*`) that decides when. `resolve_influence` was removed (286100e); `resolve_choice` is decided in the Plan (F.6-cog) and its body is OI-83 (formula or policy). The entries above stay as history. See ADR-028 §5 and ADR-039.
+> **Note (2026-11-08) — the seven `resolve_*` are the prototype's API.** ADR-028 §5 (rewritten 2026-11-05) supersedes the single `resolve_*`: a **custodian** (`ds-db`) that holds the performances and answers one characteristic at a time, a **calculator** (`pcfm-calculator`) that applies a formula from `L0-match/balance/*.json`, an **orchestrator** (`resolve_*`) that decides when. `resolve_influence` was removed (286100e); `resolve_choice` is decided in the Plan (F.6-cog) and its body is OI-83 (formula or policy). The entries above stay as history. See ADR-028 §5 and ADR-039.
 
 
 > **Note (2026-11-09) — the API is smaller today.** `resolve_pressure`, `resolve_injury_risk`, `resolve_set_piece` were dormant (no caller outside `pcfm-hidden`) and drew from `ChaCha20Rng` streams. ADR-035 forbids a die in simulation paths and D3 forbids structure without a consumer. The three functions, their streams (`pressure`, `injury`, `set_piece`), their `*Context`/`*Outcome` types and their `ObservationEvent` variants are removed; they return with the phenomenon that needs them and an ADR. The API is now `resolve_duel`, `resolve_shot`, `resolve_pass`, `resolve_save`, `resolve_choice`, `resolve_movement`, `drain_observations`. The two remaining live dice are `action_roll` (`state.rs`, R.1-latency) and `resolve_duel` (Plan E). The entries above stay as history.
@@ -221,15 +221,15 @@ Same seed + same inputs = same result. Always. A non-negotiable pillar. See [`do
 
 ### Named RNG stream
 
-A random stream identified by a name (`match:{id}:micro-decisions`) and derived from `(world_seed, stream_name)`. Adding a new stream never shifts the results of existing streams. Implemented in `L0.01`. See [`L0-match/specs/01-rng.md`](../L0-match/specs/01-rng.md).
+**Superseded in the match (ADR-035, no dice).** A random stream identified by a name and derived from `(world_seed, stream_name)`; the engine no longer draws from any. The world generator derives values by key from the world seed instead (`ds-db`). See [`L0-match/specs/01-rng.md`](../L0-match/specs/01-rng.md).
 
 ### `world_seed`
 
-The top-level seed from which all streams are derived. Changing it changes the entire world. Stored in the save. See [`L0-match/specs/01-rng.md`](../L0-match/specs/01-rng.md) §2.4.
+The top-level seed from which every value of the world is derived, by key. Changing it changes the entire world. Stored in the save. See [`L0-match/specs/01-rng.md`](../L0-match/specs/01-rng.md) §2.4.
 
 ### `SIM_VERSION`
 
-The version identifier of the simulation behaviour. Bumped whenever the outcome of a simulation changes for the same seed and inputs. Tracked in [`L0-match/CHANGELOG-SIM.md`](../L0-match/CHANGELOG-SIM.md). Defined in `ds-core` (planned).
+The version identifier of the simulation behaviour. Bumped whenever the outcome of a simulation changes for the same seed and inputs. Tracked in [`L0-match/CHANGELOG-SIM.md`](../L0-match/CHANGELOG-SIM.md). Defined in `ds-match/src/save.rs`.
 
 ### Golden test
 
@@ -243,28 +243,23 @@ A test that asserts a property that must hold for all inputs (e.g. "money is con
 
 ## 4. Architecture
 
-### `pcfm-*` crates
+### `ds-*` crates
 
-The Rust crates of the project. Each has a single responsibility. The mapping:
-- `ds-core` — time, IDs, RNG, event bus, deterministic math
-- `pcfm-hidden` — Plane A (latents, `resolve_*`)
-- `pcfm-match` — the match engine (orchestrator, L0.04)
-- `pcfm-stats` — Plane B storage (append-only)
-- `ds-model` — pure entities
-- `pcfm-gen` — world generator
-- Others — see [`doctrine/00-foundations.md`](00-foundations.md) §8 and [`doctrine/STRUCTURE.md`](STRUCTURE.md) §2.
+The Rust crates of the project (`pcfm-*` until ADR-032). Each has a single responsibility; the table with their dependencies is in [`L0-match/design/ARCHITECTURE.md`](../L0-match/design/ARCHITECTURE.md) §1:
+- `ds-core` — deterministic math (`dmath`), geometry, ids, time, hash
+- `ds-model` — the visible entities
+- `ds-db` — Plane A: the hidden characteristics, behind the custodian (ADR-041 §2, which split the old `pcfm-hidden` into `ds-db`, `ds-calculator`, `ds-orchestrator`)
+- `ds-calculator` — the formulas of the gestures and of the thought
+- `ds-orchestrator` — the decision: the scene, the read, the choice, `resolve_*`
+- `ds-stats` — Plane B storage (append-only)
+- `ds-match` — the match engine (L0.04)
+- the tools: `ds-demo`, `ds-gui`, `ds-reference`, `ds-test-runner`, `ds-testkit`, `ds-fixtures`
 
-### `pcfm-bridge`
+The Qt bridge (`pcfm-bridge`, ADR-005) was replaced by egui in `tools/ds-gui` (ADR-055).
 
-The only crate that knows Qt. Contains the FFI shim. See [`doctrine/adr/004-panic-strategy-ffi.md`](adr/004-panic-strategy-ffi.md) and [`doctrine/adr/005-qt-binding.md`](adr/005-qt-binding.md).
+### `L0-match/balance/*.json`
 
-### `pcfm-hidden`
-
-The crate that contains Plane A. Its public API is `resolve_*` and `drain_observations`. There are no public latent fields. See [`doctrine/adr/003-plane-a-enforcement.md`](adr/003-plane-a-enforcement.md).
-
-### `L0-match/balance/*.toml`
-
-Configuration files for tunable parameters (e.g. `L0-match/balance/match_engine.toml`, `L0-match/balance/ratings.toml`, `L0-match/balance/random_events.toml`). No balance value is hardcoded. *(planned — the `L0-match/balance/` directory does not exist yet)*
+The files of the engine's numbers, one per family (`kick.json`, `duel.json`, `laws.json`, ...), each with `_note` and `_source`; every number has its row and its grade in [`L0-match/balance/SOURCES.md`](../L0-match/balance/SOURCES.md).
 
 ### Plugin
 
@@ -320,7 +315,7 @@ Frontmatter fields that declare the dependency graph. `depends_on` lists modules
 
 ### Truth leakage
 
-Any path by which Plane A data reaches a module outside `pcfm-hidden` / `pcfm-match` / `pcfm-gen`. **Banned.** See [`doctrine/00-foundations.md`](00-foundations.md) §3.
+Any path by which Plane A data reaches a module outside `ds-db` / `ds-match` / the world generator. **Banned.** See [`doctrine/00-foundations.md`](00-foundations.md) §3.
 
 ### `HashMap` in simulation paths
 
@@ -328,7 +323,7 @@ Any path by which Plane A data reaches a module outside `pcfm-hidden` / `pcfm-ma
 
 ### Hardcoded balance values
 
-**Banned.** All tunable values live in `L0-match/balance/*.toml` or `registry/*.yaml`. See [`doctrine/00-foundations.md`](00-foundations.md) §5.
+**Banned.** All tunable values live in `L0-match/balance/*.json` or `registry/*.yaml`. See [`doctrine/00-foundations.md`](00-foundations.md) §5.
 
 ### `Proprietary`
 

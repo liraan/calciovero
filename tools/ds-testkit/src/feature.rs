@@ -14,8 +14,6 @@ pub enum Feature {
     // ── Core primitives ─────────────────────────────────────────────
     /// The RNG registry (`ds-core::rng`).
     CoreRng,
-    /// The event bus (`ds-core::event_bus`).
-    CoreEventBus,
     /// Entity identifiers (`ds-core::ids`).
     CoreIds,
     /// Hashing primitives (`ds-core::hash`).
@@ -86,7 +84,6 @@ impl Feature {
     /// this list.
     pub const ALL_BUILTIN: &'static [Self] = &[
         Self::CoreRng,
-        Self::CoreEventBus,
         Self::CoreIds,
         Self::CoreHash,
         Self::L0Match,
@@ -127,7 +124,6 @@ impl Feature {
     pub fn label(&self) -> Cow<'static, str> {
         match self {
             Self::CoreRng => Cow::Borrowed("core::rng"),
-            Self::CoreEventBus => Cow::Borrowed("core::event_bus"),
             Self::CoreIds => Cow::Borrowed("core::ids"),
             Self::CoreHash => Cow::Borrowed("core::hash"),
             Self::L0Match => Cow::Borrowed("L0::match"),

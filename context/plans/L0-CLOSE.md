@@ -7,6 +7,34 @@
 
 **Ogni passo:** SIM_VERSION, golden, CHANGELOG-SIM, P1 e test dei gemelli, gate verdi, segnalibro, push. Misura su 30 seed (42-71) confrontata con il reale; il filtro *partita vera*: un tifoso lo riconoscerebbe? il filtro *luna*: che cosa indica, oltre la lettera?
 
+## Lo stato vero e ciò che resta (riscritto il 2026-11-15, dopo il ricontrollo `L0-AUDIT.md`)
+
+**Mandato del maintainer (2026-11-15):** completare L0 in cinque fasi: ricontrollo, aggiornamento, il calcio che manca, la taratura fine (compito di Claude Code da ora), la chiusura con la partita di prova. L1 non si apre prima.
+
+**Fatto:** passi 1-9; nel 10, le famiglie 10a, 10b, 10c, 10g; il 10d, 10e e 10f in parte; il ricontrollo (fase 1) e l'aggiornamento dei documenti (fase 2). Il motore è al `SIM_VERSION` 114 (448 test).
+
+**Fase 3, il calcio che manca, in quest'ordine** (ogni voce con il suo `SIM_VERSION`, i gemelli, il golden su glibc e musl, la misura su 60 seed):
+
+| # | Voce | Dipende da | Prima azione |
+|---|---|---|---|
+| 1 | La memoria minima di ciò che si è visto: l'ultimo sguardo (ADR-034, MD-40) | — | per ogni giocatore, dove ha visto ogni altro al suo ultimo sguardo; nel salvataggio e nell'hash |
+| 2 | La scena solo dal cono e dalla memoria (OI-106) | 1 | il test anti-fuga, rosso; poi `rank`, `loose_rival_cm`, `cutters` dalla memoria |
+| 3 | ADR-062 (a) e (c): l'ampiezza dell'attenzione come `vision`, la linea letta dall'ultimo sguardo (fonti in OI-104, `SOURCES.md`); rimisurare fuorigioco e palloni che escono (OI-98, OI-100) | 1, 2 | il gemello su `vision` |
+| 4 | Supplementari e rigori finali (Regole 7 e 10, testo 2026/27), quando la competizione li chiede; la monetina come input della partita (approvata il 2026-11-15) | — | un `Match` di coppa finito pari: i supplementari, poi la serie |
+| 5 | La barriera: la somma di corpi, ognuno sceglie se entrarci e dove, resta o si gira secondo il coraggio (OI-105) | 8 (il coraggio) | la distanza della Regola 13 e il metro dalla barriera |
+| 6 | L'allenatore avversario che reagisce in partita (ADR-059 passo 3, poi cambi e istruzioni dallo stato) | ADR-059 passo 3 | il passo 3: istruzioni rapide e transizioni |
+| 7 | Il colpo che fa uscire un giocatore: `Injury` emesso dalla forza del contatto, `injury_proneness` col suo consumatore | — | la fonte (studio UEFA, Ekstrand) e la misura del contatto nel duello |
+| 8 | Gli appannatori: lucidità, coraggio, aggressività (OI-70, ADR-057) | — | il coraggio come radice fissa, col gemello |
+| 9 | Le cause aperte del realismo: OI-102 (il secondo uomo in aria), OI-103 (protezione e dribbling), OI-64 (il corpo rispetto alla palla), 10d (il portiere che si piazza, esce), 10e (il tempo del salto), la tabella di ADR-057 | — | una per volta, la causa nel calcio vero prima del codice |
+
+**Fase 4, la taratura fine:** prima due proposte di dottrina al maintainer (RULES A6, la taratura a Claude Code; RULES A5-bis con i tre gradi della decisione 5), e si aspetta il suo ok; poi ogni parametro di grado 3 (356 su 381, `L0-AUDIT.md` §7) verso il grado 1 o 2, la misura su 60 seed con le bande scritte prima, ogni metrica fuori banda con la sua causa o il suo OI; la tabella in `L0-CALIBRATION.md`.
+
+**Fase 5, la chiusura:** la misura finale (passo 11), il golden su glibc, musl e dove si può Windows, macOS, ARM64 (OI-99), la durata di una partita su un core, la partita di prova del maintainer. L0 è chiuso solo dopo il suo ok; poi l'ADR dei plugin (OI-94).
+
+---
+
+*Sotto, la storia del piano com'era, per riferimento.*
+
 ## Riferimenti reali (per partita, entrambe le squadre)
 
 Gol ~2,7 · tiri ~25 · nello specchio ~9 · angoli ~10 · falli ~22 · gialli ~4 · rossi ~0,15 · rigori ~0,3 · passaggi ~900-1.000 · rimesse laterali ~40 · cross ~35 · fuorigioco ~4.

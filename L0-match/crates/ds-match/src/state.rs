@@ -229,13 +229,9 @@ pub struct MatchState {
 /// The action an agent chooses from its point of view (MD-01, MD-43).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum ChosenAction {
-    /// Pass to the teammate with the most space, and how much space he
-    /// has (cm, distance to the nearest opponent). The freedom is computed
-    /// once in `choose_action` and carried to the reception, not recomputed
-    /// (D7, one source of truth).
+    /// Pass to the teammate he chose.
     Pass {
         receiver: PlayerId,
-        freedom_cm: i64,
         lofted: bool,
         /// A through ball: played to this point, ahead of the runner.
         at: Option<(i32, i32)>,
@@ -1124,28 +1120,17 @@ impl MatchState {
             .filter(|id| self.spatial.act(**id) == Some(ds_orchestrator::OffBallAct::Run))
             .filter_map(|id| self.spatial.act_target(*id).map(|t| (*id, t)))
             .collect();
-        let (chosen_kind, freedoms) =
+        let (chosen_kind, _) =
             ds_orchestrator::Actor::new(attacker).decide(&scene, ctx.hidden, tick);
         let chosen = match chosen_kind {
             ds_orchestrator::ChoiceKind::Pass(receiver)
-            | ds_orchestrator::ChoiceKind::Loft(receiver) => {
-                let freedom_cm = freedoms
-                    .get(&receiver)
-                    .copied()
-                    .unwrap_or(ds_orchestrator::read::PASS_FREEDOM_CM);
-                ChosenAction::Pass {
-                    receiver,
-                    freedom_cm,
-                    lofted: matches!(chosen_kind, ds_orchestrator::ChoiceKind::Loft(_)),
-                    at: None,
-                }
-            }
+            | ds_orchestrator::ChoiceKind::Loft(receiver) => ChosenAction::Pass {
+                receiver,
+                lofted: matches!(chosen_kind, ds_orchestrator::ChoiceKind::Loft(_)),
+                at: None,
+            },
             ds_orchestrator::ChoiceKind::Through { to, at } => ChosenAction::Pass {
                 receiver: to,
-                freedom_cm: freedoms
-                    .get(&to)
-                    .copied()
-                    .unwrap_or(ds_orchestrator::read::PASS_FREEDOM_CM),
                 lofted: false,
                 at: Some(at),
             },
@@ -1230,7 +1215,6 @@ impl MatchState {
 
         if let ChosenAction::Pass {
             receiver,
-            freedom_cm,
             lofted,
             at,
         } = chosen
@@ -1276,7 +1260,6 @@ impl MatchState {
                 from,
                 to,
                 throw,
-                receiver_freedom_cm: freedom_cm,
                 ground_friction_milli: self.spatial.ground_friction_milli(),
                 air_friction_milli: self.spatial.air_friction_milli(),
                 gait: self

@@ -9,7 +9,6 @@
 //! # Modules
 //!
 //! - [`rng`] — deterministic, isolated, named random streams (L0.01)
-//! - [`event_bus`] — deterministic in-process event dispatch (L0.02)
 //! - [`ids`] — generational entity identifiers (L0.03 §3.1)
 //! - [`time`] — monotonic simulation clock
 //! - [`hash`] — 32-byte BLAKE3 digest
@@ -18,7 +17,6 @@
 #![deny(missing_docs)]
 
 pub mod dmath;
-pub mod event_bus;
 pub mod geometry;
 pub mod hash;
 pub mod identity;

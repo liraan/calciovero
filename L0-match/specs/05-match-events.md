@@ -84,16 +84,20 @@ pub enum EventType {
     Woodwork,
     // Meta
     Substitution, Injury, Goal, Assist,
+    // The coach in the match (ADR-059)
+    Instruction,
     // Advanced
     ProgressiveCarry, ProgressivePass, Pressure,
     // Random (from L0.08)
     RandomEvent,
-    // Administrative
-    HalfTime, FullTime, MatchAbandoned,
+    // Administrative (ADR-026: KickOff and SecondHalf mark the halves)
+    KickOff, HalfTime, SecondHalf, FullTime, MatchAbandoned,
 }
 ```
 
 The set is closed at L0. `L3-registry` allows pack-provided event kinds later.
+
+**Aligned 2026-11-15 with the code** (`ds-stats/src/event.rs`, 33 kinds; OI-31): `KickOff`, `SecondHalf` (ADR-026) and `Instruction` (ADR-059) were in the code and not here. `RandomEvent` is still in the enum but no producer emits it since ADR-035 (no dice); `Injury` has no producer yet (plan L0-CLOSE 10h).
 
 **Amended 2026-11-13 (version 1.2, the maintainer's decision).** Three kinds join the closed set so that every time the ball leaves the pitch or meets the frame, the match tells it: `ThrowIn` (Law 15), `GoalKick` (Law 16) and `Woodwork` (a post or the crossbar, ADR-048 §1). `Corner` already existed. The restart's taker is the event's actor.
 

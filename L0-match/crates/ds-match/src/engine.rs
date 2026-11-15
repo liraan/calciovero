@@ -88,7 +88,7 @@ mod tests {
             make_squad(1, 0),
             make_squad(2, 100),
             Pitch::default(),
-            Referee::try_new(RefereeId::new(1, 0), 0.5, 0.7).unwrap(),
+            Referee::new(RefereeId::new(1, 0)),
             MatchSeed::from_raw(42),
             MatchRules::default(),
         )

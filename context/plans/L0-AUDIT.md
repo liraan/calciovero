@@ -8,7 +8,7 @@
 |---|---|---|---|
 | Segnalibro E4b | `STATE.md`: LCV `de71d3e` | `git log`: HEAD `a343b05` è il segnalibro, il commit prima è `de71d3e` | niente |
 | `SIM_VERSION` | `STATE.md`, `CHANGELOG-SIM.md`: 114 | `ds-match/src/save.rs`: 114; i due golden passano su glibc, musl e Windows (113) | niente |
-| Numero dei test | `README.md` (badge e testo), `doctrine/_index.md`: 448 | `cargo test --workspace`: 448 passati (SIM 114, 2026-11-15) | `STRUCTURE.md` e `CONTRIBUTING.md` non riportano il numero: niente da allineare |
+| Numero dei test | `README.md` (badge e testo), `doctrine/_index.md`: 448 | `cargo test --workspace`: 448 passati (SIM 114, 2026-11-15); 440 dopo la fase 2, che ha tolto i test del bus eventi e dell'arbitro | `STRUCTURE.md` e `CONTRIBUTING.md` non riportano il numero: niente da allineare |
 | Numero dei crate | `_index.md`: 13 | `Cargo.toml` `members`: 13 | niente |
 
 ## 2. Gli OI aperti (23)
@@ -83,10 +83,7 @@
 
 ## 7. I parametri di `balance/` e il loro grado (decisione 5)
 
-Grado 1 = fonte diretta (in `SOURCES.md`: *sourced*, *derived*); grado 2 = misurato sull'effetto (nessuno ancora); grado 3 = arbitrario o senza fonte (*arbitrary, declared*, *explained, no source*, *undocumented*). I profili dei ruoli (`profiles.json` `roles`, una riga in `SOURCES.md`) sono espansi qui foglia per foglia: sono il prototipo del generatore delle squadre di prova, non pesi del motore.
-
-Parametri di `SOURCES.md`: 221; grado 1: 25, grado 2: 0, grado 3: 196, non classificati: 0
-Foglie dei profili dei ruoli: 168, tutte grado 3. **Totale: 389 parametri; grado 1: 25; grado 2: 0; grado 3: 364.**
+Parametri di `SOURCES.md`: 213 (dopo la fase 2, che ha tolto otto parametri senza lettore); foglie dei profili dei ruoli: 168, tutte grado 3. **Totale: 381 parametri; grado 1: 25; grado 2: 0; grado 3: 356.**
 
 | file | parametro | valore | stato in SOURCES.md | grado |
 |---|---|---|---|---|
@@ -114,8 +111,6 @@ Foglie dei profili dei ruoli: 168, tutte grado 3. **Totale: 389 parametri; grado
 | `choice.json` | `decision_bias` | 0.2 | arbitrary, declared | 3 |
 | `choice.json` | `floor` | 0.5 | undocumented | 3 |
 | `choice.json` | `clarity_threshold` | 0.25 | undocumented | 3 |
-| `choice.json` | `perception_floor` | 0.1 | undocumented | 3 |
-| `choice.json` | `perception_range` | 0.7 | undocumented | 3 |
 | `duel.json` | `reach_cm` | 120 | explained, no source | 3 |
 | `duel.json` | `retry_ticks` | 50 | explained, no source | 3 |
 | `duel.json` | `defender_tackling_milli` | 450 | undocumented | 3 |
@@ -284,20 +279,14 @@ Foglie dei profili dei ruoli: 168, tutte grado 3. **Totale: 389 parametri; grado
 | `shot_choice.json` | `reading_weight` | 0.5 | explained, no source | 3 |
 | `shot_choice.json` | `risk_weight` | 0.5 | explained, no source | 3 |
 | `shot_choice.json` | `shot_range_cm` | 3500 | explained, no source | 3 |
-| `shot_choice.json` | `shot_distance_ref_cm` | 1800 | explained, no source | 3 |
 | `shot_choice.json` | `progression_gain` | 1.5 | explained, no source | 3 |
 | `shot_choice.json` | `progression_floor` | 0.4 | explained, no source | 3 |
 | `shot_choice.json` | `pressure_radius_cm` | 300 | explained, no source | 3 |
 | `shot_choice.json` | `kick_pressure_radius_cm` | 1500 | explained, no source | 3 |
-| `shot_choice.json` | `shot_cone_ref` | 0.6 | explained, no source | 3 |
-| `shot_choice.json` | `carry_salience` | 0.6 | explained, no source | 3 |
 | `shot_choice.json` | `carry_room_ref_cm` | 1000 | explained, no source | 3 |
 | `shot_choice.json` | `clear_salience` | 2.5 | explained, no source | 3 |
 | `shot_choice.json` | `clear_zone_cm` | 2500 | explained, no source | 3 |
-| `shot_choice.json` | `other_side_factor` | 0.8 | explained, no source | 3 |
-| `shot_choice.json` | `loft_salience` | 1.2 | explained, no source | 3 |
 | `shot_choice.json` | `loft_min_cm` | 1800 | explained, no source | 3 |
-| `shot_choice.json` | `loft_max_cm` | 5000 | explained, no source | 3 |
 | `shot_choice.json` | `power_lob` | 0.2 | explained, no source | 3 |
 | `stoppage_time.json` | `base` | 0 | undocumented | 3 |
 | `stoppage_time.json` | `goal` | 60 | sourced | 1 |
