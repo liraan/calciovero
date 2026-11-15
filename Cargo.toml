@@ -66,3 +66,11 @@ suspicious = "warn"
 perf = "warn"
 pedantic = "warn"
 nursery = "warn"
+
+# Tests play whole matches; unoptimised, the suite takes over twenty
+# minutes and every commit waits for it (the pre-commit hook). Opt-level 1
+# changes no result: the simulation's arithmetic is IEEE and deterministic
+# (`ds_core::dmath`, no fast-math), and the goldens pass the same in debug
+# and release (2026-11-15).
+[profile.dev]
+opt-level = 1
