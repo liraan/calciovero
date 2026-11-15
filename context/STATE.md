@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `383d78f` - "refactor(plugins): the bench decides the substitutions through the contract -- ADR-063"
+**Last commit verified:** `8afc9f6` - "docs(state): bookmark after the bench through the contract"
 
 ## Dove siamo (2026-11-14)
 
@@ -64,7 +64,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
     2. i fuorigioco, circa sei a partita, anche su chi sembrava in linea (113-114);
     3. i tiri, ancora troppi (54 contro 25, OI-100), e le rimesse, troppo poche (OI-100);
     4. una partita di coppa ai rigori: `cargo test --release -p ds-match --test extra_time -- --nocapture`.
-- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; passo 4 completo: gli undici plugin obbligatori sono moduli di `ds-match/src/plugins/`, `state.rs` da 4.074 a circa 1.585 righe; passi 5 (la cronaca nel crate `ds-narrative`) e 6 (la psicologia si spegne, SIM 121) fatti; fatica, percezione e i cambi della panchina sono chiamati dal tick attraverso il contratto (`World`, `MatchPlugin::run`, lo schema di `StateWorld`); il prossimo è il resto (le istruzioni della panchina, poi portiere, duelli, arbitro, palle inattive, pallone, corpo, gesti tecnici, pensiero), uno per volta, a golden identico.
+- **La divisione in plugin:** ADR-063 accettato dal maintainer (*"si inizia"*, 2026-11-15; chiude OI-94); il piano è `plans/PLUGINS.md`; passi 1 (SIM 120), 2 (il crate `ds-match-api`) e 3 (le schede nel registro) fatti; passo 4 completo: gli undici plugin obbligatori sono moduli di `ds-match/src/plugins/`, `state.rs` da 4.074 a circa 1.585 righe; passi 5 (la cronaca nel crate `ds-narrative`) e 6 (la psicologia si spegne, SIM 121) fatti; fatica, percezione e i cambi della panchina sono chiamati dal tick attraverso il contratto (`World`, `MatchPlugin::run`, lo schema di `StateWorld`); il prossimo passo esatto è in `plans/PLUGINS.md`: i duelli attraverso `World`, poi arbitro, pallone e corpo, pensiero.
 
 ## Decisioni prese da Claude, da rivedere
 
@@ -89,6 +89,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 | 17 | OI-109, opzione A: coraggio e compostezza come radici, profili di prova uguali per ogni ruolo (0.5 ± 0.15), effetto in una forma senza numeri | partita vera: si riconoscono in campo; luna: sono dati dei giocatori, i veri dai pacchetti; modularità: il futuro plugin "psicologia", che si può spegnere | SIM 119 |
 | 18 | OI-110, il colpo, rinviato a L1 | salute del progetto: una soglia inventata andrebbe rifatta; il colpo e lo stop sono un fatto solo | SIM 119 |
 | 19 | La compostezza scala il termine di pressione con 2 (1 - c): il giocatore medio resta com'era | l'effetto medio non cambia, cambia solo come si distribuisce fra i giocatori; nessuna statistica si sposta in media per costruzione | SIM 119 |
+| 20 | `run` del contratto solo per i plugin con una fase loro; portiere, palle inattive e gesti tecnici restano servizi chiamati dal passo che li contiene | il loro lavoro avviene dentro il passo di un altro plugin; come un plugin esterno chiami un servizio lo deciderà un ADR con i plugin esterni | dopo la panchina |
 
 ## Plan
 

@@ -44,4 +44,12 @@
 
 **La panchina attraverso il contratto (2026-11-15):** il plugin decide i cambi (pianificati e dell'allenatore che reagisce) leggendo solo da `World` (il minuto, il portatore, le rose, i ruoli, la fatica, la velocità possibile, i cambi già fatti) e li fa con `World::substitute`; il motore li esegue (`MatchState::make_substitution`). Lo schema per tutti: il motore presta al plugin un `StateWorld`, che vede lo stato intero ma solo attraverso il contratto, togliendo il plugin dallo stato per la durata della chiamata. Golden identico.
 
-**Il prossimo:** gli altri otto attraverso `World` con lo stesso schema, uno per volta, a golden identico (le istruzioni della panchina, poi il portiere, i duelli, l'arbitro, le palle inattive, il pallone, il corpo, i gesti tecnici, il pensiero); ognuno aggiunge a `World` quello che legge e scrive.
+**Una regola del contratto (decisione di Claude, 2026-11-15):** `run` serve ai plugin che agiscono in una fase loro. Un plugin che lavora dentro il passo di un altro (il portiere nel pallone che attraversa la linea, le palle inattive nella ripresa dell'arbitro, i gesti tecnici nelle scelte del pensiero) resta un servizio, chiamato da quel passo. Come un plugin esterno chiami il servizio di un altro lo deciderà un ADR, quando ci saranno plugin esterni (decisione 4).
+
+**Restano attraverso `World`, in quest'ordine, uno per volta e a golden identico:**
+1. i duelli (`challenge_carrier`, fase `ResolveContacts`);
+2. l'arbitro (il fuorigioco, il fallo, la palla fuori, fase `Referee`);
+3. il pallone e il corpo (fase `Move`);
+4. il pensiero (fasi `DecideOffBall` e `DecideOnBall`, il più grande).
+
+**Il prossimo passo esatto:** i duelli. Leggere `plugins/duels.rs` `challenge_carrier`; aggiungere a `World` ciò che legge (atti, portatore, distanze, corpi, caratteristiche del duello) e ciò che scrive (l'esito del contatto, la palla libera, il fallo come fatto per l'arbitro); chiamarlo da `MatchState::tick` con `StateWorld`; il golden identico.
