@@ -28,4 +28,57 @@ pub trait World {
     /// One of `player`'s characteristics, 0 to 1, by its name in the
     /// catalogue (`CHARACTERISTICS-AND-ABILITIES.md`).
     fn characteristic(&mut self, player: PlayerKey, name: &str) -> Option<f64>;
+
+    /// The minute of the match, as the broadcast clock shows it.
+    fn minute(&self) -> u64 {
+        0
+    }
+    /// Who has the ball at his feet, if anyone.
+    fn carrier(&self) -> Option<PlayerKey> {
+        None
+    }
+    /// The eleven of a side as they are now, the keeper first.
+    fn lineup(&self, home: bool) -> Vec<PlayerKey> {
+        let _ = home;
+        Vec::new()
+    }
+    /// The bench of a side.
+    fn bench(&self, home: bool) -> Vec<PlayerKey> {
+        let _ = home;
+        Vec::new()
+    }
+    /// The role of `player` (the registry's name for it).
+    fn role(&self, player: PlayerKey) -> Option<String> {
+        let _ = player;
+        None
+    }
+    /// Whether `player` has already been replaced.
+    fn substituted(&self, player: PlayerKey) -> bool {
+        let _ = player;
+        false
+    }
+    /// The substitutions the Laws and the competition allow a side.
+    fn subs_allowed(&self) -> usize {
+        0
+    }
+    /// The substitutions a side's manager planned: minute, off, on.
+    fn planned(&self, home: bool) -> Vec<(u16, PlayerKey, PlayerKey)> {
+        let _ = home;
+        Vec::new()
+    }
+    /// Whether a side's coach changes players from what he sees.
+    fn coach_reacts(&self, home: bool) -> bool {
+        let _ = home;
+        false
+    }
+    /// How fast `player` can run, as tired as `fatigue`, cm a tick.
+    fn top_speed(&mut self, player: PlayerKey, fatigue: f64) -> Option<f64> {
+        let _ = (player, fatigue);
+        None
+    }
+    /// Replaces `off` with `on` from the bench (Law 3); whether it was made.
+    fn substitute(&mut self, off: PlayerKey, on: PlayerKey) -> bool {
+        let _ = (off, on);
+        false
+    }
 }

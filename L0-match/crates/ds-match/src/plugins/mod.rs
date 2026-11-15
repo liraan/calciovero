@@ -83,3 +83,138 @@ impl World for EngineWorld<'_> {
         self.hidden.characteristic(id, name)
     }
 }
+
+/// The whole match as a plugin sees it through the contract: the state,
+/// the characteristics and the live squads. The core lends it to a plugin
+/// for one call (the plugin is taken out of the state for it), so that the
+/// plugin reads and writes only through `World`.
+pub(crate) struct StateWorld<'a> {
+    pub(crate) state: &'a mut crate::state::MatchState,
+    pub(crate) hidden: &'a mut ds_orchestrator::GroundTruth,
+    pub(crate) live: &'a mut ds_model::Match,
+    pub(crate) minute: u64,
+}
+
+impl StateWorld<'_> {
+    fn id(&self, p: PlayerKey) -> Option<PlayerId> {
+        let squads = [&self.live.home, &self.live.away];
+        squads
+            .iter()
+            .flat_map(|s| s.players.iter().chain(s.bench.iter()))
+            .map(|q| q.id)
+            .find(|id| key(*id) == p)
+    }
+
+    fn player(&self, p: PlayerKey) -> Option<&ds_model::Player> {
+        let squads = [&self.live.home, &self.live.away];
+        squads
+            .into_iter()
+            .flat_map(|s| s.players.iter().chain(s.bench.iter()))
+            .find(|q| key(q.id) == p)
+    }
+
+    const fn squad(&self, home: bool) -> &ds_model::Squad {
+        if home {
+            &self.live.home
+        } else {
+            &self.live.away
+        }
+    }
+}
+
+impl World for StateWorld<'_> {
+    fn players(&self) -> Vec<PlayerKey> {
+        self.state
+            .spatial
+            .on_pitch()
+            .map(|(id, _)| key(*id))
+            .collect()
+    }
+
+    fn position(&self, p: PlayerKey) -> Option<(i32, i32)> {
+        self.state.spatial.agent(self.id(p)?).map(|a| a.position)
+    }
+
+    fn gaze(&self, p: PlayerKey) -> Option<u16> {
+        self.state.spatial.agent(self.id(p)?).map(|a| a.gaze)
+    }
+
+    fn velocity(&self, p: PlayerKey) -> Option<(f64, f64)> {
+        let a = self.state.spatial.agent(self.id(p)?)?;
+        Some((f64::from(a.velocity.0), f64::from(a.velocity.1)))
+    }
+
+    fn fatigue(&self, p: PlayerKey) -> Option<f64> {
+        let id = self.id(p)?;
+        self.state.bodies.get(&id).map_or_else(
+            || self.player(p).map(|q| f64::from(q.physical.fatigue)),
+            |b| Some(b.fatigue),
+        )
+    }
+
+    fn set_fatigue(&mut self, p: PlayerKey, fatigue: f64) {
+        if let Some(id) = self.id(p) {
+            if let Some(b) = self.state.bodies.get_mut(&id) {
+                b.fatigue = fatigue;
+            }
+        }
+    }
+
+    fn characteristic(&mut self, p: PlayerKey, name: &str) -> Option<f64> {
+        let id = self.id(p)?;
+        self.hidden.characteristic(id, name)
+    }
+
+    fn minute(&self) -> u64 {
+        self.minute
+    }
+
+    fn carrier(&self) -> Option<PlayerKey> {
+        self.state.spatial.carrier().map(key)
+    }
+
+    fn lineup(&self, home: bool) -> Vec<PlayerKey> {
+        self.squad(home).players.iter().map(|q| key(q.id)).collect()
+    }
+
+    fn bench(&self, home: bool) -> Vec<PlayerKey> {
+        self.squad(home).bench.iter().map(|q| key(q.id)).collect()
+    }
+
+    fn role(&self, p: PlayerKey) -> Option<String> {
+        self.player(p).map(|q| q.role.as_str().to_string())
+    }
+
+    fn substituted(&self, p: PlayerKey) -> bool {
+        self.id(p)
+            .is_some_and(|id| self.state.substituted.contains(&id))
+    }
+
+    fn subs_allowed(&self) -> usize {
+        usize::from(self.live.rules.subs_allowed)
+    }
+
+    fn planned(&self, home: bool) -> Vec<(u16, PlayerKey, PlayerKey)> {
+        self.squad(home)
+            .substitutions
+            .iter()
+            .map(|s| (s.minute, key(s.outgoing), key(s.incoming)))
+            .collect()
+    }
+
+    fn coach_reacts(&self, home: bool) -> bool {
+        self.squad(home).coach_reacts
+    }
+
+    fn top_speed(&mut self, p: PlayerKey, fatigue: f64) -> Option<f64> {
+        let id = self.id(p)?;
+        Some(self.hidden.top_speed_now(id, fatigue))
+    }
+
+    fn substitute(&mut self, off: PlayerKey, on: PlayerKey) -> bool {
+        let (Some(off), Some(on)) = (self.id(off), self.id(on)) else {
+            return false;
+        };
+        self.state.make_substitution(self.live, off, on)
+    }
+}

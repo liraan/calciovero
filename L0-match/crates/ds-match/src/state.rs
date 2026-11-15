@@ -220,6 +220,8 @@ pub struct MatchState {
     pub(crate) perception: crate::plugins::perception::Perception,
     /// The fatigue plugin, called in the move phase (ADR-063).
     pub(crate) fatigue_plugin: crate::plugins::fatigue::Fatigue,
+    /// The bench plugin, called at a stoppage (ADR-063).
+    pub(crate) bench_plugin: crate::plugins::bench::Bench,
     pub(crate) scan_balance: crate::balance::ScanningBalance,
     pub(crate) keeper_balance: crate::balance::KeeperBalance,
     /// The Laws' thresholds (Law 12, `balance/laws.json`).
@@ -745,6 +747,7 @@ impl MatchState {
             scan_balance: crate::balance::ScanningBalance::load(),
             perception: crate::plugins::perception::Perception::default(),
             fatigue_plugin: crate::plugins::fatigue::Fatigue::default(),
+            bench_plugin: crate::plugins::bench::Bench,
             keeper_balance: crate::balance::KeeperBalance::load(),
             laws: crate::balance::LawsBalance::load(),
             cautioned: BTreeSet::new(),

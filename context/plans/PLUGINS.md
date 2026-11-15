@@ -42,4 +42,6 @@
 
 **La percezione attraverso il contratto (2026-11-15):** la memoria è lo stato del plugin (`Perception.memory`, per `PlayerKey`); il plugin legge giocatori, posizioni e sguardi da `World`; il tick lo chiama nella fase `Perceive`. Il mondo del motore è uno solo per tutti i plugin (`plugins::EngineWorld`). Golden identico.
 
-**Il prossimo:** gli altri nove attraverso `World`, uno per volta, a golden identico (pallone, corpo, pensiero, gesti tecnici, duelli, portiere, arbitro, palle inattive, panchina); ognuno aggiunge a `World` quello che legge e scrive.
+**La panchina attraverso il contratto (2026-11-15):** il plugin decide i cambi (pianificati e dell'allenatore che reagisce) leggendo solo da `World` (il minuto, il portatore, le rose, i ruoli, la fatica, la velocità possibile, i cambi già fatti) e li fa con `World::substitute`; il motore li esegue (`MatchState::make_substitution`). Lo schema per tutti: il motore presta al plugin un `StateWorld`, che vede lo stato intero ma solo attraverso il contratto, togliendo il plugin dallo stato per la durata della chiamata. Golden identico.
+
+**Il prossimo:** gli altri otto attraverso `World` con lo stesso schema, uno per volta, a golden identico (le istruzioni della panchina, poi il portiere, i duelli, l'arbitro, le palle inattive, il pallone, il corpo, i gesti tecnici, il pensiero); ognuno aggiunge a `World` quello che legge e scrive.
