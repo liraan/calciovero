@@ -17,8 +17,8 @@
 
 | # | Voce | Dipende da | Prima azione |
 |---|---|---|---|
-| 1 | La memoria minima di ciò che si è visto: l'ultimo sguardo (ADR-034, MD-40) | — | per ogni giocatore, dove ha visto ogni altro al suo ultimo sguardo; nel salvataggio e nell'hash |
-| 2 | La scena solo dal cono e dalla memoria (OI-106) | 1 | il test anti-fuga, rosso; poi `rank`, `loose_rival_cm`, `cutters` dalla memoria |
+| 1 | **fatto (115)** — La memoria minima di ciò che si è visto: l'ultimo sguardo (ADR-034, MD-40) | — | per ogni giocatore, dove ha visto ogni altro al suo ultimo sguardo; nel salvataggio e nell'hash |
+| 2 | **fatto (115)** — La scena solo dal cono e dalla memoria (OI-106) | 1 | il test anti-fuga, rosso; poi `rank`, `loose_rival_cm`, `cutters` dalla memoria |
 | 3 | ADR-062 (a) e (c): l'ampiezza dell'attenzione come `vision`, la linea letta dall'ultimo sguardo (fonti in OI-104, `SOURCES.md`); rimisurare fuorigioco e palloni che escono (OI-98, OI-100) | 1, 2 | il gemello su `vision` |
 | 4 | Supplementari e rigori finali (Regole 7 e 10, testo 2026/27), quando la competizione li chiede; la monetina come input della partita (approvata il 2026-11-15) | — | un `Match` di coppa finito pari: i supplementari, poi la serie |
 | 5 | La barriera: la somma di corpi, ognuno sceglie se entrarci e dove, resta o si gira secondo il coraggio (OI-105) | 8 (il coraggio) | la distanza della Regola 13 e il metro dalla barriera |

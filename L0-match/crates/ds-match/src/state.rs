@@ -106,6 +106,70 @@ fn nearest_on_path((a, b): ((i32, i32, i32), (i32, i32, i32)), p: (i32, i32)) ->
     ((at(a.0, b.0), at(a.1, b.1)), at(a.2, b.2))
 }
 
+/// What every player has seen of the others: where he last saw each one
+/// (ADR-034, MD-40, OI-106). A square table over the players, by a fixed
+/// order of their ids, rebuilt (keeping what was seen) when a substitute
+/// comes on.
+#[derive(Debug, Clone, Default)]
+struct Memory {
+    ids: Vec<PlayerId>,
+    at: Vec<Option<(i32, i32)>>,
+}
+
+impl Memory {
+    /// Each player looks: the men in his cone are where they are now.
+    fn see(&mut self, agents: &[(PlayerId, (i32, i32), u16)]) {
+        if self.ids.len() != agents.len() || self.ids.iter().zip(agents).any(|(a, b)| *a != b.0) {
+            let old = std::mem::take(self);
+            self.ids = agents.iter().map(|a| a.0).collect();
+            let n = self.ids.len();
+            self.at = vec![None; n * n];
+            for (i, &o) in self.ids.clone().iter().enumerate() {
+                for (j, &x) in self.ids.clone().iter().enumerate() {
+                    self.at[i * n + j] = old.get(o, x);
+                }
+            }
+        }
+        let n = self.ids.len();
+        for (i, &(_, origin, gaze)) in agents.iter().enumerate() {
+            for (j, &(_, pos, _)) in agents.iter().enumerate() {
+                if i != j && crate::perception::in_cone(origin, gaze, pos) {
+                    self.at[i * n + j] = Some(pos);
+                }
+            }
+        }
+    }
+
+    fn get(&self, observer: PlayerId, other: PlayerId) -> Option<(i32, i32)> {
+        let i = self.ids.iter().position(|id| *id == observer)?;
+        let j = self.ids.iter().position(|id| *id == other)?;
+        self.at.get(i * self.ids.len() + j).copied().flatten()
+    }
+}
+
+/// Where `id` cuts out a pass on the grass, and how many teammates he
+/// believes get there before him, judged from what he has seen (OI-106):
+/// he goes if he meets it before the receiver, when he has seen the
+/// receiver, or wherever he meets it, when he has not; the teammates ahead
+/// of him are only those he has seen. `cutters` are sorted along the path.
+fn cut_target(
+    cutters: &[(PlayerId, (i32, i32), i64)],
+    receiver: Option<(PlayerId, i64)>,
+    id: PlayerId,
+    sees: impl Fn(PlayerId) -> bool,
+) -> Option<((i32, i32), u32)> {
+    let &(_, at, mine) = cutters.iter().find(|c| c.0 == id)?;
+    let (r, r_along) = receiver?;
+    if sees(r) && mine >= r_along {
+        return None;
+    }
+    let ahead = cutters
+        .iter()
+        .filter(|c| c.0 != id && sees(c.0) && (c.2, c.0) < (mine, id))
+        .count();
+    Some((at, u32::try_from(ahead).unwrap_or(u32::MAX)))
+}
+
 /// His rank among his teammates for a ball nobody has: a pass played to
 /// him is his to meet first (0), however near the ball his teammates are
 /// (OI-98: a keeper ranked behind them held his place, and the back pass
@@ -178,6 +242,10 @@ pub struct MatchState {
     /// in `new` from the squads; read by `resolve_movement` each tick.
     bodies: BTreeMap<PlayerId, PlayerBody>,
     /// Scanning parameters (ADR-034), loaded once at construction.
+    /// What each player has seen of the others, where he last saw them
+    /// (ADR-034, MD-40: the memory of the last look). His scene reads the
+    /// pitch through it, never the pitch itself (OI-106).
+    seen: Memory,
     scan_balance: crate::balance::ScanningBalance,
     keeper_balance: crate::balance::KeeperBalance,
     /// The Laws' thresholds (Law 12, `balance/laws.json`).
@@ -694,6 +762,7 @@ impl MatchState {
             ball_from: (0, 0, 0),
             instructed: (0, 0),
             scan_balance: crate::balance::ScanningBalance::load(),
+            seen: Memory::default(),
             keeper_balance: crate::balance::KeeperBalance::load(),
             laws: crate::balance::LawsBalance::load(),
             cautioned: BTreeSet::new(),
@@ -943,6 +1012,26 @@ impl MatchState {
         }
     }
 
+    /// Every player remembers where he saw each man in his cone, as he is
+    /// now (ADR-034, MD-40): the memory of the last look. What he has not
+    /// seen since the kick-off he does not know.
+    fn remember(&mut self) {
+        // The men on the pitch: one sent off, or replaced, is not looked at
+        // and does not look.
+        let agents: Vec<(PlayerId, (i32, i32), u16)> = self
+            .spatial
+            .on_pitch()
+            .map(|(id, a)| (*id, a.position, a.gaze))
+            .collect();
+        self.seen.see(&agents);
+    }
+
+    /// Where `observer` believes `other` is: where he last saw him, or
+    /// nothing if he never has (OI-106).
+    fn perceived(&self, observer: PlayerId, other: PlayerId) -> Option<(i32, i32)> {
+        self.seen.get(observer, other)
+    }
+
     /// The decision layer of the tick: elect the actor, resolve his
     /// latency, choose his action, execute the branch. This method is not
     /// the tick: the tick is the time and the substrate (ball, movement,
@@ -958,6 +1047,7 @@ impl MatchState {
     /// refactor, tracked as a note on IDEA-011.
     #[allow(clippy::too_many_lines)]
     pub fn decide(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
+        self.remember();
         self.decide_off_ball(tick, ctx);
         let Some((attacker, defender)) = self.pick_from_space(ctx) else {
             return;
@@ -2217,11 +2307,17 @@ impl MatchState {
         // ADR-058): before, while a pass travelled the other side only held
         // its places, and the old clock made every pass a loose ball after
         // 1.5 s for them to chase.
+        // Who could cut it, where he meets it and how far along the ball's
+        // path; whether he gets there before the receiver, and before his
+        // teammates, each one judges from what he has seen (OI-106: before,
+        // from the whole pitch).
         let mut cutters: Vec<(PlayerId, (i32, i32), i64)> = Vec::new();
+        let mut receiver_along: Option<(PlayerId, i64)> = None;
         if let Some(r) = meets_pass {
             if let Some(rp) = self.meets_rolling_ball(ctx, r) {
                 let ball_now = self.spatial.ball();
                 let along = |pt: (i32, i32)| distance_squared(ball_now, pt);
+                receiver_along = Some((r, along(rp)));
                 let defenders = if passing_home {
                     &ctx.match_.away
                 } else {
@@ -2230,9 +2326,7 @@ impl MatchState {
                 let ids: Vec<PlayerId> = defenders.players.iter().map(|p| p.id).collect();
                 for id in ids {
                     if let Some(mp) = self.meets_rolling_ball(ctx, id) {
-                        if along(mp) < along(rp) {
-                            cutters.push((id, mp, along(mp)));
-                        }
+                        cutters.push((id, mp, along(mp)));
                     }
                 }
                 cutters.sort_by_key(|c| (c.2, c.0));
@@ -2301,8 +2395,8 @@ impl MatchState {
                         .players
                         .iter()
                         .filter(|q| q.id != id && Some(q.id) != keeper_id)
-                        .filter_map(|q| self.spatial.agent(q.id))
-                        .all(|a| distance_squared(a.position, d) >= mine)
+                        .filter_map(|q| self.perceived(id, q.id))
+                        .all(|at| distance_squared(at, d) >= mine)
                 });
                 // A pass played to him changes his scene too: he goes to
                 // meet it at once, unless he already is; so does a ball in
@@ -2326,8 +2420,8 @@ impl MatchState {
                             .filter(|q| {
                                 q.id != id && Some(q.id) != keeper_id && Some(q.id) != pass_by
                             })
-                            .filter_map(|q| self.spatial.agent(q.id))
-                            .filter(|a| distance_squared(a.position, target) < mine)
+                            .filter_map(|q| self.perceived(id, q.id))
+                            .filter(|at| distance_squared(*at, target) < mine)
                             .count(),
                     )
                     .unwrap_or(u32::MAX)
@@ -2358,10 +2452,13 @@ impl MatchState {
                                 && sees_ball
                                 && meets_pass.is_some()
                                 && home != passing_home;
-                            let cut = cutters.iter().position(|c| c.0 == id).map(|i| {
+                            let cut = cut_target(&cutters, receiver_along, id, |o| {
+                                self.perceived(id, o).is_some()
+                            })
+                            .map(|(at, ahead)| {
                                 ds_orchestrator::Target {
-                                    distance_cm: distance_squared(me, cutters[i].1).isqrt(),
-                                    rank: u32::try_from(i).unwrap_or(u32::MAX),
+                                    distance_cm: distance_squared(me, at).isqrt(),
+                                    rank: ahead,
                                 }
                             });
                             cut.or_else(|| {
@@ -2389,8 +2486,8 @@ impl MatchState {
                     loose_rival_cm: other
                         .players
                         .iter()
-                        .filter_map(|q| self.spatial.agent(q.id))
-                        .map(|a| distance_squared(a.position, ball).isqrt())
+                        .filter_map(|q| self.perceived(id, q.id))
+                        .map(|at| distance_squared(at, ball).isqrt())
                         .min(),
                     carrier: carrier_pos
                         .zip(to_carrier)
@@ -4053,5 +4150,93 @@ mod control_tests {
         s.control_loose_ball(&mut ctx, 0);
         assert_eq!(s.spatial.carrier(), Some(away));
         assert_eq!(s.possession, Possession::Away);
+    }
+}
+
+#[cfg(test)]
+mod memory_tests {
+    use super::*;
+
+    /// The anti-leak test of the scene (OI-106, ADR-052): after his first
+    /// look a player knows exactly the men in his cone and nobody else; a
+    /// man he has never seen is not in his scene.
+    #[test]
+    fn a_player_knows_only_whom_he_has_seen() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut s = MatchState::new(&m);
+        s.remember();
+        let ids: Vec<PlayerId> = s.spatial.iter().map(|(id, _)| *id).collect();
+        let mut unseen = 0;
+        for &o in &ids {
+            let cone = crate::perception::visible_to(&s.spatial, o);
+            for &x in ids.iter().filter(|x| **x != o) {
+                assert_eq!(
+                    s.perceived(o, x).is_some(),
+                    cone.contains(&x),
+                    "{o:?} of {x:?}"
+                );
+                unseen += usize::from(!cone.contains(&x));
+            }
+        }
+        assert!(unseen > 0, "some men are out of someone's cone");
+    }
+
+    /// P1 (OI-106): a man moves after he was seen; the observer still
+    /// places him where he saw him, until he looks again.
+    #[test]
+    fn a_man_is_remembered_where_he_was_seen() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut s = MatchState::new(&m);
+        s.remember();
+        let ids: Vec<PlayerId> = s.spatial.iter().map(|(id, _)| *id).collect();
+        let (o, x) = ids
+            .iter()
+            .find_map(|&o| {
+                crate::perception::visible_to(&s.spatial, o)
+                    .first()
+                    .map(|&x| (o, x))
+            })
+            .expect("someone sees someone");
+        let was = s.perceived(o, x).expect("seen");
+        s.spatial.set_position(o, (5000, 3400));
+        s.spatial.set_position(x, (was.0, was.1 + 2000));
+        // He has not looked since: he keeps the old place, unless he sees
+        // him now from where he stands.
+        if !crate::perception::visible_to(&s.spatial, o).contains(&x) {
+            s.remember();
+            assert_eq!(s.perceived(o, x), Some(was));
+        }
+    }
+
+    /// The twin of the cut-out (OI-106): a teammate nearer the ball's path
+    /// whom he has not seen does not hold him back; one he has seen does.
+    /// A receiver he has not seen does not stop him either.
+    #[test]
+    fn he_cuts_out_a_pass_from_what_he_has_seen() {
+        let me = PlayerId::new(101, 0);
+        let mate = PlayerId::new(102, 0);
+        let receiver = PlayerId::new(9, 0);
+        let cutters = [(mate, (1000, 0), 10), (me, (2000, 0), 20)];
+        let seen_all = |_: PlayerId| true;
+        let seen_none = |_: PlayerId| false;
+        assert_eq!(
+            cut_target(&cutters, Some((receiver, 30)), me, seen_all),
+            Some(((2000, 0), 1)),
+            "the mate he sees gets there first"
+        );
+        assert_eq!(
+            cut_target(&cutters, Some((receiver, 30)), me, seen_none),
+            Some(((2000, 0), 0)),
+            "the mate he never saw does not count"
+        );
+        assert_eq!(
+            cut_target(&cutters, Some((receiver, 15)), me, seen_all),
+            None
+        );
+        assert_eq!(
+            cut_target(&cutters, Some((receiver, 15)), me, seen_none),
+            Some(((2000, 0), 0)),
+            "a receiver he never saw does not stop him"
+        );
     }
 }

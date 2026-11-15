@@ -131,6 +131,21 @@ pub fn visible_to(spatial: &SpatialState, from: PlayerId) -> Vec<PlayerId> {
         .collect()
 }
 
+/// Whether an observer at `origin`, gazing `gaze`, has `at` in his cone:
+/// the same test as `visible_to`, for one point (the memory, OI-106).
+#[must_use]
+pub(crate) fn in_cone(origin: (i32, i32), gaze: u16, at: (i32, i32)) -> bool {
+    let (hx, hy) = heading_vector(gaze);
+    let dx = at.0 - origin.0;
+    let dy = at.1 - origin.1;
+    if dx == 0 && dy == 0 {
+        return false;
+    }
+    let dot = i64::from(dx) * i64::from(hx) + i64::from(dy) * i64::from(hy);
+    let dist = (i64::from(dx) * i64::from(dx) + i64::from(dy) * i64::from(dy)).isqrt();
+    dot > dist * COS_HALF_ANGLE_MILLI
+}
+
 /// The heading as an integer vector `(hx, hy)`, scaled by 1000.
 ///
 /// `0` = north (+y), clockwise. A 36-entry table, one per 10 degrees; the
