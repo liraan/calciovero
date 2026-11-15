@@ -1274,6 +1274,7 @@ impl MatchState {
                 throw,
                 receiver_freedom_cm: freedom_cm,
                 ground_friction_milli: self.spatial.ground_friction_milli(),
+                air_friction_milli: self.spatial.air_friction_milli(),
                 gait: self
                     .spatial
                     .agent(attacker)

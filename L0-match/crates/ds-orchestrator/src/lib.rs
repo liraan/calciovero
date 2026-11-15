@@ -613,11 +613,17 @@ impl GroundTruth {
         );
         let dir = Self::direction_3d(ctx.from, aim);
         if let Some(gravity) = ctx.lofted {
-            // In the air: no grass slows it, so he gives it the speed to
-            // land at the receiver after `loft_ticks_per_10m` per ten metres
-            // of flight, and the lift to stay up that long.
+            // In the air: he gives it the speed to land at the receiver
+            // after `loft_ticks_per_10m` per ten metres of flight, knowing
+            // that the air keeps `air_keep` of its speed each tick, as he
+            // knows the grass for a ground pass: over `flight` ticks it
+            // covers v (1 - a^T) / (1 - a) (SIM_VERSION 110; before, he
+            // reckoned no drag and every lofted pass fell about 8% short),
+            // and the lift to stay up that long.
             let flight = (distance / 1000.0 * k.loft_ticks_per_10m).max(1.0);
-            let horizontal = (distance * (1.0 + error) / flight).min(max);
+            let a = (f64::from(ctx.air_friction_milli) / 1000.0).clamp(0.0, 0.999_999);
+            let carried = (1.0 - dmath::powf(a, flight)) / (1.0 - a);
+            let horizontal = (distance * (1.0 + error) / carried.max(1.0)).min(max);
             #[allow(clippy::cast_possible_truncation)]
             let v = Self::velocity(dir, horizontal.round() as i16);
             #[allow(clippy::cast_possible_truncation)]
@@ -1581,6 +1587,45 @@ mod choice_filter_tests {
     /// The keeper's throw (P1, plan L0-CLOSE 10d): from his hands the ball
     /// leaves no faster than his arm throws it, where his foot would kick
     /// a long ball harder.
+    /// The lofted pass through the air (P1, `SIM_VERSION` 110): he gives it
+    /// the speed that carries it the whole distance with the air's drag, so
+    /// it lands at the receiver; reckoning no drag, it fell about 8% short.
+    #[test]
+    fn a_lofted_pass_lands_at_its_man() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let v = g
+            .resolve_pass(
+                &PassContext {
+                    passer: PlayerId::new(0, 0),
+                    from: (500, 3400, 0),
+                    to: (3500, 3400, 0),
+                    receiver_freedom_cm: 800,
+                    ground_friction_milli: 957,
+                    air_friction_milli: 990,
+                    gait: 0.5,
+                    lofted: Some(10),
+                    throw: false,
+                },
+                &crate::reception_tests::params(),
+            )
+            .initial_velocity;
+        // Integrate the flight as the engine does: the air keeps 99%.
+        let (mut x, mut vx, mut z, mut vz) = (0.0_f64, f64::from(v.0), 0.0_f64, f64::from(v.2));
+        for _ in 0..200 {
+            vz -= 10.0;
+            vx *= 0.99;
+            x += vx;
+            z += vz;
+            if z < 0.0 {
+                break;
+            }
+        }
+        assert!(
+            (x - 3000.0).abs() < 150.0,
+            "it lands {x:.0} cm out, aimed at 3000"
+        );
+    }
+
     /// The pass's contact (P1, `SIM_VERSION` 109, ADR-054 as for the shot):
     /// met in the middle of the step it goes straight; met late or early it
     /// drifts to opposite sides of its line; never always to the same side.
@@ -1595,6 +1640,7 @@ mod choice_filter_tests {
                     to: (4000, 3400, 0),
                     receiver_freedom_cm: 800,
                     ground_friction_milli: 957,
+                    air_friction_milli: 990,
                     gait,
                     lofted: None,
                     throw: false,
@@ -1621,6 +1667,7 @@ mod choice_filter_tests {
                         to: (4000, 3400, 0),
                         receiver_freedom_cm: 800,
                         ground_friction_milli: 957,
+                        air_friction_milli: 990,
                         gait: 0.5,
                         lofted: None,
                         throw,

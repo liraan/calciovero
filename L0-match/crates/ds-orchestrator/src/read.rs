@@ -154,8 +154,37 @@ fn controls_lofted(
     receiver: PlayerId,
     (at, d, flight): ((i32, i32), f64, f64),
 ) -> bool {
-    let landing = d / flight.max(1.0) * dmath::powf(scene.reception.air_keep, flight);
+    // The speed he gives it so that it lands there through the air (the
+    // engine's own weighing, `resolve_pass`), and what the air leaves it.
+    let a = scene.reception.air_keep.clamp(0.0, 0.999_999);
+    let carried = ((1.0 - dmath::powf(a, flight)) / (1.0 - a)).max(1.0);
+    let landing = d / carried * dmath::powf(a, flight);
     controls(scene, players, receiver, (at, landing, flight))
+}
+
+/// Where a lofted pass from `from` to `to` is lost if nobody takes it where
+/// it comes down: it runs on along its line as fast as the air left it (no
+/// bounce, the ball's declared physics), into his own goal if it goes there
+/// before it stops (`runs_into_goal`, as for a ground pass; `SIM_VERSION`
+/// 110: a lofted back pass to the keeper that he missed ran into the net),
+/// else where it came down.
+#[allow(clippy::cast_precision_loss)] // cm on a pitch
+fn lofted_missed_at(
+    scene: &PerceivedScene,
+    from: (i32, i32),
+    to: (i32, i32),
+    flight: f64,
+) -> (i32, i32) {
+    let d = (distance_squared(from, to) as f64).sqrt();
+    let a = scene.reception.air_keep.clamp(0.0, 0.999_999);
+    let carried = ((1.0 - dmath::powf(a, flight)) / (1.0 - a)).max(1.0);
+    let landing = d / carried * dmath::powf(a, flight);
+    let run_on = landing / (1.0 - scene.ground_keep).max(0.001);
+    if runs_into_goal(from, to, scene.own_goal, run_on) {
+        scene.own_goal
+    } else {
+        to
+    }
 }
 
 /// Whether he imagines `receiver` controlling a ball that reaches `at` at
@@ -1142,7 +1171,7 @@ fn pass_candidates(
                     0.0
                 },
                 tpos,
-                tpos,
+                lofted_missed_at(scene, pos, tpos, flight),
                 risk_appetite,
             );
             candidates.push(ChoiceCandidate {
@@ -1416,6 +1445,24 @@ mod keeper_visibility_tests {
             motion: BTreeMap::new(),
             reception: ReceptionReckoning::default(),
         }
+    }
+
+    /// P1 (`SIM_VERSION` 110): a lofted pass back towards his own goal,
+    /// missed where it comes down, runs on into the net, and he sees it; one
+    /// played away from his goal is lost where it comes down.
+    #[test]
+    fn a_missed_lofted_back_pass_runs_into_his_goal() {
+        let mut s = scene_with(None);
+        s.reception.air_keep = 0.99;
+        let flight = 2200.0 / 1000.0 * 6.0;
+        assert_eq!(
+            lofted_missed_at(&s, (2400, 3400), (300, 3400), flight),
+            s.own_goal
+        );
+        assert_eq!(
+            lofted_missed_at(&s, (2400, 3400), (4600, 3400), flight),
+            (4600, 3400)
+        );
     }
 
     /// P1 (Law 11, `SIM_VERSION` 107): the passer sees the line. A teammate
