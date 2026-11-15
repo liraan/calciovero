@@ -30,3 +30,7 @@ Partita vera. *How do the actors recognise it?* A passer plays the runner who is
 
 - **An arbitrary size now.** Rejected: any value chosen without a source would be chosen by what it does to the statistics.
 - **A margin on the offside line only.** Rejected: a rule for one statistic, not the sight that causes several.
+
+## Dated notes
+
+- **2026-11-15 — the first part implemented** (`SIM_VERSION` 113), from the source read (Oudejans et al. 2000, Nature 404, 33, Table 1 and text): the offside line is read as the eye projects it, through the second-last defender along the passer's line of sight. The source gives a model, not a size: two men look in line when they stand on the same line of sight; level with the line the reading is right, off it the error grows with how far apart across the pitch they are; and it holds 'regardless of the quality' of the observer, so no twin on vision for this part. Looking along the depth the projection says nothing: the depth misjudged, the flights and the effect of vision and concentration (§2) remain open, waiting for their source.

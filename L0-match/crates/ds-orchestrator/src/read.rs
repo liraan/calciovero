@@ -130,20 +130,39 @@ fn controls_ground(
 /// the ball and the second-last opponent he sees. A pass to him is a free
 /// kick for them: lost where he stands (`SIM_VERSION` 107; before, nearly
 /// every offside flagged was the receiver the passer chose).
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)] // cm on a pitch
 fn offside_to(scene: &PerceivedScene, from: (i32, i32), at: (i32, i32)) -> bool {
     let depth = |x: i32| (scene.goal.0 - x).abs();
-    let mut opp: Vec<i32> = scene
+    let mut opp: Vec<(i32, (i32, i32))> = scene
         .opponents
         .iter()
         .filter_map(|o| scene.positions.get(o))
-        .map(|p| depth(p.0))
+        .map(|p| (depth(p.0), *p))
         .collect();
     opp.sort_unstable();
-    let Some(second_last) = opp.get(1).copied() else {
+    let Some(&(second_last, line_man)) = opp.get(1) else {
         return false;
     };
     let half = (scene.goal.0 - scene.own_goal.0).abs() / 2;
-    depth(at.0) < half && depth(at.0) < depth(from.0) && depth(at.0) < second_last
+    if depth(at.0) >= half || depth(at.0) >= depth(from.0) {
+        return false;
+    }
+    // He sees the line as his eye projects it (ADR-062; Oudejans et al.
+    // 2000, Nature 404, 33): two men are "in line" when they stand on the
+    // same line of sight from him, so the line he reads runs through the
+    // second-last defender along his sight, not parallel to the goal line.
+    // Level with that defender he reads it right; off it, he misreads it,
+    // the more the wider apart the two men are. Looking along the depth
+    // (the line of sight nearer the length of the pitch than its width)
+    // the projection tells him nothing and he reads the true line: the
+    // depth he misjudges then is the open part of ADR-062 §5.
+    let (sx, sy) = (line_man.0 - from.0, line_man.1 - from.1);
+    if sy.abs() <= sx.abs() {
+        return depth(at.0) < second_last;
+    }
+    let along = f64::from(at.1 - from.1) / f64::from(sy);
+    let seen_x = f64::from(sx).mul_add(along, f64::from(from.0)).round() as i32;
+    depth(at.0) < depth(seen_x)
 }
 
 /// A lofted pass over `d` cm, `flight` ticks in the air: controlled where
@@ -1462,6 +1481,28 @@ mod keeper_visibility_tests {
         assert_eq!(
             lofted_missed_at(&s, (2400, 3400), (4600, 3400), flight),
             (4600, 3400)
+        );
+    }
+
+    /// P1 (ADR-062, `SIM_VERSION` 113; Oudejans et al. 2000): the line as
+    /// his eye projects it. From the wing, short of the line, a man truly
+    /// beyond it but far across the pitch looks level with the defender
+    /// (read onside); level with the defender himself, the passer reads
+    /// it right.
+    #[test]
+    fn the_line_is_read_as_the_eye_projects_it() {
+        let mut s = scene_with(Some(3400));
+        let defender = PlayerId::new(101, 0);
+        s.opponents.push(defender);
+        s.positions.insert(defender, (8200, 3000));
+        let runner = (8300, 5000);
+        assert!(
+            !offside_to(&s, (8000, 500), runner),
+            "short of the line: misread"
+        );
+        assert!(
+            offside_to(&s, (8200, 500), runner),
+            "level with the line: read right"
         );
     }
 
