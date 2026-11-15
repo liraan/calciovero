@@ -34,7 +34,7 @@ impl MatchState {
     /// refactor, tracked as a note on IDEA-011.
     #[allow(clippy::too_many_lines)]
     pub fn decide(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
-        self.remember();
+        self.remember(ctx.hidden);
         self.decide_off_ball(tick, ctx);
         let Some((attacker, defender)) = self.pick_from_space(ctx) else {
             return;

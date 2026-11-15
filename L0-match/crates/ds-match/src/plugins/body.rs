@@ -29,7 +29,7 @@ pub fn all() -> Vec<Box<dyn MatchPlugin>> {
     vec![
         Box::new(Ball),
         Box::new(Body),
-        Box::new(Perception),
+        Box::new(Perception::default()),
         Box::new(Thought),
         Box::new(Technique),
         Box::new(Duels),

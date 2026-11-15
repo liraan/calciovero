@@ -40,4 +40,6 @@
 
 **Il contratto chiamato (2026-11-15):** `ds-match-api` ha `World`, lo stato osservabile come lo vede un plugin (oggi: i giocatori, la velocità, la fatica, una caratteristica per nome), e `MatchPlugin::run(phase, world)`. La fatica è il primo plugin che agisce solo attraverso il contratto: il tick la chiama nella fase `Move`; un test la fa girare su un campo finto di due giocatori, senza motore. Golden identico. `World` cresce con il plugin che ne ha bisogno (RULES D3).
 
-**Il prossimo:** gli altri dieci attraverso `World`, uno per volta, ciascuno a golden identico, a cominciare dalla percezione (le posizioni, lo sguardo, la memoria).
+**La percezione attraverso il contratto (2026-11-15):** la memoria è lo stato del plugin (`Perception.memory`, per `PlayerKey`); il plugin legge giocatori, posizioni e sguardi da `World`; il tick lo chiama nella fase `Perceive`. Il mondo del motore è uno solo per tutti i plugin (`plugins::EngineWorld`). Golden identico.
+
+**Il prossimo:** gli altri nove attraverso `World`, uno per volta, a golden identico (pallone, corpo, pensiero, gesti tecnici, duelli, portiere, arbitro, palle inattive, panchina); ognuno aggiunge a `World` quello che legge e scrive.

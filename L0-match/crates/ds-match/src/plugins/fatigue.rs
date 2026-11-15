@@ -6,12 +6,8 @@
 //! plugin that acts only through the contract: it reads and writes the
 //! match through `ds_match_api::World`.
 
-use std::collections::BTreeMap;
-
-use ds_core::{dmath, ids::PlayerId};
-use ds_match_api::{MatchPlugin, Phase, PlayerKey, PluginCard, World};
-
-use crate::spatial::{PlayerBody, SpatialState};
+use ds_core::dmath;
+use ds_match_api::{MatchPlugin, Phase, PluginCard, World};
 
 /// The fatigue of the players.
 #[derive(Debug, Clone, Copy)]
@@ -47,55 +43,6 @@ impl MatchPlugin for Fatigue {
     }
 }
 
-/// The key of a player in the contract: his slot and generation.
-#[must_use]
-pub const fn key(id: PlayerId) -> PlayerKey {
-    PlayerKey(((id.slot() as u64) << 32) | id.generation() as u64)
-}
-
-/// The match in the move phase, as the fatigue sees it: the bodies, the
-/// spatial state and the characteristics (Plane A through the custodian,
-/// `GroundTruth`).
-pub(crate) struct MoveWorld<'a> {
-    pub(crate) bodies: &'a mut BTreeMap<PlayerId, PlayerBody>,
-    pub(crate) spatial: &'a SpatialState,
-    pub(crate) hidden: &'a mut ds_orchestrator::GroundTruth,
-}
-
-impl MoveWorld<'_> {
-    fn id(&self, p: PlayerKey) -> Option<PlayerId> {
-        self.bodies.keys().copied().find(|id| key(*id) == p)
-    }
-}
-
-impl World for MoveWorld<'_> {
-    fn players(&self) -> Vec<PlayerKey> {
-        self.bodies.keys().map(|id| key(*id)).collect()
-    }
-
-    fn velocity(&self, p: PlayerKey) -> Option<(f64, f64)> {
-        let a = self.spatial.agent(self.id(p)?)?;
-        Some((f64::from(a.velocity.0), f64::from(a.velocity.1)))
-    }
-
-    fn fatigue(&self, p: PlayerKey) -> Option<f64> {
-        self.bodies.get(&self.id(p)?).map(|b| b.fatigue)
-    }
-
-    fn set_fatigue(&mut self, p: PlayerKey, fatigue: f64) {
-        if let Some(id) = self.id(p) {
-            if let Some(b) = self.bodies.get_mut(&id) {
-                b.fatigue = fatigue;
-            }
-        }
-    }
-
-    fn characteristic(&mut self, p: PlayerKey, name: &str) -> Option<f64> {
-        let id = self.id(p)?;
-        self.hidden.characteristic(id, name)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::Fatigue;
@@ -110,6 +57,12 @@ mod tests {
     impl World for Two {
         fn players(&self) -> Vec<PlayerKey> {
             vec![PlayerKey(0), PlayerKey(1)]
+        }
+        fn position(&self, _: PlayerKey) -> Option<(i32, i32)> {
+            Some((0, 0))
+        }
+        fn gaze(&self, _: PlayerKey) -> Option<u16> {
+            Some(0)
         }
         fn velocity(&self, p: PlayerKey) -> Option<(f64, f64)> {
             Some((self.speed[usize::try_from(p.0).ok()?], 0.0))

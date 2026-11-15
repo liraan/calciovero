@@ -217,7 +217,7 @@ pub struct MatchState {
     /// What each player has seen of the others, where he last saw them
     /// (ADR-034, MD-40: the memory of the last look). His scene reads the
     /// pitch through it, never the pitch itself (OI-106).
-    pub(crate) seen: crate::plugins::perception::Memory,
+    pub(crate) perception: crate::plugins::perception::Perception,
     /// The fatigue plugin, called in the move phase (ADR-063).
     pub(crate) fatigue_plugin: crate::plugins::fatigue::Fatigue,
     pub(crate) scan_balance: crate::balance::ScanningBalance,
@@ -743,7 +743,7 @@ impl MatchState {
             ball_from: (0, 0, 0),
             instructed: (0, 0),
             scan_balance: crate::balance::ScanningBalance::load(),
-            seen: crate::plugins::perception::Memory::default(),
+            perception: crate::plugins::perception::Perception::default(),
             fatigue_plugin: crate::plugins::fatigue::Fatigue::default(),
             keeper_balance: crate::balance::KeeperBalance::load(),
             laws: crate::balance::LawsBalance::load(),
@@ -892,15 +892,15 @@ impl MatchState {
     /// Every player remembers where he saw each man in his cone, as he is
     /// now (ADR-034, MD-40): the memory of the last look. What he has not
     /// seen since the kick-off he does not know.
-    pub(crate) fn remember(&mut self) {
-        // The men on the pitch: one sent off, or replaced, is not looked at
-        // and does not look.
-        let agents: Vec<(PlayerId, (i32, i32), u16)> = self
-            .spatial
-            .on_pitch()
-            .map(|(id, a)| (*id, a.position, a.gaze))
-            .collect();
-        self.seen.see(&agents);
+    pub(crate) fn remember(&mut self, hidden: &mut ds_orchestrator::GroundTruth) {
+        use ds_match_api::MatchPlugin as _;
+        let mut world = crate::plugins::EngineWorld {
+            bodies: &mut self.bodies,
+            spatial: &self.spatial,
+            hidden,
+        };
+        self.perception
+            .run(ds_match_api::Phase::Perceive, &mut world);
     }
 
     /// The men of a scene placed where `observer` has seen them; himself
@@ -925,7 +925,8 @@ impl MatchState {
     /// Where `observer` believes `other` is: where he last saw him, or
     /// nothing if he never has (OI-106).
     pub(crate) fn perceived(&self, observer: PlayerId, other: PlayerId) -> Option<(i32, i32)> {
-        self.seen.get(observer, other)
+        use crate::plugins::key;
+        self.perception.memory.get(key(observer), key(other))
     }
 
     /// Emits a match-boundary event (`KickOff`, `HalfTime`, `SecondHalf`,
@@ -939,7 +940,7 @@ impl MatchState {
     /// against his endurance, and recovers when he walks.
     pub(crate) fn tire_players(&mut self, ctx: &mut MatchContext<'_>) {
         use ds_match_api::MatchPlugin as _;
-        let mut world = crate::plugins::fatigue::MoveWorld {
+        let mut world = crate::plugins::EngineWorld {
             bodies: &mut self.bodies,
             spatial: &self.spatial,
             hidden: ctx.hidden,
@@ -1485,7 +1486,8 @@ mod memory_tests {
     fn a_player_knows_only_whom_he_has_seen() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut s = MatchState::new(&m);
-        s.remember();
+        let mut truth = ds_orchestrator::GroundTruth::for_match(42, &m);
+        s.remember(&mut truth);
         let ids: Vec<PlayerId> = s.spatial.iter().map(|(id, _)| *id).collect();
         let mut unseen = 0;
         for &o in &ids {
@@ -1508,7 +1510,8 @@ mod memory_tests {
     fn a_man_is_remembered_where_he_was_seen() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut s = MatchState::new(&m);
-        s.remember();
+        let mut truth = ds_orchestrator::GroundTruth::for_match(42, &m);
+        s.remember(&mut truth);
         let ids: Vec<PlayerId> = s.spatial.iter().map(|(id, _)| *id).collect();
         let (o, x) = ids
             .iter()
@@ -1524,7 +1527,7 @@ mod memory_tests {
         // He has not looked since: he keeps the old place, unless he sees
         // him now from where he stands.
         if !crate::perception::visible_to(&s.spatial, o).contains(&x) {
-            s.remember();
+            s.remember(&mut truth);
             assert_eq!(s.perceived(o, x), Some(was));
         }
     }
@@ -1535,7 +1538,8 @@ mod memory_tests {
     fn the_carriers_scene_holds_whom_he_has_seen() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut s = MatchState::new(&m);
-        s.remember();
+        let mut truth = ds_orchestrator::GroundTruth::for_match(42, &m);
+        s.remember(&mut truth);
         let all: BTreeMap<PlayerId, (i32, i32)> = s
             .spatial
             .on_pitch()
