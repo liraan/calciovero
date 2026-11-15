@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `8ab25c0` - "docs(state): bookmark after SIM 126, the choice of ADR-052; OI-85 and OI-115 closed"
+**Last commit verified:** `6a28995` - "docs(plans,state): calibration at SIM 126 (9 of 22 in band); the next exact action"
 
 ## Dove siamo (2026-11-14)
 
@@ -84,7 +84,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Provato e tolto: l'ampiezza dell'attenzione (OI-108; fuorigioco a 11.7).
 - In banda al 124: 8 metriche su 22, ognuna fuori banda con il suo OI.
 - Poi, sempre nella notte: la spazzata in fallo laterale (125) e la scelta dell'ADR-052 (126): il giocatore gioca la migliore opzione che vede, anche cattiva. Tolta la vecchia formula di `choice.json` e la soglia di chiarezza; chiusi OI-85 e OI-115. Al 126 sono in banda 9 metriche su 22, con i gol a 3.65 (reale 2.68).
-- **Prossima azione esatta:** la causa delle rimesse (4.7 contro 42.7). La spazzata in fallo è ancora un'opzione che perde contro un passaggio rischioso; guardare dove va il pallone dopo i contrasti (`loose_from_contact`) e dopo le respinte, e i palloni che nessuno raggiunge vicino alle linee (OI-100).
+- **Prossima azione esatta:** la causa delle rimesse (4.7 contro 42.7). Misurato nel seme 42-44: il pallone sta entro 1.5 m dalla linea laterale circa l'1% del tempo (30 volte a partita, quasi sempre al piede); il contrasto lo spinge via dal difensore, quindi esce solo se si gioca vicino alla linea. Ipotesi: il gioco si sviluppa poco sulle fasce. Serve la distribuzione reale del gioco in larghezza (gli eventi Wyscout hanno le coordinate: la quota di eventi nei 10 m vicino alle linee); poi la causa nell'ampiezza della forma (`block.json`) o nelle scelte di chi ha la palla in fascia (OI-100).
 
 ## Decisioni prese da Claude, da rivedere
 
