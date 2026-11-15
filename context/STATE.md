@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `058e8b7` - "feat(coach): the coach changes a tired player during the match -- Law 3, SIM_VERSION 118"
+**Last commit verified:** `f62152a` - "docs(plans): the calibration (phase 4), the closing (phase 5), the plugin ADR proposed"
 
 ## Dove siamo (2026-11-14)
 
@@ -40,7 +40,31 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Fatti: SIM 115 (la memoria dell'ultimo sguardo e le quattro letture senza palla che passano da lì, OI-106 chiuso); SIM 116 (la scena del portatore dalla memoria); SIM 117 (supplementari e rigori finali, la monetina come input, il rigore solo tiro).
 - Rinviato: ADR-062 (a), OI-108.
 - SIM 118: l'allenatore che cambia in partita (voce 6, parte dei cambi). Voci 5, 7 e 8 scritte come OI-109 e OI-110 (conflitto con la decisione 5).
-- **Prossima azione esatta:** la voce 9, le cause aperte del realismo, a partire da OI-102 (il secondo uomo sui palloni alti); poi la fase 4.
+- Voce 9 (le cause del realismo): resta negli OI-64, OI-102, OI-103, con la loro prima azione.
+
+**Fase 4, la taratura (2026-11-15), `plans/L0-CALIBRATION.md`.**
+- La misura del 118 con le bande (media reale ± una deviazione standard): 9 metriche in banda su 22, le altre 13 con il loro OI (OI-100 precisione e tiri, OI-101 recupero, OI-102 duelli aerei, OI-103 duelli a terra, OI-112 punizioni).
+- Nessun parametro portato da grado 3 a 1 o 2: le fonti negli OI non sono ancora lette, e i fuori banda sono una catena (tiri, parate, angoli, gol) che non dà una verifica indipendente.
+- Registro di grado 3: 356 parametri su 381.
+
+**Fase 5, la chiusura (2026-11-15): L0 è chiuso, in attesa della prova del maintainer.**
+- **La misura finale:** quella della fase 4 (SIM 118, `plans/L0-CALIBRATION.md`).
+- **Il golden:** i tre golden passano su glibc e musl (SIM 118); Windows UCRT64 era verde al 113.
+  - Da lanciare sul tuo PC Windows: `cargo test --release -p ds-match --test golden_l0`.
+  - Su macOS e ARM64 non posso farlo girare da qui: stesso comando, su un Mac (Apple Silicon è anche ARM64). Ogni sistema verificato va in OI-99.
+- **La durata:** una partita dura circa 2.1 s su un core (ds-demo release, seed 42-46: da 2.05 a 2.30 s, con la cronaca). Una stagione di circa 1.900 partite fa circa 67 minuti su un core, circa 17 su quattro.
+- **La partita di prova:**
+  - Comando:
+    ```bash
+    cargo run --release -p ds-demo -- --seed 42 --why
+    ```
+    Oppure, in finestra, `cargo run --release -p ds-gui` con il seme 42.
+  - Cosa guardare:
+    1. chi non ha visto un compagno alle spalle va sul pallone anche lui (la memoria, 115-116);
+    2. i fuorigioco, circa sei a partita, anche su chi sembrava in linea (113-114);
+    3. i tiri, ancora troppi (54 contro 25, OI-100), e le rimesse, troppo poche (OI-100);
+    4. una partita di coppa ai rigori: `cargo test --release -p ds-match --test extra_time -- --nocapture`.
+- **Il prossimo passo, dopo il tuo ok:** l'ADR della divisione in plugin, proposto e non implementato, in `plans/ADR-063-PROPOSAL.md` (fuori da `doctrine/adr/` perché il gate B6 non ammette ADR proposti).
 
 ## Decisioni prese da Claude, da rivedere
 
@@ -61,6 +85,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 | 13 | Il calcio ai rigori finisce alla parata, anche se la palla respinta potrebbe poi entrare | semplificazione dichiarata della Regola 10 ("finché la palla si ferma"); la respinta che entra da sola è rara | SIM 117 |
 | 14 | L'allenatore che reagisce cambia solo per la velocità, e solo se lo chiede la sua squadra (`coach_reacts`, spento di default) | è l'unico confronto ricavabile senza numeri nuovi; acceso di default avrebbe cambiato tutte le partite e la misura prima della taratura | SIM 118 |
 | 15 | Coraggio, compostezza, barriera e colpo non fatti, scritti come OI-109 e OI-110 | il punto 3b del mandato: una scelta che contraddice una regola scritta (niente numeri nuovi di grado 3 in L0) non si fa | SIM 118 |
+| 16 | La banda della taratura è media reale ± una deviazione standard delle 380 partite, uguale per tutte le metriche | una regola sola, presa dalla dispersione del calcio vero; una banda per metrica sarebbe scelta guardando i valori | fase 4 |
 
 ## Plan
 
@@ -90,6 +115,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 | OI-109 | **Coraggio e compostezza come radici fisse (ADR-057), e la barriera che ne dipende (OI-105)**: due regole scritte si contraddicono. ADR-057 li vuole in L0; la decisione 5 (RULES A5-bis) vieta numeri nuovi di grado 3 in L0, e una radice nuova vuole i suoi valori nei profili dei ruoli e la forma del suo effetto, senza fonte. | Alternative per il maintainer: (A) ammettere i valori dei profili delle squadre di prova come input di grado 3 (sono dati dei giocatori, non del motore; i veri vengono dai pacchetti, L3), con la forma dell'effetto senza numeri (il coraggio confrontato con un pericolo misurato, per esempio la velocità del pallone sul tiro da respingere); (B) rinviare le due radici a L1, emendando ADR-057 §6; (C) cercare prima una fonte per la loro distribuzione nei giocatori. |
 | OI-110 | **Il colpo che fa uscire un giocatore (10h-d)**: serve una soglia di forza del contatto oltre la quale il corpo cede; nessuna fonte letta la dà, e lo studio UEFA (Ekstrand) dà l'incidenza, non la forza. Una soglia scelta sarebbe un numero nuovo di grado 3; fissarla di grado 2 vorrebbe una metrica reale tenuta da parte, e `ds-reference` non conta gli infortuni. | Cercare una fonte biomeccanica sulla forza d'impatto nei contrasti che causano infortuni (per esempio studi su placcaggi e contrasti con video e accelerometri); altrimenti rinviare a L1 con l'emendamento dichiarato. |
 | OI-111 | **La fatica rallenta lo scatto già nei primi minuti** (visto con l'allenatore che reagisce, SIM 118: cambi al 2', 4', 15'). | Nella taratura: confrontare la velocità massima per tempo con dati di tracking (la caduta tipica dello sprint fra primo e ultimo quarto d'ora) e cercare la causa in `fatigue.json`. |
+| OI-112 | **Le punizioni contate sono la metà del reale** (SIM 118, ds-reference seed 42-101: 14.9 contro 29.5), mentre falli (20.5) e fuorigioco (6.4) sono in banda: probabilmente il conteggio, non il calcio (un vantaggio, un rigore o una ripresa dopo il fuorigioco non raccontati come `FreeKick`, o la definizione Wyscout più larga). | Contare in 10 partite falli, fuorigioco e eventi `FreeKick` del motore, e leggere in `tools/ds-reference/src/wyscout.rs` cosa conta Wyscout come punizione; poi allineare la definizione o trovare la ripresa che manca. |
 | OI-99 | **Il golden va verificato su più sistemi.** Dal 101 (`ds_core::dmath`) il golden è uguale con glibc 2.39 e con musl su Linux x86_64; **il 2026-11-15 è uguale anche su Windows** (`SIM_VERSION` 113, il PC del maintainer, terminale MSYS2 UCRT64, `cargo test --release -p ds-match --test golden_l0`: i due golden passano, quindi `mul_add` e le altre operazioni danno gli stessi bit anche lì); non è stato eseguito su macOS, né su Ubuntu 26.04 dove era risultato diverso. Rischi dichiarati, da guardare per primi se un giorno il golden diverge: (1) `mul_add`, che su x86_64 senza FMA hardware chiama la `fma` di sistema (IEEE la vuole corretta e glibc e musl coincidono, il CRT di Windows non è verificato); (2) il toolchain non fissato (`rust-toolchain.toml`, `channel = "stable"`): non si fissa ora; (3) `libm` è fissato a `=0.2.16`, un aggiornamento cambia i bit e va trattato come un bump. | Eseguire `cargo test --release -p ds-match --test golden_l0` su macOS, e registrare qui ogni sistema verificato; poi un job di CI per sistema (Linux, Windows, macOS) sul golden. |
 | OI-100 | **Il gioco è troppo preciso, e la palla esce poco** (dal 109, seed 42-101, ds-reference): passaggi riusciti 94.5% contro 83% reale, tiri in porta 24.5 su 45.1 (54%, reale 35%), rimesse 13.1 contro 42.7, tiri 45.1 contro 24.6. Il tiratore sa che il suo tiro conviene, quindi tira di più. Le distanze di tiro sono plausibili (mediana 17 m). Provato e tolto come causa delle rimesse: la deriva sempre verso il centro (109 la fa nascere dal contatto, ma le rimesse non salgono). I termini dell'errore senza fonte (`kick.json` `error_pressure_rad`, `error_power_gain`, `run_speed_ref_cm_per_tick`) e la ricezione quasi sempre pulita sono i sospetti: vanno fondati su una fonte, non scelti guardando i tiri in porta. | Fonti candidate trovate (2026-11-15), senza ancora numeri utilizzabili: StatsBomb, *Representing Freeze Frames in Expected Completion Percentage Models* (la distanza del difensore più vicino al passatore e al ricevente è legata in modo forte alla riuscita; curve continue, non soglie); NFL Next Gen Stats, *completion probability* (la separazione dal difensore più vicino). Prima azione: leggere le tabelle originali (o misurarle da dati aperti con posizioni, come i freeze frame StatsBomb open data) e fondare `error_pressure_rad` e la pressione sulla ricezione; poi misurare. |
 | OI-101 | **Il recupero è più lungo del reale, per dottrina** (dal 109, seed 42-101: primo tempo 6.1 min, secondo 4.4; Serie A 2017-18 almeno 1.5 e 4.1, ma è un limite inferiore, l'ultimo evento registrato). Fonte (FiveThirtyEight, Mondiali 2018): gli arbitri aggiungono circa metà del tempo perso (6'59" contro 13'10" a partita); il motore, che applica le Leggi in modo oggettivo (ADR-021, nota), lo aggiunge tutto, e i suoi 60 s per gol stanno dentro i circa 66 s misurati. Perché il primo tempo ha più recupero del secondo: contati (seed 42-51), il primo tempo ha più falli (10.7 contro 7.0) e più gol (2.0 contro 1.7); nel reale il secondo tempo recupera di più soprattutto per le sostituzioni (circa cinque a partita), che le squadre di prova del confronto non fanno (0). Aperto: perché i falli calano nel secondo tempo (la fatica che appanna l'accelerazione, quindi meno contrasti?), e i secondi di una punizione senza fonte. | Contare i contrasti per tempo e la fatica media di chi entra in contrasto; poi, se serve, un confronto con sostituzioni pianificate nelle squadre di prova. |
