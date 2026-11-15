@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `9900ec2` - "docs(balance): the loose ball's speed checked on Metrica tracking"
+**Last commit verified:** `f6d6116` - "docs(state): the play still narrow at SIM 128; the next action"
 
 ## Dove siamo (2026-11-14)
 
@@ -88,7 +88,8 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Poi: da dove nascono le rimesse vere. Wyscout Serie A 2017-18 (16.235 rimesse, 42,7 a partita), l'evento prima della rimessa: spazzata 21,5%, tocco o deviazione 19,7%, duello a terra 26,2%, duello aereo 5,0%, passaggio sbagliato 23,7%. Nel motore (semi 42-51) 43 rimesse su 44 seguono un passaggio, e nessuna delle circa 300 spazzate finisce fuori: dopo una spazzata vengono un passaggio (98), un duello (72), un intercetto (48), un'altra spazzata (38). Una causa trovata nel codice: **il pallone non rimbalza**. Quando atterra (`spatial.rs` `ball_step`) perde tutta la velocità verticale e scorre a terra alla velocità del volo (circa 22 m/s per una spazzata), quindi chiunque sia sulla sua linea lo raggiunge e lo controlla. Un pallone vero rimbalza e, mentre rimbalza, resta lontano dai piedi.
 - Poi (128): il rimbalzo, dalla fonte FIFA (il maintainer ha autorizzato i PDF). Rimesse raddoppiate, 3.85 -> 7.97; gol 4.33. Restano lontane dalle 42.7 vere.
 - Poi: la velocità del pallone sciolto da un contrasto (`duel.json` 5 m/s) è giusta: nel tracking Metrica la mediana è 4,6 m/s su 228 contrasti; ora ha la fonte. Misurato al 128 (semi 42-46): il pallone sta nel decimo esterno di ogni lato il 5,8% del tempo (Metrica circa 17%) e da lì parte il 2,1% dei passaggi (Wyscout 20,3%); la squadra con la palla è larga 42 m come quella vera, ma l'uomo più vicino alla linea ne dista 10,6 m (vero 4 m), perché il pallone sta al centro e il blocco lo segue.
-- **Prossima azione esatta:** perché il portatore non gioca sulle fasce. Ipotesi da verificare nel codice: `read.rs` `space_value` vale meno un punto largo alla stessa altezza (la distanza dal centro della porta), e nella scelta ogni piccola differenza decide (argmax); il compagno largo e libero dovrebbe vincere per la sicurezza del passaggio (`sure`), da misurare: quanti passaggi vanno agli uomini di fascia e quanto vale per il portatore il compagno largo libero rispetto a quello centrale marcato. Nessun numero di valore nuovo: ADR-052 vuole che il valore di un punto venga dal tiro e dalla parata. Poi le rimesse dai duelli e dai tocchi; poi il passaggio troppo preciso (OI-100).
+- Verificato e tolto come causa del gioco stretto (semi 42-44, SIM 128): (1) `space_value` di un punto largo è l'84% di quello centrale a metà campo e il 70% a 35 m dalla porta, un ordine simile a quello dell'expected threat reale; (2) la deriva: in 4.384 possessi le conduzioni portano il pallone verso l'esterno di 3.484 m e verso il centro di 2.718, i passaggi fra un portatore e il successivo verso il centro di 13.895 e verso l'esterno di 13.198: quasi in pari. Il pallone non viene tirato al centro; semplicemente, quando arriva in fascia, non ci resta.
+- **Prossima azione esatta:** misurare, decisione per decisione, il portatore in fascia (decimo esterno): quali opzioni immagina, con quale valore, e quale sceglie, contro le scelte reali in fascia (Wyscout: dopo un evento nel decimo esterno, quanti passaggi restano sulla fascia). Serve una sonda di test (ignorata) che legga `build_choice` sulle scene del registro. Poi le rimesse dai duelli e dai tocchi; poi il passaggio troppo preciso (OI-100).
 
 ## Decisioni prese da Claude, da rivedere
 
