@@ -29,6 +29,8 @@
 
 **Fase 4, la taratura fine:** prima due proposte di dottrina al maintainer (RULES A6, la taratura a Claude Code; RULES A5-bis con i tre gradi della decisione 5), e si aspetta il suo ok; poi ogni parametro di grado 3 (356 su 381, `L0-AUDIT.md` §7) verso il grado 1 o 2, la misura su 60 seed con le bande scritte prima, ogni metrica fuori banda con la sua causa o il suo OI; la tabella in `L0-CALIBRATION.md`.
 
+**Stato al 2026-11-15:** fasi 1-5 svolte; L0 chiuso, in attesa della prova del maintainer (`STATE.md`, "Per il maintainer"); ciò che resta è negli OI-64, OI-100-OI-112.
+
 **Fase 5, la chiusura:** la misura finale (passo 11), il golden su glibc, musl e dove si può Windows, macOS, ARM64 (OI-99), la durata di una partita su un core, la partita di prova del maintainer. L0 è chiuso solo dopo il suo ok; poi l'ADR dei plugin (OI-94).
 
 ---
