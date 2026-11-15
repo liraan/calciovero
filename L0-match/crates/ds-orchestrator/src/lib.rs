@@ -1030,6 +1030,17 @@ impl GroundTruth {
         std::mem::take(&mut self.observations)
     }
 
+    /// How fast `player` can run now, cm a tick, as tired as `fatigue`: the
+    /// top speed of the movement, dimmed by fatigue (plan L0-CLOSE step 6).
+    /// What his coach sees of him from the bench (plan L0-CLOSE 10h-c).
+    pub fn top_speed_now(&mut self, player: PlayerId, fatigue: f64) -> f64 {
+        let max_speed = self.latents_for(player).physical.max_speed;
+        let balance = &self.movement_balance;
+        (balance.top_speed_max_cm_per_tick - balance.top_speed_min_cm_per_tick)
+            .mul_add(f64::from(max_speed), balance.top_speed_min_cm_per_tick)
+            * self.fatigue_balance.v_max_factor(fatigue)
+    }
+
     fn latents_for(&mut self, player: PlayerId) -> PlayerLatents {
         self.vault.latents_for(player)
     }

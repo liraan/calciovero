@@ -93,7 +93,7 @@ fn step(
     t: u64,
     rec: &mut Recorder<'_>,
 ) {
-    state.substitute_due(live, t, ctx.config.ticks_per_second);
+    state.substitute_due(live, ctx.hidden, t, ctx.config.ticks_per_second);
     let mut now = MatchContext {
         match_: live,
         hidden: &mut *ctx.hidden,

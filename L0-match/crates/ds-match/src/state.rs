@@ -819,7 +819,13 @@ impl MatchState {
     /// at the next stoppage (the ball dead before a restart), the player
     /// from the bench takes the place of the one coming off, in the live
     /// squad and on the pitch, fresh. The caller plays on with `live`.
-    pub fn substitute_due(&mut self, live: &mut ds_model::Match, tick: u64, ticks_per_second: u8) {
+    pub fn substitute_due(
+        &mut self,
+        live: &mut ds_model::Match,
+        hidden: &mut ds_orchestrator::GroundTruth,
+        tick: u64,
+        ticks_per_second: u8,
+    ) {
         if !std::mem::take(&mut self.stoppage) {
             return;
         }
@@ -827,8 +833,9 @@ impl MatchState {
         let in_half = tick.saturating_sub(self.half_start_tick) / tps / 60;
         let minute = in_half + u64::from(self.half.offset_minutes());
         let carrier = self.spatial.carrier();
+        let allowed = usize::from(live.rules.subs_allowed);
         for squad in [&mut live.home, &mut live.away] {
-            let due: Vec<ds_model::Substitution> = squad
+            let mut due: Vec<ds_model::Substitution> = squad
                 .substitutions
                 .iter()
                 .copied()
@@ -837,6 +844,9 @@ impl MatchState {
                 // Not the taker of the restart: he is on the ball.
                 .filter(|s| Some(s.outgoing) != carrier)
                 .collect();
+            if squad.coach_reacts {
+                due.extend(self.tired_for_fresh(squad, hidden, carrier, minute, allowed));
+            }
             for s in due {
                 let (Some(i), Some(j)) = (
                     squad.players.iter().position(|p| p.id == s.outgoing),
@@ -862,6 +872,67 @@ impl MatchState {
                 self.to_announce.push((s.outgoing, s.incoming));
             }
         }
+    }
+
+    /// The changes a coach decides from what he sees (plan L0-CLOSE
+    /// 10h-c, Law 3): an outfield player is replaced by a substitute of
+    /// the same role who, fresh, runs faster than he can now, while he was
+    /// the faster of the two fresh (the coach chose him to start); within
+    /// the substitutions the Laws allow. No number of its own: the speeds
+    /// are the movement's, dimmed by fatigue.
+    fn tired_for_fresh(
+        &self,
+        squad: &ds_model::Squad,
+        hidden: &mut ds_orchestrator::GroundTruth,
+        carrier: Option<PlayerId>,
+        minute: u64,
+        allowed: usize,
+    ) -> Vec<ds_model::Substitution> {
+        let made = squad
+            .players
+            .iter()
+            .chain(squad.bench.iter())
+            .filter(|p| self.substituted.contains(&p.id))
+            .count();
+        let mut left = allowed.saturating_sub(made);
+        let mut used: BTreeSet<PlayerId> = BTreeSet::new();
+        let mut out = Vec::new();
+        for p in squad.players.iter().skip(1) {
+            if left == 0 {
+                break;
+            }
+            if Some(p.id) == carrier || self.substituted.contains(&p.id) {
+                continue;
+            }
+            let Some(body) = self.bodies.get(&p.id) else {
+                continue;
+            };
+            let now = hidden.top_speed_now(p.id, body.fatigue);
+            let fresh = hidden.top_speed_now(p.id, 0.0);
+            let best = squad
+                .bench
+                .iter()
+                .filter(|b| b.role == p.role && !used.contains(&b.id))
+                .filter(|b| !self.substituted.contains(&b.id))
+                .map(|b| {
+                    (
+                        hidden.top_speed_now(b.id, f64::from(b.physical.fatigue)),
+                        b.id,
+                    )
+                })
+                .filter(|(v, _)| *v > now && *v <= fresh)
+                .max_by(|a, b| a.0.total_cmp(&b.0).then(b.1.cmp(&a.1)));
+            if let Some((_, incoming)) = best {
+                used.insert(incoming);
+                left -= 1;
+                out.push(ds_model::Substitution {
+                    outgoing: p.id,
+                    incoming,
+                    minute: u16::try_from(minute).unwrap_or(u16::MAX),
+                });
+            }
+        }
+        out
     }
 
     /// The coaches' instructions due (ADR-059): each takes effect at the

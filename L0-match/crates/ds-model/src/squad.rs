@@ -143,6 +143,11 @@ pub struct Squad {
     /// ticks (ADR-059).
     #[serde(default)]
     pub instructions: Vec<Instruction>,
+    /// Whether the coach also changes players during the match from what
+    /// he sees (plan L0-CLOSE 10h-c): a tired player for a fresher one of
+    /// the same role.
+    #[serde(default)]
+    pub coach_reacts: bool,
 }
 
 impl Squad {
@@ -177,8 +182,17 @@ impl Squad {
             formation,
             intention: Intention::default(),
             substitutions: Vec::new(),
+            coach_reacts: false,
             instructions: Vec::new(),
         })
+    }
+
+    /// The same squad with a coach who changes tired players during the
+    /// match (plan L0-CLOSE 10h-c).
+    #[must_use]
+    pub const fn with_reacting_coach(mut self) -> Self {
+        self.coach_reacts = true;
+        self
     }
 
     /// The same squad with the substitutions the manager plans: at most

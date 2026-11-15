@@ -21,10 +21,10 @@
 | 2 | **fatto (115)** — La scena solo dal cono e dalla memoria (OI-106) | 1 | il test anti-fuga, rosso; poi `rank`, `loose_rival_cm`, `cutters` dalla memoria |
 | 3 | **(c) fatto (116, dalla memoria); (a) aperto, OI-108** — ADR-062 (a) e (c): l'ampiezza dell'attenzione come `vision`, la linea letta dall'ultimo sguardo (fonti in OI-104, `SOURCES.md`); rimisurare fuorigioco e palloni che escono (OI-98, OI-100) | 1, 2 | il gemello su `vision` |
 | 4 | **fatto (117)** — Supplementari e rigori finali (Regole 7 e 10, testo 2026/27), quando la competizione li chiede; la monetina come input della partita (approvata il 2026-11-15) | — | un `Match` di coppa finito pari: i supplementari, poi la serie |
-| 5 | La barriera: la somma di corpi, ognuno sceglie se entrarci e dove, resta o si gira secondo il coraggio (OI-105) | 8 (il coraggio) | la distanza della Regola 13 e il metro dalla barriera |
-| 6 | L'allenatore avversario che reagisce in partita (ADR-059 passo 3, poi cambi e istruzioni dallo stato) | ADR-059 passo 3 | il passo 3: istruzioni rapide e transizioni |
-| 7 | Il colpo che fa uscire un giocatore: `Injury` emesso dalla forza del contatto, `injury_proneness` col suo consumatore | — | la fonte (studio UEFA, Ekstrand) e la misura del contatto nel duello |
-| 8 | Gli appannatori: lucidità, coraggio, aggressività (OI-70, ADR-057) | — | il coraggio come radice fissa, col gemello |
+| 5 | **bloccato, OI-109** — La barriera: la somma di corpi, ognuno sceglie se entrarci e dove, resta o si gira secondo il coraggio (OI-105) | 8 (il coraggio) | la distanza della Regola 13 e il metro dalla barriera |
+| 6 | **cambi fatti (118); istruzioni in partita e ADR-059 passo 3 aperti** — L'allenatore avversario che reagisce in partita (ADR-059 passo 3, poi cambi e istruzioni dallo stato) | ADR-059 passo 3 | il passo 3: istruzioni rapide e transizioni |
+| 7 | **bloccato, OI-110** — Il colpo che fa uscire un giocatore: `Injury` emesso dalla forza del contatto, `injury_proneness` col suo consumatore | — | la fonte (studio UEFA, Ekstrand) e la misura del contatto nel duello |
+| 8 | **bloccato, OI-109** — Gli appannatori: lucidità, coraggio, aggressività (OI-70, ADR-057) | — | il coraggio come radice fissa, col gemello |
 | 9 | Le cause aperte del realismo: OI-102 (il secondo uomo in aria), OI-103 (protezione e dribbling), OI-64 (il corpo rispetto alla palla), 10d (il portiere che si piazza, esce), 10e (il tempo del salto), la tabella di ADR-057 | — | una per volta, la causa nel calcio vero prima del codice |
 
 **Fase 4, la taratura fine:** prima due proposte di dottrina al maintainer (RULES A6, la taratura a Claude Code; RULES A5-bis con i tre gradi della decisione 5), e si aspetta il suo ok; poi ogni parametro di grado 3 (356 su 381, `L0-AUDIT.md` §7) verso il grado 1 o 2, la misura su 60 seed con le bande scritte prima, ogni metrica fuori banda con la sua causa o il suo OI; la tabella in `L0-CALIBRATION.md`.
