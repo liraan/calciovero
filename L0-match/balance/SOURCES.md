@@ -9,7 +9,7 @@
 - **explained, no source**: the file explains what it does, without a source or a derivation.
 - **undocumented**: the file says nothing about this parameter. These come first in the work to do.
 
-**Today:** 220 parameters in 21 files: 17 sourced, 5 derived, 6 arbitrary and declared, 89 explained without a source, 103 undocumented.
+**Today:** 220 parameters in 21 files: 19 sourced, 5 derived, 5 arbitrary and declared, 88 explained without a source, 103 undocumented.
 
 **The rule from now on.** A change to a number in `balance/` updates its row here in the same commit, with the source (author, year, title, and the page or table) or the derivation, or the word *arbitrary*. A number chosen by looking at the statistic it produces is never a source. This file was generated from the JSON files on 2026-11-14 (the classification is read from their text and is a first pass: a row marked sourced still needs its full reference written here when the file gives only a name).
 
@@ -333,8 +333,8 @@ To be filled as each row is completed: full reference, what it measures, which p
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
 | `base` | 0 | undocumented | — |
-| `goal` | 60 | explained, no source | Seconds of stoppage per event (ADR-026). duel 10 -> 0 (2026-11-12): a clean duel does not stop play; the time is lost to fouls, goals, injuries. |
-| `foul` | 20 | explained, no source | Seconds of stoppage per event (ADR-026). duel 10 -> 0 (2026-11-12): a clean duel does not stop play; the time is lost to fouls, goals, injuries. |
+| `goal` | 60 | sourced | Seconds of stoppage for a goal (ADR-026). FiveThirtyEight, "World Cup stoppage time is wildly inaccurate" (2018): goal celebrations cost 2'55" a match at the 2018 World Cup, which had 169 goals in 64 matches (2.64 a match): about 66 s a goal. The same count found that referees added 6'59" a match against 13'10" lost: the engine's referee is the Laws applied objectively (ADR-021 note) and allows for all of it, a real one for about half. |
+| `foul` | 20 | explained, no source | Seconds of stoppage for a foul (ADR-026). FiveThirtyEight (2018 World Cup) counts 10'29" a match lost to free kicks; the number of free kicks of those matches is not in the source, so the seconds a free kick are not derived from it yet. |
 | `duel` | 0 | explained, no source | Seconds of stoppage per event (ADR-026). duel 10 -> 0 (2026-11-12): a clean duel does not stop play; the time is lost to fouls, goals, injuries. With the duel in the match (SIM_VERSION 47) thousands of duels made a 328-minute match. |
 
 ### `thought.json`
