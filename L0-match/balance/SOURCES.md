@@ -51,8 +51,8 @@ To be filled as each row is completed: full reference, what it measures, which p
 |---|---|---|---|
 | `depth_in_possession_cm` | 4500 | undocumented | — |
 | `depth_out_of_possession_cm` | 3200 | undocumented | — |
-| `width_in_possession_cm` | 4200 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean 42.2 m with the ball |
-| `width_out_of_possession_cm` | 3700 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean 37.4 m without it |
+| `width_in_possession_cm` | 4730 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean 47.3 m with the ball in play (SIM 129; 42.2 at SIM 127 counted the dead-ball frames) |
+| `width_out_of_possession_cm` | 3700 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean 37.0 m without it, with the ball in play |
 | `line_behind_ball_in_possession_cm` | 3000 | undocumented | — |
 | `line_behind_ball_out_of_possession_cm` | 1500 | undocumented | — |
 | `line_min_cm` | 1000 | undocumented | — |
