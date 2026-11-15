@@ -78,6 +78,10 @@ pub struct PerceivedScene {
     /// How the players he sees are moving, cm/tick (plan L0-CLOSE 11): a
     /// pass is played where the man will be, not where he is.
     pub motion: BTreeMap<PlayerId, (i16, i16)>,
+    /// Two men nearer than this share of their distance from him, across
+    /// his line of sight, look level to him (ADR-062 (b): the eye's
+    /// threshold, about 8 mrad, Wühr et al. 2015). Zero: he sees exactly.
+    pub level_share: f64,
     /// What he reckons of a teammate's reception (ADR-058): the same
     /// difficulty the engine judges, as well as he reads the game.
     pub reception: ReceptionReckoning,
@@ -157,12 +161,18 @@ fn offside_to(scene: &PerceivedScene, from: (i32, i32), at: (i32, i32)) -> bool 
     // the projection tells him nothing and he reads the true line: the
     // depth he misjudges then is the open part of ADR-062 §5.
     let (sx, sy) = (line_man.0 - from.0, line_man.1 - from.1);
-    if sy.abs() <= sx.abs() {
-        return depth(at.0) < second_last;
-    }
-    let along = f64::from(at.1 - from.1) / f64::from(sy);
-    let seen_x = f64::from(sx).mul_add(along, f64::from(from.0)).round() as i32;
-    depth(at.0) < depth(seen_x)
+    let line = if sy.abs() <= sx.abs() {
+        second_last
+    } else {
+        let along = f64::from(at.1 - from.1) / f64::from(sy);
+        depth(f64::from(sx).mul_add(along, f64::from(from.0)).round() as i32)
+    };
+    // Nearer to the line than his eye can tell apart at that distance, the
+    // runner looks level with it, and level is onside (ADR-062 (b); Wühr,
+    // Fasold and Memmert 2015: about 8 mrad).
+    let far = dmath::hypot(f64::from(at.0 - from.0), f64::from(at.1 - from.1));
+    let ahead = f64::from(line - depth(at.0));
+    ahead > far * scene.level_share
 }
 
 /// A lofted pass over `d` cm, `flight` ticks in the air: controlled where
@@ -1462,6 +1472,7 @@ mod keeper_visibility_tests {
             shield_keep: 0.0,
             foresight: 1.0,
             motion: BTreeMap::new(),
+            level_share: 0.0,
             reception: ReceptionReckoning::default(),
         }
     }
@@ -1504,6 +1515,23 @@ mod keeper_visibility_tests {
             offside_to(&s, (8200, 500), runner),
             "level with the line: read right"
         );
+    }
+
+    /// P1 (ADR-062 (b), `SIM_VERSION` 114): nearer to the line than his eye
+    /// can tell apart at that distance, the runner looks level, so onside;
+    /// a passer who saw exactly would call him off.
+    #[test]
+    fn a_runner_a_hair_past_the_line_looks_level() {
+        let mut s = scene_with(Some(3400));
+        let defender = PlayerId::new(101, 0);
+        s.opponents.push(defender);
+        s.positions.insert(defender, (8000, 3000));
+        let from = (6000, 3000);
+        let hair = (8010, 3000);
+        assert!(offside_to(&s, from, hair), "the exact eye sees him off");
+        s.level_share = 0.008;
+        assert!(!offside_to(&s, from, hair), "10 cm at 20 m look level");
+        assert!(offside_to(&s, from, (8100, 3000)), "1 m past is seen");
     }
 
     /// P1 (Law 11, `SIM_VERSION` 107): the passer sees the line. A teammate
@@ -1792,6 +1820,7 @@ mod keeper_visibility_tests {
                 shield_keep: 0.0,
                 foresight: 1.0,
                 motion: BTreeMap::new(),
+                level_share: 0.0,
                 reception: ReceptionReckoning::default(),
             }
         }

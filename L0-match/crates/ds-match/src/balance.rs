@@ -157,6 +157,9 @@ pub struct ScanningBalance {
     pub weight_mark: i32,
     /// Radius within which the mark beats the ball, in cm.
     pub mark_radius_cm: i32,
+    /// Two men nearer than this angle across his line of sight look level
+    /// to him, in milliradians (ADR-062 (b); Wühr et al. 2015, derived).
+    pub level_threshold_mrad: i32,
 }
 
 impl Default for ScanningBalance {

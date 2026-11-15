@@ -9,7 +9,7 @@
 - **explained, no source**: the file explains what it does, without a source or a derivation.
 - **undocumented**: the file says nothing about this parameter. These come first in the work to do.
 
-**Today:** 220 parameters in 21 files: 19 sourced, 5 derived, 5 arbitrary and declared, 88 explained without a source, 103 undocumented.
+**Today:** 221 parameters in 21 files: 20 sourced, 5 derived, 5 arbitrary and declared, 88 explained without a source, 103 undocumented.
 
 **The rule from now on.** A change to a number in `balance/` updates its row here in the same commit, with the source (author, year, title, and the page or table) or the derivation, or the word *arbitrary*. A number chosen by looking at the statistic it produces is never a source. This file was generated from the JSON files on 2026-11-14 (the classification is read from their text and is a first pass: a row marked sourced still needs its full reference written here when the file gives only a name).
 
@@ -24,7 +24,7 @@ To be filled as each row is completed: full reference, what it measures, which p
 | Helsen, W., Gilis, B. & Weston, M. (2006), *Errors in judging "offside" in association football: test of the optical error versus the perceptual flash-lag hypothesis*, J. Sports Sci. 24, 521 (abstract) | 337 offsides at the 2002 World Cup, 26.2% wrong, 86.6% of the errors flag errors; the observer 0.81 m and 0.77 m ahead of the line | none yet (ADR-062 §5) |
 | Baldo, M. V. C., Ranvaud, R. D. & Morya, E. (2002), *Flag errors in soccer games: the flash-lag effect brought to real life*, Perception 31, 1205 (abstract) | the flash-lag effect in the offside errors; no number | none |
 | Gilis, B., Helsen, W., Catteeuw, P. & Wagemans, J. (2008), *Offside decisions by expert assistant referees in association football*, J. Exp. Psychol. Appl. 14, 21 (abstract) | the attacker seen ahead by 8.4 (FIFA) and 11.0 (Belgian) pixels; accuracy 76.4% and 67.5%; the pixel scale not read | none yet (ADR-062 §5) |
-| Wühr, P., Fasold, F. & Memmert, D. (2015), *Soccer offside judgments in laypersons with different types of static displays*, PLoS ONE 10, e0133687 (full text) | one step 10 cm seen from about 50 m; accuracy 90% to 40%, about 60% bias-free at one step: a spread of about 40 cm at 50 m (8 mrad), derived | none yet (ADR-062 §5, proposed) |
+| Wühr, P., Fasold, F. & Memmert, D. (2015), *Soccer offside judgments in laypersons with different types of static displays*, PLoS ONE 10, e0133687 (full text) | one step 10 cm seen from about 50 m; accuracy 90% to 40%, about 60% bias-free at one step: a spread of about 40 cm at 50 m (8 mrad), derived | `scanning.json` `level_threshold_mrad` (SIM 114) |
 | Hüttermann, S., Noël, B. & Memmert, D. (2017), *Evaluating erroneous offside calls in soccer*, PLoS ONE 12, e0174358 (full text) | Bundesliga 2010/11, 355 calls, 14% wrong; 11% under 40° of visual angle, 30% over; the spread of attention 33.25° (SD 3.05°), 37.25° across | none yet (ADR-062 §5, proposed: `vision` as the spread) |
 | Put, K., Baldo, M. V. C., Cravo, A. M., Wagemans, J. & Helsen, W. F. (2013), *Experts in offside decision making learn to compensate for their illusory perceptions*, J. Sport Exerc. Psychol. 35, 576 (abstract) | experts do not see better than amateurs; they decide differently | none (the threshold is the same for everybody) |
 | Craig, C. M., Berton, E., Rao, G., Fernandez, L. & Bootsma, R. J. (2006), *Judging where a ball will go: the case of curved free kicks in football*, Naturwissenschaften 93, 97; Craig, C. M., Goulon, C., Berton, E., Rao, G., Fernandez, L. & Bootsma, R. J. (2009), *Optic variables used to judge future ball arrival position in expert and novice soccer players*, Atten. Percept. Psychophys. 71, 515 (abstracts) | the errors in judging where a ball goes come from its spin | none (the engine has no spin) |
@@ -309,6 +309,7 @@ To be filled as each row is completed: full reference, what it measures, which p
 | `weight_ball` | 100 | undocumented | — |
 | `weight_opponent_on_ball` | 80 | undocumented | — |
 | `weight_mark` | 60 | undocumented | — |
+| `level_threshold_mrad` | 8 | sourced (derived) | Two men nearer than this angle across his line of sight look level (ADR-062 (b), `SIM_VERSION` 114). Wühr, Fasold and Memmert 2015, PLoS ONE 10, e0133687: one step 10 cm seen from about 50 m, about 60% right bias-free at one step, about 90% far from the line; read as one spread, about 40 cm at 50 m, 8 mrad. The same for every observer (Put et al. 2013). |
 
 ### `shot_choice.json`
 

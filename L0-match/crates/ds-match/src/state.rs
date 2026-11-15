@@ -302,6 +302,7 @@ fn scene_from(
         shield_keep: 0.0,
         foresight: 1.0,
         motion: std::collections::BTreeMap::new(),
+        level_share: 0.0,
         reception: ds_orchestrator::read::ReceptionReckoning {
             air_keep: f64::from(spatial.air_friction_milli()) / 1000.0,
             ..ds_orchestrator::read::ReceptionReckoning::default()
@@ -1110,6 +1111,9 @@ impl MatchState {
             .chain(scene.teammates.iter().copied())
             .filter_map(|id| self.spatial.agent(id).map(|a| (id, a.velocity)))
             .collect();
+        // Two men nearer than his eye can tell apart look level to him
+        // (ADR-062 (b)).
+        scene.level_share = f64::from(self.scan_balance.level_threshold_mrad) / 1000.0;
         // The teammates he sees attacking the depth, and where they run to
         // (plan L0-CLOSE 10a: the through ball).
         let seen = crate::perception::visible_to(&self.spatial, attacker);
