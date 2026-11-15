@@ -545,13 +545,18 @@ impl SpatialState {
         }
     }
 
-    /// Where a player at `from` first meets the ball rolling on the grass, by
-    /// the physics `advance_ball` applies (the ground keeps
-    /// `ground_friction_milli` of its speed each tick) and his own: from his
+    /// Where a player at `from` first meets the moving ball, by the physics
+    /// `advance_ball` applies, the same steps (gravity and the air in
+    /// flight, the grass once it is down, the stop) and his own: from his
     /// speed now he accelerates at `accel` up to `top` (cm/tick), and he
     /// needs only to come within `reach` cm of it. The first point of its
-    /// path he gets to no later than it does, or where it stops. `None` if
-    /// the ball is not rolling on the ground.
+    /// path within his height (at most head height, coming down or on the
+    /// grass) that he gets to no later than it does, or where it stops. A
+    /// ball in the air he meets where it comes down if he gets there in
+    /// time, else further on (`SIM_VERSION` 111, OI-102: a keeper who could
+    /// not reach where a lofted back pass came down chased it where it was,
+    /// and it ran past him into the net). `None` if the ball is at
+    /// someone's feet or still.
     #[must_use]
     pub fn intercept(
         &self,
@@ -559,43 +564,53 @@ impl SpatialState {
         (speed, accel, top): (f64, f64, f64),
         reach: f64,
     ) -> Option<(i32, i32)> {
-        let rolling = match self.ball {
-            // On the grass and not lifting off: a ball just struck upwards
-            // is in the air, even before it leaves the ground.
-            BallState::InFlight | BallState::Loose => {
-                self.ball_position.2 == 0 && self.ball_velocity.2 <= 0
-            }
-            BallState::Possessed => false,
-        };
-        let (vx, vy) = (
-            f64::from(self.ball_velocity.0),
-            f64::from(self.ball_velocity.1),
-        );
-        if !rolling || dmath::hypot(vx, vy) < 1.0 {
+        if matches!(self.ball, BallState::Possessed) {
             return None;
         }
-        let keep = f64::from(self.ball_physics.ground_friction_milli) / 1000.0;
-        let (bx, by) = (
-            f64::from(self.ball_position.0),
-            f64::from(self.ball_position.1),
+        let p = self.ball_physics;
+        let stop = i32::from(p.stop_threshold_cm_per_tick);
+        let (mut x, mut y, mut z) = self.ball_position;
+        let (mut vx, mut vy, mut vz) = (
+            i32::from(self.ball_velocity.0),
+            i32::from(self.ball_velocity.1),
+            i32::from(self.ball_velocity.2),
         );
-        let mut at = (self.ball_position.0, self.ball_position.1);
+        if z == 0 && vz <= 0 && vx == 0 && vy == 0 {
+            return None;
+        }
+        let mut at = None;
         for t in 1..=80_u32 {
-            let d = rolled(1.0, f64::from(t), keep);
-            #[allow(clippy::cast_possible_truncation)]
-            {
-                at = (
-                    vx.mul_add(d, bx).round() as i32,
-                    vy.mul_add(d, by).round() as i32,
-                );
+            let moving = !(z == 0 && vz <= 0 && vx.abs() <= stop && vy.abs() <= stop);
+            if moving {
+                let friction = if z == 0 && vz <= 0 {
+                    p.ground_friction_milli
+                } else {
+                    p.air_friction_milli
+                };
+                vz -= i32::from(p.gravity_cm_per_tick2);
+                vx = vx * friction / 1000;
+                vy = vy * friction / 1000;
+                x += vx;
+                y += vy;
+                z += vz;
+                if z < 0 {
+                    z = 0;
+                    vz = 0;
+                }
             }
+            // Within his height: coming down to his head or lower, or on the
+            // grass; a ball still climbing is not his yet.
+            if z > HEAD_HEIGHT_CM || (z > 0 && vz > 0) {
+                continue;
+            }
+            at = Some((x, y));
             #[allow(clippy::cast_precision_loss)]
-            let mine = ((distance_squared(from, at) as f64).sqrt() - reach).max(0.0);
+            let mine = ((distance_squared(from, (x, y)) as f64).sqrt() - reach).max(0.0);
             if mine <= run_in(f64::from(t), speed, accel, top) {
-                return Some(at);
+                return at;
             }
         }
-        Some(at)
+        at
     }
 
     /// Where a ball in the air comes down to `height_cm`, by the same
@@ -1628,12 +1643,13 @@ mod tests {
             .intercept((4000, 2400), (0.0, 2.0, 40.0), 0.0)
             .expect("rolling");
         assert!(fast.0 > 3000 && slow.0 > fast.0, "{fast:?} {slow:?}");
+        // In the air (SIM_VERSION 111): met where it comes down within his
+        // height, ahead of where it is now, not chased.
         s.set_ball_in_flight((3000, 3400, 0), (60, 0, 50));
-        assert_eq!(
-            s.intercept((4000, 2400), (0.0, 5.0, 90.0), 0.0),
-            None,
-            "in the air"
-        );
+        let lofted = s
+            .intercept((4000, 2400), (0.0, 5.0, 90.0), 0.0)
+            .expect("met on its path");
+        assert!(lofted.0 > 3000, "{lofted:?}");
     }
 
     #[test]
