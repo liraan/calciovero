@@ -160,6 +160,25 @@ pub const fn free_kick(side: Side, spot: (i32, i32)) -> Restart {
     }
 }
 
+/// Law 12: whether a foul at `spot` denies an obvious goal-scoring
+/// opportunity at the goal `goal`.
+///
+/// Near enough (`dogso_cm`), and no outfield defender other than the
+/// offender nearer the goal line than the spot (`cover_depths`, their
+/// distances from that line). The keeper is not cover: he is the man the
+/// attacker through on goal had to beat.
+#[must_use]
+pub fn obvious_chance(
+    spot: (i32, i32),
+    goal: (i32, i32),
+    dogso_cm: i32,
+    cover_depths: &[i32],
+) -> bool {
+    let depth = (goal.0 - spot.0).abs();
+    let (dx, dy) = (i64::from(goal.0 - spot.0), i64::from(goal.1 - spot.1));
+    dx * dx + dy * dy <= i64::from(dogso_cm).pow(2) && cover_depths.iter().all(|d| *d >= depth)
+}
+
 /// Laws 13-14: the restart of a foul.
 ///
 /// Inside the defending side's penalty area, a penalty from the mark `penalty_spot_cm` from the goal line at
@@ -219,6 +238,27 @@ mod tests {
     use super::*;
 
     const PITCH: (i32, i32) = (10_500, 6_800);
+
+    /// Law 12 (P1, `SIM_VERSION` 112): through on goal with only the keeper to
+    /// beat, a foul denies an obvious chance; with an outfield defender
+    /// covering nearer the goal, or far from it, it does not.
+    #[test]
+    fn only_the_keeper_to_beat_is_an_obvious_chance() {
+        let goal = (10_500, 3400);
+        assert!(obvious_chance((9000, 3400), goal, 2500, &[]));
+        assert!(
+            obvious_chance((9000, 3400), goal, 2500, &[2000]),
+            "a defender behind him"
+        );
+        assert!(
+            !obvious_chance((9000, 3400), goal, 2500, &[800]),
+            "a defender covering"
+        );
+        assert!(
+            !obvious_chance((7000, 3400), goal, 2500, &[]),
+            "too far from goal"
+        );
+    }
 
     /// Law 14 (P1, the guard of the penalty, a rare act in the repertoire
     /// test): a foul in the area is a penalty from the mark of the goal it

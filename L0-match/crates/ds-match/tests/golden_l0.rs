@@ -16,8 +16,9 @@ const N: u64 = 10;
 /// First seed of the range.
 const SEED_START: u64 = 42;
 
-/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 111.
-/// SIM 111: a ball in the air is met on its whole path, not chased.
+/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 112
+/// (identical to 111: no foul of seeds 42-51 is an obvious chance).
+/// SIM 112: an obvious chance with only the keeper to beat (Law 12).
 /// Regenerate when `SIM_VERSION` changes.
 const EXPECTED: &str = "7a7a6f3562b821aeddd426daf38903828acea8d24fde3f7276f083df1061f6668ba05254ef5ab0b2b8409643c2adfed18861913dadb0aec9373ec136a012a1494c4d120a62d6701bf49c7577400447f599d07f7089ecc4c3e5158a12cdc1e329486fd1baaa9b32e9b541dfc4b60d5247191d858bc908158b01bd859018b5d9acef99be52a5ea1938c3372729da8b04ed3c4670e857b419b31e82ed56f21d1e0ee6d23a21c064df36ec76a4dd3244dcd1d7e9798241975ee8fc5010bf8805c7cd1d5be4eb5139fe2c4391c554858adb588e55c0c72b2c035117703c15d22e3f44585eea97041cb9d655ac0847cc9d65cbcd3ac26b0d5fe8eb0926dfab1987d0c07cefe0146140b9125df483d9834fae875c7c0186f22def087a588cc78d1dfb51f58e874a1501b6a21fa9911ec624aee2f45b586769c59352904f64dc5642e13e";
 

@@ -2685,21 +2685,28 @@ impl MatchState {
         let laws = self.laws;
         let in_area = depth(spot) <= laws.penalty_area_depth_cm
             && (spot.1 - goal.1).abs() <= laws.penalty_area_half_width_cm;
-        // An obvious goal-scoring opportunity: near the goal he attacks, and
-        // no defender but the offender, the keeper included, nearer to it.
+        // An obvious goal-scoring opportunity (Law 12: the distance to the
+        // goal, the location and number of defenders): near the goal he
+        // attacks, and no outfield defender but the offender nearer to it.
+        // The keeper alone does not take it away: he is the man the
+        // attacker through on goal had to beat (SIM_VERSION 112; before, the
+        // keeper counted as cover, and since he nearly always stands nearer
+        // the goal, the opportunity almost never was one).
         let defenders = if fouled_home {
             &ctx.match_.away
         } else {
             &ctx.match_.home
         };
-        let cover = defenders
+        let their_keeper = defenders.players.first().map(|p| p.id);
+        let cover: Vec<i32> = defenders
             .players
             .iter()
-            .filter(|q| q.id != offender)
+            .filter(|q| q.id != offender && Some(q.id) != their_keeper)
             .filter_map(|q| self.spatial.agent(q.id))
-            .any(|a| depth(a.position) < depth(spot));
+            .map(|a| depth(a.position))
+            .collect();
         facts.denies_obvious_chance =
-            distance_squared(spot, goal) <= i64::from(laws.dogso_distance_cm).pow(2) && !cover;
+            crate::rules::obvious_chance(spot, goal, laws.dogso_distance_cm, &cover);
         self.emit_event(
             ctx,
             tick,
