@@ -735,11 +735,37 @@ impl GroundTruth {
         kicker: PlayerId,
         from: (i32, i32, i32),
         to: (i32, i32),
+        gait: f64,
     ) -> (i16, i16, i16) {
         let k = self.kick_balance;
-        let explosive = self.latents_for(kicker).physical.explosive_force;
-        let speed = k.speed(1.0, explosive);
-        let dir = Self::direction_3d(from, (to.0, to.1, from.2));
+        let l = self.latents_for(kicker);
+        let speed = k.speed(1.0, l.physical.explosive_force);
+        // The miss of a kick (the pass's own, `kick.json`; plan L0-CLOSE,
+        // the root of the clearance's error, SIM_VERSION 123): his technique
+        // and the foot he kicks with, at full power; the contact in his
+        // stride picks the side it runs off his line, as for the pass and
+        // the shot (ADR-054). Before, every clearance went exactly where he
+        // aimed it.
+        let (dx, dy) = (f64::from(to.0 - from.0), f64::from(to.1 - from.1));
+        let distance = dmath::hypot(dx, dy);
+        let foot = if dy >= 0.0 {
+            l.technical.left_foot
+        } else {
+            l.technical.right_foot
+        };
+        let error = k.error_rad(l.technical.passing, foot, 1.0, 0.0) * k.pass_error_ref_rad
+            / k.error_ref_rad.max(1e-6);
+        let contact = gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
+        let foot_side = if dy >= 0.0 { 1.0 } else { -1.0 };
+        let drift = distance * error * contact * foot_side;
+        let (ux, uy) = if distance > 0.0 {
+            (dx / distance, dy / distance)
+        } else {
+            (1.0, 0.0)
+        };
+        #[allow(clippy::cast_possible_truncation)]
+        let aim = (to.0 + (-uy * drift) as i32, to.1 + (ux * drift) as i32);
+        let dir = Self::direction_3d(from, (aim.0, aim.1, from.2));
         #[allow(clippy::cast_possible_truncation)]
         let (h, up) = (speed.round() as i16, (speed * k.clear_loft).round() as i16);
         let v = Self::velocity(dir, h);
@@ -1567,6 +1593,22 @@ mod choice_filter_tests {
             }
         }
         (PlayerId::new(weak.0, 0), PlayerId::new(strong.0, 0))
+    }
+
+    /// Twin test (plan L0-CLOSE, the clearance's error, `SIM_VERSION` 123):
+    /// the same clearance up the wing, struck at the worst moment of the
+    /// stride; the better kicker sends it nearer where he aimed it, and in
+    /// the middle of the stride it goes straight.
+    #[test]
+    fn the_better_kicker_clears_nearer_his_aim() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (weak, strong) = ends(&mut g, |l| l.technical.passing);
+        let mut side = |p: PlayerId, gait: f64| {
+            let v = g.resolve_clearance(p, (1500, 1000, 0), (5500, 1000), gait);
+            i32::from(v.1).abs()
+        };
+        assert!(side(strong, 0.0) < side(weak, 0.0));
+        assert_eq!(side(weak, 0.5), 0, "met clean, it goes straight");
     }
 
     /// Twin test (ADR-057, goalkeeping): the same shots at the same keeper's

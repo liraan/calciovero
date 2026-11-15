@@ -277,9 +277,14 @@ impl MatchState {
         let from = (fx, fy);
         let (length, width) = pitch_cm(ctx);
         let to = (to.0.clamp(0, length), to.1.clamp(0, width));
-        let v = ctx
-            .hidden
-            .resolve_clearance(kicker, (from.0, from.1, 0), to);
+        let v = ctx.hidden.resolve_clearance(
+            kicker,
+            (from.0, from.1, 0),
+            to,
+            self.spatial
+                .agent(kicker)
+                .map_or(0.5, |a| f64::from(a.gait_milli) / 1000.0),
+        );
         self.spatial.set_carrier(None);
         self.spatial.set_ball_in_flight((from.0, from.1, 0), v);
         self.pending = None;
