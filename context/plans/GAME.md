@@ -30,8 +30,9 @@ Ogni passo si chiude con la sua prova, e il successivo non parte prima.
 6. **La 0.2 · Mercato e panchina:** il mercato di [`L1-MARKET.md`](L1-MARKET.md) (contratti, cassa, finestre, trasferimenti, prestiti, il posto di direttore sportivo, decisione AR) e i moduli consigliati dell'allenatore di [`L1-COACH.md`](L1-COACH.md) (canali, discorsi, piani "se, allora", riunione tattica, leader, decisione AQ), uno alla volta, ognuno spento senza rompere nulla. Prova: dieci anni di mercato con lo stesso hash; ogni modulo acceso e spento lascia il golden deterministico.
 7. **L2, prima metà** (procuratori, osservatori, il bilancio completo, la società; il posto giocabile di presidente, decisione AK). Prova: dieci anni di società e bilancio deterministici. Poi la **0.3 · Società**.
 8. **L2, seconda metà** (crescita, vivaio, tattica nel tempo, società, staff, strutture, spogliatoio, l'allenatore). Prova: una carriera di dieci anni con lo stesso hash. Poi la **0.4 · Carriera**.
-9. **L3.** Prova: un dato modificato dall'editor e un pacchetto esterno lasciano la partita deterministica. Poi la **1.0** sul desktop.
-10. **Android**, poi la **1.1** (stampa e tifosi), poi il **3D** sul desktop, se Bevy è maturo.
+9. **La vita dell'allenatore**, modulo opzionale dopo la 0.4 ([`L2.md`](L2.md), decisione BA): la casa, i soldi personali, le persone.
+10. **L3.** Prova: un dato modificato dall'editor e un pacchetto esterno lasciano la partita deterministica. Poi la **1.0** sul desktop.
+11. **Android**, poi la **1.1** (stampa e tifosi), poi il **3D** sul desktop, se Bevy è maturo.
 
 ## La 0.1 · Stagione, contenuto congelato
 
