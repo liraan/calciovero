@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `c8063d9` - "docs(state): the maintainer's test match prepared at SIM 134; OI-119 trial recorded"
+**Last commit verified:** `452d859` - "docs(state): OI-116 (A), the receiver's carries tried and dropped"
 
 ## Mandato attivo (2026-11-16)
 
@@ -38,6 +38,12 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**Mandato del 16 novembre, voce (a), primo tratto (SIM 134).**
+- Fatti: i merge di `docs/l1-europe-and-breaks` e `docs/readme-tables`; ADR-064 (DD-3, delegato) e SIM 134: chi riceve sceglie fra controllare e spazzare di prima; spazzate di piede 0,5 -> 7,4 a partita (StatsBomb 16,2), 12 metriche su 22 in banda; README al 134; la partita di prova preparata.
+- DD-1: la tua OI-117 (A) aspetta in `context/plans/patches/sim135-oi117a-on-134.patch`: sopra il 134 fa sparire il passaggio deviato (OI-119), che nel motore quasi non c'è (24,6 a partita nel vero).
+- Provati e tolti, con le misure negli OI: il blocco del corpo anche per chi non ha reagito (OI-119), la conduzione del ricevente come valore del passaggio (OI-116 (A), primo tentativo).
+- Da rivedere: ADR-064, DD-1, DD-3 (tabella "Decisioni delegate").
 
 **La notte del 15-16 novembre (SIM 127-133), su main.** Il motore misurato contro dati veri nuovi (tracking Metrica, StatsBomb open data, Wyscout grezzo, FIFA), ogni numero nuovo con la sua fonte in `balance/SOURCES.md`. Da 9 a 11 metriche in banda su 22.
 - 127 e 129: l'ampiezza del blocco misurata sul tracking (47 m con la palla in gioco, 37 senza; al 127 avevo contato anche la palla ferma, errore mio, corretto al 129); la griglia del 4-4-2 letta come i lati del blocco.
