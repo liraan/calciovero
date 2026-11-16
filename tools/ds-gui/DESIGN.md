@@ -158,7 +158,9 @@ Decisione del maintainer guardando gli omini del 2.5D renderizzati dal codice di
 
 Di conseguenza nel 2.5D "campo intero" e "telecamera vicina" non sono più modi diversi di disegnare, ma solo livelli di zoom. I tre preset diventano:
 - **uno zoom continuo**: rotellina del mouse sul desktop, pizzico con due dita su Android; dal campo intero fino a circa 25 m di campo nella larghezza;
-- **"segui il pallone"** acceso o spento (acceso, la telecamera segue il pallone con un movimento smorzato, senza uscire dal campo; spento, si trascina il campo);
+- **"segui il pallone"** acceso o spento (acceso, la telecamera segue il pallone con un movimento smorzato, senza uscire dal campo);
 - **l'inclinazione**, come oggi, con 0° che resta la vista dall'alto.
+
+**La vista si sposta trascinando** (maintainer, 16 novembre 2026, guardando l'anteprima dei pallini): si trascina il campo con il mouse sul desktop e con un dito su Android. Appena si trascina, "segui il pallone" si spegne da solo; un tasto "torna al pallone" (e il doppio clic o doppio tocco sul campo) lo riaccende e ricentra. Lo spostamento resta dentro i limiti del campo, con un piccolo margine.
 
 I pallini, il numero, il bordo e il pallone hanno grandezze minime in pixel, così restano leggibili a ogni zoom. Il rallentatore resta.
