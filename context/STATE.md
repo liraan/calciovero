@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `c0952ad` - "docs(state): the mandate of 16 November; DD-1, SIM 134 kept as a patch until the foot clearance exists"
+**Last commit verified:** `c764ed0` - "docs(state): OI-118, the foot clearance is a choice at the reception; the next action"
 
 ## Mandato attivo (2026-11-16)
 
@@ -129,7 +129,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Sonda (seme 42, SIM 133, il difensore più vicino al portatore, fuori portata): entro 3 m pressa nell'84% dei casi; fra 3 e 6 m nel 66%; fra 6 e 10 m nel 30%, e nel 54% marca un altro uomo. Il pressing vale il pericolo del portatore per `in_time`, la fiducia di arrivare con `trust_ticks` (1 s) di margine alla velocità creduta: a 8 m vale 0,40 e perde contro la marcatura di un uomo più vicino. Il secondo di `trust_ticks` è un tempo senza riferimento: arrivare in tempo per cosa?
 - Verificato: la latenza che il difensore crederebbe al portatore medio è 10,5 tick, quasi il secondo fisso di `trust_ticks`; cambiarlo non cambierebbe il pressing. La causa è la misura della marcatura (OI-117, alternative per il maintainer).
 - Gli autogol del motore (SIM 133, semi 42-101: 25 in 60 partite, 0.42 contro 0.10): 10 seguono un passaggio non riuscito, 6 uno riuscito, 3 un duello, 2 un intercetto. Il sospetto è il retropassaggio: sotto pressione (dal 132) devia, e il portiere che non lo controlla col piede (Regola 12: niente mani su un retropassaggio calciato) lo lascia correre a metà velocità verso la porta.
-- **Prossima azione esatta:** mandato, voce (a): OI-118, l'ADR delegato della scelta alla ricezione (giocare di prima o controllare, con il pensiero del portatore), poi la sua implementazione con gemello e `SIM_VERSION`; poi il SIM 134 dalla patch; poi OI-116 (A). Sveglia: 17 novembre alle 01:10.
+- **Prossima azione esatta:** mandato, voce (a): implementare ADR-064 (la scelta alla ricezione) per il pallone basso: in `plugins/technique.rs` `control_loose_ball`, prima della ricezione, la scena di chi riceve con il pallone dove arriva (`build_choice`), le opzioni di prima (spazzata, passaggio, tiro) contro il controllo (la migliore opzione dopo, se il tocco basta; la perdita lì, se non basta); gemello, `SIM_VERSION`, golden; poi il SIM 134 dalla patch; poi OI-116 (A). Sveglia: 17 novembre alle 01:10.
 
 ## Decisioni prese da Claude, da rivedere
 
@@ -165,6 +165,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 | DD | Decisione | LUNA | Come lo riconoscono gli attori | Da cosa dipende | Chi lo produce | Fonte o derivazione | Commit |
 |---|---|---|---|---|---|---|---|
 | DD-1 | Il SIM 134 (OI-117 (A), la marcatura pesata dal passaggio che arriva all'uomo) non va su main finché la spazzata di piede non esiste: con il 134 scompare dal catalogo (semi 42-56), e il test del repertorio non si indebolisce. Il lavoro è conservato in `context/plans/patches/sim134-oi117a-marking.patch`; aperto OI-118. | Un difensore pressato vicino alla sua porta, senza un passaggio sicuro, calcia via il pallone: un modello che non lo fa mai manca di un gesto del calcio. | il pallone calciato lontano dalla propria area | la pressione sul difensore e il pericolo della palla persa lì | il difensore | StatsBomb open data (Liga 2020/21): 16,2 spazzate di piede e 13,8 di testa a partita; il motore 133: 7 di piede e 401 di testa in 15 partite | questo commit |
+| DD-3 | ADR-064: prima del tocco chi riceve sceglie fra controllare e giocare di prima (la spazzata, il passaggio, il tiro), con lo stesso pensiero del portatore e nessun numero nuovo; modifica ADR-058 | Chi riceve un pallone sceglie già prima di toccarlo: fermarlo e poi giocare, o giocarlo subito; lo decide da ciò che sa del suo tocco, da quanto arriva forte il pallone e da chi ha addosso. | il pallone colpito al volo senza essere fermato | la velocità del pallone, la pressione, il primo tocco, il valore di ogni opzione dove arriva | chi riceve | StatsBomb open data: 16,2 spazzate di piede a partita; ADR-052 e ADR-058 per la forma | questo commit |
 
 ## Plan
 
