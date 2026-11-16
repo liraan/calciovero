@@ -37,6 +37,8 @@ struct Game {
     /// The home side at the kick-off: the eleven and the bench (the bench
     /// post-it).
     home: (Vec<PlayerId>, Vec<PlayerId>),
+    /// The stadium and its town, built once for the pitch (drawing only).
+    backdrop: (Vec<crate::stadium::Shape>, Vec<crate::stadium::Shape>),
     /// The record's header (ADR-065): the physics the match was played
     /// with, for the ball's flight between two ticks.
     header: ds_match::RecordHeader,
@@ -222,7 +224,13 @@ impl App {
                     m.home.players.iter().map(|p| p.id).collect(),
                     m.home.bench.iter().map(|p| p.id).collect(),
                 );
+                let pitch = (
+                    i32::from(m.pitch.length_m) * 100,
+                    i32::from(m.pitch.width_m) * 100,
+                );
+                let backdrop = (crate::stadium::city(pitch), crate::stadium::stadium(pitch));
                 self.game = Some(Game {
+                    backdrop,
                     home,
                     header,
                     ticks,
@@ -316,6 +324,7 @@ impl App {
                         color: egui::Color32::from_black_alpha(90),
                     })
                     .show(ui, |ui| {
+                        ui.style_mut().visuals = egui::Visuals::light();
                         ui.visuals_mut().override_text_color = Some(ink);
                         ui.set_max_width(220.0);
                         ui.strong("Bench");
@@ -553,6 +562,7 @@ impl App {
                 Geometry::around(origin, size, game.pitch_cm, self.tilt, (f, CLOSE_SPAN_CM))
             }
         };
+        self.draw_backdrop(&painter, &geom, r, &game.backdrop);
         self.draw_markings(&painter, &geom);
         let frame = scene::frame(&moment, &geom);
         let t = &self.theme;
@@ -728,6 +738,90 @@ impl App {
         }
         if *saved >= *wanted {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+    }
+
+    /// The stadium round the pitch and its town under the sky (drawing
+    /// only, `stadium.rs`): the sky down to the horizon, then the town and
+    /// the stands from the farthest shape to the nearest.
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "colours and mesh indices: small, positive, clamped"
+    )]
+    fn draw_backdrop(
+        &self,
+        painter: &Painter,
+        geom: &Geometry,
+        rect: egui::Rect,
+        (city, stands): &(Vec<crate::stadium::Shape>, Vec<crate::stadium::Shape>),
+    ) {
+        use crate::stadium::{Paint, mix};
+        let st = &self.theme.stadium;
+        painter.rect_filled(rect, 0.0, st.ground);
+        if let Some(h) = geom.horizon() {
+            let h = h.clamp(rect.top(), rect.bottom());
+            let mut mesh = egui::Mesh::default();
+            let i = mesh.vertices.len() as u32;
+            for (p, c) in [
+                (rect.left_top(), st.sky),
+                (rect.right_top(), st.sky),
+                (Pos2::new(rect.right(), h), st.horizon),
+                (Pos2::new(rect.left(), h), st.horizon),
+            ] {
+                mesh.colored_vertex(p, c);
+            }
+            mesh.add_triangle(i, i + 1, i + 2);
+            mesh.add_triangle(i, i + 2, i + 3);
+            painter.add(Shape::mesh(mesh));
+        }
+        let cut_near = geom.tilt() > 0.09;
+        let t = &self.theme;
+        let colour = |paint: Paint| match paint {
+            Paint::Track => st.track,
+            Paint::Concrete => st.concrete,
+            Paint::Roof => st.roof,
+            Paint::Mast => st.mast,
+            Paint::Lamps => st.lamps,
+            Paint::Window => st.window,
+            Paint::Building(k) => st.city[usize::from(k.min(3))],
+            Paint::Crowd(h) => {
+                // Mostly the home side's colours, some away, the rest in
+                // their own clothes; all of it toned down to the crowd's.
+                let side = match h % 100 {
+                    0..38 => t.home,
+                    38..58 => t.away,
+                    _ => st.crowd,
+                };
+                let base = side.lerp_to_gamma(st.crowd, 0.35);
+                // Faces and clothes: each block a little lighter or darker.
+                #[allow(clippy::cast_possible_truncation)]
+                let k = 0.7 + f32::from((mix(h) % 60) as u8) / 100.0;
+                egui::Color32::from_rgb(
+                    (f32::from(base.r()) * k).min(255.0) as u8,
+                    (f32::from(base.g()) * k).min(255.0) as u8,
+                    (f32::from(base.b()) * k).min(255.0) as u8,
+                )
+            }
+        };
+        for shapes in [city, stands] {
+            let mut drawn: Vec<(f32, Vec<Pos2>, Paint)> = shapes
+                .iter()
+                .filter(|s| !(cut_near && s.near))
+                .filter_map(|s| {
+                    let pts: Option<Vec<_>> = s.corners.iter().map(|&c| geom.project(c)).collect();
+                    let pts = pts?;
+                    #[allow(clippy::cast_precision_loss)]
+                    let depth = pts.iter().map(|p| p.depth).sum::<f32>() / pts.len() as f32;
+                    let screen: Vec<Pos2> = pts.iter().map(|p| Pos2::new(p.x, p.y)).collect();
+                    let r = egui::Rect::from_points(&screen);
+                    r.intersects(rect).then_some((depth, screen, s.paint))
+                })
+                .collect();
+            drawn.sort_by(|a, b| b.0.total_cmp(&a.0));
+            for (_, pts, paint) in drawn {
+                painter.add(Shape::convex_polygon(pts, colour(paint), Stroke::NONE));
+            }
         }
     }
 

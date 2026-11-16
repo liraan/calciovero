@@ -113,7 +113,8 @@ impl Geometry {
         g.scale = scale;
         g.offset = (
             lo.0.mul_add(-scale, (size.0 - used.0).mul_add(0.5, origin.0)),
-            lo.1.mul_add(-scale, (size.1 - used.1).mul_add(0.5, origin.1)),
+            // The pitch sits low, with the stands and the sky above it.
+            lo.1.mul_add(-scale, size.1 - used.1 - margin + origin.1),
         );
         g
     }
@@ -201,6 +202,23 @@ impl Geometry {
             y: y.mul_add(self.scale, self.offset.1),
             depth,
         })
+    }
+
+    /// The camera's tilt from the vertical, radians.
+    #[must_use]
+    pub const fn tilt(&self) -> f32 {
+        self.tilt
+    }
+
+    /// Where the horizon is on the screen, points down; `None` looking
+    /// straight down (no horizon).
+    #[must_use]
+    pub fn horizon(&self) -> Option<f32> {
+        if self.tilt < 0.02 {
+            return None;
+        }
+        let far = (self.eye.0, self.eye.1 + 1.0e9, 0.0);
+        self.project(far).map(|s| s.y)
     }
 
     /// A point of the grass on the screen (`z = 0`), points.

@@ -13,9 +13,53 @@ struct RawFile {
     themes: Vec<RawTheme>,
 }
 
+/// The stadium and the town round the pitch, as written in the file.
+#[derive(Debug, Clone, Deserialize)]
+struct RawStadium {
+    sky: String,
+    horizon: String,
+    ground: String,
+    track: String,
+    concrete: String,
+    roof: String,
+    crowd: String,
+    mast: String,
+    lamps: String,
+    city: [String; 4],
+    window: String,
+}
+
+/// The colours of the stadium and of its town.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Stadium {
+    /// The sky at the top.
+    pub sky: Color32,
+    /// The sky at the horizon.
+    pub horizon: Color32,
+    /// The ground beyond the stadium.
+    pub ground: Color32,
+    /// The grass between the pitch and the stands.
+    pub track: Color32,
+    /// The stands' walls.
+    pub concrete: Color32,
+    /// The roofs.
+    pub roof: Color32,
+    /// The crowd's neutral clothes (the rest wear the sides' colours).
+    pub crowd: Color32,
+    /// The floodlights' masts.
+    pub mast: Color32,
+    /// The floodlights' lamps.
+    pub lamps: Color32,
+    /// The buildings: front, side, back, roof.
+    pub city: [Color32; 4],
+    /// A lit window.
+    pub window: Color32,
+}
+
 /// A theme as written in the file: every colour a hex string.
 #[derive(Debug, Clone, Deserialize)]
 struct RawTheme {
+    stadium: RawStadium,
     name: String,
     dark: bool,
     board: String,
@@ -81,6 +125,8 @@ pub struct Theme {
     pub medium: Color32,
     /// Commentary: the rest.
     pub low: Color32,
+    /// The stadium and its town.
+    pub stadium: Stadium,
 }
 
 /// A colour from `#rrggbb` or `#rrggbbaa`.
@@ -137,6 +183,27 @@ impl Theme {
             high: parse_hex(&r.high)?,
             medium: parse_hex(&r.medium)?,
             low: parse_hex(&r.low)?,
+            stadium: {
+                let s = &r.stadium;
+                Stadium {
+                    sky: parse_hex(&s.sky)?,
+                    horizon: parse_hex(&s.horizon)?,
+                    ground: parse_hex(&s.ground)?,
+                    track: parse_hex(&s.track)?,
+                    concrete: parse_hex(&s.concrete)?,
+                    roof: parse_hex(&s.roof)?,
+                    crowd: parse_hex(&s.crowd)?,
+                    mast: parse_hex(&s.mast)?,
+                    lamps: parse_hex(&s.lamps)?,
+                    city: [
+                        parse_hex(&s.city[0])?,
+                        parse_hex(&s.city[1])?,
+                        parse_hex(&s.city[2])?,
+                        parse_hex(&s.city[3])?,
+                    ],
+                    window: parse_hex(&s.window)?,
+                }
+            },
         })
     }
 

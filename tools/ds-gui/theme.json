@@ -20,7 +20,25 @@
       "high": "#e6eee8",
       "medium": "#b4bfb7",
       "low": "#7f8c83",
-      "skin": "#e8c4a0"
+      "skin": "#e8c4a0",
+      "stadium": {
+        "sky": "#2b3d4f",
+        "horizon": "#7f8f8a",
+        "ground": "#1d2a22",
+        "track": "#2a5532",
+        "concrete": "#5d6661",
+        "roof": "#3a4440",
+        "crowd": "#8a8f86",
+        "mast": "#4a524e",
+        "lamps": "#f4f1d8",
+        "city": [
+          "#3c4a52",
+          "#33404a",
+          "#2b3740",
+          "#46545c"
+        ],
+        "window": "#e8d9a0"
+      }
     },
     {
       "name": "Notte",
@@ -42,7 +60,25 @@
       "high": "#e6ecf6",
       "medium": "#aab4c6",
       "low": "#6f7a8f",
-      "skin": "#d9b391"
+      "skin": "#d9b391",
+      "stadium": {
+        "sky": "#050813",
+        "horizon": "#1b2a4a",
+        "ground": "#070b16",
+        "track": "#101b33",
+        "concrete": "#2a3245",
+        "roof": "#1a2133",
+        "crowd": "#4d566c",
+        "mast": "#2a3245",
+        "lamps": "#fffbe6",
+        "city": [
+          "#141b2e",
+          "#10172a",
+          "#0c1222",
+          "#1a2238"
+        ],
+        "window": "#f2cf74"
+      }
     },
     {
       "name": "Carta",
@@ -64,7 +100,25 @@
       "high": "#222222",
       "medium": "#555555",
       "low": "#8a8a8a",
-      "skin": "#e2b58e"
+      "skin": "#e2b58e",
+      "stadium": {
+        "sky": "#d9e4ea",
+        "horizon": "#f1ede2",
+        "ground": "#ddd5c2",
+        "track": "#ece5d4",
+        "concrete": "#bdb4a2",
+        "roof": "#a99f8c",
+        "crowd": "#c9bfa9",
+        "mast": "#9a917f",
+        "lamps": "#ffffff",
+        "city": [
+          "#cfc6b3",
+          "#c4baa6",
+          "#b8ae99",
+          "#d8d0be"
+        ],
+        "window": "#a99f8c"
+      }
     }
   ],
   "_note": "The GUI's colours (ADR-055, doctrine/00-foundations.md §5: no hardcoded colours), in the three themes of the tactics board (DESIGN.md: Lavagna, Notte, Carta), the first the default. Hex, #rrggbb or #rrggbbaa. dark: the interface around the board is dark (else light). board the background around the pitch; pitch and pitch_stripe the grass in bands; lines the markings and the goals; home and away the two sides, keeper_home and keeper_away their goalkeepers; carrier_ring around the man on the ball; skin a figure's head; ball_shadow the shadows on the grass; critical, high, medium and low the commentary by the importance of the event."

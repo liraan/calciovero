@@ -10,6 +10,7 @@ mod animation;
 mod app;
 mod interp;
 mod scene;
+mod stadium;
 mod theme;
 
 /// The options of the command line; an unknown one is an error.
