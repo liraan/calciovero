@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `8fd7454` - "docs(state): contacts are missing, not fouls; the next action"
+**Last commit verified:** `b652979` - "docs(state): OI-114, the fouls of pressing; the jockey foul tried and dropped"
 
 ## Dove siamo (2026-11-14)
 
@@ -100,7 +100,8 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Poi (133): l'avversario vicino al passatore prendeva il pallone nel tick in cui partiva (118 intercetti a partita fra 1 e 3 m); ora prima reagisce, con la formula della reazione del portiere. Il motore cambia di molto, verso il vero: passaggi riusciti 83,9%, tiri 19.7, in porta 10.5, parate 10.9, angoli 12.4, gol 2.35; 11 metriche su 22 in banda. Scendono i duelli a terra (125) e i falli (8.5).
 - Poi (SIM 133, semi 42-71): i contatti a palla al piede sono 90,8 a partita contro i 143,5 duelli difensivi a terra Wyscout; i falli per contatto sono l'8,8% (Wyscout 11,4%: 16,4 su 143,5). Mancano i contatti, non il fallo. Il portatore non si libera troppo presto: tiene la palla 1,9 s di mediana (Metrica, tracking ed eventi: 1,1-1,2 s). Quindi i difensori lo attaccano troppo poco.
 - Poi: i contatti non mancano davvero (StatsBomb: 54 sfide registrate a partita fra contrasti e dribbling subiti; il motore ne ha 91 a palla al piede più 38 fra due tocchi; i duelli Wyscout sono una definizione più larga). I falli che mancano sono quelli nella pressione: 20,6 dei 28,2 di StatsBomb. Nuova proposta nell'OI-114 (un numero di grado 2).
-- **Prossima azione esatta:** OI-114, contare nel motore le pressioni a contatto (difensore entro la portata del contrasto che fa `Jockey` o resta in `Press`), poi la soglia del fallo nella pressione derivata dal 6,6% StatsBomb, con gialli e punizioni tenuti da parte; gemello, `SIM_VERSION`, golden. Poi perché tanti passaggi (OI-100). In attesa del maintainer: OI-116. Sveglie: 16 novembre alle 06:10, 17 novembre alle 01:10.
+- Contato (SIM 133, semi 42-71): il difensore che resta sul portatore senza entrare (`Jockey`) lo fa 4 volte a partita; gli altri, in portata, entrano (91 contatti) o non sono in portata. La pressione a contatto senza contrasto, da cui nascono 20,6 falli veri a partita su 314 pressioni StatsBomb, nel motore quasi non c'è: chi pressa arriva e entra, o resta fuori portata.
+- **Prossima azione esatta:** OI-114, come la pressione diventa contatto. Misurare nel motore il tempo che un pressatore passa entro la portata del contrasto del portatore senza entrare, e confrontarlo con il tracking Metrica (la distanza del difensore più vicino dal portatore, quanto spesso sotto 1-2 m); da lì la popolazione dei contatti di pressione e la soglia del loro fallo (grado 2 dal 6,6% StatsBomb). Poi perché tanti passaggi (OI-100). In attesa del maintainer: OI-116. Sveglie: 16 novembre alle 06:10, 17 novembre alle 01:10.
 
 ## Decisioni prese da Claude, da rivedere
 
