@@ -84,6 +84,22 @@ and every event carries the reason it happened.** The rest of the game,
 from scouting to the academy, is built so that you can ask "why?" and
 get an honest answer.
 
+### The coach on the touchline
+
+Every piece of the match is checked with two questions before it enters
+the engine: *what does it reveal about football?* and *would a fan at the
+stadium recognise it, and who on the pitch produces it?* The bench is
+the latest part to pass them.
+
+| What football is | What you see on the pitch | In the engine |
+|---|---|---|
+| A coach draws his team, and the drawing can change during the match. | The wingers swap sides at the half-hour; the back three becomes a four. | The free board: where each player stands with the ball and without, and what each is asked to do (go out on the carrier, cover, mark, attack the depth, come short, stay back); changed with a tick, from the bench post-it or the tactics. |
+| A player follows his coach as he is, not as a robot. | The disciplined full back stays; the free spirit goes anyway. | He does what is asked if what he gives up is within what his discipline accepts. |
+| The foot is a choice. | The right-footer on the left who cuts inside to shoot; the back on the wrong side who crosses with his weak foot. | The ball is on the foot of the side where it is; with space he touches it onto his strong foot, under pressure he strikes with the one he has. |
+| A coach reads the score and the clock. | Losing at the hour, he sends on a striker; winning late, a defender. | The opponent coach changes players at the minutes the real coaches of Serie A changed them with that score. |
+| The bench can change the match, and the match can change the bench. | "Press higher!", the counter-press after losing the ball; a player down after a hard tackle, and a change nobody chose. | Quick instructions and transitions that move the block, never a player's numbers; a knock from the force of a foul and the body that takes it, never a die. |
+| A match played is a fact. | You watch it again a year later and it is the same match. | The finished match keeps its record, even after the engine changes. |
+
 ## What you will do as a manager
 
 The loop is familiar, and that is the point:
@@ -141,17 +157,17 @@ The game is built in four concentric levels; each one widens the previous and de
 
 ### The match against real football
 
-Measured on 60 matches against Serie A 2017-18 (380 real matches, Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one standard deviation of the real matches. **Today 12 of 22 metrics are in band**; every metric outside has an open item with its cause. No number is ever tuned to hit a target: a distance is a question about how the players perceive, think or move.
+Measured on 60 matches against Serie A 2017-18 (380 real matches, Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one standard deviation of the real matches: the closing of L0 asks whether a single match is credible, since a real one can end 0-0 or 4-3. **Today 11 of 22 metrics are in band**; every metric outside has an open item with its cause. No number is ever tuned to hit a target: a distance is a question about how the players perceive, think or move.
 
 | In band | Real | Engine | | Not yet | Real | Engine |
 |---|---|---|---|---|---|---|
-| goals | 2.68 | 2.62 | | aerial duels | 38.1 | 8.6 |
-| shots | 24.6 | 21.6 | | fouls | 26.0 | 8.6 |
-| shots on target | 8.7 | 11.8 | | throw-ins | 42.7 | 16.5 |
-| pass accuracy | 83.3% | 83.9% | | goal kicks | 17.2 | 8.0 |
-| corners | 10.3 | 13.5 | | free kicks | 29.5 | 12.9 |
-| saves | 9.4 | 12.4 | | passes | 888 | 1245 |
-| clearances | 29.5 | 37.6 | | ground duels | 183 | 124 |
+| goals | 2.68 | 2.18 | | aerial duels | 38.1 | 6.6 |
+| shots | 24.6 | 20.9 | | fouls | 26.0 | 15.2 |
+| shots on target | 8.7 | 7.1 | | throw-ins | 42.7 | 16.8 |
+| corners | 10.3 | 9.4 | | goal kicks | 17.2 | 9.8 |
+| saves | 9.4 | 10.5 | | free kicks | 29.5 | 18.2 |
+| ground duels | 183 | 202 | | passes | 888 | 1320 |
+| offsides | 4.3 | 5.0 | | clearances | 29.5 | 42.5 |
 
 The full table, with the cause of every distance, is in [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md).
 
@@ -163,13 +179,13 @@ Every value an act reads comes from the player's characteristics; the full catal
 |---|---|---|---|
 | **The body** | top speed and acceleration by his characteristics; brake, stop, turn; his own pace; fatigue against endurance, rest at half-time | jump in the aerial duel | the timing of the jump; the second man on high balls |
 | **The mind** ([ADR-052](doctrine/adr/052-every-player-thinks.md)) | every player imagines his options and picks the best he sees; a cone of sight; the memory of his last look, so he decides on what he has seen; vision, reading, anticipation, creativity, concentration; courage and composure | perception with its error ([ADR-062](doctrine/adr/062-what-a-player-sees-is-not-exact.md)) | |
-| **With the ball** | control; short and lofted pass, cross, switch, through ball; carry and dribble or shield; shot with power, foot and lob; header; clearance with its error, into touch when he chooses, first time when he would be robbed before he plays ([ADR-064](doctrine/adr/064-the-choice-at-the-reception.md)) | | |
+| **With the ball** | control; short and lofted pass, cross, switch, through ball; carry and dribble or shield; shot with power and lob; the foot on the ball's side, or a touch onto the strong one when there is space; header; clearance with its error, into touch when he chooses, first time when he would be robbed before he plays ([ADR-064](doctrine/adr/064-the-choice-at-the-reception.md)) | | |
 | **Without the ball** | press, challenge standing, sliding or jockeying; mark, offer, run in behind; hold the block's shape and width; intercept; cover; block a shot; react to a ball before it is played | | |
 | **In goal** | dive, hold or parry, claim crosses; split the angle of his posts; throw | coming out (in his area only) | reading the shot to position himself; getting set |
 | **The ball** | flight with air resistance, bounce from FIFA's rebound test, rolling, posts and crossbar, in integers so the match is the same everywhere | | spin |
 | **The Laws** | kick-off and restarts; offside read as the eye sees it; fouls, advantage, cards, penalties; free kicks with the wall; extra time and the penalty shoot-out; the referee hiding nothing | stoppage time (the engine adds all the time lost) | |
-| **The manager** | the eleven and the bench; block height and width; planned substitutions and the change of a tired player during the match; save, reload, replay; why you conceded each goal | instructions during the match ([ADR-059](doctrine/adr/059-the-coach-speaks-during-the-match.md)): block and width | the other instructions; an opponent coach who reacts to the match |
-| **The structure** | eleven mandatory plugins behind one contract; psychology can be switched off; the commentary in its own crate | | a knock that forces a player off (it starts the injuries of L1) |
+| **The manager** | the eleven and the bench; the free board (positions with and without the ball, each player's responsibilities), changed during the match; quick instructions and the transitions; substitutions planned or made live; save, reload, replay; why you conceded each goal ([ADR-059](doctrine/adr/059-the-coach-speaks-during-the-match.md)) | the opponent coach reads the score and the clock and changes players; moving his block with the score waits for its check on real data | the channels from the bench (voice, gesture, the note at a pause); half-time talks and the water breaks |
+| **The structure** | eleven mandatory plugins behind one contract; psychology can be switched off; the commentary in its own crate; a knock that forces a player off ([ADR-066](doctrine/adr/066-the-knock-that-forces-a-substitution.md)); the finished match keeps its record ([ADR-065](doctrine/adr/065-the-match-record-is-a-contract.md)) | | each player's freshness and condition at the kick-off as an input |
 
 ## Try the engine today
 
