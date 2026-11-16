@@ -16,3 +16,16 @@ Prese dal maintainer analizzando le fragilità del piano del gioco intero (doc: 
 | C | Serie minori: un solo motore, le serie differiscono solo per i giocatori; B e C confrontate sui dati di stagione pubblici, citati | `SOURCES.md` |
 | D | Allenatore avversario: piano suo, `context/plans/L1-COACH.md`, all'inizio del passo 5 di L1 | piano L1 |
 | E | La fonte dei piani è la repo; i doc rimandano a `context/plans/` | — |
+
+## Decisioni del 16 novembre 2026: dati reali e asset grafici
+
+Prese dal maintainer discutendo come aiutare chi gioca restando coperti legalmente (non è un parere legale: prima della 0.1 un legale rivede questo elenco). Vanno nell'ADR di L3 su pacchetti e importatore.
+
+| # | Decisione | Dove va |
+|---|---|---|
+| F | Il gioco esce pulito: mondo inventato, stemmi generati da forme e colori, maglie dai colori, volti generati, nomi inventati credibili. Nessun nome, stemma, foto o dato protetto nel repository né nei binari | ADR di L3 (pacchetti) |
+| G | Formati aperti e documentati: il pacchetto (nomi, stemmi, maglie, foto in cartelle note, varianti per il telefono, manifesto) si aggiunge trascinando una cartella; l'editor modifica il resto | ADR di L3 (pacchetti) |
+| H | L'importatore lavora sul computer dell'utente, su sua richiesta. Fonti ufficiali, come plugin WebAssembly mantenuti da noi: solo Wikidata (CC0: rose, trasferimenti, età, nazionalità, ruoli) e openfootball (pubblico dominio: calendari e risultati). Nessuno scraper di siti commerciali nel repository o nell'elenco ufficiale: l'estrazione ripetuta e sistematica è vietata dalla direttiva 96/9/CE, art. 7(5), oltre che dai termini d'uso. Le caratteristiche dei giocatori veri sono stime dell'importatore, con la loro incertezza (ADR-057) | ADR di L3 (importatore) |
+| I | "Aggiorna il mondo" produce una versione nuova del pacchetto dell'utente, con data e impronta nel manifesto, e vale per le carriere nuove | ADR di L3 (importatore) |
+| J | Una carriera è un mondo a sé, fatto delle scelte dell'utente, e va rispettata: nessun dato reale entra in una carriera in corso, nemmeno a inizio stagione. Chi vuole i dati aggiornati ricomincia. Non è un'idea da tenere da parte | ADR di L3 (importatore) |
+| K | Distribuzione: non ospitiamo e non linkiamo pacchetti con materiale protetto; l'elenco ufficiale contiene solo pacchetti con licenze pulite; plugin e pacchetti non ufficiali si caricano col consenso dell'utente (decisione 4); un contatto per le richieste di rimozione nel README | ADR di L3 (pacchetti) |
