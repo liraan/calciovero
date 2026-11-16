@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `045f199` - "Merge docs/plan-l2: L3, decisions BE and BF, the releases in GAME.md"
+**Last commit verified:** `f715e40` - "README: the coach on the touchline, through LUNA and the real match"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,8 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**README con i filtri LUNA e partita vera (2026-11-16).** Una sezione nuova, "The coach on the touchline": ogni pezzo nuovo della panchina (138-144) come cosa rivela del calcio e come lo riconosce chi guarda la partita; la tabella del confronto con il calcio vero al SIM 144 (11 su 22, con il significato della banda); le righe del manager, del pallone e della struttura.
 
 **Le responsabilità sulla lavagna (SIM 144, ADR-059 passo 4) e il merge di L3 (2026-11-16).**
 - Ogni posto della lavagna ha una responsabilità per fase, con la palla (profondità, incontro, restare) e senza (pressione, copertura, marcatura, restare). Il giocatore la segue se quello a cui rinuncia sta dentro ciò che la sua disciplina accetta: l'atto chiesto vale almeno (1 − disciplina) della sua opzione migliore. Le istruzioni individuali sono queste; il cambio di modulo è un disegno nuovo; si cambiano con `Order::Board`. Golden identici.
