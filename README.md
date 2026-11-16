@@ -111,113 +111,62 @@ of the classic Italian ones. The longer version is in
 
 ## Where we are, honestly
 
-**There is no playable game yet.** This is an early prototype of the
-match engine, built in the open, one verified step at a time.
+**There is no playable game yet.** The match engine is close to complete and is being calibrated against real football, one verified step at a time, in the open. Engine version **133**; **477 tests** and a health check run on every commit.
 
-What exists today:
+### The road, level by level
 
-- a **deterministic match engine** for one match, with players who
-  perceive, choose and move, a ball that flies, a goalkeeper who
-  positions himself, posts and crossbar that deflect the ball;
-- the **same match on every machine**: since engine version 101 the
-  engine's mathematics no longer goes through the operating system's C
-  library, and the golden match is checked with two of them;
-- a **desktop window** (egui) that replays the match on a 2D pitch with
-  the commentary, and a **2D debug view** in the terminal, a text board
-  and an HTML page with the result;
-- **every goal with its scorer**, own goals told as such, and *why* you
-  conceded each one;
-- a **friendly you can play** from the command line: choose your eleven
-  from the squad and the bench, how high you defend and how wide you play,
-  your substitutions, save the match, reload it, and read why you conceded each goal;
-- **477 tests** and a health check that runs on every commit.
+The game is built in four concentric levels; each one widens the previous and depends only on the ones inside it ([`doctrine/STRUCTURE.md`](doctrine/STRUCTURE.md)).
 
-What does not exist yet: changing the plan during the match, the season, the
-career, the transfer market. And the match is not calibrated yet: today it
-has too many goals. The full list is below; the order in which things
-arrive is public.
+| Level | What it is | Status | Plan |
+|---|---|---|---|
+| **L0 · The match** | twenty-two players who think, a ball with physics, the Laws, the bench | 🟡 almost complete; calibration in progress | [`L0-CLOSE`](context/plans/L0-CLOSE.md), [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md) |
+| **L0 · Plugins** | the match split into plugins behind one contract, the commentary out of the engine | ✅ done ([ADR-063](doctrine/adr/063-the-match-split-into-plugins.md)) | [`PLUGINS`](context/plans/PLUGINS.md) |
+| **L1 · The season** | three divisions and the cup in the real Italian format, every match played by the engine | ⬜ planned, starts when L0 is closed | [`L1`](context/plans/L1.md) |
+| **L2 · The career** | contracts, market, scouts, academy, growth, finances, the dressing room, the coach's life | ⬜ planned | [ADR-060](doctrine/adr/060-the-season-is-true-the-career-builds.md) |
+| **L3 · Make it yours** | editor for every value, packs, a local importer for your own data, external plugins in WebAssembly | ⬜ planned | [decisions](context/plans/DECISIONS-2026-11-15.md) |
+| **Interface** | desktop window today (2D replay, commentary, why you conceded); the full design is decided | 🟡 | [`DESIGN`](tools/ds-gui/DESIGN.md) |
+| **Android** | the same game, the same plugins, light asset packs | ⬜ after the desktop | [ADR-061](doctrine/adr/061-android-is-the-same-game.md) |
 
-| Milestone | What you get |
-|---|---|
-| **The match can be watched** | a 2D view of twenty-two players and a ball, from any seed (first version: done) |
-| **The match reads as football** | shots, saves, restarts, fouls; a match a fan recognises |
-| **A friendly you can play** | pick the line-ups, play ninety minutes, save, reload, read why you conceded (first version: done) |
-| **A season**, then **a career** | standings and fixtures; then scouting, the market, the academy |
+### Releases
 
-The second one is the longest. We will not skip it to ship faster: a
-match that does not read as football would make everything after it
-pointless. Each milestone goes faster with more people: see
-[Build it with us](#build-it-with-us).
+| Version | When | What you get |
+|---|---|---|
+| **0.1 · Season** | when L1 is done | a full season, the board, the calendar, the squad, the week, the 2D match; for a few testers |
+| **0.2 · Market** | after the first half of L2 | contracts, finances, transfers, scouts |
+| **0.3 · Career** | after L2 | growth, academy, dressing room, the board; open to everyone |
+| **1.0** | after L3 | the editor, the packs, the polished interface, on desktop |
+
+### The match against real football
+
+Measured on 60 matches against Serie A 2017-18 (380 real matches, Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one standard deviation of the real matches. **Today 11 of 22 metrics are in band**; every metric outside has an open item with its cause. No number is ever tuned to hit a target: a distance is a question about how the players perceive, think or move.
+
+| In band | Real | Engine | | Not yet | Real | Engine |
+|---|---|---|---|---|---|---|
+| goals | 2.68 | 2.35 | | aerial duels | 38.1 | 7.4 |
+| shots | 24.6 | 19.7 | | fouls | 26.0 | 8.5 |
+| shots on target | 8.7 | 10.5 | | throw-ins | 42.7 | 15.1 |
+| pass accuracy | 83.3% | 83.9% | | goal kicks | 17.2 | 7.1 |
+| corners | 10.3 | 12.4 | | free kicks | 29.5 | 12.8 |
+| saves | 9.4 | 10.9 | | passes | 888 | 1251 |
+| offsides | 4.3 | 5.8 | | ground duels | 183 | 125 |
+
+The full table, with the cause of every distance, is in [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md).
 
 ## What the engine does, and what is coming
 
-✅ done · 🟡 partly done · ⬜ to do. Every value an act reads comes from
-the player's characteristics; the full catalogue, act by act, is
-[`L0-match/design/ACTIONS.md`](L0-match/design/ACTIONS.md).
+Every value an act reads comes from the player's characteristics; the full catalogue, act by act, is [`L0-match/design/ACTIONS.md`](L0-match/design/ACTIONS.md).
 
-**The body**
-
-| | |
-|---|---|
-| ✅ Run and sprint: a professional's top speed and acceleration, by his characteristics | ✅ Brake and stop, in a straight line |
-| ✅ The pace is his: flat out into a contest, in his own time into his place | ✅ Fatigue: grows with the effort, against endurance; half-time rests |
-| ✅ Turn: by braking, as well as his joint mobility lets him | 🟡 Jump: in the aerial duel (timing ⬜) |
-
-**The mind** (every player thinks: he imagines his options and judges them, [ADR-052](doctrine/adr/052-every-player-thinks.md))
-
-| | |
-|---|---|
-| ✅ Perceives from where he stands, with a cone of sight | ✅ Vision: how often he looks around |
-| ✅ Game reading, decision making, risk management | ✅ Anticipation, creativity, concentration |
-
-**With the ball**
-
-| | |
-|---|---|
-| ✅ Receive and control (first touch) | ✅ Short pass, lofted pass, cross, switch |
-| ✅ Through ball, into the space ahead of a run | ✅ Carry, in the direction he chooses, at the speed his dribbling allows |
-| ✅ Dribble past a man, or shield the ball | ✅ Shoot: power, foot, post, lob; aims inside the post by his own miss |
-| ✅ Header at goal | 🟡 Clear: no error yet |
-
-**Without the ball**
-
-| | |
-|---|---|
-| ✅ Press, challenge: standing, slide or jockey | ✅ Mark, offer for a pass, run in behind |
-| ✅ Hold the team's shape, high, mid or low block | ✅ Block a shot; aerial duel shoulder to shoulder |
-| ✅ Intercept: step into the passing lane | ✅ Cover the space behind a teammate who presses |
-| ✅ Deflect a pass he cannot control | ✅ Discipline and work rate |
-
-**In goal**
-
-| | |
-|---|---|
-| ✅ Dive: reaction, explosive force, height | ✅ Hold or parry |
-| ✅ Claim a ball in the air in his area | 🟡 Position: a rule (between ball and goal), not yet his reading |
-| 🟡 Come out: in his area only | 🟡 Distribute: throw from his hands ✅, get set ⬜ |
-
-**The Laws** (the referee is the Laws, applied objectively)
-
-| | |
-|---|---|
-| ✅ Kick-off, throw-in, goal kick, corner | ✅ Offside |
-| ✅ Fouls, advantage, penalties, yellow and red cards | ✅ Free kicks and penalties, the taker chosen by the team, the distances |
-| ✅ The referee drawn on the pitch, on the diagonal, hiding nothing | |
-
-**The manager**
-
-| | |
-|---|---|
-| ✅ Choose the eleven from squad and bench | ✅ The intention: block height and width |
-| ✅ Save, reload, replay the same match | ✅ Why you conceded each goal |
-| ✅ Substitutions: planned before the kick-off, made at a stoppage | 🟡 Instructions during the match: block and width, at once ([ADR-059](doctrine/adr/059-the-coach-speaks-during-the-match.md)); the rest ⬜ |
-
-**Then** (after the match engine is complete, [VISION](doctrine/VISION.md))
-
-| | |
-|---|---|
-| ⬜ The match calibrated on real football, derived from the players | ⬜ A season: fixtures and standings |
-| ⬜ A career: scouting, the market, the academy | ⬜ The radio commentary |
+| Area | ✅ Done | 🟡 Partly | ⬜ To do |
+|---|---|---|---|
+| **The body** | top speed and acceleration by his characteristics; brake, stop, turn; his own pace; fatigue against endurance, rest at half-time | jump in the aerial duel | the timing of the jump; the second man on high balls |
+| **The mind** ([ADR-052](doctrine/adr/052-every-player-thinks.md)) | every player imagines his options and picks the best he sees; a cone of sight; the memory of his last look, so he decides on what he has seen; vision, reading, anticipation, creativity, concentration; courage and composure | perception with its error ([ADR-062](doctrine/adr/062-what-a-player-sees-is-not-exact.md)) | |
+| **With the ball** | control; short and lofted pass, cross, switch, through ball; carry and dribble or shield; shot with power, foot and lob; header; clearance with its error, into touch when he chooses | | |
+| **Without the ball** | press, challenge standing, sliding or jockeying; mark, offer, run in behind; hold the block's shape and width; intercept; cover; block a shot; react to a ball before it is played | | |
+| **In goal** | dive, hold or parry, claim crosses; split the angle of his posts; throw | coming out (in his area only) | reading the shot to position himself; getting set |
+| **The ball** | flight with air resistance, bounce from FIFA's rebound test, rolling, posts and crossbar, in integers so the match is the same everywhere | | spin |
+| **The Laws** | kick-off and restarts; offside read as the eye sees it; fouls, advantage, cards, penalties; free kicks with the wall; extra time and the penalty shoot-out; the referee hiding nothing | stoppage time (the engine adds all the time lost) | |
+| **The manager** | the eleven and the bench; block height and width; planned substitutions and the change of a tired player during the match; save, reload, replay; why you conceded each goal | instructions during the match ([ADR-059](doctrine/adr/059-the-coach-speaks-during-the-match.md)): block and width | the other instructions; an opponent coach who reacts to the match |
+| **The structure** | eleven mandatory plugins behind one contract; psychology can be switched off; the commentary in its own crate | | a knock that forces a player off (it starts the injuries of L1) |
 
 ## Try the engine today
 
@@ -281,8 +230,8 @@ pointing inward.
 ```
 doctrine/    the rules everything obeys: foundations, vision, decisions (ADRs)
 L0-match/    the match: its spec, its design notes, its parameters, its engine
-tools/       demo, fixtures, test harness, test runner
-context/     how the work is done: the bookmark, the rules, the ideas, the scripts
+tools/       the window, demo, fixtures, test harness, test runner, the reference measure
+context/     how the work is done: the bookmark, the rules, the plans, the ideas, the scripts
 ```
 
 Start with [`doctrine/00-foundations.md`](doctrine/00-foundations.md),
@@ -325,7 +274,11 @@ Codeberg is the backup, with the same gate on Woodpecker
   apart, and the logo are project trademarks; the licences do not grant trademark rights.
 
 Calcio Vero - Deep Simulator uses no licensed data: no real squads, no real players, no
-scraped databases. Players are fictional; the football is real.
+scraped databases. Players are fictional; the football is real. The engine is measured
+against an open dataset (Wyscout, Pappalardo et al. 2019, CC BY 4.0). Real names, crests
+and photos will only ever come from packs you build on your own computer, from open
+sources such as Wikidata (CC0) and openfootball (public domain); the project never
+hosts or links protected material ([decisions F-K](context/plans/DECISIONS-2026-11-15.md)).
 
 Football Manager is a trademark of Sports Interactive. Calcio Vero - Deep Simulator is
 not affiliated with it.
