@@ -43,6 +43,16 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 
 ## La partita in 3D e in 2.5D (16 novembre 2026)
 
+**Le tre viste, una per strumento** (maintainer, 16 novembre 2026):
+
+| Vista | Dove | Con cosa |
+|---|---|---|
+| 2D dall'alto, a caratteri | il terminale (`ds-demo --tui`) | testo, com'è oggi |
+| 2.5D, la lavagna inclinata | la GUI, su desktop e Android | egui |
+| 3D | solo desktop, quando arriverà | Bevy, se sarà maturo |
+
+Tutte e tre leggono la stessa registrazione della partita e non scrivono mai nella simulazione.
+
 - **Oggi e fino al 3D: egui**, su desktop e Android (ADR-055).
 - **Desktop, quando arriverà il 3D (dopo la 0.1): Bevy, se sarà abbastanza maturo.** Conta la comunità: è la più grande del mondo Rust per i giochi. Fyrox è escluso, con dispiacere: ha l'editor e API stabili dalla 1.0 (marzo 2026), ma una comunità piccola e una grafica ancora OpenGL, a rischio su macOS. Bevy usa wgpu (Vulkan, Metal, DirectX 12).
 - **"Abbastanza maturo" si misura così,** al momento della scelta: un anno senza cambiamenti incompatibili che costringano a riscrivere la vista, oppure la 1.0; Windows, Linux e macOS che girano senza problemi noti; bevy_egui mantenuto. Se non ci siamo, il 3D aspetta: il 2.5D in egui basta.
