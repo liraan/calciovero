@@ -4,7 +4,7 @@
 //! engine, and he watches it on the tilted board of the 2.5D view with the
 //! commentary and the reasons for every goal conceded.
 //!
-//! `ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--camera whole|close|above] [--slow] [--record DIR --frames N]` It reads Plane B only (ADR-022 §3).
+//! `ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--zoom 0..1] [--free] [--slow] [--record DIR --frames N]` It reads Plane B only (ADR-022 §3).
 
 mod animation;
 mod app;
@@ -25,14 +25,8 @@ fn start() -> Result<app::Start, String> {
             "--seed" => s.seed = Some(value()?.parse().map_err(|e| format!("--seed: {e}"))?),
             "--at" => s.tick = Some(value()?.parse().map_err(|e| format!("--at: {e}"))?),
             "--speed" => s.speed = Some(value()?.parse().map_err(|e| format!("--speed: {e}"))?),
-            "--camera" => {
-                s.camera = Some(match value()?.as_str() {
-                    "whole" => app::Camera::Whole,
-                    "close" => app::Camera::Close,
-                    "above" => app::Camera::Above,
-                    other => return Err(format!("--camera: {other}: whole, close or above")),
-                });
-            }
+            "--zoom" => s.zoom = Some(value()?.parse().map_err(|e| format!("--zoom: {e}"))?),
+            "--free" => s.follow = Some(false),
             "--slow" => s.slow = true,
             "--record" => {
                 let dir = value()?;
@@ -45,7 +39,7 @@ fn start() -> Result<app::Start, String> {
             }
             "--help" | "-h" => {
                 println!(
-                    "ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--camera whole|close|above] [--slow] [--record DIR --frames N]"
+                    "ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--zoom 0..1] [--free] [--slow] [--record DIR --frames N]"
                 );
                 std::process::exit(0);
             }

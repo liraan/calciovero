@@ -45,9 +45,9 @@ More options in [Try the engine today](#try-the-engine-today).
 
 <div align="center">
 
-<img src="assets/demo-2.5d.webp" alt="The 2.5D view: the close camera follows a cross from the right into the box and a header at goal, the figures running with their stride" width="800">
+<img src="assets/demo-2.5d.webp" alt="The 2.5D view: the camera follows the ball, a cross from the right into the box and a header in the net, the players as numbered tokens, the fans rising at the goal" width="800">
 
-*Seed 43, engine version 137, 38'02" to 38'14": a cross from the right and a header at goal, with the close camera of the 2.5D view at 50° and the board's Lavagna theme. Everything is the engine's own tick record (where the twenty-two and the ball are, ten times a second), drawn by the GUI at 60 frames a second: between two ticks the players move on curves with their speed, the ball flies on the engine's own gravity, and every curve ends exactly on the next tick; the figures' gestures (the kick, the jump) come only from the facts of the match. The drawing never touches the simulation ([`tools/ds-gui/DESIGN.md`](tools/ds-gui/DESIGN.md)). The terminal view is in [`assets/demo-2d.gif`](assets/demo-2d.gif).*
+*Seed 43, engine version 138, from 38'09": a cross from the right and a header in the net, in the 2.5D view zoomed in at 50° with the camera following the ball, the board's Lavagna theme. The players are tokens with their numbers; the keeper stretches in his dive, the header lifts its man off the grass with his shadow below, and the home end rises at the goal: every movement comes from a fact of the match, nothing else. Everything is the engine's own tick record (where the twenty-two and the ball are, ten times a second), drawn by the GUI at 60 frames a second: between two ticks the players move on curves with their speed, the ball flies on the gravity the match was played with, and every curve ends exactly on the next tick. The drawing never touches the simulation ([`tools/ds-gui/DESIGN.md`](tools/ds-gui/DESIGN.md)). The terminal view is in [`assets/demo-2d.gif`](assets/demo-2d.gif).*
 
 </div>
 
@@ -124,7 +124,7 @@ The game is built in four concentric levels; each one widens the previous and de
 | **L1 · The season** | three divisions and the cup in the real Italian format, every match played by the engine | ⬜ planned, starts when L0 is closed | [`L1`](context/plans/L1.md) |
 | **L2 · The career** | contracts, market, scouts, academy, growth, finances, the dressing room, the coach's life | ⬜ planned | [ADR-060](doctrine/adr/060-the-season-is-true-the-career-builds.md) |
 | **L3 · Make it yours** | editor for every value, packs, a local importer for your own data, external plugins in WebAssembly | ⬜ planned | [decisions](context/plans/DECISIONS-2026-11-15.md) |
-| **Interface** | desktop window today: the 2.5D view (three cameras, articulated figures, gestures from the facts, three themes), commentary, why you conceded; the full design is decided | 🟡 | [`DESIGN`](tools/ds-gui/DESIGN.md) |
+| **Interface** | desktop window today: the 2.5D view (numbered tokens with their gestures from the facts, a continuous zoom, follow the ball or drag the view, the stadium and its crowd, three themes), the bench as a post-it for substitutions while watching, commentary, why you conceded; the full design is decided | 🟡 | [`DESIGN`](tools/ds-gui/DESIGN.md) |
 | **Android** | the same game, the same plugins, light asset packs | ⬜ after the desktop | [ADR-061](doctrine/adr/061-android-is-the-same-game.md) |
 
 ### Releases
@@ -176,7 +176,7 @@ Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
     cd calciovero
     cargo run --release --bin ds-demo -- --seed 42 --tui
 
-Or open the window (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): choose seed, block and width, watch the match on the 2.5D board (the whole pitch, the close camera that follows the ball, or from above; the tilt, the slow motion, three themes) with the commentary, click an event to go back to it, and read why you conceded. `--help` lists the options (`--seed`, `--camera`, `--tilt`, `--theme`, `--slow`).
+Or open the window (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): choose seed, block and width, watch the match on the 2.5D board with the commentary, click an event to go back to it, and read why you conceded. The wheel (two fingers on a touch screen) zooms from the whole pitch to about 25 m; the camera follows the ball until you drag the view, and "Back to the ball" or a double click brings it back; the tilt goes from 0° (from above) to 75°, with a slow motion and three themes. From the bench post-it you make a substitution while you watch: the match is the same up to that moment and goes on with your change. `--help` lists the options (`--seed`, `--zoom`, `--free`, `--tilt`, `--theme`, `--slow`).
 
     cargo run --release -p ds-gui
 

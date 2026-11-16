@@ -37,6 +37,9 @@ struct Game {
     /// The home side at the kick-off: the eleven and the bench (the bench
     /// post-it).
     home: (Vec<PlayerId>, Vec<PlayerId>),
+    /// What moves the crowd, from the facts of the match: the tick, the
+    /// side whose fans rise, and how much (a goal, a shot).
+    cheers: Vec<(usize, bool, f32)>,
     /// The stadium and its town, built once for the pitch (drawing only).
     backdrop: (Vec<crate::stadium::Shape>, Vec<crate::stadium::Shape>),
     /// The record's header (ADR-065): the physics the match was played
@@ -57,8 +60,10 @@ pub struct Start {
     pub tick: Option<usize>,
     /// The playback speed, times real time.
     pub speed: Option<f64>,
-    /// The camera preset.
-    pub camera: Option<Camera>,
+    /// The zoom, `0` the whole pitch, `1` about 25 m across.
+    pub zoom: Option<f32>,
+    /// Follow the ball (the default) or not.
+    pub follow: Option<bool>,
     /// The slow motion.
     pub slow: bool,
     /// Record the window, frame by frame at 60 frames a second of
@@ -67,34 +72,13 @@ pub struct Start {
     pub record: Option<(String, usize)>,
 }
 
-/// The camera presets (DESIGN.md, "La visuale del 2.5D").
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Camera {
-    /// The whole pitch, tilted: the team's shape, the lines, the distances.
-    Whole,
-    /// About 38 m around the ball, following it with a damped movement:
-    /// the gestures, the duels, the shots.
-    Close,
-    /// From above, 0°: the board as it always was.
-    Above,
-}
-
-/// How much pitch the close camera shows across, cm (DESIGN.md).
-const CLOSE_SPAN_CM: f32 = 3_800.0;
-/// How quickly the close camera catches up with the ball, a share a
-/// second (a drawing choice: the damped movement).
+/// How quickly the camera catches up with the ball when it follows it, a
+/// share a second (a drawing choice: the damped movement).
 const FOLLOW_RATE: f32 = 3.0;
 /// The slow motion, a share of the chosen speed (DESIGN.md: about a third).
 const SLOW: f64 = 1.0 / 3.0;
-/// A stride's length at a run, cm: the stride's phase moves on by the
-/// ground covered (a drawing size).
-const STRIDE_CM: f32 = 180.0;
-
-/// Each figure's stride: its phase, radians, and where he stood at the
-/// last frame, cm.
-type Strides = BTreeMap<PlayerId, (f32, (f32, f32))>;
-
 /// The application state.
+#[allow(clippy::struct_excessive_bools, reason = "the window's switches")]
 pub struct App {
     theme: Theme,
     themes: Vec<Theme>,
@@ -110,16 +94,16 @@ pub struct App {
     every_event: bool,
     /// The camera's tilt from the vertical, degrees.
     tilt: f32,
-    /// The camera preset.
-    camera: Camera,
+    /// The zoom, `0` the whole pitch, `1` the nearest (about 25 m).
+    zoom: f32,
+    /// The camera follows the ball; dragging the view turns it off.
+    follow: bool,
     /// The slow motion is on.
     slow: bool,
-    /// Where the close camera looks, cm (it follows the ball).
-    focus: std::cell::Cell<(f32, f32)>,
-    /// Each figure's stride: its phase and where he was at the last frame.
-    strides: std::cell::RefCell<Strides>,
+    /// Where the camera looks, cm.
+    focus: (f32, f32),
     /// The time of the last frame, seconds (for the damped camera).
-    last_dt: std::cell::Cell<f32>,
+    last_dt: f32,
     /// The recording: the folder, the frames wanted, the frames saved.
     record: Option<(String, usize, usize)>,
     /// The bench post-it: who comes off and who comes on, as chosen.
@@ -147,12 +131,12 @@ impl App {
             speed: 16.0,
             carry: 0.0,
             every_event: false,
-            tilt: scene::PRESETS[2],
-            camera: Camera::Whole,
+            tilt: 45.0,
+            zoom: 0.0,
+            follow: true,
             slow: false,
-            focus: std::cell::Cell::new((5_250.0, 3_400.0)),
-            strides: std::cell::RefCell::new(BTreeMap::new()),
-            last_dt: std::cell::Cell::new(0.0),
+            focus: (5_250.0, 3_400.0),
+            last_dt: 0.0,
             record: None,
             pick: (None, None),
         };
@@ -177,8 +161,11 @@ impl App {
         if let Some(tilt) = start.tilt {
             self.tilt = tilt;
         }
-        if let Some(c) = start.camera {
-            self.camera = c;
+        if let Some(z) = start.zoom {
+            self.zoom = z.clamp(0.0, 1.0);
+        }
+        if let Some(f) = start.follow {
+            self.follow = f;
         }
         self.slow = start.slow;
         self.record = start.record.clone().map(|(dir, n)| (dir, n, 0));
@@ -206,6 +193,7 @@ impl App {
                 let why = friendly::why_conceded(&m, result.events.events());
                 let kept = records.clone();
                 let gestures = gestures(&records, result.events.events());
+                let cheers = cheers(&records, result.events.events());
                 let ticks = ds_match::narrate_ticks(&m, &result.events, records);
                 let names = m
                     .home
@@ -230,6 +218,7 @@ impl App {
                 );
                 let backdrop = (crate::stadium::city(pitch), crate::stadium::stadium(pitch));
                 self.game = Some(Game {
+                    cheers,
                     backdrop,
                     home,
                     header,
@@ -308,8 +297,8 @@ impl App {
                 ds_model::Order::Intention(_) => None,
             })
             .collect();
-        let paper = egui::Color32::from_rgb(0xf6, 0xe0, 0x7a);
-        let ink = egui::Color32::from_rgb(0x2a, 0x26, 0x1c);
+        let paper = self.theme.postit;
+        let ink = self.theme.postit_ink;
         let mut give = None;
         egui::Area::new(egui::Id::new("bench-postit"))
             .anchor(egui::Align2::LEFT_TOP, egui::vec2(12.0, 52.0))
@@ -321,7 +310,7 @@ impl App {
                         offset: [2, 3],
                         blur: 6,
                         spread: 0,
-                        color: egui::Color32::from_black_alpha(90),
+                        color: self.theme.postit_shadow,
                     })
                     .show(ui, |ui| {
                         ui.style_mut().visuals = egui::Visuals::light();
@@ -467,10 +456,16 @@ impl App {
             ui.separator();
             ui.toggle_value(&mut self.slow, "Slow");
             ui.separator();
-            ui.label("Camera");
-            ui.selectable_value(&mut self.camera, Camera::Whole, "Whole pitch");
-            ui.selectable_value(&mut self.camera, Camera::Close, "Close");
-            ui.selectable_value(&mut self.camera, Camera::Above, "Above");
+            ui.add(
+                egui::Slider::new(&mut self.zoom, 0.0..=1.0)
+                    .show_value(false)
+                    .text("zoom"),
+            )
+            .on_hover_text("the mouse wheel, or two fingers");
+            ui.toggle_value(&mut self.follow, "Follow the ball");
+            if ui.button("Back to the ball").clicked() {
+                self.follow = true;
+            }
             ui.add(
                 egui::Slider::new(&mut self.tilt, 0.0..=75.0)
                     .suffix("°")
@@ -534,35 +529,48 @@ impl App {
         }
     }
 
-    fn pitch(&self, ui: &mut egui::Ui) {
-        let Some(game) = &self.game else { return };
-        if game.records.is_empty() {
+    fn pitch(&mut self, ui: &mut egui::Ui) {
+        let Some(pitch_cm) = self
+            .game
+            .as_ref()
+            .filter(|g| !g.records.is_empty())
+            .map(|g| g.pitch_cm)
+        else {
             return;
-        }
-        let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::hover());
+        };
+        let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
         let r = response.rect;
+        self.steer(ui, &response, pitch_cm);
+        let Some(game) = &self.game else { return };
         // One tick behind the playhead, so that the drawing always has the
         // tick before and the tick after (the interpolation layer).
         #[allow(clippy::cast_precision_loss)]
         let instant = (self.tick as f64 + self.carry - 1.0).max(0.0);
         let moment = Moment::at(&game.records, instant, &game.header.physics);
         let (origin, size) = ((r.min.x, r.min.y), (r.width(), r.height()));
-        let geom = match self.camera {
-            Camera::Whole => Geometry::fit(origin, size, 16.0, game.pitch_cm, self.tilt),
-            Camera::Above => Geometry::fit(origin, size, 16.0, game.pitch_cm, 0.0),
-            Camera::Close => {
-                // The damped movement: the camera catches up with the ball.
-                let (fx, fy) = self.focus.get();
-                let k = (self.last_dt.get() * FOLLOW_RATE).clamp(0.0, 1.0);
-                let f = (
-                    (moment.ball.0 - fx).mul_add(k, fx),
-                    (moment.ball.1 - fy).mul_add(k, fy),
-                );
-                self.focus.set(f);
-                Geometry::around(origin, size, game.pitch_cm, self.tilt, (f, CLOSE_SPAN_CM))
-            }
-        };
-        self.draw_backdrop(&painter, &geom, r, &game.backdrop);
+        if self.follow {
+            // The damped movement: the camera catches up with the ball.
+            let (fx, fy) = self.focus;
+            let k = (self.last_dt * FOLLOW_RATE).clamp(0.0, 1.0);
+            self.focus = (
+                (moment.ball.0 - fx).mul_add(k, fx),
+                (moment.ball.1 - fy).mul_add(k, fy),
+            );
+        }
+        let span = self.span(game.pitch_cm);
+        let geom = Geometry::view(origin, size, game.pitch_cm, self.tilt, (self.focus, span));
+        // What the view could not reach stays where the view is.
+        self.focus = geom.looks_at();
+        let game = self.game.as_ref().expect("the game drawn");
+        #[allow(clippy::cast_possible_truncation)]
+        let now = instant as f32;
+        self.draw_backdrop(
+            &painter,
+            &geom,
+            r,
+            &game.backdrop,
+            (now, crowd_mood(&game.cheers, now)),
+        );
         self.draw_markings(&painter, &geom);
         let frame = scene::frame(&moment, &geom);
         let t = &self.theme;
@@ -574,43 +582,43 @@ impl App {
         let mut hovered = None;
         for item in &frame.items {
             match item {
-                Item::Figure(f) | Item::Referee(f) => {
-                    let fill = match item {
-                        Item::Referee(_) => t.referee,
-                        _ => match (f.home, f.keeper) {
+                Item::Token(tk) | Item::Referee(tk) => {
+                    let referee = matches!(item, Item::Referee(_));
+                    let fill = if referee {
+                        t.referee
+                    } else {
+                        match (tk.home, tk.keeper) {
                             (true, true) => t.keeper_home,
                             (true, false) => t.home,
                             (false, true) => t.keeper_away,
                             (false, false) => t.away,
-                        },
+                        }
                     };
-                    let (head, head_r) = self.draw_figure(&painter, &geom, f, fill);
-                    if matches!(item, Item::Figure(_)) {
-                        // His letter above him, when he is big enough to
-                        // carry it (the close camera).
-                        if head_r >= 4.0 {
-                            painter.text(
-                                head - egui::vec2(0.0, head_r * 2.6),
-                                Align2::CENTER_CENTER,
-                                f.letter,
-                                FontId::monospace(head_r * 2.0),
-                                fill,
-                            );
-                        }
-                        if response
+                    let (centre, radius) = self.draw_token(&painter, &geom, tk, fill, referee);
+                    if !referee
+                        && response
                             .hover_pos()
-                            .is_some_and(|p| p.distance(head) <= (head_r * 3.0).max(6.0))
-                        {
-                            hovered = Some(f.id);
-                        }
+                            .is_some_and(|p| p.distance(centre) <= radius.max(6.0))
+                    {
+                        hovered = Some(tk.id);
                     }
                 }
                 Item::Ball(b) => {
+                    if b.height_cm > 30.0 {
+                        // In flight: a light dashed line down to its
+                        // shadow, as on television.
+                        painter.extend(Shape::dashed_line(
+                            &[pos(&b.ground), pos(&b.at)],
+                            Stroke::new(1.0_f32, t.ball.gamma_multiply(0.5)),
+                            3.0,
+                            3.0,
+                        ));
+                    }
                     painter.circle_filled(pos(&b.at), b.radius, t.ball);
                     painter.circle_stroke(
                         pos(&b.at),
                         b.radius,
-                        Stroke::new((b.radius * 0.2).max(0.8), t.ball_shadow),
+                        Stroke::new((b.radius * 0.18).max(1.0), t.ball_edge),
                     );
                 }
             }
@@ -622,65 +630,193 @@ impl App {
         }
     }
 
-    /// One articulated figure (DESIGN.md, "Gli omini articolati"): his
-    /// shadow, the ring of the man on the ball, the limbs with his stride,
-    /// the head. Returns where his head is and its radius.
-    fn draw_figure(
+    /// The camera's span across the screen at the current zoom, cm: from
+    /// the whole pitch down to about 25 m, evenly in the eye (a log scale).
+    fn span(&self, pitch_cm: (i32, i32)) -> f32 {
+        let whole = Geometry::whole_span(pitch_cm);
+        #[allow(
+            clippy::disallowed_methods,
+            reason = "drawing only: the view never feeds the simulation"
+        )]
+        let span = whole * (scene::NEAREST_SPAN_CM / whole).powf(self.zoom.clamp(0.0, 1.0));
+        span
+    }
+
+    /// The hand on the board (DESIGN.md, "Una partita, molte viste"): the
+    /// wheel or two fingers zoom, dragging moves the view and turns
+    /// "follow the ball" off, a double click or tap turns it back on.
+    fn steer(&mut self, ui: &egui::Ui, response: &egui::Response, pitch_cm: (i32, i32)) {
+        if response.hovered() {
+            let (wheel, pinch) = ui.input(|i| (i.smooth_scroll_delta.y, i.zoom_delta()));
+            #[allow(
+                clippy::disallowed_methods,
+                reason = "drawing only: the view never feeds the simulation"
+            )]
+            let steps = pinch.ln().mul_add(1.5, wheel / 400.0);
+            self.zoom = (self.zoom + steps).clamp(0.0, 1.0);
+        }
+        if response.dragged() {
+            let d = response.drag_delta();
+            if d.length() > 0.0 {
+                self.follow = false;
+                // Points to cm at the focus: the span over the width; up
+                // and down the tilt shortens the grass.
+                let per = self.span(pitch_cm) / response.rect.width().max(1.0);
+                #[allow(
+                    clippy::disallowed_methods,
+                    reason = "drawing only: the view never feeds the simulation"
+                )]
+                let lean = self.tilt.to_radians().cos().max(0.3);
+                self.focus = (
+                    d.x.mul_add(-per, self.focus.0),
+                    (d.y * per).mul_add(1.0 / lean, self.focus.1),
+                );
+            }
+        }
+        if response.double_clicked() {
+            self.follow = true;
+        }
+    }
+
+    /// One token (DESIGN.md, "Pallini nel 2.5D, omini nel 3D"): its shadow
+    /// on the grass, the ring of the man on the ball, the disc of his side
+    /// with its number and a thin darker edge, the mark of where he faces;
+    /// shaped by the gesture a fact of the match gives him. Never smaller
+    /// than the readable size. Returns its centre and radius.
+    #[allow(
+        clippy::disallowed_methods,
+        reason = "drawing only: the view never feeds the simulation"
+    )]
+    #[allow(
+        clippy::suboptimal_flops,
+        clippy::too_many_lines,
+        clippy::similar_names,
+        reason = "one token, drawn in order: shadow, ring, disc, mark, number, card"
+    )]
+    fn draw_token(
         &self,
         painter: &Painter,
         geom: &Geometry,
-        f: &scene::Figure,
+        tk: &scene::Token,
         fill: egui::Color32,
+        referee: bool,
     ) -> (Pos2, f32) {
+        use std::f32::consts::PI;
         let t = &self.theme;
-        let pos = |s: &scene::Screen| Pos2::new(s.x, s.y);
-        let feet = pos(&f.feet);
-        // His shadow on the grass, then the figure.
-        painter.circle_filled(feet, f.size * 2.2, t.ball_shadow);
-        if f.carrier {
-            painter.circle_stroke(
-                feet,
-                f.size * 3.0,
-                Stroke::new((f.size * 0.4).max(1.2), t.carrier_ring),
+        let ground = Pos2::new(tk.ground.x, tk.ground.y);
+        let r = geom
+            .len_at(scene::TOKEN_CM, (tk.at.0, tk.at.1, 0.0))
+            .max(scene::MIN_TOKEN_PX);
+        // Where he faces, on the screen.
+        let ahead = egui::vec2(tk.facing.x - tk.ground.x, tk.facing.y - tk.ground.y);
+        let dir = if ahead.length() > 1e-3 {
+            ahead.normalized()
+        } else {
+            egui::vec2(0.0, -1.0)
+        };
+        let side = egui::vec2(-dir.y, dir.x);
+        // The gesture: lift, stretch across and along, a shift, a lean.
+        let (mut lift, mut wide, mut tall, mut shift, mut lean) =
+            (0.0_f32, 1.0_f32, 1.0_f32, egui::Vec2::ZERO, 0.0_f32);
+        let mut card = None;
+        if let Some((g, p)) = self.gesture_now(tk.id) {
+            let bump = (PI * p).sin();
+            match g {
+                scene::Gesture::Jump => lift = 1.6 * r * bump,
+                scene::Gesture::Dive(s) => {
+                    wide = 0.9f32.mul_add(bump, 1.0);
+                    tall = 0.35f32.mul_add(-bump, 1.0);
+                    shift = side * (s * 1.2 * r * bump);
+                    lean = 0.6 * s * bump;
+                }
+                scene::Gesture::Slide | scene::Gesture::Lunge => {
+                    tall = 0.45f32.mul_add(-bump, 1.0);
+                    wide = 0.25f32.mul_add(bump, 1.0);
+                    shift = dir * (0.8 * r * p);
+                }
+                scene::Gesture::Fall => {
+                    // Down at once, up slowly.
+                    let down = if p < 0.15 {
+                        p / 0.15
+                    } else {
+                        1.0 - (p - 0.15) / 0.85
+                    };
+                    tall = 0.6f32.mul_add(-down, 1.0);
+                    wide = 0.3f32.mul_add(down, 1.0);
+                }
+                scene::Gesture::Kick | scene::Gesture::Throw => {
+                    shift = dir * (0.35 * r * bump);
+                    wide = 0.12f32.mul_add(bump, 1.0);
+                    tall = wide;
+                }
+                scene::Gesture::Celebrate => lift = 0.9 * r * (3.0 * PI * p).sin().abs(),
+                scene::Gesture::Card(red) => card = Some(red),
+            }
+        }
+        // The shadow stays on the grass.
+        let shadow_tilt = self.tilt.to_radians().cos().clamp(0.35, 1.0);
+        painter.add(Shape::convex_polygon(
+            ellipse(
+                ground + shift,
+                r * 1.05 * wide,
+                r * 0.55 * shadow_tilt.max(0.5),
+                0.0,
+            ),
+            t.ball_shadow,
+            Stroke::NONE,
+        ));
+        if tk.carrier {
+            painter.add(Shape::closed_line(
+                ellipse(ground, r * 1.6, r * 1.6 * shadow_tilt.max(0.5), 0.0),
+                Stroke::new((r * 0.18).max(1.5), t.carrier_ring),
+            ));
+        }
+        // The disc stands on its spot: its centre one radius up.
+        let centre = ground + shift - egui::vec2(0.0, r * tall + lift);
+        // A thin darker edge; a light one round a black disc (the referee).
+        let rim = if luminance(fill) < 0.15 {
+            t.rim_light
+        } else {
+            fill.gamma_multiply(0.45)
+        };
+        let edge = Stroke::new((r * 0.12).max(1.0), rim);
+        let disc = ellipse(centre, r * wide, r * tall, lean);
+        painter.add(Shape::convex_polygon(disc.clone(), fill, Stroke::NONE));
+        painter.add(Shape::closed_line(disc, edge));
+        // The mark of his facing, on the edge.
+        let tip = centre + dir * (r * wide.max(tall) + r * 0.35);
+        let base = centre + dir * (r * wide.max(tall) * 0.8);
+        painter.add(Shape::convex_polygon(
+            vec![tip, base + side * (r * 0.3), base - side * (r * 0.3)],
+            rim,
+            Stroke::NONE,
+        ));
+        if !referee {
+            let size = (r * 1.15).max(8.0);
+            let ink = if luminance(fill) > 0.55 {
+                t.number_dark
+            } else {
+                t.player_text
+            };
+            painter.text(
+                centre,
+                Align2::CENTER_CENTER,
+                tk.number.to_string(),
+                FontId::proportional(size),
+                ink,
             );
         }
-        // The stride moves on with the ground he covers.
-        let phase = {
-            let mut strides = self.strides.borrow_mut();
-            let e = strides.entry(f.id).or_insert((0.0, f.at));
-            let moved = ds_core::dmath::hypot(f64::from(f.at.0 - e.1.0), f64::from(f.at.1 - e.1.1));
-            #[allow(clippy::cast_possible_truncation)]
-            let moved = moved as f32;
-            if moved < 500.0 {
-                e.0 = (moved / STRIDE_CM)
-                    .mul_add(std::f32::consts::TAU, e.0)
-                    .rem_euclid(std::f32::consts::TAU);
-            }
-            e.1 = f.at;
-            e.0
-        };
-        let (parts, head_at, head_r) = scene::limbs(
-            geom,
-            f.at,
-            f.heading,
-            scene::Motion {
-                phase,
-                speed: f.speed,
-                gesture: self.gesture_now(f.id),
-                fatigue: f.fatigue,
-            },
-        );
-        let sock = fill.gamma_multiply(0.6);
-        for l in &parts {
-            let c = match l.part {
-                scene::Part::Shirt => fill,
-                scene::Part::Sock => sock,
-            };
-            painter.line_segment([pos(&l.a), pos(&l.b)], Stroke::new(l.width, c));
+        if let Some(red) = card {
+            let colour = if red { t.card_red } else { t.card_yellow };
+            let h = (r * 1.4).max(9.0);
+            let at = centre - egui::vec2(-r * 0.9, r * 1.6 + h / 2.0);
+            painter.rect_filled(
+                egui::Rect::from_center_size(at, egui::vec2(h * 0.7, h)),
+                1.5,
+                colour,
+            );
         }
-        let head = pos(&head_at);
-        painter.circle_filled(head, head_r, t.skin);
-        (head, head_r)
+        (centre, r)
     }
 
     /// The gesture `id` makes at the instant drawn, and how far into it:
@@ -699,7 +835,7 @@ impl App {
                 scene::Gesture::Fall => (0.0, 20.0),
                 scene::Gesture::Throw => (8.0, 2.0),
                 scene::Gesture::Celebrate => (0.0, 40.0),
-                scene::Gesture::Card => (0.0, 25.0),
+                scene::Gesture::Card(_) => (0.0, 25.0),
             };
             #[allow(clippy::cast_precision_loss)]
             let start = tick as f64 - before;
@@ -745,6 +881,10 @@ impl App {
     /// only, `stadium.rs`): the sky down to the horizon, then the town and
     /// the stands from the farthest shape to the nearest.
     #[allow(
+        clippy::disallowed_methods,
+        reason = "drawing only: the view never feeds the simulation"
+    )]
+    #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
         reason = "colours and mesh indices: small, positive, clamped"
@@ -755,6 +895,7 @@ impl App {
         geom: &Geometry,
         rect: egui::Rect,
         (city, stands): &(Vec<crate::stadium::Shape>, Vec<crate::stadium::Shape>),
+        (now, (home_up, away_up)): (f32, (f32, f32)),
     ) {
         use crate::stadium::{Paint, mix};
         let st = &self.theme.stadium;
@@ -804,6 +945,40 @@ impl App {
                 )
             }
         };
+        // The fans as small tokens on their steps, when they are big
+        // enough to see; farther off, the steps take their colours.
+        let fan = |painter: &Painter, pts: &[Pos2], h: u32| {
+            let lerp = |a: Pos2, b: Pos2, k: f32| a + (b - a) * k;
+            let across = (pts[1] - pts[0]).length();
+            let r = (across / 6.0).min((pts[3] - pts[0]).length() * 0.45);
+            if r < 1.1 {
+                return false;
+            }
+            painter.add(Shape::convex_polygon(
+                pts.to_vec(),
+                st.concrete,
+                Stroke::NONE,
+            ));
+            for k in 0..3_u32 {
+                #[allow(clippy::cast_precision_loss)]
+                let at = (k as f32 + 0.5) / 3.0;
+                let c = lerp(lerp(pts[0], pts[1], at), lerp(pts[3], pts[2], at), 0.4);
+                let who = mix(h ^ (k + 1).wrapping_mul(0x51ed));
+                let fill = colour(Paint::Crowd(who));
+                // A fan of the side that just scored or shot hops (only
+                // from a fact of the match; the others stay seated).
+                let up = match who % 100 {
+                    0..38 => home_up,
+                    38..58 => away_up,
+                    _ => 0.0,
+                };
+                #[allow(clippy::cast_precision_loss)]
+                let phase = (who >> 8 & 0xff) as f32 / 40.0;
+                let hop = up * now.mul_add(0.8, phase).sin().abs() * r * 1.4;
+                painter.circle_filled(c - egui::vec2(0.0, r.mul_add(0.6, hop)), r, fill);
+            }
+            true
+        };
         for shapes in [city, stands] {
             let mut drawn: Vec<(f32, Vec<Pos2>, Paint)> = shapes
                 .iter()
@@ -820,6 +995,12 @@ impl App {
                 .collect();
             drawn.sort_by(|a, b| b.0.total_cmp(&a.0));
             for (_, pts, paint) in drawn {
+                if let Paint::Crowd(h) = paint
+                    && pts.len() == 4
+                    && fan(painter, &pts, h)
+                {
+                    continue;
+                }
                 painter.add(Shape::convex_polygon(pts, colour(paint), Stroke::NONE));
             }
         }
@@ -974,9 +1155,13 @@ fn gestures(
                     }
                 }
                 crate::animation::Animation::Card => {
-                    out.entry(scene::REFEREE)
-                        .or_default()
-                        .push((k, scene::Gesture::Card));
+                    out.entry(scene::REFEREE).or_default().push((
+                        k,
+                        scene::Gesture::Card(
+                            e.fields.get("color").and_then(serde_json::Value::as_str)
+                                == Some("red"),
+                        ),
+                    ));
                     continue;
                 }
                 crate::animation::Animation::Throw => scene::Gesture::Throw,
@@ -1019,7 +1204,8 @@ impl eframe::App for App {
             self.save_screenshots(ctx);
         }
         #[allow(clippy::cast_possible_truncation)]
-        self.last_dt.set(dt as f32);
+        let dt32 = dt as f32;
+        self.last_dt = dt32;
         self.advance(dt);
         ctx.set_visuals(if self.theme.dark {
             egui::Visuals::dark()
@@ -1044,6 +1230,82 @@ impl eframe::App for App {
             ctx.request_repaint();
         }
     }
+}
+
+/// What moves the crowd (DESIGN.md: only from a fact of the match): a goal
+/// lifts the fans of the side that scored for six seconds, a shot those of
+/// the side that shot for a second. The side of a goal is read from the
+/// score, so that an own goal is the right side's.
+fn cheers(
+    records: &[ds_match::TickRecord],
+    events: &[ds_stats::MatchEvent],
+) -> Vec<(usize, bool, f32)> {
+    let mut out = Vec::new();
+    for (k, pair) in records.windows(2).enumerate() {
+        let (a, b) = (&pair[0], &pair[1]);
+        if b.score.home > a.score.home {
+            out.push((k + 1, true, 1.0));
+        }
+        if b.score.away > a.score.away {
+            out.push((k + 1, false, 1.0));
+        }
+        for e in events.get(b.events.clone()).unwrap_or(&[]) {
+            if e.event_type == ds_stats::EventType::Shot
+                && let Some(ds_core::ids::ActorId::Player(p)) = e.actor
+            {
+                out.push((k + 1, p.slot() < 100, 0.4));
+            }
+        }
+    }
+    out
+}
+
+/// How much each side's fans are up at the instant `now` (ticks), `[0, 1]`:
+/// the strongest fact still going, fading out.
+fn crowd_mood(cheers: &[(usize, bool, f32)], now: f32) -> (f32, f32) {
+    let mut mood = (0.0_f32, 0.0_f32);
+    for &(tick, home, strength) in cheers {
+        let lasts = if strength >= 1.0 { 60.0 } else { 10.0 };
+        #[allow(clippy::cast_precision_loss)]
+        let since = now - tick as f32;
+        if (0.0..lasts).contains(&since) {
+            let v = strength * (1.0 - since / lasts);
+            if home {
+                mood.0 = mood.0.max(v);
+            } else {
+                mood.1 = mood.1.max(v);
+            }
+        }
+    }
+    mood
+}
+
+/// An ellipse round `c`, `rx` across and `ry` up, turned by `angle`
+/// radians, as a polygon.
+#[allow(
+    clippy::disallowed_methods,
+    reason = "drawing only: the view never feeds the simulation"
+)]
+#[allow(clippy::many_single_char_names, reason = "drawing geometry")]
+fn ellipse(c: Pos2, rx: f32, ry: f32, angle: f32) -> Vec<Pos2> {
+    let (sa, ca) = angle.sin_cos();
+    (0..32)
+        .map(|k| {
+            #[allow(clippy::cast_precision_loss)]
+            let a = k as f32 * std::f32::consts::TAU / 32.0;
+            let (s, co) = a.sin_cos();
+            let (x, y) = (rx * co, ry * s);
+            Pos2::new(x.mul_add(ca, -(y * sa)) + c.x, x.mul_add(sa, y * ca) + c.y)
+        })
+        .collect()
+}
+
+/// How light a colour looks, `[0, 1]`.
+fn luminance(c: egui::Color32) -> f32 {
+    (0.2126f32.mul_add(
+        f32::from(c.r()),
+        0.7152f32.mul_add(f32::from(c.g()), 0.0722 * f32::from(c.b())),
+    )) / 255.0
 }
 
 #[cfg(test)]
@@ -1114,5 +1376,22 @@ mod tests {
             .position(|r| r.agents.iter().any(|x| x.id == on))
             .expect("he comes on");
         assert!(came > 6_000);
+    }
+
+    /// The crowd moves only from facts: every goal lifts the fans of the
+    /// side whose score went up, and nobody is up at the kick-off.
+    #[test]
+    fn the_fans_rise_only_at_the_facts() {
+        let a = app();
+        let game = a.game.as_ref().expect("game");
+        let goals: Vec<_> = game.cheers.iter().filter(|c| c.2 >= 1.0).collect();
+        let last = game.records.last().expect("records").score;
+        assert_eq!(goals.len(), usize::from(last.home + last.away));
+        assert_eq!(crowd_mood(&game.cheers, 0.0), (0.0, 0.0));
+        if let Some(&&(tick, home, _)) = goals.first() {
+            #[allow(clippy::cast_precision_loss)]
+            let (h, w) = crowd_mood(&game.cheers, tick as f32 + 1.0);
+            assert!(if home { h > 0.9 } else { w > 0.9 });
+        }
     }
 }

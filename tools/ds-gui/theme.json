@@ -12,15 +12,14 @@
       "keeper_home": "#e0a43a",
       "keeper_away": "#3aa7a0",
       "player_text": "#ffffff",
-      "carrier_ring": "#ffffff",
+      "carrier_ring": "#f2c94c",
       "ball": "#ffffff",
       "ball_shadow": "#00000070",
-      "referee": "#161616",
+      "referee": "#141414",
       "critical": "#f2c14e",
       "high": "#e6eee8",
       "medium": "#b4bfb7",
       "low": "#7f8c83",
-      "skin": "#e8c4a0",
       "stadium": {
         "sky": "#2b3d4f",
         "horizon": "#7f8f8a",
@@ -38,7 +37,15 @@
           "#46545c"
         ],
         "window": "#e8d9a0"
-      }
+      },
+      "number_dark": "#141414",
+      "card_yellow": "#f2c11e",
+      "card_red": "#d32f2f",
+      "rim_light": "#969696",
+      "ball_edge": "#000000aa",
+      "postit": "#f6e07a",
+      "postit_ink": "#2a261c",
+      "postit_shadow": "#0000005a"
     },
     {
       "name": "Notte",
@@ -52,15 +59,14 @@
       "keeper_home": "#f0b44c",
       "keeper_away": "#46c2b9",
       "player_text": "#ffffff",
-      "carrier_ring": "#ffffff",
+      "carrier_ring": "#f5cd4f",
       "ball": "#ffffff",
       "ball_shadow": "#00000099",
-      "referee": "#9aa3b5",
+      "referee": "#141414",
       "critical": "#f2c14e",
       "high": "#e6ecf6",
       "medium": "#aab4c6",
       "low": "#6f7a8f",
-      "skin": "#d9b391",
       "stadium": {
         "sky": "#050813",
         "horizon": "#1b2a4a",
@@ -78,7 +84,15 @@
           "#1a2238"
         ],
         "window": "#f2cf74"
-      }
+      },
+      "number_dark": "#141414",
+      "card_yellow": "#f2c11e",
+      "card_red": "#d32f2f",
+      "rim_light": "#969696",
+      "ball_edge": "#000000aa",
+      "postit": "#f6e07a",
+      "postit_ink": "#2a261c",
+      "postit_shadow": "#0000005a"
     },
     {
       "name": "Carta",
@@ -92,15 +106,14 @@
       "keeper_home": "#d08a1e",
       "keeper_away": "#2a8f88",
       "player_text": "#ffffff",
-      "carrier_ring": "#222222",
+      "carrier_ring": "#e0a800",
       "ball": "#ffffff",
       "ball_shadow": "#0000004d",
-      "referee": "#222222",
+      "referee": "#141414",
       "critical": "#a8671a",
       "high": "#222222",
       "medium": "#555555",
       "low": "#8a8a8a",
-      "skin": "#e2b58e",
       "stadium": {
         "sky": "#d9e4ea",
         "horizon": "#f1ede2",
@@ -118,8 +131,16 @@
           "#d8d0be"
         ],
         "window": "#a99f8c"
-      }
+      },
+      "number_dark": "#141414",
+      "card_yellow": "#f2c11e",
+      "card_red": "#d32f2f",
+      "rim_light": "#969696",
+      "ball_edge": "#000000aa",
+      "postit": "#f6e07a",
+      "postit_ink": "#2a261c",
+      "postit_shadow": "#0000005a"
     }
   ],
-  "_note": "The GUI's colours (ADR-055, doctrine/00-foundations.md §5: no hardcoded colours), in the three themes of the tactics board (DESIGN.md: Lavagna, Notte, Carta), the first the default. Hex, #rrggbb or #rrggbbaa. dark: the interface around the board is dark (else light). board the background around the pitch; pitch and pitch_stripe the grass in bands; lines the markings and the goals; home and away the two sides, keeper_home and keeper_away their goalkeepers; carrier_ring around the man on the ball; skin a figure's head; ball_shadow the shadows on the grass; critical, high, medium and low the commentary by the importance of the event."
+  "_note": "The GUI's colours (ADR-055, doctrine/00-foundations.md §5: no hardcoded colours), in the three themes of the tactics board (DESIGN.md: Lavagna, Notte, Carta), the first the default. Hex, #rrggbb or #rrggbbaa. dark: the interface around the board is dark (else light). board the background around the pitch; pitch and pitch_stripe the grass in bands; lines the markings and the goals; home and away the two sides, keeper_home and keeper_away their goalkeepers; carrier_ring around the man on the ball; player_text and number_dark the number on a token (light on dark sides, dark on light ones), rim_light the edge of a black token; card_yellow and card_red the referee's cards; ball_edge the ball's rim; postit, postit_ink and postit_shadow the bench post-it; stadium the stands, the town and the sky; ball_shadow the shadows on the grass; critical, high, medium and low the commentary by the importance of the event."
 }

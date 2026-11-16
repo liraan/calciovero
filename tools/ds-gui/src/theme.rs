@@ -72,7 +72,14 @@ struct RawTheme {
     keeper_away: String,
     player_text: String,
     carrier_ring: String,
-    skin: String,
+    number_dark: String,
+    card_yellow: String,
+    card_red: String,
+    rim_light: String,
+    ball_edge: String,
+    postit: String,
+    postit_ink: String,
+    postit_shadow: String,
     ball: String,
     ball_shadow: String,
     referee: String,
@@ -105,12 +112,10 @@ pub struct Theme {
     pub keeper_home: Color32,
     /// The away goalkeeper.
     pub keeper_away: Color32,
-    /// The letter on a player.
+    /// The number on a dark token.
     pub player_text: Color32,
     /// The ring around the man on the ball.
     pub carrier_ring: Color32,
-    /// A figure's head.
-    pub skin: Color32,
     /// The ball.
     pub ball: Color32,
     /// The ball's shadow on the grass.
@@ -125,6 +130,22 @@ pub struct Theme {
     pub medium: Color32,
     /// Commentary: the rest.
     pub low: Color32,
+    /// The number on a light token.
+    pub number_dark: Color32,
+    /// The yellow card.
+    pub card_yellow: Color32,
+    /// The red card.
+    pub card_red: Color32,
+    /// The edge of a black token (the referee).
+    pub rim_light: Color32,
+    /// The ball's rim.
+    pub ball_edge: Color32,
+    /// The bench post-it's paper.
+    pub postit: Color32,
+    /// Its ink.
+    pub postit_ink: Color32,
+    /// Its shadow.
+    pub postit_shadow: Color32,
     /// The stadium and its town.
     pub stadium: Stadium,
 }
@@ -175,7 +196,6 @@ impl Theme {
             keeper_away: parse_hex(&r.keeper_away)?,
             player_text: parse_hex(&r.player_text)?,
             carrier_ring: parse_hex(&r.carrier_ring)?,
-            skin: parse_hex(&r.skin)?,
             ball: parse_hex(&r.ball)?,
             ball_shadow: parse_hex(&r.ball_shadow)?,
             referee: parse_hex(&r.referee)?,
@@ -183,6 +203,14 @@ impl Theme {
             high: parse_hex(&r.high)?,
             medium: parse_hex(&r.medium)?,
             low: parse_hex(&r.low)?,
+            number_dark: parse_hex(&r.number_dark)?,
+            card_yellow: parse_hex(&r.card_yellow)?,
+            card_red: parse_hex(&r.card_red)?,
+            rim_light: parse_hex(&r.rim_light)?,
+            ball_edge: parse_hex(&r.ball_edge)?,
+            postit: parse_hex(&r.postit)?,
+            postit_ink: parse_hex(&r.postit_ink)?,
+            postit_shadow: parse_hex(&r.postit_shadow)?,
             stadium: {
                 let s = &r.stadium;
                 Stadium {

@@ -13,25 +13,27 @@ use ds_match::BallState;
 
 use crate::interp::Moment;
 
-/// The camera presets, degrees of tilt from the vertical: `0` is the view
-/// from above (the 2D board of before), the others lean towards the near
-/// touchline.
-pub const PRESETS: [f32; 4] = [0.0, 30.0, 45.0, 60.0];
-
-/// How far the camera stands from the centre of the pitch, as a share of
-/// the pitch's length: a drawing choice, the strength of the perspective.
+/// How far the camera stands from what it looks at, as a share of the
+/// span of pitch it shows across: a drawing choice, the strength of the
+/// perspective.
 const DISTANCE_SHARE: f32 = 1.3;
-/// A figure's height on the board, cm (a drawing size, not the player's).
-pub const FIGURE_CM: f32 = 180.0;
+/// The margin round the pitch the view may show and move into, cm (a
+/// drawing size: the whole pitch with its goals and a little ground).
+pub const MARGIN_CM: f32 = 800.0;
+/// The nearest the zoom goes: about this much pitch across, cm (DESIGN.md,
+/// "Una partita, molte viste": about 25 m).
+pub const NEAREST_SPAN_CM: f32 = 2_500.0;
+/// A token's radius, cm (a drawing size, about a man's shoulders).
+pub const TOKEN_CM: f32 = 55.0;
+/// The smallest a token is drawn, its radius in points: readable at every
+/// zoom (DESIGN.md).
+pub const MIN_TOKEN_PX: f32 = 6.5;
+/// The smallest the ball is drawn, its radius in points.
+pub const MIN_BALL_PX: f32 = 3.5;
 /// The ball's radius, cm (Law 2: a circumference of 68-70 cm).
 const BALL_RADIUS_CM: f32 = 11.0;
 /// The goal's depth behind the line, cm (a drawing size).
 const GOAL_DEPTH_CM: f32 = 200.0;
-/// The thinnest a line of a figure is drawn, points: at true size a man
-/// on the whole pitch is about 10 points high (DESIGN.md, "La grandezza
-/// vera decide"), and he must stay visible.
-pub const MIN_LINE: f32 = 1.2;
-
 /// A point of the pitch, cm, `(x, y, z)`: `z` up from the grass.
 pub type World = (f32, f32, f32);
 
@@ -55,6 +57,8 @@ pub struct Geometry {
     tilt: f32,
     /// The camera, cm.
     eye: World,
+    /// The point of the grass the camera looks at, cm.
+    centre: (f32, f32),
     /// Points per unit of projected size.
     scale: f32,
     /// The screen point of the projected origin, points.
@@ -63,69 +67,19 @@ pub struct Geometry {
 
 #[allow(clippy::cast_precision_loss)] // cm on a pitch: far inside f32's exact range
 impl Geometry {
-    /// The camera at `tilt_deg`, fitted so that the pitch, its goals and
-    /// the figures on its lines fit `size` (points) at `origin`, with
-    /// `margin` points all round.
+    /// The span across the screen that shows the whole pitch, cm.
     #[must_use]
-    pub fn fit(
-        origin: (f32, f32),
-        size: (f32, f32),
-        margin: f32,
-        pitch_cm: (i32, i32),
-        tilt_deg: f32,
-    ) -> Self {
-        let (l, w) = (pitch_cm.0.max(1) as f32, pitch_cm.1.max(1) as f32);
-        let tilt = tilt_deg.clamp(0.0, 75.0).to_radians();
-        let d = DISTANCE_SHARE * l;
-        #[allow(
-            clippy::disallowed_methods,
-            reason = "drawing only: the view never feeds the simulation"
-        )]
-        let eye = (l / 2.0, d.mul_add(-tilt.sin(), w / 2.0), d * tilt.cos());
-        let mut g = Self {
-            pitch_cm,
-            tilt,
-            eye,
-            scale: 1.0,
-            offset: (0.0, 0.0),
-        };
-        // The box of everything drawn: the pitch with its goals, a figure
-        // standing on each corner.
-        let mut lo = (f32::INFINITY, f32::INFINITY);
-        let mut hi = (f32::NEG_INFINITY, f32::NEG_INFINITY);
-        for x in [-GOAL_DEPTH_CM, l + GOAL_DEPTH_CM] {
-            for y in [0.0, w] {
-                for z in [0.0, FIGURE_CM] {
-                    if let Some((px, py)) = g.raw((x, y, z)) {
-                        lo = (lo.0.min(px), lo.1.min(py));
-                        hi = (hi.0.max(px), hi.1.max(py));
-                    }
-                }
-            }
-        }
-        let room = (
-            2.0f32.mul_add(-margin, size.0).max(1.0),
-            2.0f32.mul_add(-margin, size.1).max(1.0),
-        );
-        let span = ((hi.0 - lo.0).max(1e-6), (hi.1 - lo.1).max(1e-6));
-        let scale = (room.0 / span.0).min(room.1 / span.1);
-        let used = (span.0 * scale, span.1 * scale);
-        g.scale = scale;
-        g.offset = (
-            lo.0.mul_add(-scale, (size.0 - used.0).mul_add(0.5, origin.0)),
-            // The pitch sits low, with the stands and the sky above it.
-            lo.1.mul_add(-scale, size.1 - used.1 - margin + origin.1),
-        );
-        g
+    pub fn whole_span(pitch_cm: (i32, i32)) -> f32 {
+        2.0f32.mul_add(MARGIN_CM, pitch_cm.0.max(1) as f32)
     }
 
-    /// The close camera (DESIGN.md, "La visuale del 2.5D"): about
-    /// `span_cm` of pitch across the rectangle, centred on `focus` (the
-    /// ball, followed with a damped movement by the caller), never past
-    /// the pitch's edges.
+    /// The camera at `tilt_deg` (`0` from above), showing about `span_cm`
+    /// of pitch across the rectangle, centred on `focus` as far as the
+    /// pitch and its margin allow: the view never leaves the pitch, at
+    /// every zoom (DESIGN.md, "Una partita, molte viste").
     #[must_use]
     #[allow(clippy::many_single_char_names)] // drawing geometry
-    pub fn around(
+    pub fn view(
         origin: (f32, f32),
         size: (f32, f32),
         pitch_cm: (i32, i32),
@@ -133,12 +87,19 @@ impl Geometry {
         (focus, span_cm): ((f32, f32), f32),
     ) -> Self {
         let (l, w) = (pitch_cm.0.max(1) as f32, pitch_cm.1.max(1) as f32);
-        let half = (span_cm / 2.0).min(l / 2.0);
-        let depth_half = (half * size.1 / size.0.max(1.0)).min(w / 2.0);
-        let fx = focus.0.clamp(half, l - half);
-        let fy = focus.1.clamp(depth_half, w - depth_half);
+        let span = span_cm.clamp(NEAREST_SPAN_CM.min(l), Self::whole_span(pitch_cm));
+        let half = span / 2.0;
+        let depth_half = half * size.1 / size.0.max(1.0);
+        let keep = |f: f32, half: f32, len: f32| {
+            if half >= len / 2.0 + MARGIN_CM {
+                len / 2.0
+            } else {
+                f.clamp(half - MARGIN_CM, len - half + MARGIN_CM)
+            }
+        };
+        let (fx, fy) = (keep(focus.0, half, l), keep(focus.1, depth_half, w));
         let tilt = tilt_deg.clamp(0.0, 75.0).to_radians();
-        let d = DISTANCE_SHARE * span_cm;
+        let d = DISTANCE_SHARE * span;
         #[allow(
             clippy::disallowed_methods,
             reason = "drawing only: the view never feeds the simulation"
@@ -148,12 +109,16 @@ impl Geometry {
             pitch_cm,
             tilt,
             eye,
+            centre: (fx, fy),
             scale: 1.0,
             offset: (0.0, 0.0),
         };
+        // The span is measured on the nearest line of grass in view, where
+        // the perspective makes the pitch widest: what is asked fits there.
+        let near = (fy - depth_half).clamp(-MARGIN_CM, fy);
         let (Some(a), Some(b), Some(c)) = (
-            g.raw((fx - half, fy, 0.0)),
-            g.raw((fx + half, fy, 0.0)),
+            g.raw((fx - half, near, 0.0)),
+            g.raw((fx + half, near, 0.0)),
             g.raw((fx, fy, 0.0)),
         ) else {
             return g;
@@ -164,6 +129,13 @@ impl Geometry {
             c.1.mul_add(-g.scale, size.1.mul_add(0.5, origin.1)),
         );
         g
+    }
+
+    /// Where the camera looks on the grass, cm: the focus once kept
+    /// inside the pitch and its margin.
+    #[must_use]
+    pub const fn looks_at(&self) -> (f32, f32) {
+        self.centre
     }
 
     /// The camera's axes: forward (to the centre), right, up on screen.
@@ -259,266 +231,53 @@ impl Geometry {
     }
 }
 
-/// One player as drawn: a figure standing on his spot.
+/// One player as drawn: a token on his spot (DESIGN.md, "Pallini nel
+/// 2.5D, omini nel 3D").
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Figure {
+pub struct Token {
     /// Who.
     pub id: PlayerId,
-    /// His feet on the screen.
-    pub feet: Screen,
-    /// His head on the screen.
-    pub head: Screen,
-    /// The tip of the line on the grass that shows where he faces.
+    /// His spot on the grass, on the screen.
+    pub ground: Screen,
+    /// A point a metre ahead of him on the grass, on the screen: where he
+    /// faces.
     pub facing: Screen,
-    /// His squad letter (`A`-`K` home, `a`-`k` away).
-    pub letter: char,
+    /// His shirt number: his place in the squad, from 1.
+    pub number: u32,
     /// Home side.
     pub home: bool,
-    /// The goalkeeper (the first of the eleven, letter `A` or `a`).
+    /// The goalkeeper (the first of the eleven).
     pub keeper: bool,
     /// He has the ball.
     pub carrier: bool,
-    /// His size on the screen, points: the radius of his head (11 cm).
-    pub size: f32,
     /// His spot on the grass, cm.
     pub at: (f32, f32),
     /// Which way he faces, degrees.
     pub heading: f32,
-    /// His speed, cm a tick.
-    pub speed: f32,
-    /// How tired he looks, `[0, 1]`.
-    pub fatigue: f32,
-}
-
-/// What a limb is dressed in.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Part {
-    /// The shirt: the side's colour.
-    Shirt,
-    /// The legs and socks: the side's colour, darker.
-    Sock,
-}
-
-/// One limb of a figure on the screen.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Limb {
-    /// One end.
-    pub a: Screen,
-    /// The other end.
-    pub b: Screen,
-    /// Its thickness, points.
-    pub width: f32,
-    /// What it is dressed in.
-    pub part: Part,
-}
-
-/// How a figure moves at an instant: his stride, and the gesture a fact of
-/// the match gives him (DESIGN.md: an animation only from a fact).
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Motion {
-    /// Where his stride is, radians: it moves on with the ground he
-    /// covers.
-    pub phase: f32,
-    /// His speed, cm a tick.
-    pub speed: f32,
-    /// The gesture a fact of the match gives him now, and how far into it
-    /// he is, `[0, 1]`.
-    pub gesture: Option<(Gesture, f32)>,
-    /// How tired he looks, `[0, 1]` (the record's `fatigue_milli`): a
-    /// heavier step, the body bent.
-    pub fatigue: f32,
 }
 
 /// A gesture, only from a fact of the match (DESIGN.md, the table of the
 /// animations).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Gesture {
-    /// The leg that loads and kicks: a pass, a cross, a shot, a clearance.
+    /// A small push towards the kick: a pass, a cross, a shot, a clearance.
     Kick,
-    /// The jump with the arms high: a header, an aerial duel.
+    /// Off the ground and down again: a header, an aerial duel.
     Jump,
-    /// The keeper's dive, towards the side `1` (his right) or `-1`.
+    /// The keeper stretches and leans towards the side `1` (his right) or `-1`.
     Dive(f32),
-    /// The slide along the grass: a sliding foul.
+    /// Flattened, sliding a little forward: a sliding foul.
     Slide,
-    /// The standing tackle: the lunge, one leg out.
+    /// Flattened, a little forward: a tackle.
     Lunge,
-    /// The fall after a foul, and getting up.
+    /// Flattened on the grass after a foul, rising slowly.
     Fall,
-    /// The throw-in, the ball held over his head.
+    /// The throw-in: a small push.
     Throw,
-    /// The celebration after a goal: arms high, small jumps.
+    /// Small hops after a goal.
     Celebrate,
-    /// The referee showing a card, his arm high.
-    Card,
-}
-
-/// The articulated figure (DESIGN.md, "Gli omini articolati"): legs,
-/// body, arms and head, from his spot, his facing and his stride, at true
-/// size, never thinner than `MIN_LINE`, in the pose of the gesture a fact
-/// gives him. Built in the pitch's space and projected, so it has the
-/// camera's perspective.
-#[must_use]
-#[allow(
-    clippy::many_single_char_names,
-    clippy::too_many_lines,
-    clippy::suboptimal_flops
-)] // drawing geometry
-pub fn limbs(
-    geom: &Geometry,
-    (x, y): (f32, f32),
-    heading: f32,
-    m: Motion,
-) -> (Vec<Limb>, Screen, f32) {
-    use std::f32::consts::PI;
-    #[allow(
-        clippy::disallowed_methods,
-        reason = "drawing only: the view never feeds the simulation"
-    )]
-    let ((hs, hc), (ps, pc)) = (heading.to_radians().sin_cos(), m.phase.sin_cos());
-    let fwd = (hs, hc);
-    let side = (hc, -hs);
-    // A full stride at a run (8 m/s, 80 cm a tick), barely moving still.
-    let tired = m.fatigue.clamp(0.0, 1.0);
-    let mut amp = (m.speed / 80.0).clamp(0.0, 1.0) * 45.0 * (1.0 - tired * 0.35);
-    let mut lean = (m.speed / 80.0).clamp(0.0, 1.0) * 14.0 + tired * 16.0;
-    // The pose of the gesture: how high he is off the grass, how low his
-    // hips, where his arms and his kicking leg go, how far he lies over.
-    let mut lift = 0.0f32;
-    let mut hip_z = 92.0f32;
-    let mut hands_z = 92.0f32;
-    let mut kick: Option<(f32, f32)> = None;
-    let mut over = 0.0f32;
-    if let Some((g, p)) = m.gesture {
-        #[allow(
-            clippy::disallowed_methods,
-            reason = "drawing only: the view never feeds the simulation"
-        )]
-        let arc = (PI * p).sin();
-        match g {
-            Gesture::Kick => {
-                amp = 0.0;
-                // Back as he loads it, through as he strikes.
-                let swing = if p < 0.6 {
-                    -40.0 * p / 0.6
-                } else {
-                    (p - 0.6) / 0.4 * 95.0 - 40.0
-                };
-                kick = Some((swing, (swing.max(0.0) / 55.0) * 40.0));
-            }
-            Gesture::Jump => {
-                amp = 0.0;
-                lift = arc * 45.0;
-                hands_z = 92.0 + arc * 120.0;
-            }
-            Gesture::Dive(sgn) => {
-                amp = 0.0;
-                over = sgn * arc;
-                hip_z = 92.0 - arc * 60.0;
-                hands_z = 92.0 + arc * 100.0;
-            }
-            Gesture::Slide => {
-                amp = 0.0;
-                hip_z = 92.0 - arc * 70.0;
-                lean = -arc * 25.0;
-                kick = Some((arc * 80.0, 5.0));
-            }
-            Gesture::Lunge => {
-                amp = 0.0;
-                lean = arc * 25.0;
-                kick = Some((arc * 60.0, 8.0));
-            }
-            Gesture::Fall => {
-                amp = 0.0;
-                // Down at once, up slowly.
-                let down = if p < 0.25 {
-                    p / 0.25
-                } else {
-                    1.0 - (p - 0.25) / 0.75
-                };
-                hip_z = 92.0 - down * 72.0;
-                lean = down * 90.0;
-            }
-            Gesture::Throw => {
-                amp = 0.0;
-                hands_z = 92.0 + 135.0;
-                lean = -arc * 12.0;
-            }
-            Gesture::Celebrate => {
-                amp = 0.0;
-                #[allow(
-                    clippy::disallowed_methods,
-                    reason = "drawing only: the view never feeds the simulation"
-                )]
-                let hop = (PI * 6.0 * p).sin().abs();
-                lift = hop * 25.0;
-                hands_z = 92.0 + 125.0;
-            }
-            Gesture::Card => {
-                amp = 0.0;
-                hands_z = 92.0 + 120.0;
-            }
-        }
-    }
-    let at = |f: f32, sd: f32, z: f32| -> World {
-        (
-            f.mul_add(fwd.0, sd.mul_add(side.0, x)),
-            f.mul_add(fwd.1, sd.mul_add(side.1, y)),
-            z + lift,
-        )
-    };
-    // Lying over to a side (the dive): the upper body leans along `side`.
-    let up = |f: f32, sd: f32, z: f32| -> World {
-        let off = over * (z - hip_z).max(0.0) * 0.9;
-        at(
-            f,
-            off.mul_add(1.0, sd),
-            z - over.abs() * (z - hip_z).max(0.0) * 0.6,
-        )
-    };
-    let w = |cm: f32, p: World| geom.len_at(cm, p).max(MIN_LINE);
-    let mut out = Vec::new();
-    let mut seg = |a: World, b: World, cm: f32, part: Part| {
-        if let (Some(pa), Some(pb)) = (geom.project(a), geom.project(b)) {
-            out.push(Limb {
-                a: pa,
-                b: pb,
-                width: w(cm, a),
-                part,
-            });
-        }
-    };
-    for (k, sd) in [(1.0f32, 11.0f32), (-1.0, -11.0)] {
-        let swing = k * ps * amp;
-        let step = (k * pc).max(0.0) * amp * 0.25;
-        let hip = at(lean * 0.3, sd, hip_z);
-        // The kicking leg is his right one (k = 1).
-        let (foot_f, foot_z) = match kick {
-            Some((f, z)) if k > 0.0 => (f, z),
-            _ => (swing, step),
-        };
-        let foot = at(foot_f, sd, foot_z);
-        let knee = at(foot_f.mul_add(0.5, 6.0), sd, f32::midpoint(foot_z, hip_z));
-        seg(hip, knee, 15.0, Part::Sock);
-        seg(knee, foot, 12.0, Part::Sock);
-        // The arm swings against the leg on its side.
-        let shoulder = up(lean, sd * 1.8, hip_z + 53.0);
-        let hand = up(-swing.mul_add(0.6, -lean), sd * 2.4, hands_z);
-        seg(shoulder, hand, 9.0, Part::Shirt);
-    }
-    seg(
-        at(lean * 0.3, 0.0, hip_z),
-        up(lean, 0.0, hip_z + 58.0),
-        32.0,
-        Part::Shirt,
-    );
-    let head_at = up(lean * 1.1, 0.0, hip_z + 76.0);
-    let head = geom.project(head_at).unwrap_or(Screen {
-        x: 0.0,
-        y: 0.0,
-        depth: 0.0,
-    });
-    (out, head, w(11.0, head_at))
+    /// The referee showing a card: red or yellow.
+    Card(bool),
 }
 
 /// The ball as drawn.
@@ -540,9 +299,9 @@ pub struct Ball {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Item {
     /// A player.
-    Figure(Figure),
-    /// The referee, as a figure without a side.
-    Referee(Figure),
+    Token(Token),
+    /// The referee, as a token without a side.
+    Referee(Token),
     /// The ball.
     Ball(Ball),
 }
@@ -552,7 +311,7 @@ impl Item {
     #[must_use]
     pub const fn depth(&self) -> f32 {
         match self {
-            Self::Figure(f) | Self::Referee(f) => f.feet.depth,
+            Self::Token(t) | Self::Referee(t) => t.ground.depth,
             Self::Ball(b) => b.at.depth,
         }
     }
@@ -567,36 +326,32 @@ pub struct Frame {
     pub shadows: Vec<(Screen, f32)>,
 }
 
-fn figure(
+fn token(
     geom: &Geometry,
     id: PlayerId,
-    ((x, y), speed, fatigue): ((f32, f32), f32, f32),
+    (x, y): (f32, f32),
     heading: f32,
-    (letter, carrier): (char, bool),
-) -> Option<Figure> {
-    let feet = geom.project((x, y, 0.0))?;
-    let head = geom.project((x, y, FIGURE_CM))?;
+    carrier: bool,
+) -> Option<Token> {
+    let ground = geom.project((x, y, 0.0))?;
     #[allow(
         clippy::disallowed_methods,
         reason = "drawing only: the view never feeds the simulation"
     )]
     let (s, c) = heading.to_radians().sin_cos();
     // Heading: 0 towards positive y, clockwise (the record's convention).
-    let facing = geom.project((s.mul_add(90.0, x), c.mul_add(90.0, y), 0.0))?;
-    Some(Figure {
+    let facing = geom.project((s.mul_add(100.0, x), c.mul_add(100.0, y), 0.0))?;
+    let slot = id.slot();
+    Some(Token {
         id,
-        feet,
-        head,
+        ground,
         facing,
-        letter,
-        home: letter.is_ascii_uppercase(),
-        keeper: letter.eq_ignore_ascii_case(&'a'),
+        number: slot % 100 + 1,
+        home: slot < 100,
+        keeper: slot % 100 == 0,
         carrier,
-        size: geom.len_at(11.0, (x, y, FIGURE_CM)).max(MIN_LINE),
         at: (x, y),
         heading,
-        speed,
-        fatigue,
     })
 }
 
@@ -611,28 +366,14 @@ pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
         .players
         .iter()
         .filter_map(|p| {
-            let letter = ds_demo::pitchview::marker(p.id);
-            figure(
-                geom,
-                p.id,
-                (p.at, p.speed, p.fatigue),
-                p.heading,
-                (letter, m.carrier == Some(p.id)),
-            )
-            .map(Item::Figure)
+            token(geom, p.id, p.at, p.heading, m.carrier == Some(p.id)).map(Item::Token)
         })
         .collect();
     #[allow(clippy::cast_possible_truncation)] // a point on the pitch, cm
     let (rx, ry) =
         ds_demo::pitchview::referee_at((m.ball.0 as i32, m.ball.1 as i32), geom.pitch_cm);
     #[allow(clippy::cast_precision_loss)] // cm on a pitch
-    if let Some(r) = figure(
-        geom,
-        referee,
-        ((rx as f32, ry as f32), 0.0, 0.0),
-        0.0,
-        ('·', false),
-    ) {
+    if let Some(r) = token(geom, referee, (rx as f32, ry as f32), 0.0, false) {
         items.push(Item::Referee(r));
     }
     let (bx, by, bz) = m.ball;
@@ -641,9 +382,7 @@ pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
         geom.project((bx, by, bz.max(0.0) + BALL_RADIUS_CM)),
         geom.project((bx, by, 0.0)),
     ) {
-        let radius = geom
-            .len_at(BALL_RADIUS_CM, (bx, by, bz))
-            .max(MIN_LINE * 1.5);
+        let radius = geom.len_at(BALL_RADIUS_CM, (bx, by, bz)).max(MIN_BALL_PX);
         shadows.push((ground, radius));
         items.push(Item::Ball(Ball {
             at,
@@ -664,43 +403,67 @@ mod tests {
 
     const PITCH: (i32, i32) = (10_500, 6_800);
 
-    fn fit(tilt: f32) -> Geometry {
-        Geometry::fit((0.0, 0.0), (1200.0, 800.0), 10.0, PITCH, tilt)
+    fn whole(tilt: f32) -> Geometry {
+        Geometry::view(
+            (0.0, 0.0),
+            (1200.0, 800.0),
+            PITCH,
+            tilt,
+            ((0.0, 0.0), Geometry::whole_span(PITCH)),
+        )
     }
 
     /// From above (0°) the board is the 2D board of before: the far
-    /// touchline at the top, the pitch with its proportions.
+    /// touchline at the top, the pitch with its proportions, and zoomed
+    /// out the camera looks at the centre whatever the focus.
     #[test]
     #[allow(clippy::many_single_char_names)]
     fn from_above_the_pitch_keeps_its_proportions() {
-        let g = fit(0.0);
+        let g = whole(0.0);
         let (a, b) = (g.at((0, 0)), g.at((PITCH.0, 0)));
         let c = g.at((0, PITCH.1));
         let (l, w) = (b.0 - a.0, a.1 - c.1);
         assert!(w > 0.0, "the far touchline is at the top");
         assert!((l / w - 105.0 / 68.0).abs() < 0.02, "{l} {w}");
+        assert_eq!(g.looks_at().0, 5_250.0);
     }
 
     /// Tilted, the far touchline looks shorter than the near one
-    /// (perspective), and a figure stands up from the grass.
+    /// (perspective).
     #[test]
-    fn tilted_the_far_side_is_smaller_and_figures_stand_up() {
-        let g = fit(45.0);
+    fn tilted_the_far_side_is_smaller() {
+        let g = whole(45.0);
         let near = g.at((PITCH.0, 0)).0 - g.at((0, 0)).0;
         let far = g.at((PITCH.0, PITCH.1)).0 - g.at((0, PITCH.1)).0;
         assert!(far < near, "far {far} near {near}");
-        let feet = g.project((5250.0, 3400.0, 0.0)).expect("feet");
-        let head = g.project((5250.0, 3400.0, FIGURE_CM)).expect("head");
-        assert!(head.y < feet.y, "the head above the feet");
     }
 
-    /// The nearer figure is drawn after the farther one.
+    /// Zoomed in, the view stays inside the pitch and its margin wherever
+    /// the focus is asked to go (DESIGN.md: dragging stays in bounds).
+    #[test]
+    fn the_view_never_leaves_the_pitch() {
+        for focus in [
+            (-9_000.0, -9_000.0),
+            (20_000.0, 20_000.0),
+            (5_250.0, 3_400.0),
+        ] {
+            let g = Geometry::view((0.0, 0.0), (1200.0, 800.0), PITCH, 45.0, (focus, 2_500.0));
+            let (x, _) = g.looks_at();
+            assert!(
+                (1_250.0 - MARGIN_CM..=9_250.0 + MARGIN_CM).contains(&x),
+                "{x}"
+            );
+        }
+    }
+
+    /// The nearer token is drawn after the farther one; the tokens carry
+    /// their numbers from 1, the keeper first.
     #[test]
     fn the_nearer_is_drawn_last() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let (_, records) =
             ds_match::simulate_from_seed_recorded(&m, 42, ds_match::MatchConfig::default());
-        let g = fit(45.0);
+        let g = whole(45.0);
         let f = frame(
             &crate::interp::Moment::at(&records, 500.0, &crate::interp::tests::physics()),
             &g,
@@ -708,17 +471,23 @@ mod tests {
         let depths: Vec<f32> = f.items.iter().map(Item::depth).collect();
         assert!(depths.windows(2).all(|w| w[0] >= w[1]));
         assert!(f.items.len() >= 22, "{}", f.items.len());
+        for i in &f.items {
+            if let Item::Token(t) = i {
+                assert!((1..=18).contains(&t.number));
+                assert_eq!(t.keeper, t.number == 1);
+            }
+        }
     }
 
-    /// The whole match, projected at every preset: every figure's feet
-    /// inside the drawn rectangle.
+    /// The whole match, zoomed out at every tilt: every token inside the
+    /// drawn rectangle.
     #[test]
     fn every_tick_of_a_match_projects_inside_the_board() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let (_, records) =
             ds_match::simulate_from_seed_recorded(&m, 42, ds_match::MatchConfig::default());
-        for tilt in PRESETS {
-            let g = fit(tilt);
+        for tilt in [0.0, 30.0, 45.0, 60.0] {
+            let g = whole(tilt);
             let inside =
                 |s: &Screen| (-1.0..=1201.0).contains(&s.x) && (-1.0..=801.0).contains(&s.y);
             for t in (0..records.len()).step_by(197) {
@@ -732,8 +501,8 @@ mod tests {
                     &g,
                 );
                 for i in &f.items {
-                    if let Item::Figure(p) = i {
-                        assert!(inside(&p.feet), "tilt {tilt} tick {t}: {:?}", p.feet);
+                    if let Item::Token(p) = i {
+                        assert!(inside(&p.ground), "tilt {tilt} tick {t}: {:?}", p.ground);
                     }
                 }
             }
