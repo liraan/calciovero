@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `e00d0e9` - "SIM 140: the coach who reads the match, on by default (decision Y)"
+**Last commit verified:** `994323d` - "docs(state): bookmark after SIM 140; DD-7 and OI-120"
 
 ## Mandato attivo (2026-11-16)
 
