@@ -63,3 +63,20 @@ jobs:
       # skipped in startup mode (cargo test already ran above).
       - name: gates.sh startup
         run: bash context/scripts/gates.sh startup
+
+  # Decision P (maintainer, 2026-11-16): the golden runs on ARM64 too,
+  # before the 2.5D view is tried on Android. A different result here is a
+  # libm or FMA divergence (OI-99), not a simulation change.
+  golden-arm64:
+    name: Golden ARM64
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: golden on aarch64
+        run: cargo test --release -p ds-match --test golden_l0

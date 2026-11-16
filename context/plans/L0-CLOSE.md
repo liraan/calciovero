@@ -31,7 +31,7 @@
 
 **Stato al 2026-11-15:** fasi 1-5 svolte; L0 chiuso, in attesa della prova del maintainer (`STATE.md`, "Per il maintainer"); ciò che resta è negli OI-64, OI-100-OI-112.
 
-**Fase 5, la chiusura:** la misura finale (passo 11), il golden su glibc, musl e dove si può Windows, macOS, ARM64 (OI-99), la durata di una partita su un core, la partita di prova del maintainer. L0 è chiuso solo dopo il suo ok; poi l'ADR dei plugin (OI-94).
+**Fase 5, la chiusura:** la misura finale (passo 11), il golden su glibc, musl e dove si può Windows, macOS, ARM64 (OI-99; ARM64 anche nella CI, decisione P), la durata di una partita su un core, la partita di prova del maintainer. **Quando L0 si chiude (decisione L del 16 novembre):** almeno 16 metriche su 22 in banda (`L0-CALIBRATION.md`), e ogni metrica fuori banda con la sua causa scritta e il suo OI; il resto del realismo continua dopo, senza bloccare (decisione M: prima completo, poi perfetto). Poi la partita di prova del maintainer; L0 è chiuso dopo il suo ok. **Dopo L0:** la vista 2.5D (decisione R, `tools/ds-gui/DESIGN.md`), poi L1 (`GAME.md`).
 
 ---
 

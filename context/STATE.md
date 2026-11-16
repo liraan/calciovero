@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `8ea554c` - "docs(state): the branches checked; both are in main, their deletion is for the maintainer"
+**Last commit verified:** `aa55b3f` - "Merge docs/game-plan: GAME.md, decisions L to R, one writer on main (RULES C1)"
 
 ## Mandato attivo (2026-11-16)
 
@@ -13,7 +13,7 @@ Il mandato di autonomia del maintainer del 16 novembre 2026: Claude Code continu
 - (d) L1, seguendo `plans/L1.md` e `DECISIONS-2026-11-15`;
 - (e) la versione 0.1 · Stagione pronta (la pubblicazione è del maintainer).
 
-**Cambio d'ordine (maintainer, 2026-11-16):** appena L0 è chiuso, e prima di aprire L1, la vista 2.5D secondo la sezione "Il lavoro del 2.5D" di `tools/ds-gui/DESIGN.md`: (1) la prospettiva con l'inclinazione e i preset della telecamera (0° è la vista dall'alto), al posto del disegno di `scene.rs`; (2) le figurine, il pallone con l'ombra, le porte con l'altezza; (3) lo strato di interpolazione; (4) i tre temi della lavagna e la prova su Android.
+**Decisioni L-R (maintainer, 2026-11-16, `plans/DECISIONS-2026-11-15.md`, `plans/GAME.md`):** L0 si chiude con almeno 16 metriche su 22 in banda e ogni fuori banda con la sua causa e il suo OI (L); prima completo, poi perfetto (M); la 0.1 è congelata nella lista di `GAME.md` (N); un solo scrittore su main, Claude Code (O); il golden anche su ARM64 nella CI (P, fatto). **Cambio d'ordine (maintainer, 2026-11-16):** appena L0 è chiuso, e prima di aprire L1, la vista 2.5D secondo la sezione "Il lavoro del 2.5D" di `tools/ds-gui/DESIGN.md`: (1) la prospettiva con l'inclinazione e i preset della telecamera (0° è la vista dall'alto), al posto del disegno di `scene.rs`; (2) le figurine, il pallone con l'ombra, le porte con l'altezza; (3) lo strato di interpolazione; (4) i tre temi della lavagna e la prova su Android.
 
 L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1 con coppe e nazionali come settimane vuote, le decisioni F-K del 16 novembre su dati reali e asset, `tools/ds-gui/DESIGN.md`, con la prima scheda del giocatore come base), con C2 verde; poi `docs/readme-tables` (il README con lo stato in tabelle, al SIM 133, il motore di main).
 
@@ -141,7 +141,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Sonda (seme 42, SIM 133, il difensore più vicino al portatore, fuori portata): entro 3 m pressa nell'84% dei casi; fra 3 e 6 m nel 66%; fra 6 e 10 m nel 30%, e nel 54% marca un altro uomo. Il pressing vale il pericolo del portatore per `in_time`, la fiducia di arrivare con `trust_ticks` (1 s) di margine alla velocità creduta: a 8 m vale 0,40 e perde contro la marcatura di un uomo più vicino. Il secondo di `trust_ticks` è un tempo senza riferimento: arrivare in tempo per cosa?
 - Verificato: la latenza che il difensore crederebbe al portatore medio è 10,5 tick, quasi il secondo fisso di `trust_ticks`; cambiarlo non cambierebbe il pressing. La causa è la misura della marcatura (OI-117, alternative per il maintainer).
 - Gli autogol del motore (SIM 133, semi 42-101: 25 in 60 partite, 0.42 contro 0.10): 10 seguono un passaggio non riuscito, 6 uno riuscito, 3 un duello, 2 un intercetto. Il sospetto è il retropassaggio: sotto pressione (dal 132) devia, e il portiere che non lo controlla col piede (Regola 12: niente mani su un retropassaggio calciato) lo lascia correre a metà velocità verso la porta.
-- **Prossima azione esatta:** mandato, voce (a): i dribbling riusciti sopra la banda dal 136 (OI-103: la scelta fra protezione e dribbling, `answer_confidence`); poi OI-116 (A) con i passaggi del ricevente; poi il passaggio e il tiro di prima (ADR-064). Dopo la chiusura di L0: la vista 2.5D (il cambio d'ordine del maintainer), poi L1. Sveglia: 17 novembre alle 01:10.
+- **Prossima azione esatta:** mandato, voce (a), verso la soglia di chiusura (decisione L: almeno 16 su 22 in banda; al 136 sono 11): le metriche più vicine alla banda prima (spazzate 39.9, autogol 0.43, dribbling riusciti 32.9: OI-103, `answer_confidence`, la scelta fra protezione e dribbling; sonda del 136: il dribbling a palla al piede riesce il 35%, StatsBomb il 63%); poi le altre con la loro causa. Poi la vista 2.5D, poi L1. Sveglia: 17 novembre alle 01:10.
 
 ## Decisioni prese da Claude, da rivedere
 
