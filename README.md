@@ -22,11 +22,11 @@
 
 ---
 
-**Watch a match in 2D now** (Rust 1.85+ stable; on Windows, Git Bash or WSL):
+**Watch a match now** (Rust 1.85+ stable; on Windows, Git Bash or WSL):
 
     git clone https://github.com/liraan/calciovero.git
     cd calciovero
-    cargo run --release -p ds-gui                              # the window: 2D pitch, commentary, why you conceded
+    cargo run --release -p ds-gui                              # the window: the 2.5D board, commentary, why you conceded
     cargo run --release --bin ds-demo -- --seed 42 --tui       # the same match on a text pitch in the terminal
 
 More options in [Try the engine today](#try-the-engine-today).
@@ -45,9 +45,9 @@ More options in [Try the engine today](#try-the-engine-today).
 
 <div align="center">
 
-<img src="assets/demo-match.gif" alt="A 2D pitch: twenty-two players and the ball; an away midfielder wins a cleared ball and scores from 31 metres" width="800">
+<img src="assets/demo-2.5d.webp" alt="The 2.5D view: the close camera follows a cross from the right into the box and a header at goal, the figures running with their stride" width="800">
 
-*Seed 42, engine version 102, 61'54" to 62'10": the home side clears, the away side wins it back and `g` scores from 31 metres, with no pass in between. The positions are the engine's own tick record (where the twenty-two and the ball are, ten times a second), drawn by a script in the style of the coming interface at 30 frames a second: between two ticks the drawing moves everyone in a straight line, a smoothing for the eye, not the engine. Home players are `A`-`K`, away `a`-`k`, the goalkeepers in their own colour, the ring is the man on the ball. The GUI as it is today ([ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)) is in [`assets/demo-gui.gif`](assets/demo-gui.gif) (recorded at engine version 95); the terminal view in [`assets/demo-2d.gif`](assets/demo-2d.gif).*
+*Seed 43, engine version 137, 38'02" to 38'14": a cross from the right and a header at goal, with the close camera of the 2.5D view at 50° and the board's Lavagna theme. Everything is the engine's own tick record (where the twenty-two and the ball are, ten times a second), drawn by the GUI at 60 frames a second: between two ticks the players move on curves with their speed, the ball flies on the engine's own gravity, and every curve ends exactly on the next tick; the figures' gestures (the kick, the jump) come only from the facts of the match. The drawing never touches the simulation ([`tools/ds-gui/DESIGN.md`](tools/ds-gui/DESIGN.md)). The terminal view is in [`assets/demo-2d.gif`](assets/demo-2d.gif).*
 
 </div>
 
@@ -98,7 +98,7 @@ matches** you **observe** what your players actually did, through
 ratings and data built from events and the reports of your staff, never
 from hidden numbers; you **understand** why; you **decide** the eleven,
 the tactic, the training, the signings. **Inside the match** you
-**watch** it, in a 2D view or as radio commentary; you **understand**
+**watch** it, on the tilted board of the 2.5D view or as radio commentary; you **understand**
 what is happening, down to the moment and the reason; you **adjust**
 from the touchline, at half-time, with the substitutions. In both,
 understanding comes before acting: you change because you understood,
@@ -124,14 +124,14 @@ The game is built in four concentric levels; each one widens the previous and de
 | **L1 · The season** | three divisions and the cup in the real Italian format, every match played by the engine | ⬜ planned, starts when L0 is closed | [`L1`](context/plans/L1.md) |
 | **L2 · The career** | contracts, market, scouts, academy, growth, finances, the dressing room, the coach's life | ⬜ planned | [ADR-060](doctrine/adr/060-the-season-is-true-the-career-builds.md) |
 | **L3 · Make it yours** | editor for every value, packs, a local importer for your own data, external plugins in WebAssembly | ⬜ planned | [decisions](context/plans/DECISIONS-2026-11-15.md) |
-| **Interface** | desktop window today (2D replay, commentary, why you conceded); the full design is decided | 🟡 | [`DESIGN`](tools/ds-gui/DESIGN.md) |
+| **Interface** | desktop window today: the 2.5D view (three cameras, articulated figures, gestures from the facts, three themes), commentary, why you conceded; the full design is decided | 🟡 | [`DESIGN`](tools/ds-gui/DESIGN.md) |
 | **Android** | the same game, the same plugins, light asset packs | ⬜ after the desktop | [ADR-061](doctrine/adr/061-android-is-the-same-game.md) |
 
 ### Releases
 
 | Version | When | What you get |
 |---|---|---|
-| **0.1 · Season** | when L1 is done | a full season, the board, the calendar, the squad, the week, the 2D match; for a few testers |
+| **0.1 · Season** | when L1 is done | a full season, the board, the calendar, the squad, the week, the 2.5D match; for a few testers |
 | **0.2 · Market** | after the first half of L2 | contracts, finances, transfers, scouts |
 | **0.3 · Career** | after L2 | growth, academy, dressing room, the board; open to everyone |
 | **1.0** | after L3 | the editor, the packs, the polished interface, on desktop |
@@ -176,13 +176,13 @@ Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
     cd calciovero
     cargo run --release --bin ds-demo -- --seed 42 --tui
 
-Or open the window (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): choose seed, block and width, watch the match on a 2D pitch with the commentary, click an event to go back to it, and read why you conceded.
+Or open the window (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): choose seed, block and width, watch the match on the 2.5D board (the whole pitch, the close camera that follows the ball, or from above; the tilt, the slow motion, three themes) with the commentary, click an event to go back to it, and read why you conceded. `--help` lists the options (`--seed`, `--camera`, `--tilt`, `--theme`, `--slow`).
 
     cargo run --release -p ds-gui
 
 ![The GUI](tools/ds-gui/screenshot.png)
 
-The command above is the 2D debug view in the terminal: the twenty-two (`A`-`K` home, `a`-`k` away)
+The first command above is the 2D debug view in the terminal: the twenty-two (`A`-`K` home, `a`-`k` away)
 and the ball on a text pitch, with the events as they happen. It works
 in Git Bash too. Add `--speed 60` to go faster, `--step` to advance with
 Enter, `--frame 30` to print the pitch at the 30th minute. It is a debug
