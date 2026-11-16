@@ -1,6 +1,6 @@
 # L1 · L'allenatore (`ds-coach`)
 
-Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni da AF ad AL (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
+Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni da AF ad AM (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
 
 Il quadro è in [`L1.md`](L1.md); le istruzioni in partita sono dell'[ADR-059](../../doctrine/adr/059-the-coach-speaks-during-the-match.md).
 
@@ -40,7 +40,7 @@ Chi gioca a Calcio Vero non è per forza l'allenatore: all'inizio della carriera
 
 Una proposta da correggere con il maintainer ramo per ramo, come quella dei giocatori. Le caratteristiche nascono dal livello del club e da come hanno giocato le squadre vere nella stagione di riferimento (i dati di squadra e delle partite del riferimento Wyscout), con nomi inventati; si misurano sull'effetto (grado 2) e si citano in `balance/SOURCES.md`, tranne dove è detto.
 
-**Le radici, in quattro famiglie:**
+**Le radici, in cinque famiglie:**
 
 | Famiglia | Caratteristiche |
 |---|---|
@@ -48,6 +48,7 @@ Una proposta da correggere con il maintainer ramo per ramo, come quella dei gioc
 | **Mente tattica** | la lettura della partita, la conoscenza tattica, l'adattabilità (quanto si sposta dalla sua idea) |
 | **Metodo** | l'analisi dell'avversario (grado 3 in L1, dal livello del club, finché lo staff di L2 non la rende misurabile), l'attenzione alla condizione (quanto pesa la freschezza contro la gerarchia) |
 | **Carattere** | la propensione al rischio (un giovane, un attaccante in più, la linea alta), la tenuta sotto pressione, l'ostinazione |
+| **Comunicazione** | il carisma, la chiarezza, l'empatia (decisione AM) |
 
 **I rami, le abilità (formule):**
 
@@ -57,6 +58,9 @@ Una proposta da correggere con il maintainer ramo per ramo, come quella dei gioc
 | Scegliere l'undici | attenzione alla condizione, propensione al rischio, conoscenza tattica | prima della partita |
 | Leggere la partita | lettura, tenuta sotto pressione | in partita, nella panchina di L0: quando reagisce (decisione Y) |
 | Correggere in corsa | conoscenza tattica, adattabilità, propensione al rischio | in partita: cosa cambia |
+| Parlare alla squadra | carisma, chiarezza, tenuta sotto pressione | prima, durante, dopo la partita, in settimana |
+| Parlare al singolo | empatia, chiarezza, carisma | i colloqui, i richiami |
+| Spiegare la tattica | chiarezza, conoscenza tattica | la riunione tattica |
 
 **Gli stati del momento:** la pressione (la classifica, il risultato, i risultati recenti), la fiducia. In L1 si vedono nel piano B dalle scelte (più prudenti, più nervose); in L2 si aggiunge la pressione della società.
 
@@ -94,7 +98,7 @@ Le scelte dell'allenatore sono il più libere possibile. L'allenatore **disegna*
 6. **La costruzione e il ritmo:** il portiere corto o lungo, quanto si rischia nel passaggio, il ritmo.
 7. **I movimenti e le rotazioni:** attaccare la profondità, venire incontro, sovrapporsi, restare largo, accentrarsi; due giocatori che si scambiano il posto durante l'azione; lo scambio di posizione (decisione AG).
 8. **La difesa preventiva:** quanti restano dietro la palla quando si attacca, e dove.
-9. **Le transizioni non si disegnano: si scelgono.** Palla persa: riaggredire, ricomporsi, abbassarsi; palla recuperata: ripartire o tenere palla (ADR-059 §6); con quanti secondi di riaggressione e chi la fa. Una scelta di base prima della partita, che l'allenatore cambia in partita quando la legge.
+9. **Le transizioni non si disegnano: si scelgono.** Palla persa: riaggredire, ricomporsi, abbassarsi; palla recuperata: ripartire o tenere palla (ADR-059 §6); con quanti secondi di riaggressione e chi la fa. Una scelta di base prima della partita, che l'allenatore cambia con le fasi della partita, quando la legge.
 10. **I calci piazzati disegnati:** posizioni, corse e tiratori per angoli, punizioni e rimesse, in attacco e in difesa, salvati come schemi.
 11. **La gestione:** perdere tempo, il ritmo a fine partita.
 
@@ -103,6 +107,28 @@ Le scelte dell'allenatore sono il più libere possibile. L'allenatore **disegna*
 **Gli allenatori attori usano la stessa lavagna:** la loro idea di gioco è un disegno, preso dalle posizioni medie per fase delle squadre vere della stagione di riferimento (grado 2).
 
 **Le tattiche sono dati:** file di testo, che si salvano, si caricano e si scambiano come i pacchetti (decisione AD, punto 9). Un verbo nuovo della lavagna nasce in L0 con il suo ADR.
+
+## I discorsi (decisione AM)
+
+La stessa regola della tattica: chi parla sceglie liberamente cosa dire, chi ascolta lo legge con le sue caratteristiche. Nessun dado, nessun "+5 al morale".
+
+**Spiegare il piano.** Una tattica funziona se la squadra la capisce. La **riunione tattica** è una seduta della settimana in `ds-week` (il video sull'avversario, la spiegazione del piano gara), con il suo carico mentale. La **comprensione del piano** è uno stato di ogni giocatore: cresce con le riunioni, con le prove in campo e con le partite giocate in quel modo, quanto dice la sua lettura del gioco e l'abilità "spiegare la tattica" di chi la spiega. In partita, chi ha capito poco esegue peggio e chi ha capito bene la applica anche quando la situazione si complica: dalla sua scena, non da un numero aggiunto.
+
+**Il discorso si compone a pezzi** (più gestibile del testo libero, che andrebbe interpretato e romperebbe il determinismo o ingannerebbe):
+
+- **a chi:** la squadra, un reparto, un giocatore;
+- **quando:** prima della partita, all'intervallo, dopo, in settimana, in un colloquio privato;
+- **cosa:** elogio, richiesta, calma, stimolo, critica, un promemoria tattico, una promessa;
+- **su cosa:** un fatto vero (il suo errore, il suo gol, l'avversario, la classifica);
+- **come:** calmo, deciso, duro.
+
+**Chi lo riceve lo legge da attore:** con le sue caratteristiche psicologiche (la sensibilità, l'ego, la professionalità) e i suoi stati (fiducia, morale, nervi). L'effetto è sugli stati psicologici, che si vedono dai segni nel piano B. Test gemello: lo stesso discorso a due giocatori uguali tranne la sensibilità, due reazioni diverse.
+
+**La credibilità.** Il giocatore ha vissuto la partita e sa cosa è successo: un elogio dopo una partita orribile non vale, una promessa non mantenuta pesa sulla prossima. Ogni giocatore ha un **rapporto con il suo allenatore**, uno stato costruito solo da fatti: le promesse mantenute o no, la coerenza fra le parole e quello che succede. Per il giocatore umano, che non ha caratteristiche, la forza dei discorsi è questa storia; per gli allenatori attori si aggiunge la loro comunicazione.
+
+**Le promesse di L1** sono quelle che L1 sa verificare: i minuti e il posto da titolare. Quelle sul mercato e sul contratto arrivano con L2.
+
+**L'intervallo e i richiami dalla panchina** sono durante la partita: input del motore con il loro tick, come le istruzioni (ADR-059), letti dal plugin psicologia di L0. Vanno in L0, nella lista della decisione T, con un'aggiunta all'ADR-059. I discorsi fuori dalla partita sono di L1.
 
 ## Lo scambio di posizione (decisione AG)
 
