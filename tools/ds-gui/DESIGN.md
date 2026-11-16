@@ -75,3 +75,4 @@ La registrazione della partita ha già quello che serve (`ds-match/src/record.rs
 2. Le figurine con i colori della squadra e l'orientamento; il pallone con l'ombra; le porte con pali e traversa in altezza; l'ordine di disegno per profondità.
 3. Lo strato di interpolazione (sopra).
 4. I tre temi della lavagna; la prova su Android.
+5. **Il README** (maintainer, 16 novembre 2026): appena il 2.5D è disponibile, entra nel README. Una GIF della vista 2.5D (un cross e un colpo di testa, con il seme e la versione del motore nella didascalia) al posto di `assets/demo-match.gif` in cima, lo screenshot della finestra aggiornato, e la vista nelle tabelle dello stato e in "Try the engine today".
