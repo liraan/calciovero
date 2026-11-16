@@ -268,6 +268,8 @@ pub struct Figure {
     pub heading: f32,
     /// His speed, cm a tick.
     pub speed: f32,
+    /// How tired he looks, `[0, 1]`.
+    pub fatigue: f32,
 }
 
 /// What a limb is dressed in.
@@ -304,6 +306,9 @@ pub struct Motion {
     /// The gesture a fact of the match gives him now, and how far into it
     /// he is, `[0, 1]`.
     pub gesture: Option<(Gesture, f32)>,
+    /// How tired he looks, `[0, 1]` (the record's `fatigue_milli`): a
+    /// heavier step, the body bent.
+    pub fatigue: f32,
 }
 
 /// A gesture, only from a fact of the match (DESIGN.md, the table of the
@@ -320,6 +325,14 @@ pub enum Gesture {
     Slide,
     /// The standing tackle: the lunge, one leg out.
     Lunge,
+    /// The fall after a foul, and getting up.
+    Fall,
+    /// The throw-in, the ball held over his head.
+    Throw,
+    /// The celebration after a goal: arms high, small jumps.
+    Celebrate,
+    /// The referee showing a card, his arm high.
+    Card,
 }
 
 /// The articulated figure (DESIGN.md, "Gli omini articolati"): legs,
@@ -348,8 +361,9 @@ pub fn limbs(
     let fwd = (hs, hc);
     let side = (hc, -hs);
     // A full stride at a run (8 m/s, 80 cm a tick), barely moving still.
-    let mut amp = (m.speed / 80.0).clamp(0.0, 1.0) * 45.0;
-    let mut lean = (m.speed / 80.0).clamp(0.0, 1.0) * 14.0;
+    let tired = m.fatigue.clamp(0.0, 1.0);
+    let mut amp = (m.speed / 80.0).clamp(0.0, 1.0) * 45.0 * (1.0 - tired * 0.35);
+    let mut lean = (m.speed / 80.0).clamp(0.0, 1.0) * 14.0 + tired * 16.0;
     // The pose of the gesture: how high he is off the grass, how low his
     // hips, where his arms and his kicking leg go, how far he lies over.
     let mut lift = 0.0f32;
@@ -395,6 +409,36 @@ pub fn limbs(
                 amp = 0.0;
                 lean = arc * 25.0;
                 kick = Some((arc * 60.0, 8.0));
+            }
+            Gesture::Fall => {
+                amp = 0.0;
+                // Down at once, up slowly.
+                let down = if p < 0.25 {
+                    p / 0.25
+                } else {
+                    1.0 - (p - 0.25) / 0.75
+                };
+                hip_z = 92.0 - down * 72.0;
+                lean = down * 90.0;
+            }
+            Gesture::Throw => {
+                amp = 0.0;
+                hands_z = 92.0 + 135.0;
+                lean = -arc * 12.0;
+            }
+            Gesture::Celebrate => {
+                amp = 0.0;
+                #[allow(
+                    clippy::disallowed_methods,
+                    reason = "drawing only: the view never feeds the simulation"
+                )]
+                let hop = (PI * 6.0 * p).sin().abs();
+                lift = hop * 25.0;
+                hands_z = 92.0 + 125.0;
+            }
+            Gesture::Card => {
+                amp = 0.0;
+                hands_z = 92.0 + 120.0;
             }
         }
     }
@@ -508,7 +552,7 @@ pub struct Frame {
 fn figure(
     geom: &Geometry,
     id: PlayerId,
-    ((x, y), speed): ((f32, f32), f32),
+    ((x, y), speed, fatigue): ((f32, f32), f32, f32),
     heading: f32,
     (letter, carrier): (char, bool),
 ) -> Option<Figure> {
@@ -534,12 +578,17 @@ fn figure(
         at: (x, y),
         heading,
         speed,
+        fatigue,
     })
 }
+
+/// The referee's id in a frame and in the gestures: he is no player.
+pub const REFEREE: PlayerId = PlayerId::new(u32::MAX, 0);
 
 /// The frame of the instant `m` on `geom`.
 #[must_use]
 pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
+    let referee = REFEREE;
     let mut items: Vec<Item> = m
         .players
         .iter()
@@ -548,7 +597,7 @@ pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
             figure(
                 geom,
                 p.id,
-                (p.at, p.speed),
+                (p.at, p.speed, p.fatigue),
                 p.heading,
                 (letter, m.carrier == Some(p.id)),
             )
@@ -561,8 +610,8 @@ pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
     #[allow(clippy::cast_precision_loss)] // cm on a pitch
     if let Some(r) = figure(
         geom,
-        PlayerId::new(u32::MAX, 0),
-        ((rx as f32, ry as f32), 0.0),
+        referee,
+        ((rx as f32, ry as f32), 0.0, 0.0),
         0.0,
         ('·', false),
     ) {

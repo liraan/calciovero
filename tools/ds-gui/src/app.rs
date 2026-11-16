@@ -515,6 +515,7 @@ impl App {
                 phase,
                 speed: f.speed,
                 gesture: self.gesture_now(f.id),
+                fatigue: f.fatigue,
             },
         );
         let sock = fill.gamma_multiply(0.6);
@@ -543,6 +544,10 @@ impl App {
                 scene::Gesture::Jump => (3.0, 4.0),
                 scene::Gesture::Lunge => (2.0, 3.0),
                 scene::Gesture::Dive(_) | scene::Gesture::Slide => (2.0, 8.0),
+                scene::Gesture::Fall => (0.0, 20.0),
+                scene::Gesture::Throw => (8.0, 2.0),
+                scene::Gesture::Celebrate => (0.0, 40.0),
+                scene::Gesture::Card => (0.0, 25.0),
             };
             #[allow(clippy::cast_precision_loss)]
             let start = tick as f64 - before;
@@ -683,7 +688,30 @@ fn gestures(
                     });
                     scene::Gesture::Dive(side)
                 }
-                E::Foul if flag(e, "slide") => scene::Gesture::Slide,
+                E::Foul => {
+                    // The man fouled falls (the field `against`, his slot).
+                    let fouled = e
+                        .fields
+                        .get("against")
+                        .and_then(serde_json::Value::as_u64)
+                        .and_then(|slot| r.agents.iter().find(|a| u64::from(a.id.slot()) == slot));
+                    if let Some(a) = fouled {
+                        out.entry(a.id).or_default().push((k, scene::Gesture::Fall));
+                    }
+                    if flag(e, "slide") {
+                        scene::Gesture::Slide
+                    } else {
+                        continue;
+                    }
+                }
+                E::Card => {
+                    out.entry(scene::REFEREE)
+                        .or_default()
+                        .push((k, scene::Gesture::Card));
+                    continue;
+                }
+                E::ThrowIn => scene::Gesture::Throw,
+                E::Goal => scene::Gesture::Celebrate,
                 E::Tackle => scene::Gesture::Lunge,
                 _ => continue,
             };

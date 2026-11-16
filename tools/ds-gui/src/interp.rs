@@ -33,6 +33,8 @@ pub struct PlayerAt {
     pub heading: f32,
     /// His speed between the two ticks, cm a tick.
     pub speed: f32,
+    /// How tired he looks at the tick before, `[0, 1]`.
+    pub fatigue: f32,
 }
 
 /// Everyone and the ball at an instant.
@@ -137,6 +139,7 @@ impl Moment {
                     heading: turn(f32::from(a.heading), h1, s),
                     #[allow(clippy::cast_possible_truncation)]
                     speed: ds_core::dmath::hypot(f64::from(seg.0), f64::from(seg.1)) as f32,
+                    fatigue: f32::from(a.fatigue_milli) / 1000.0,
                 }
             })
             .collect();
