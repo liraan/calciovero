@@ -45,7 +45,7 @@ More options in [Try the engine today](#try-the-engine-today).
 
 <div align="center">
 
-<img src="assets/demo-2.5d.webp" alt="The 2.5D view: the camera follows the ball, a cross from the right into the box and a header in the net, the players as numbered tokens, the fans rising at the goal" width="800">
+<img src="assets/demo-2.5d-tokens.webp" alt="The 2.5D view: the camera follows the ball, a cross from the right into the box and a header in the net, the players as numbered tokens, the fans rising at the goal" width="800">
 
 *Seed 43, engine version 138, from 38'09": a cross from the right and a header in the net, in the 2.5D view zoomed in at 50° with the camera following the ball, the board's Lavagna theme. The players are tokens with their numbers; the keeper stretches in his dive, the header lifts its man off the grass with his shadow below, and the home end rises at the goal: every movement comes from a fact of the match, nothing else. Everything is the engine's own tick record (where the twenty-two and the ball are, ten times a second), drawn by the GUI at 60 frames a second: between two ticks the players move on curves with their speed, the ball flies on the gravity the match was played with, and every curve ends exactly on the next tick. The drawing never touches the simulation ([`tools/ds-gui/DESIGN.md`](tools/ds-gui/DESIGN.md)). The terminal view is in [`assets/demo-2d.gif`](assets/demo-2d.gif).*
 
@@ -180,7 +180,7 @@ Or open the window (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-
 
     cargo run --release -p ds-gui
 
-![The GUI](tools/ds-gui/screenshot.png)
+![The GUI](tools/ds-gui/screenshot-tokens.png)
 
 The first command above is the 2D debug view in the terminal: the twenty-two (`A`-`K` home, `a`-`k` away)
 and the ball on a text pitch, with the events as they happen. It works
