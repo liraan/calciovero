@@ -75,6 +75,10 @@ fn slot_role(i: usize) -> Role {
 
 /// The situation the block answers to.
 #[derive(Debug, Clone, Copy)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the facts of the moment the block reads"
+)]
 pub struct Situation {
     /// The ball, in cm.
     pub ball: (i32, i32),
@@ -88,6 +92,10 @@ pub struct Situation {
     pub kick_off: bool,
     /// The coach's intention for the player's side.
     pub intention: ds_model::Intention,
+    /// His quick instructions and transition choices (ADR-059 step 3).
+    pub orders: ds_model::TeamOrders,
+    /// The seconds after the ball changed side (ADR-059 §6).
+    pub transition: bool,
 }
 
 /// Where a player with `role` stands in his side's block.
@@ -124,6 +132,18 @@ pub fn place(role: Role, s: Situation, blk: &BlockBalance) -> (i32, i32) {
             ds_model::Width::Normal => 1000,
         };
         span = (span * w / 1000).min(width);
+        // Everyone forward, and the transition after winning the ball
+        // (ADR-059 step 3): the block higher, or held back to keep it.
+        let mut push = s.orders.forward_cm;
+        if s.transition {
+            match s.orders.won {
+                ds_model::OnWin::Counter => push = push.max(ds_model::TeamOrders::FORWARD_STEP_CM),
+                ds_model::OnWin::Keep => push -= ds_model::TeamOrders::FORWARD_STEP_CM / 2,
+                ds_model::OnWin::Shape => {}
+            }
+        }
+        line_max += push;
+        behind -= push / 2;
     } else {
         match s.intention.block {
             ds_model::BlockHeight::High => {
@@ -136,8 +156,26 @@ pub fn place(role: Role, s: Situation, blk: &BlockBalance) -> (i32, i32) {
             }
             ds_model::BlockHeight::Mid => {}
         }
-        behind = behind.max(0);
+        // More pressing: the block engages nearer the ball and higher.
+        line_max += s.orders.press_cm / 2;
+        behind -= s.orders.press_cm;
+        // The transition after losing the ball (ADR-059 step 3): stay up on
+        // the ball, or drop into a low block.
+        if s.transition {
+            match s.orders.lost {
+                ds_model::OnLoss::CounterPress => {
+                    line_max = line_max.max(blk.line_max_in_possession_cm);
+                    behind = 0;
+                }
+                ds_model::OnLoss::DropBack => {
+                    line_max -= blk.low_block_line_cm;
+                    behind += blk.low_block_line_cm / 2;
+                }
+                ds_model::OnLoss::Shape => {}
+            }
+        }
     }
+    behind = behind.max(0);
     // Distances along the side's own attacking direction (u = 0 at its own
     // goal line).
     let u_ball = if s.home { s.ball.0 } else { length - s.ball.0 };
@@ -178,6 +216,8 @@ mod tests {
             pitch: PITCH,
             kick_off: false,
             intention: ds_model::Intention::default(),
+            orders: ds_model::TeamOrders::default(),
+            transition: false,
         }
     }
 
@@ -224,6 +264,49 @@ mod tests {
         };
         let y = |w| place(wing, with(ds_model::BlockHeight::Mid, w, true), &blk).1;
         assert!(y(ds_model::Width::Wide) > y(ds_model::Width::Narrow));
+    }
+
+    /// Twin tests (ADR-059 step 3): two teams identical but for one quick
+    /// instruction or one transition choice, the same ball.
+    #[test]
+    fn the_quick_instructions_and_the_transitions_move_the_block() {
+        use ds_model::{OnLoss, OnWin, Quick, TeamOrders};
+        let blk = BlockBalance::load();
+        let ball = (6_000, 3_400);
+        let line = |orders: TeamOrders, in_possession: bool, transition: bool| {
+            let s = Situation {
+                orders,
+                transition,
+                ..at(ball, in_possession)
+            };
+            place(DEFENDER, s, &blk).0
+        };
+        let plain = TeamOrders::default();
+        // More pressing: without the ball the line stands nearer the ball.
+        let press = plain.with(Quick::MorePressing, true);
+        assert!(line(press, false, false) > line(plain, false, false));
+        // Everyone forward: with the ball the line is higher.
+        let forward = plain.with(Quick::EveryoneForward, true);
+        assert!(line(forward, true, false) > line(plain, true, false));
+        // After losing the ball: counter-pressing stays up, dropping back
+        // goes low; once the transition is over, both take the shape.
+        let lost = |l| TeamOrders { lost: l, ..plain };
+        let up = line(lost(OnLoss::CounterPress), false, true);
+        let back = line(lost(OnLoss::DropBack), false, true);
+        let shape = line(plain, false, true);
+        assert!(
+            up > shape && shape > back,
+            "up {up} shape {shape} back {back}"
+        );
+        assert_eq!(
+            line(lost(OnLoss::CounterPress), false, false),
+            line(plain, false, false)
+        );
+        // After winning it: the counter pushes up, keeping it holds back.
+        let won = |w| TeamOrders { won: w, ..plain };
+        let counter = line(won(OnWin::Counter), true, true);
+        let keep = line(won(OnWin::Keep), true, true);
+        assert!(counter > line(plain, true, true) && line(plain, true, true) > keep);
     }
 
     #[test]

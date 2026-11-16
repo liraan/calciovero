@@ -938,8 +938,10 @@ impl MatchState {
             self.check_goal_line(ctx, tick, prev_ball, curr_ball);
         }
         self.restart_if_out(ctx, tick);
+        let window = u64::from(ds_model::TeamOrders::TRANSITION_S)
+            * u64::from(ctx.config.ticks_per_second.max(1));
         self.spatial
-            .set_home_in_possession(self.possession == Possession::Home);
+            .set_home_in_possession(self.possession == Possession::Home, tick, window);
         self.spatial.move_agents(
             i32::from(ctx.match_.pitch.length_m) * 100,
             i32::from(ctx.match_.pitch.width_m) * 100,

@@ -220,6 +220,12 @@ pub struct SpatialState {
     roles: BTreeMap<PlayerId, crate::shape::Role>,
     /// The coaches' intentions, home and away (OI-27).
     intentions: (ds_model::Intention, ds_model::Intention),
+    /// The coaches' quick instructions and transition choices, home and
+    /// away (ADR-059 step 3).
+    orders: (ds_model::TeamOrders, ds_model::TeamOrders),
+    /// Until which tick the side that last won the ball is in its
+    /// transition, and the tick now (ADR-059 §6).
+    transition: (u64, u64),
     /// The pitch, in centimetres: `(length, width)`.
     pitch_cm: (i32, i32),
     /// Half the distance between the posts, cm (Law 1): the keeper covers
@@ -330,6 +336,11 @@ impl SpatialState {
             block: crate::balance::BlockBalance::load(),
             roles: crate::shape::roles(home, away),
             intentions: (home.intention, away.intention),
+            orders: (
+                ds_model::TeamOrders::default(),
+                ds_model::TeamOrders::default(),
+            ),
+            transition: (0, 0),
             pitch_cm: (length, width),
             goal_half_width_cm: crate::balance::LawsBalance::load().goal_half_width_cm,
             home_in_possession: true,
@@ -409,9 +420,31 @@ impl SpatialState {
         self.acts.get(&id).copied()
     }
 
-    /// The side in possession, for the block (set by the match each tick).
-    pub const fn set_home_in_possession(&mut self, home: bool) {
+    /// The side in possession, for the block (set by the match each tick
+    /// `tick`): when it changes, both sides are in their transition for
+    /// `window` ticks (ADR-059 §6).
+    pub const fn set_home_in_possession(&mut self, home: bool, tick: u64, window: u64) {
+        if home != self.home_in_possession {
+            self.transition.0 = tick + window;
+        }
         self.home_in_possession = home;
+        self.transition.1 = tick;
+    }
+
+    /// The coach of one side changes his quick instructions or his
+    /// transition choices (ADR-059 step 3).
+    pub const fn set_orders(&mut self, home: bool, orders: ds_model::TeamOrders) {
+        if home {
+            self.orders.0 = orders;
+        } else {
+            self.orders.1 = orders;
+        }
+    }
+
+    /// The quick instructions and transition choices of one side.
+    #[must_use]
+    pub const fn orders(&self, home: bool) -> ds_model::TeamOrders {
+        if home { self.orders.0 } else { self.orders.1 }
     }
 
     /// Where an outfield player stands in his team's block (VISION §3:
@@ -442,6 +475,8 @@ impl SpatialState {
             } else {
                 self.intentions.1
             },
+            orders: self.orders(home),
+            transition: self.transition.1 < self.transition.0,
         };
         Some(crate::shape::place(role, situation, &self.block))
     }
@@ -1100,6 +1135,8 @@ impl SpatialState {
                         } else {
                             self.intentions.1
                         },
+                        orders: self.orders(home),
+                        transition: self.transition.1 < self.transition.0,
                     },
                     &self.block,
                 );

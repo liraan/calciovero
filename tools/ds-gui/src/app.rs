@@ -302,7 +302,9 @@ impl App {
                 ds_model::Order::Substitute { outgoing, incoming } => {
                     Some((i.tick, outgoing, incoming, on.contains(&incoming)))
                 }
-                ds_model::Order::Intention(_) => None,
+                ds_model::Order::Intention(_)
+                | ds_model::Order::Quick { .. }
+                | ds_model::Order::Transitions { .. } => None,
             })
             .collect();
         let paper = self.theme.postit;
@@ -360,6 +362,103 @@ impl App {
             });
         if let Some((outgoing, incoming)) = give {
             self.order(ds_model::Order::Substitute { outgoing, incoming });
+        }
+    }
+
+    /// The quick instructions as a post-it under the bench (ADR-059 step 3,
+    /// DESIGN.md): more pressing, everyone forward, and the two
+    /// transitions; each change is an order at the tick on the screen.
+    fn quick_postit(&mut self, ctx: &egui::Context) {
+        if self.game.is_none() {
+            return;
+        }
+        // What he has said so far, the last word on each.
+        let mut now = ds_model::TeamOrders::default();
+        for i in &self.choices.live {
+            match i.order {
+                ds_model::Order::Quick { quick, on } => now = now.with(quick, on),
+                ds_model::Order::Transitions { lost, won } => {
+                    now.lost = lost;
+                    now.won = won;
+                }
+                ds_model::Order::Intention(_) | ds_model::Order::Substitute { .. } => {}
+            }
+        }
+        let t = &self.theme;
+        let (paper, ink, shade) = (t.postit, t.postit_ink, t.postit_shadow);
+        let mut give: Vec<ds_model::Order> = Vec::new();
+        egui::Area::new(egui::Id::new("quick-postit"))
+            .anchor(egui::Align2::LEFT_TOP, egui::vec2(12.0, 210.0))
+            .show(ctx, |ui| {
+                egui::Frame::NONE
+                    .fill(paper)
+                    .inner_margin(10.0)
+                    .shadow(egui::epaint::Shadow {
+                        offset: [2, 3],
+                        blur: 6,
+                        spread: 0,
+                        color: shade,
+                    })
+                    .show(ui, |ui| {
+                        ui.style_mut().visuals = egui::Visuals::light();
+                        ui.visuals_mut().override_text_color = Some(ink);
+                        ui.set_max_width(220.0);
+                        ui.strong("Quick instructions");
+                        for (quick, label, on) in [
+                            (
+                                ds_model::Quick::MorePressing,
+                                "More pressing",
+                                now.press_cm > 0,
+                            ),
+                            (
+                                ds_model::Quick::EveryoneForward,
+                                "Everyone forward",
+                                now.forward_cm > 0,
+                            ),
+                        ] {
+                            let mut v = on;
+                            if ui.checkbox(&mut v, label).changed() {
+                                give.push(ds_model::Order::Quick { quick, on: v });
+                            }
+                        }
+                        let (mut lost, mut won) = (now.lost, now.won);
+                        egui::ComboBox::from_id_salt("on-loss")
+                            .selected_text(match lost {
+                                ds_model::OnLoss::Shape => "Ball lost: shape",
+                                ds_model::OnLoss::CounterPress => "Ball lost: counter-press",
+                                ds_model::OnLoss::DropBack => "Ball lost: drop back",
+                            })
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut lost, ds_model::OnLoss::Shape, "shape");
+                                ui.selectable_value(
+                                    &mut lost,
+                                    ds_model::OnLoss::CounterPress,
+                                    "counter-press",
+                                );
+                                ui.selectable_value(
+                                    &mut lost,
+                                    ds_model::OnLoss::DropBack,
+                                    "drop back",
+                                );
+                            });
+                        egui::ComboBox::from_id_salt("on-win")
+                            .selected_text(match won {
+                                ds_model::OnWin::Shape => "Ball won: shape",
+                                ds_model::OnWin::Counter => "Ball won: counter",
+                                ds_model::OnWin::Keep => "Ball won: keep it",
+                            })
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut won, ds_model::OnWin::Shape, "shape");
+                                ui.selectable_value(&mut won, ds_model::OnWin::Counter, "counter");
+                                ui.selectable_value(&mut won, ds_model::OnWin::Keep, "keep it");
+                            });
+                        if (lost, won) != (now.lost, now.won) {
+                            give.push(ds_model::Order::Transitions { lost, won });
+                        }
+                    });
+            });
+        for order in give {
+            self.order(order);
         }
     }
 
@@ -1262,6 +1361,7 @@ impl eframe::App for App {
             .show(ctx, |ui| self.pitch(ui));
         if self.record.is_none() {
             self.bench_postit(ctx);
+            self.quick_postit(ctx);
         }
         if self.record.is_some() {
             // One screenshot at a time: the next frame is drawn only after
@@ -1421,6 +1521,22 @@ mod tests {
             .position(|r| r.agents.iter().any(|x| x.id == on))
             .expect("he comes on");
         assert!(came > 6_000);
+    }
+
+    /// A quick instruction from the post-it is an order at the tick on the
+    /// screen: the match up to now is the same, and the order is told.
+    #[test]
+    fn a_quick_instruction_keeps_the_match_up_to_now() {
+        let mut a = app();
+        a.tick = 9_000;
+        let before: Vec<_> = a.game.as_ref().expect("game").records[..=9_000].to_vec();
+        a.order(ds_model::Order::Quick {
+            quick: ds_model::Quick::MorePressing,
+            on: true,
+        });
+        let game = a.game.as_ref().expect("game");
+        assert_eq!(game.records[..=9_000], before[..]);
+        assert_eq!(a.choices.live.len(), 1);
     }
 
     /// The crowd moves only from facts: every goal lifts the fans of the

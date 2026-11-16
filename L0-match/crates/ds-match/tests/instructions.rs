@@ -190,3 +190,53 @@ fn no_more_substitutions_than_the_laws_allow() {
     let on = last.agents.iter().filter(|a| bench.contains(&a.id)).count();
     assert_eq!(on, allowed, "{on} came on, {allowed} allowed");
 }
+
+/// P1 (ADR-059 step 3): a quick instruction and the transition choices are
+/// inputs with their tick: the match is the same up to it, then the team
+/// plays differently; each is told at its minute, and the replay plays
+/// them back.
+#[test]
+fn quick_instructions_take_effect_from_their_tick() {
+    let plain = match_fixture(48).expect("fixture");
+    let (_, before) = simulate_from_seed_recorded(&plain, 48, MatchConfig::default());
+    let mut m = match_fixture(48).expect("fixture");
+    m.home = m.home.clone().with_instructions(vec![
+        Instruction {
+            tick: AT,
+            order: Order::Quick {
+                quick: ds_model::Quick::MorePressing,
+                on: true,
+            },
+        },
+        Instruction {
+            tick: AT,
+            order: Order::Transitions {
+                lost: ds_model::OnLoss::CounterPress,
+                won: ds_model::OnWin::Counter,
+            },
+        },
+    ]);
+    let (result, after) = simulate_from_seed_recorded(&m, 48, MatchConfig::default());
+    let upto = usize::try_from(AT).expect("tick fits");
+    assert_eq!(
+        before[..=upto],
+        after[..=upto],
+        "nothing changes before he speaks"
+    );
+    assert!(
+        before[upto + 1..]
+            .iter()
+            .zip(&after[upto + 1..])
+            .any(|(a, b)| a.agents != b.agents),
+        "the team plays differently after it"
+    );
+    let told = result
+        .events
+        .events()
+        .iter()
+        .filter(|e| e.event_type == EventType::Instruction)
+        .count();
+    assert_eq!(told, 2, "both told");
+    let save = MatchSave::from_result(&result, &m, 48, GameInstant::from_raw(0));
+    assert_eq!(replay(&save).state_hash, result.state_hash);
+}
