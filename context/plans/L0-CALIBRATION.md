@@ -23,8 +23,8 @@
 | tiri | 24.60 | 5.46 | 35.73 | 19.1–30.1 | no | OI-100 |
 | tiri in porta | 8.69 | 3.22 | 20.37 | 5.5–11.9 | no | OI-100 (l'errore del tiro: `kick.json` `error_pressure_rad`, `error_power_gain` senza fonte) |
 | rigori | 0.33 | 0.56 | 0.17 | 0–0.89 | sì | — |
-| passaggi | 887.7 | 122.8 | 1065.05 | 765–1011 | no | OI-100: il gioco è troppo preciso, la palla si perde poco |
-| passaggi riusciti | 739.2 | 124.8 | 1011.62 | 614–864 | no | OI-100 |
+| passaggi | 887.7 | 122.8 | 1355.72 | 765–1011 | no | OI-100: troppi passaggi, e troppi intercettati (290 a partita); dal 2026-11-16 `ds-reference` conta anche i passaggi intercettati, che il motore racconta solo come `Interception` (prima 1065) |
+| passaggi riusciti | 739.2 | 124.8 | 1011.62 | 614–864 | no | OI-100: riusciti il 74,6% dei tentati contro l'83,3% Wyscout (StatsBomb: 86,2%); non è il passaggio troppo preciso, sono gli intercetti |
 | duelli aerei | 38.14 | 12.98 | 10.60 | 25.2–51.1 | no | OI-102: il secondo uomo sui palloni alti |
 | duelli a terra | 182.6 | 27.5 | 200.45 | 155–210 | sì | — |
 | dribbling riusciti | 16.03 | 5.67 | 26.92 | 10.4–21.7 | no | OI-103: sopra la banda dal 131 (le forze del contrasto sulla stessa scala) |

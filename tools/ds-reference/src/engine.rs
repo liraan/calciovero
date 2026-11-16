@@ -83,7 +83,13 @@ pub fn count(events: &[MatchEvent]) -> MatchCounts {
                 }
             }
             EventType::Clearance => c.add(Metric::Clearances, 1.0),
-            EventType::Interception => c.add(Metric::Interceptions, 1.0),
+            // A pass an opponent takes is told as his `Interception` only:
+            // it was a pass, and it failed (2026-11-16; before, the passes
+            // and their accuracy left out every intercepted pass).
+            EventType::Interception => {
+                c.add(Metric::Interceptions, 1.0);
+                c.add(Metric::Passes, 1.0);
+            }
             EventType::Save => c.add(Metric::Saves, 1.0),
             EventType::Goal => {
                 if flag(e, "own_goal") {
@@ -112,5 +118,20 @@ mod tests {
             assert!((a.get(m) - b.get(m)).abs() < 1e-12, "{}", m.key());
         }
         assert!(a.get(Metric::Passes) > 0.0);
+    }
+
+    /// A pass an opponent takes is a pass that failed: it counts among the
+    /// passes, not among the accurate ones (2026-11-16).
+    #[test]
+    fn an_intercepted_pass_is_a_pass() {
+        let m = ds_fixtures::match_fixture(42).unwrap();
+        let r = ds_match::simulate_from_seed(&m, 42, MatchConfig::default());
+        let ev = r.events.events();
+        let of = |t: EventType| ev.iter().filter(|e| e.event_type == t).count();
+        let c = count(ev);
+        #[allow(clippy::cast_precision_loss)]
+        let told = (of(EventType::Pass) + of(EventType::Interception)) as f64;
+        assert!(of(EventType::Interception) > 0);
+        assert!((c.get(Metric::Passes) - told).abs() < 1e-9);
     }
 }
