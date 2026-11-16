@@ -1,6 +1,6 @@
 # L1 · L'allenatore (`ds-coach`)
 
-Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni da AF ad AM (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
+Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni da AF ad AP (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
 
 Il quadro è in [`L1.md`](L1.md); le istruzioni in partita sono dell'[ADR-059](../../doctrine/adr/059-the-coach-speaks-during-the-match.md).
 
@@ -130,9 +130,43 @@ La stessa regola della tattica: chi parla sceglie liberamente cosa dire, chi asc
 
 **L'intervallo e i richiami dalla panchina** sono durante la partita: input del motore con il loro tick, come le istruzioni (ADR-059), letti dal plugin psicologia di L0. Vanno in L0, nella lista della decisione T, con un'aggiunta all'ADR-059. I discorsi fuori dalla partita sono di L1.
 
+## Quello che fa un allenatore moderno, in più (decisione AO)
+
+Espandendo gli esempi (decisione AN):
+
+1. **L'intensità nei contrasti:** quanto entrare duri, prima ancora di dove pressare; più palloni recuperati, più falli e cartellini, e la conseguenza la decide l'arbitro.
+2. **Lo studio dell'arbitro:** l'arbitro di L0 ha le sue caratteristiche; l'analisi dell'avversario le stima dalle sue partite (piano B), e il piano gara ne tiene conto.
+3. **Il lato debole dell'avversario:** pressare dal lato del suo piede debole, attaccare il terzino più lento; la stima del gioco avversario diventa istruzione.
+4. **Le pause idriche,** dove le regole le prevedono: un momento per parlare alla squadra, come un piccolo intervallo (in L0, con l'intervallo).
+5. **Le regole moderne dei cambi** (cinque in tre finestre più l'intervallo, il cambio per commozione cerebrale dove la competizione lo adotta), come regole modulari con la loro stagione di validità.
+6. **I rigori a fine partita:** l'ordine dei tiratori lo sceglie l'allenatore; l'analisi dice al portiere dove tirano di solito i rigoristi avversari.
+7. **Il gruppo dei leader:** il capitano e i senatori, con le loro caratteristiche psicologiche, muovono gli stati dei compagni, in campo e nello spogliatoio: un contagio fra attori, non un bonus.
+8. **La familiarità con il disegno:** una tattica usata a lungo diventa automatica, un disegno nuovo riparte da una comprensione bassa (estende la comprensione del piano, decisione AM).
+9. **I piani "se, allora":** prima della partita l'allenatore prepara gli scenari (sotto dopo il 60', in dieci, in vantaggio all'80'); scattano da soli quando la condizione si verifica, come istruzioni con il loro tick, e solo se li ha preparati: altrimenti decide lui dal vivo. Il determinismo resta: decide la condizione.
+10. **La disciplina interna:** la panchina punitiva c'è in L1, come scelta che pesa sul rapporto con l'allenatore; multe ed esclusioni dalla rosa toccano contratti e società, e sono L2.
+
+## I canali dalla panchina (decisione AP)
+
+Come arriva in campo quello che l'allenatore decide. Sostituisce l'ADR-059 §2 ("vale per tutti dal tick successivo") con un ADR nuovo, in L0.
+
+| Canale | Cosa porta | Chi lo riceve |
+|---|---|---|
+| **La voce** | Messaggi brevi: "sali!", "stringi!", un nome | Tutta la squadra, subito |
+| **Il gesto** | Messaggi semplici e precisi: alza o abbassa la linea, allarga o stringi, pressa o aspetta, rallenta o accelera, le dita per il modulo, l'avversario da seguire, la concentrazione | Chi guarda la panchina (lo sguardo e la percezione di L0); gli altri dal compagno |
+| **Il compagno che ripete** | Quello che ha ricevuto | Il capitano o il vicino lo passa, con la sua lettura del gioco |
+| **Il cambio che entra** | Anche un messaggio complesso | Chi entra lo porta a chi gli sta intorno |
+| **Il foglietto** | Qualunque cosa, anche un disegno nuovo | Si passa a una pausa del gioco, attraverso un giocatore |
+| **Le pause** (infortunio, pausa idrica, intervallo) | Tutto | Chi si avvicina alla panchina |
+
+- **Niente volume e niente distanza** (maintainer): la voce non si perde nel rumore dello stadio né con la distanza, perché sarebbe frustrante. Il limite dei canali è quanto un messaggio è complesso, non quanto è lontano chi lo deve sentire.
+- **I segnali preparati:** in settimana la squadra prova i piani "se, allora" e impara un segnale per ognuno; in partita un gesto fa scattare un piano intero. Il gesto è semplice, il contenuto è complesso. Chi non ha imparato il segnale non lo capisce: lo dice la comprensione del piano.
+- **L'allenatore espulso:** dal 2019 gli allenatori prendono i cartellini; se è espulso, la panchina passa al vice, con le sue caratteristiche, e i canali cambiano come dicono le regole. L'area tecnica (da dove si parla) è una regola, come dato.
+- **I messaggi psicologici** (incoraggiare, calmare, rimproverare) passano per gli stessi canali dei discorsi (decisione AM).
+- **Nella GUI** il manager non mima un gesto: dà l'istruzione, e il gioco sceglie il canale da quanto è complessa e da dove sono i giocatori; il manager vede chi l'ha ricevuta e chi no (i pallini evidenziati sulla lavagna), e può scegliere lui il canale ("manda il foglietto con Rossi").
+
 ## La lavagna si cambia in partita (decisione AG)
 
-Tutto quello che l'allenatore disegna e sceglie prima della partita lo può cambiare durante: le posizioni di ogni fase, le responsabilità di ognuno, il blocco, il pressing, le marcature, le transizioni, i calci piazzati. Non c'è un elenco di "cambi tattici" a parte: in partita c'è la stessa lavagna, con le stesse libertà. Ogni cambio è un'istruzione con il suo tick (ADR-059 §1-2).
+Tutto quello che l'allenatore disegna e sceglie prima della partita lo può cambiare durante: le posizioni di ogni fase, le responsabilità di ognuno, il blocco, il pressing, le marcature, le transizioni, i calci piazzati. Non c'è un elenco di "cambi tattici" a parte: in partita c'è la stessa lavagna, con le stesse libertà. Ogni cambio è un'istruzione con il suo tick (ADR-059 §1), che arriva ai giocatori per i canali della panchina (decisione AP).
 
 Lo scambio di posizione (invertire le ali, spostare un centrocampista a terzino) è un caso, non una funzione: due pallini che si spostano sulla lavagna. Le conseguenze vengono dal giocatore: il destro a sinistra si accentra per tirare, il terzino sul lato sbagliato crossa col piede debole. Nessun effetto da inventare.
 
