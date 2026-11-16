@@ -135,7 +135,9 @@ The game is built in four concentric levels; each one widens the previous and de
 | **0.2 · Market and bench** | right after the 0.1, closing L1 | contracts, transfer windows, transfers and loans, play as the sporting director; the coach's modules: signals from the bench, talks and credibility, if-then plans, the tactical meeting, the leaders |
 | **0.3 · Club** | after the first half of L2 | player growth and decline, the whole staff, agents, modern contracts, foreign leagues, the full accounts, the board; play as the president |
 | **0.4 · Career** | after L2 | the youth system and the academies, coaching licences, job offers, the dressing room, the facilities; open to everyone |
-| **1.0** | after L3 | the editor, the packs, the polished interface, on desktop |
+| **The coach's life** | after the 0.4 | optional modules: the coach's private life, the players' private lives |
+| **1.0** | after L3 | the editor (a player is born from his statistics), the packs, the importer, external plugins, accessibility (screen reader, read-aloud on hover, radio commentary), the tutorial, on desktop |
+| **1.1** | after the 1.0 | Android, then the fans and the press |
 
 ### The match against real football
 
