@@ -164,3 +164,26 @@ Di conseguenza nel 2.5D "campo intero" e "telecamera vicina" non sono più modi 
 **La vista si sposta trascinando** (maintainer, 16 novembre 2026, guardando l'anteprima dei pallini): si trascina il campo con il mouse sul desktop e con un dito su Android. Appena si trascina, "segui il pallone" si spegne da solo; un tasto "torna al pallone" (e il doppio clic o doppio tocco sul campo) lo riaccende e ricentra. Lo spostamento resta dentro i limiti del campo, con un piccolo margine.
 
 I pallini, il numero, il bordo e il pallone hanno grandezze minime in pixel, così restano leggibili a ogni zoom. Il rallentatore resta.
+
+## Il pubblico in 3D (decisione BG, 16 novembre 2026)
+
+Il 3D (desktop, Bevy se maturo, dopo la 1.1) mostra anche gli spalti e il pubblico, che legge la partita e i tifosi senza scrivere mai nella simulazione.
+
+- **Quanti e dove:** gli spettatori veri della partita (piano B) nei settori dello stadio (decisione AZ); la curva dove sta la curva, i tifosi ospiti nel loro settore.
+- **Cosa fanno:** reagiscono agli eventi veri (il gol, l'occasione, il fischio, il cartellino) e all'umore dei tifosi come attori collettivi (decisione BC, la 1.1); nelle partite che contano, le coreografie, decise dai tifosi attori. LUNA: il pubblico mostra solo quello che è successo e lo stato che i tifosi hanno.
+- **Striscioni, bandiere, maglie:** generati dai colori del club; e **l'utente può inserire i suoi** (maintainer): immagini e testi in un formato di pacchetto documentato (decisione G), sul suo computer.
+- **I cori:** un sonoro generato che segue gli eventi e l'umore (il boato, i fischi, il silenzio); e **la possibilità di inserire i cori originali** (maintainer): file audio dell'utente, sul suo computer, collegati a un club e a un momento (l'ingresso in campo, il gol, la vittoria). Noi non distribuiamo registrazioni né testi di cori: molti sono su melodie protette (domanda per il legale nel documento della consulenza).
+- **Il sonoro serve anche all'accessibilità:** con la radiocronaca e i suoni del campo (decisione BE).
+- **Nell'elenco ufficiale** solo pacchetti di pubblico con licenze pulite e senza contenuti discriminatori (decisione K).
+
+## Le scelte del 3D (decisione BH, 16 novembre 2026)
+
+Decise con i filtri (partita vera, LUNA, futuribilità), con il maintainer.
+
+1. **Gli omini sono generati,** come stemmi e figurine (decisione F): un modello parametrico dal corpo che si vede (altezza, corporatura; piano B, mai il piano A), colori e numero dalla squadra. Le animazioni vengono dalla tabella evento → animazione (decisione V), sui movimenti veri della registrazione; sono solo disegno. **Il formato è aperto:** modelli e texture dell'utente in glTF, il formato standard, dentro un pacchetto documentato (decisione G).
+2. **I volti nel 3D:** teste generate, coerenti con il modello. Le foto dei pacchetti di FM (decisione BG) restano nell'interfaccia (schede, menu, la panchina), perché una foto piatta su una testa 3D sembra una maschera (maintainer: niente facce incollate).
+3. **Le telecamere:** la televisiva (alta, di lato), la tattica dall'alto, dietro la porta, quella del giocatore, e la libera che gira intorno al campo; il "segui il pallone" come nel 2.5D.
+4. **I replay:** ogni azione si rivede da ogni telecamera, perché la registrazione è un contratto (ADR-065) e la partita è deterministica: il replay è la partita stessa, non un video. Gli highlights si compongono da soli dagli eventi più importanti, con il racconto di `ds-narrative`.
+5. **Il computer minimo:** una scheda grafica integrata di fascia media di circa cinque anni fa, a 1080p e 60 fotogrammi al secondo, con i livelli di dettaglio (il pubblico lontano disegnato come sagome, quello vicino in 3D). Il numero si fissa misurando un prototipo, non stimando; la GUI mostra il costo come per i moduli (decisione AX).
+6. **Dal 3D si danno le istruzioni:** è lo stesso gioco. I pannelli egui (la lavagna, i post-it, la scheda) girano dentro Bevy con bevy_egui; le istruzioni sono input della partita (ADR-059), non scritture della vista, quindi il determinismo resta intatto.
+
