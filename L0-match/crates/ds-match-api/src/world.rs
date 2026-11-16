@@ -72,6 +72,12 @@ pub trait World {
         let _ = home;
         Vec::new()
     }
+    /// A player's condition, `[0, 1]` (decision AB): his endurance counts
+    /// for this share.
+    fn condition(&self, player: PlayerKey) -> f64 {
+        let _ = player;
+        1.0
+    }
     /// A side's goals so far.
     fn goals(&self, home: bool) -> u8 {
         let _ = home;

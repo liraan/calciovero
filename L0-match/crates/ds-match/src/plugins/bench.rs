@@ -251,14 +251,7 @@ impl MatchState {
                 return false;
             }
             let incoming = squad.bench.remove(j);
-            self.bodies.insert(
-                incoming.id,
-                PlayerBody {
-                    height_cm: f64::from(incoming.height_cm),
-                    weight_kg: f64::from(incoming.weight_kg),
-                    fatigue: f64::from(incoming.physical.fatigue),
-                },
-            );
+            self.bodies.insert(incoming.id, PlayerBody::of(&incoming));
             let outgoing = std::mem::replace(&mut squad.players[i], incoming);
             squad.bench.push(outgoing);
             self.substituted.insert(off);

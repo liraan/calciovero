@@ -582,3 +582,30 @@ fn goals_over_the_line(records: &[TickRecord]) -> usize {
     }
     goals
 }
+
+/// P1 (decision AB): the starting state is an input of the match. A man
+/// who starts with muscle damage is never fresher than it, in either half,
+/// half-time rest included; the same match without it is another match.
+#[test]
+fn the_damage_he_brings_stays_all_match() {
+    let mut m = match_fixture(SEED).expect("fixture");
+    let hurt = m.home.players[6].id;
+    m.home.players[6].physical.damage = 0.3;
+    let (r, records) = simulate_from_seed_recorded(&m, SEED, MatchConfig::default());
+    for t in &records {
+        if let Some(a) = t.agents.iter().find(|a| a.id == hurt) {
+            assert!(
+                a.fatigue_milli >= 300,
+                "tick {}: {}",
+                t.tick,
+                a.fatigue_milli
+            );
+        }
+    }
+    let plain = simulate_from_seed(
+        &match_fixture(SEED).expect("fixture"),
+        SEED,
+        MatchConfig::default(),
+    );
+    assert_ne!(plain.state_hash, r.state_hash);
+}

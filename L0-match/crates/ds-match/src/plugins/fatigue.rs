@@ -36,7 +36,9 @@ impl MatchPlugin for Fatigue {
             let (Some((vx, vy)), Some(fatigue)) = (world.velocity(p), world.fatigue(p)) else {
                 continue;
             };
-            let endurance = world.characteristic(p, "endurance").unwrap_or(0.5);
+            // Out of condition, his endurance counts for less (decision AB).
+            let endurance = world.characteristic(p, "endurance").unwrap_or(0.5)
+                * world.condition(p).clamp(0.0, 1.0);
             let speed = dmath::hypot(vx, vy);
             world.set_fatigue(p, self.balance.after_tick(fatigue, speed, endurance));
         }
@@ -52,6 +54,7 @@ mod tests {
     struct Two {
         fatigue: [f64; 2],
         speed: [f64; 2],
+        condition: [f64; 2],
     }
 
     impl World for Two {
@@ -78,6 +81,9 @@ mod tests {
         fn characteristic(&mut self, _: PlayerKey, _: &str) -> Option<f64> {
             Some(0.5)
         }
+        fn condition(&self, p: PlayerKey) -> f64 {
+            usize::try_from(p.0).map_or(1.0, |i| self.condition[i])
+        }
     }
 
     /// P1 (ADR-063): the plugin acts through the contract only; in the move
@@ -88,12 +94,29 @@ mod tests {
         let mut w = Two {
             fatigue: [0.0, 0.0],
             speed: [10.0, 60.0],
+            condition: [1.0, 1.0],
         };
         let mut f = Fatigue::default();
         f.run(Phase::Perceive, &mut w);
         assert_eq!(w.fatigue, [0.0, 0.0]);
         f.run(Phase::Move, &mut w);
         assert!(w.fatigue[1] > w.fatigue[0]);
+    }
+
+    /// Twin test (decision AB): two players equal but for their condition,
+    /// the same run: the one out of condition tires more.
+    #[test]
+    fn out_of_condition_he_tires_sooner() {
+        let mut w = Two {
+            fatigue: [0.0, 0.0],
+            speed: [50.0, 50.0],
+            condition: [1.0, 0.5],
+        };
+        let mut f = Fatigue::default();
+        for _ in 0..600 {
+            f.run(Phase::Move, &mut w);
+        }
+        assert!(w.fatigue[1] > w.fatigue[0], "{:?}", w.fatigue);
     }
 
     #[test]

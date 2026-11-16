@@ -843,14 +843,7 @@ impl MatchState {
             bodies: {
                 let mut m = BTreeMap::new();
                 for p in match_.home.players.iter().chain(match_.away.players.iter()) {
-                    m.insert(
-                        p.id,
-                        PlayerBody {
-                            height_cm: f64::from(p.height_cm),
-                            weight_kg: f64::from(p.weight_kg),
-                            fatigue: f64::from(p.physical.fatigue),
-                        },
-                    );
+                    m.insert(p.id, PlayerBody::of(p));
                 }
                 m
             },
@@ -1043,7 +1036,8 @@ impl MatchState {
             // The half-time rest (plan L0-CLOSE step 6).
             let f = ctx.hidden.fatigue_balance();
             for b in self.bodies.values_mut() {
-                b.fatigue = f.after_half_time(b.fatigue);
+                // The damage stays (decision AB).
+                b.fatigue = f.after_half_time(b.fatigue).max(b.damage);
             }
         }
         // Law 8: the team that wins the toss chooses; it takes the kick-off,

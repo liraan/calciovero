@@ -73,9 +73,16 @@ impl World for EngineWorld<'_> {
     fn set_fatigue(&mut self, p: PlayerKey, fatigue: f64) {
         if let Some(id) = self.id(p) {
             if let Some(b) = self.bodies.get_mut(&id) {
-                b.fatigue = fatigue;
+                // Never below the damage he brought (decision AB).
+                b.fatigue = fatigue.max(b.damage);
             }
         }
+    }
+
+    fn condition(&self, p: PlayerKey) -> f64 {
+        self.id(p)
+            .and_then(|id| self.bodies.get(&id))
+            .map_or(1.0, |b| b.condition)
     }
 
     fn characteristic(&mut self, p: PlayerKey, name: &str) -> Option<f64> {

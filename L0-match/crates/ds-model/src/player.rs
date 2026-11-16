@@ -77,12 +77,22 @@ impl RoleId {
 /// See `L0-match/specs/03-entities-minimal.md` §2.2.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct PhysicalStateMinimal {
-    /// Freshness, 0.0–1.0.
+    /// Condition, 0.0–1.0: his fitness, built over weeks (decision AB); out
+    /// of condition he tires sooner.
     pub condition: f32,
     /// Match sharpness, 0.0–1.0.
     pub match_sharpness: f32,
-    /// Accumulated fatigue, 0.0–1.0.
+    /// Accumulated fatigue, 0.0–1.0: his physical freshness at the kick-off
+    /// is its complement (decision AB).
     pub fatigue: f32,
+    /// Mental fatigue at the kick-off, 0.0–1.0 (decision AB, the cognitive
+    /// freshness): with the physical, it slows his thought.
+    #[serde(default)]
+    pub cognitive_fatigue: f32,
+    /// Muscle damage at the kick-off, 0.0–1.0 (decision AB): a fatigue the
+    /// half-time rest does not give back.
+    #[serde(default)]
+    pub damage: f32,
 }
 
 impl PhysicalStateMinimal {
@@ -100,6 +110,8 @@ impl PhysicalStateMinimal {
             condition,
             match_sharpness,
             fatigue,
+            cognitive_fatigue: 0.0,
+            damage: 0.0,
         })
     }
 }
@@ -110,6 +122,8 @@ impl Default for PhysicalStateMinimal {
             condition: 1.0,
             match_sharpness: 1.0,
             fatigue: 0.0,
+            cognitive_fatigue: 0.0,
+            damage: 0.0,
         }
     }
 }

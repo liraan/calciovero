@@ -166,6 +166,39 @@ pub struct PlayerBody {
     pub weight_kg: f64,
     /// Fatigue, 0.0 to 1.0 (Plane B, state).
     pub fatigue: f64,
+    /// Mental fatigue from before the match, 0.0 to 1.0 (decision AB).
+    pub mental: f64,
+    /// Condition, 0.0 to 1.0 (decision AB): his endurance counts for this
+    /// share.
+    pub condition: f64,
+    /// Muscle damage, 0.0 to 1.0 (decision AB): his fatigue never goes
+    /// below it in this match.
+    pub damage: f64,
+}
+
+impl PlayerBody {
+    /// The body of a player as he starts (decision AB): his starting
+    /// state, the damage already in his fatigue.
+    #[must_use]
+    pub fn of(p: &ds_model::Player) -> Self {
+        let s = p.physical;
+        Self {
+            height_cm: f64::from(p.height_cm),
+            weight_kg: f64::from(p.weight_kg),
+            fatigue: f64::from(s.fatigue.max(s.damage)),
+            mental: f64::from(s.cognitive_fatigue),
+            condition: f64::from(s.condition),
+            damage: f64::from(s.damage),
+        }
+    }
+
+    /// How tired his mind is: the physical fatigue and the mental one he
+    /// brought, together (Smith et al. 2016: mental fatigue slows the
+    /// decision), at most 1.
+    #[must_use]
+    pub fn mind_fatigue(&self) -> f64 {
+        (self.fatigue + self.mental).min(1.0)
+    }
 }
 
 /// The state of the ball (MD-25). `Possessed` means at the carrier's feet
@@ -1599,6 +1632,23 @@ pub fn keeper_across(ball: (f64, f64), goal: (f64, f64), half: f64, x: f64) -> f
 
 #[cfg(test)]
 mod tests {
+
+    /// Twin test (decision AB): the same physical fatigue, and the mental
+    /// one he brought: his mind is the more tired; never above 1.
+    #[test]
+    fn the_mental_fatigue_he_brings_tires_his_mind() {
+        let body = |mental| PlayerBody {
+            height_cm: 180.0,
+            weight_kg: 78.0,
+            fatigue: 0.3,
+            mental,
+            condition: 1.0,
+            damage: 0.0,
+        };
+        assert!(body(0.2).mind_fatigue() > body(0.0).mind_fatigue());
+        assert!((body(0.9).mind_fatigue() - 1.0).abs() < 1e-12);
+    }
+
     /// P1 (`SIM_VERSION` 124): the keeper stands on the bisector of the
     /// angle the ball makes with his posts: in the middle for a central
     /// ball, towards the near post for a wide one, the two posts at equal
@@ -1663,6 +1713,9 @@ mod tests {
                         height_cm: 180.0,
                         weight_kg: 78.0,
                         fatigue: 0.0,
+                        mental: 0.0,
+                        condition: 1.0,
+                        damage: 0.0,
                     },
                 );
             }

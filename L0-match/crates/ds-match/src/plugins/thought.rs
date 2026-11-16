@@ -85,7 +85,10 @@ impl MatchState {
                 player: attacker,
                 crowding,
                 nearest_threat,
-                fatigue: self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
+                fatigue: self
+                    .bodies
+                    .get(&attacker)
+                    .map_or(0.0, crate::spatial::PlayerBody::mind_fatigue),
             });
         self.latencies
             .insert(attacker, tick.saturating_add(latency.ticks));
@@ -852,7 +855,10 @@ impl MatchState {
                 player: id,
                 crowding,
                 nearest_threat,
-                fatigue: self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
+                fatigue: self
+                    .bodies
+                    .get(&id)
+                    .map_or(0.0, crate::spatial::PlayerBody::mind_fatigue),
             })
             .ticks
     }
@@ -936,7 +942,10 @@ impl MatchState {
                     (vx.mul_add(sy, -(vy * sx)) / (v * s)).abs()
                 }
             }),
-            fatigue: self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
+            fatigue: self
+                .bodies
+                .get(&attacker)
+                .map_or(0.0, crate::spatial::PlayerBody::mind_fatigue),
         };
         let outcome = ctx.hidden.resolve_shot(&ctx_shot);
         // F.3-b3: carrier released, ball flies. Goal (or Save) is
