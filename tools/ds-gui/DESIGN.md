@@ -32,6 +32,8 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 5. **I badge si guadagnano** da quello che il giocatore fa davvero in partita (per esempio "regista", "incursore"); il ruolo è un'etichetta (ADR-017).
 6. **Lo stile segue i tre temi** della lavagna e i colori della squadra.
 
+**Stato:** il primo render (16 novembre 2026: intestazione con badge, la legenda delle fasce, i quattro gruppi da quattro voci, la firma, la torta di otto statistiche con il 50° tratteggiato) è accettato dal maintainer come base. Si raffina con i betatester, non prima.
+
 ## Android (ADR-061)
 
 - **Verticale:** la proposta A, la lavagna con un cassetto che contiene i post-it.
