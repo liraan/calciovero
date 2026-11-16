@@ -161,6 +161,13 @@ impl DuelBalance {
                 ),
             ),
         );
+        // A mean of what makes it (SIM 131, OI-117): the three forces of a
+        // contact are read on the same scale.
+        let weights = milli(self.defender_tackling_milli)
+            + milli(self.defender_explosive_milli)
+            + milli(self.defender_force_milli)
+            + milli(self.defender_body_milli);
+        let force = force / weights.max(0.001);
         if slide {
             force + milli(self.slide_bonus_milli)
         } else {
@@ -171,6 +178,17 @@ impl DuelBalance {
     /// The carrier's contact force (keeping the ball).
     #[must_use]
     pub fn carrier_force(&self, d: &DuelBody, first_touch: f32) -> f32 {
+        self.carrier_sum(d, first_touch) / self.carrier_weights().max(0.001)
+    }
+
+    fn carrier_weights(&self) -> f32 {
+        milli(self.carrier_first_touch_milli)
+            + milli(self.carrier_explosive_milli)
+            + milli(self.carrier_force_milli)
+            + milli(self.carrier_body_milli)
+    }
+
+    fn carrier_sum(&self, d: &DuelBody, first_touch: f32) -> f32 {
         milli(self.carrier_first_touch_milli).mul_add(
             first_touch,
             milli(self.carrier_explosive_milli).mul_add(
@@ -194,17 +212,31 @@ impl DuelBalance {
         first_touch: f32,
         dribbling: f32,
     ) -> f32 {
+        // Each a mean of what makes it (SIM 131, OI-117): before, the
+        // shield added its strength and balance on top of the carrier's
+        // force, on a scale a third larger than the defender's, and the
+        // carrier who shielded kept 99% of the contacts.
         match answer {
-            CarrierAnswer::Shield => milli(self.shield_force_milli).mul_add(
-                d.maximal_force,
-                milli(self.shield_body_milli)
-                    .mul_add(d.body_control, self.carrier_force(d, first_touch)),
-            ),
-            CarrierAnswer::TakeOn => milli(self.dribble_dribbling_milli).mul_add(
-                dribbling,
-                milli(self.dribble_explosive_milli)
-                    .mul_add(d.explosive, milli(self.dribble_body_milli) * d.body_control),
-            ),
+            CarrierAnswer::Shield => {
+                milli(self.shield_force_milli).mul_add(
+                    d.maximal_force,
+                    milli(self.shield_body_milli)
+                        .mul_add(d.body_control, self.carrier_sum(d, first_touch)),
+                ) / (self.carrier_weights()
+                    + milli(self.shield_force_milli)
+                    + milli(self.shield_body_milli))
+                .max(0.001)
+            }
+            CarrierAnswer::TakeOn => {
+                milli(self.dribble_dribbling_milli).mul_add(
+                    dribbling,
+                    milli(self.dribble_explosive_milli)
+                        .mul_add(d.explosive, milli(self.dribble_body_milli) * d.body_control),
+                ) / (milli(self.dribble_dribbling_milli)
+                    + milli(self.dribble_explosive_milli)
+                    + milli(self.dribble_body_milli))
+                .max(0.001)
+            }
         }
     }
 
@@ -541,5 +573,20 @@ mod tests {
             b.choose(0.5, 0.95, 0.5, (true, false, true)),
             TackleKind::Slide
         );
+    }
+
+    /// Twin test (OI-117, SIM 131): the same average body and abilities,
+    /// once tackling, once shielding, once taking the man on: the three
+    /// forces are means of what makes them, so they come out equal. Before,
+    /// the shield stood a third above the tackle and the carrier who
+    /// shielded kept 99% of the contacts (Wyscout: the carrier wins 50%).
+    #[test]
+    fn equal_men_meet_with_equal_forces() {
+        let b = DuelBalance::load();
+        let tackle = b.defender_force(&AVERAGE, 0.5, false);
+        let shield = b.answer_force(CarrierAnswer::Shield, &AVERAGE, 0.5, 0.5);
+        let take_on = b.answer_force(CarrierAnswer::TakeOn, &AVERAGE, 0.5, 0.5);
+        assert!((tackle - shield).abs() < 1e-6, "{tackle} {shield}");
+        assert!((tackle - take_on).abs() < 1e-6, "{tackle} {take_on}");
     }
 }
