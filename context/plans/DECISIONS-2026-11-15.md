@@ -29,3 +29,17 @@ Prese dal maintainer discutendo come aiutare chi gioca restando coperti legalmen
 | I | "Aggiorna il mondo" produce una versione nuova del pacchetto dell'utente, con data e impronta nel manifesto, e vale per le carriere nuove | ADR di L3 (importatore) |
 | J | Una carriera è un mondo a sé, fatto delle scelte dell'utente, e va rispettata: nessun dato reale entra in una carriera in corso, nemmeno a inizio stagione. Chi vuole i dati aggiornati ricomincia. Non è un'idea da tenere da parte | ADR di L3 (importatore) |
 | K | Distribuzione: non ospitiamo e non linkiamo pacchetti con materiale protetto; l'elenco ufficiale contiene solo pacchetti con licenze pulite; plugin e pacchetti non ufficiali si caricano col consenso dell'utente (decisione 4); un contatto per le richieste di rimozione nel README | ADR di L3 (pacchetti) |
+
+## Decisioni del 16 novembre 2026: le viste e il modo di lavorare
+
+Prese dal maintainer discutendo il 3D e le fragilità della strada. Il quadro d'insieme è in [`GAME.md`](GAME.md).
+
+| # | Decisione | Dove va |
+|---|---|---|
+| L | L0 si chiude con almeno 16 metriche su 22 in banda, e ogni metrica fuori banda con la sua causa scritta e il suo OI; il resto del realismo continua dopo, senza bloccare | `GAME.md` passo 1; `L0-CLOSE.md` |
+| M | Prima completo, poi perfetto: la priorità è completare il gioco; l'aderenza alla realtà è una tendenza e uno degli scopi, non l'unico. Le decisioni delegate restano da rivedere senza un tetto | `GAME.md` |
+| N | Il contenuto della 0.1 è congelato nella lista di `GAME.md`; ogni idea nuova va dopo la 0.1, salvo decisione esplicita del maintainer | `GAME.md` |
+| O | Un solo scrittore su main: Claude Code. Chi lavora in parallelo usa un ramo e lascia la riga di merge | RULES C1 |
+| P | Il golden gira anche su ARM64 nella CI, prima della prova del 2.5D su Android | CI (`.github/workflows/ci.yml`) |
+| Q | Prima della 0.1 un legale rivede le decisioni F–K: è compito del maintainer, con un promemoria quando L1 arriva al passo 9 | `GAME.md`, lista della 0.1 |
+| R | Le tre viste: 2D a caratteri nel terminale, 2.5D nella GUI su desktop e Android (sostituisce il 2D), 3D solo desktop con Bevy se maturo (Fyrox escluso). Il 2.5D si fa appena L0 è chiuso, prima di L1, e appena c'è entra nel README | `tools/ds-gui/DESIGN.md` |
