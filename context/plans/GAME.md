@@ -23,19 +23,21 @@
 Ogni passo si chiude con la sua prova, e il successivo non parte prima.
 
 1. **La vista 2.5D** (sezione "Il lavoro del 2.5D" di `DESIGN.md`; prima della chiusura di L0, decisione S: le metriche più lontane dal vero sono in altezza, e il 2.5D serve a vederne le cause). Prova: la finestra mostra la partita inclinata, con le figurine, il pallone con l'ombra e l'interpolazione alla frequenza dello schermo; il golden identico; il README con l'animazione del 2.5D (WebP a 60 fotogrammi, o MP4 se GitHub non la anima).
-2. **Chiudere L0**, con il 2.5D come strumento: prima OI-102 (il gioco aereo), poi i tiri da vicino (OI-100), poi il resto. Prova: almeno **16 metriche su 22 in banda**, e ogni metrica fuori banda con la sua causa scritta e il suo OI (decisione L). Poi il golden su glibc, musl e Windows, la durata di una partita in `STATE.md` e la partita di prova preparata per il maintainer.
-3. **L1, i dieci passi di [`L1.md`](L1.md).** Prova: dieci stagioni con lo stesso hash, il formato reale, i plugin spenti.
-4. **La versione 0.1 · Stagione.** Prova: la lista congelata qui sotto, completa.
-5. **L2, prima metà** (contratti, finanze, mercato, gli altri club, osservatori). Prova: dieci anni di mercato deterministici. Poi la **0.2 · Mercato**.
-6. **L2, seconda metà** (crescita, vivaio, tattica nel tempo, società, staff, strutture, spogliatoio, l'allenatore). Prova: una carriera di dieci anni con lo stesso hash. Poi la **0.3 · Carriera**.
-7. **L3.** Prova: un dato modificato dall'editor e un pacchetto esterno lasciano la partita deterministica. Poi la **1.0** sul desktop.
-8. **Android**, poi la **1.1** (stampa e tifosi), poi il **3D** sul desktop, se Bevy è maturo.
+2. **La panchina in partita** (decisione T, dentro L0, è completezza): i cambi decisi dal vivo dalla GUI; ADR-059 passo 3 (istruzioni rapide, transizioni, cambio di modulo, istruzioni individuali); l'allenatore avversario che legge la partita, con il momento in cui reagisce fissato come grado 2 sui cambi veri del riferimento Wyscout; il colpo che costringe a un cambio (OI-110). Prova: un cambio e un'istruzione dati dal vivo si rigiocano identici dal replay; i test gemelli dell'allenatore avversario (sotto di due gol all'85' contro in vantaggio); il golden su glibc e musl.
+3. **Chiudere L0**, con il 2.5D come strumento: prima OI-102 (il gioco aereo), poi i tiri da vicino (OI-100), poi il resto. Prova: almeno **16 metriche su 22 in banda**, e ogni metrica fuori banda con la sua causa scritta e il suo OI (decisione L). Poi il golden su glibc, musl e Windows, la durata di una partita in `STATE.md` e la partita di prova preparata per il maintainer.
+4. **L1, i dieci passi di [`L1.md`](L1.md).** Prova: dieci stagioni con lo stesso hash, il formato reale, i plugin spenti.
+5. **La versione 0.1 · Stagione.** Prova: la lista congelata qui sotto, completa.
+6. **L2, prima metà** (contratti, finanze, mercato, gli altri club, osservatori). Prova: dieci anni di mercato deterministici. Poi la **0.2 · Mercato**.
+7. **L2, seconda metà** (crescita, vivaio, tattica nel tempo, società, staff, strutture, spogliatoio, l'allenatore). Prova: una carriera di dieci anni con lo stesso hash. Poi la **0.3 · Carriera**.
+8. **L3.** Prova: un dato modificato dall'editor e un pacchetto esterno lasciano la partita deterministica. Poi la **1.0** sul desktop.
+9. **Android**, poi la **1.1** (stampa e tifosi), poi il **3D** sul desktop, se Bevy è maturo.
 
 ## La 0.1 · Stagione, contenuto congelato
 
 Decisione N: quello che non è in questa lista va dopo la 0.1, salvo decisione esplicita del maintainer.
 
 - [ ] La vista 2.5D nella GUI (passo 1)
+- [ ] La panchina in partita: cambi dal vivo, istruzioni rapide, l'allenatore avversario che legge la partita (passo 2)
 - [ ] L0 chiuso (passo 2)
 - [ ] L1 completo: tre serie, la coppa, il calendario, le classifiche, l'allenatore, il corpo, la disciplina, la settimana
 - [ ] La GUI della stagione: la lavagna, i post-it a linguette, il calendario con l'agenda, la rosa, la classifica, la scheda giocatore, la partita
