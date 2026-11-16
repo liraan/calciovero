@@ -1,6 +1,6 @@
 # L1 · L'allenatore (`ds-coach`)
 
-Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni AF, AG, AH e AI (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
+Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni da AF ad AJ (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
 
 Il quadro è in [`L1.md`](L1.md); le istruzioni in partita sono dell'[ADR-059](../../doctrine/adr/059-the-coach-speaks-during-the-match.md).
 
@@ -34,7 +34,7 @@ Chi gioca a Calcio Vero non è per forza l'allenatore: all'inizio della carriera
 - **I ruoli sono dati.** Ogni ruolo è dichiarato in una scheda: quali scelte gli spettano, cosa vede e con che precisione (un presidente non conosce la condizione dei giocatori come l'allenatore che li allena), a chi risponde. Ogni scelta di ogni plugin dichiara il ruolo a cui spetta. Un modder può aggiungere un ruolo (il preparatore dei portieri, il team manager) senza toccare il nucleo.
 - **Le scelte degli altri restano degli altri.** Se sei il presidente, la formazione la fa l'allenatore attore, e la partita la guardi dalla tribuna; se sei l'allenatore, i giocatori li compra il direttore sportivo attore, e tu glieli chiedi. Si chiede, si propone, si discute attraverso i canali del ruolo; chi decide decide con le sue caratteristiche.
 - **In L1 c'è il meccanismo, con i posti che L1 ha.** Le scelte di L1 (la formazione, il piano, l'allenamento) sono già dichiarate con il loro ruolo dal primo giorno, così L2 aggiunge ruoli senza riscrivere niente. Il posto giocabile in L1 è l'allenatore; gli altri posti arrivano con i plugin che hanno le loro scelte (mercato, staff, società, finanze: L2).
-- Le domande aperte sul ruolo sono in fondo a questo file.
+- Le risposte del maintainer sul ruolo sono più sotto (decisione AJ).
 
 ## L'albero dell'allenatore
 
@@ -109,11 +109,11 @@ Nessun giocatore squalificato, infortunato o fuori lista. La lista si fissa all'
 - **Le regole:** nessuna formazione con un giocatore squalificato, infortunato o fuori lista; panchina e cambi come dicono le regole della stagione.
 - **Taratura (grado 2, sui dati tenuti da parte):** la distribuzione dei moduli, delle altezze del blocco e della rotazione nelle settimane fitte del campionato simulato contro quelle vere.
 
-## Domande aperte sul ruolo
+## Il ruolo: le risposte del maintainer (decisione AJ, 16 novembre 2026)
 
-- [ ] Un giocatore umano può tenere due posti insieme (il presidente che fa anche il direttore sportivo)?
-- [ ] Si cambia posto durante la carriera (il vice che diventa allenatore, l'allenatore che diventa direttore tecnico), e come: scelta tra una stagione e l'altra, o una carriera vera, con offerte ed esoneri (L2)?
-- [ ] Il vice umano in L1: propone all'allenatore attore, che accetta o no secondo le sue caratteristiche. In L1 o con lo staff di L2?
+1. **Un posto solo, ma chi sta sopra può prendere il posto di chi sta sotto.** Il giocatore umano tiene un posto; i ruoli hanno una gerarchia (dichiarata nelle schede dei ruoli), e chi sta più in alto può avocare a sé una scelta di un ruolo sotto di lui: il presidente che impone un acquisto al direttore sportivo, il direttore tecnico che si siede in panchina dopo un esonero. Vale per l'umano e per gli attori. Le conseguenze sono causate, non assegnate: chi si vede togliere una scelta lo legge con le sue caratteristiche (la fiducia, il rapporto con chi l'ha scavalcato).
+2. **La carriera con le offerte di lavoro.** Durante la carriera arrivano offerte da altri club, anche per ruoli diversi da quello che hai. Le fanno i dirigenti attori di quei club, con le loro caratteristiche, leggendo la tua storia: i risultati e le scelte che hai fatto, come le vede chiunque (piano B). Serve la società come attori: L2.
+3. **Il resto più avanti.** Il vice umano, gli altri posti giocabili e la gerarchia che avoca arrivano con i plugin che hanno le loro scelte. In L1 resta il meccanismo: ogni scelta dichiara il suo ruolo dal primo giorno.
 
 ## Fuori da L1
 
