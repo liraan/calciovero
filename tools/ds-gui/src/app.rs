@@ -28,6 +28,9 @@ const SPEEDS: [f64; 5] = [1.0, 4.0, 16.0, 64.0, 256.0];
 struct Game {
     ticks: Vec<NarratedTick>,
     records: Vec<ds_match::TickRecord>,
+    /// Each player's gestures, from the facts of the match: the tick and
+    /// the gesture (DESIGN.md: an animation only from a fact).
+    gestures: BTreeMap<PlayerId, Vec<(usize, scene::Gesture)>>,
     names: BTreeMap<PlayerId, String>,
     why: String,
     pitch_cm: (i32, i32),
@@ -183,6 +186,7 @@ impl App {
                     ds_match::simulate_from_seed_recorded(&m, self.seed, MatchConfig::default());
                 let why = friendly::why_conceded(&m, result.events.events());
                 let kept = records.clone();
+                let gestures = gestures(&records, result.events.events());
                 let ticks = ds_match::narrate_ticks(&m, &result.events, records);
                 let names = m
                     .home
@@ -196,6 +200,7 @@ impl App {
                 self.game = Some(Game {
                     ticks,
                     records: kept,
+                    gestures,
                     names,
                     why,
                     pitch_cm: (
@@ -509,6 +514,7 @@ impl App {
             scene::Motion {
                 phase,
                 speed: f.speed,
+                gesture: self.gesture_now(f.id),
             },
         );
         let sock = fill.gamma_multiply(0.6);
@@ -522,6 +528,28 @@ impl App {
         let head = pos(&head_at);
         painter.circle_filled(head, head_r, t.skin);
         (head, head_r)
+    }
+
+    /// The gesture `id` makes at the instant drawn, and how far into it:
+    /// each gesture a few ticks either side of its fact (a kick loads
+    /// before the contact, a dive lasts after it).
+    fn gesture_now(&self, id: PlayerId) -> Option<(scene::Gesture, f32)> {
+        let game = self.game.as_ref()?;
+        #[allow(clippy::cast_precision_loss)]
+        let t = self.tick as f64 + self.carry - 1.0;
+        game.gestures.get(&id)?.iter().find_map(|&(tick, g)| {
+            let (before, after) = match g {
+                scene::Gesture::Kick => (5.0, 2.0),
+                scene::Gesture::Jump => (3.0, 4.0),
+                scene::Gesture::Lunge => (2.0, 3.0),
+                scene::Gesture::Dive(_) | scene::Gesture::Slide => (2.0, 8.0),
+            };
+            #[allow(clippy::cast_precision_loss)]
+            let start = tick as f64 - before;
+            let p = (t - start) / (before + after);
+            #[allow(clippy::cast_possible_truncation)]
+            (0.0..=1.0).contains(&p).then_some((g, p as f32))
+        })
     }
 
     /// The markings of Law 1 (`laws.json`) and the goals in their height
@@ -603,6 +631,66 @@ impl App {
             }
         }
     }
+}
+
+/// Every player's gestures, from the facts of the match (DESIGN.md, the
+/// table of the animations): the kick of a pass, a cross, a shot or a
+/// clearance; the jump of a header or an aerial duel; the keeper's dive
+/// towards the ball's side; the slide of a sliding foul; the lunge of a
+/// tackle won.
+fn gestures(
+    records: &[ds_match::TickRecord],
+    events: &[ds_stats::MatchEvent],
+) -> BTreeMap<PlayerId, Vec<(usize, scene::Gesture)>> {
+    use ds_stats::EventType as E;
+    let mut out: BTreeMap<PlayerId, Vec<(usize, scene::Gesture)>> = BTreeMap::new();
+    let flag = |e: &ds_stats::MatchEvent, k: &str| {
+        e.fields.get(k).and_then(serde_json::Value::as_bool) == Some(true)
+    };
+    for (k, r) in records.iter().enumerate() {
+        for e in events.get(r.events.clone()).unwrap_or(&[]) {
+            let Some(ds_core::ids::ActorId::Player(p)) = e.actor else {
+                continue;
+            };
+            let header = e
+                .fields
+                .get("shot_type")
+                .and_then(serde_json::Value::as_str)
+                == Some("header")
+                || flag(e, "header");
+            let g = match e.event_type {
+                E::Shot | E::Clearance if header => scene::Gesture::Jump,
+                E::Duel if flag(e, "aerial") => scene::Gesture::Jump,
+                E::Pass | E::Cross | E::Shot | E::Clearance => scene::Gesture::Kick,
+                E::Save => {
+                    // Towards the ball's side, as he faces.
+                    let side = r.agents.iter().find(|a| a.id == p).map_or(1.0, |a| {
+                        #[allow(
+                            clippy::disallowed_methods,
+                            reason = "drawing only: the view never feeds the simulation"
+                        )]
+                        let (s, c) = f32::from(a.heading).to_radians().sin_cos();
+                        #[allow(clippy::cast_precision_loss)]
+                        let (dx, dy) = (
+                            (r.ball.position.0 - a.position.0) as f32,
+                            (r.ball.position.1 - a.position.1) as f32,
+                        );
+                        if dx.mul_add(c, -(dy * s)) >= 0.0 {
+                            1.0
+                        } else {
+                            -1.0
+                        }
+                    });
+                    scene::Gesture::Dive(side)
+                }
+                E::Foul if flag(e, "slide") => scene::Gesture::Slide,
+                E::Tackle => scene::Gesture::Lunge,
+                _ => continue,
+            };
+            out.entry(p).or_default().push((k, g));
+        }
+    }
+    out
 }
 
 const fn block_label(b: BlockHeight) -> &'static str {

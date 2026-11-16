@@ -301,20 +301,45 @@ pub struct Motion {
     pub phase: f32,
     /// His speed, cm a tick.
     pub speed: f32,
+    /// The gesture a fact of the match gives him now, and how far into it
+    /// he is, `[0, 1]`.
+    pub gesture: Option<(Gesture, f32)>,
+}
+
+/// A gesture, only from a fact of the match (DESIGN.md, the table of the
+/// animations).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Gesture {
+    /// The leg that loads and kicks: a pass, a cross, a shot, a clearance.
+    Kick,
+    /// The jump with the arms high: a header, an aerial duel.
+    Jump,
+    /// The keeper's dive, towards the side `1` (his right) or `-1`.
+    Dive(f32),
+    /// The slide along the grass: a sliding foul.
+    Slide,
+    /// The standing tackle: the lunge, one leg out.
+    Lunge,
 }
 
 /// The articulated figure (DESIGN.md, "Gli omini articolati"): legs,
 /// body, arms and head, from his spot, his facing and his stride, at true
-/// size, never thinner than `MIN_LINE`. Built in the pitch's space and
-/// projected, so it has the camera's perspective.
+/// size, never thinner than `MIN_LINE`, in the pose of the gesture a fact
+/// gives him. Built in the pitch's space and projected, so it has the
+/// camera's perspective.
 #[must_use]
-#[allow(clippy::many_single_char_names)] // drawing geometry
+#[allow(
+    clippy::many_single_char_names,
+    clippy::too_many_lines,
+    clippy::suboptimal_flops
+)] // drawing geometry
 pub fn limbs(
     geom: &Geometry,
     (x, y): (f32, f32),
     heading: f32,
     m: Motion,
 ) -> (Vec<Limb>, Screen, f32) {
+    use std::f32::consts::PI;
     #[allow(
         clippy::disallowed_methods,
         reason = "drawing only: the view never feeds the simulation"
@@ -323,13 +348,70 @@ pub fn limbs(
     let fwd = (hs, hc);
     let side = (hc, -hs);
     // A full stride at a run (8 m/s, 80 cm a tick), barely moving still.
-    let amp = (m.speed / 80.0).clamp(0.0, 1.0) * 45.0;
-    let lean = (m.speed / 80.0).clamp(0.0, 1.0) * 14.0;
+    let mut amp = (m.speed / 80.0).clamp(0.0, 1.0) * 45.0;
+    let mut lean = (m.speed / 80.0).clamp(0.0, 1.0) * 14.0;
+    // The pose of the gesture: how high he is off the grass, how low his
+    // hips, where his arms and his kicking leg go, how far he lies over.
+    let mut lift = 0.0f32;
+    let mut hip_z = 92.0f32;
+    let mut hands_z = 92.0f32;
+    let mut kick: Option<(f32, f32)> = None;
+    let mut over = 0.0f32;
+    if let Some((g, p)) = m.gesture {
+        #[allow(
+            clippy::disallowed_methods,
+            reason = "drawing only: the view never feeds the simulation"
+        )]
+        let arc = (PI * p).sin();
+        match g {
+            Gesture::Kick => {
+                amp = 0.0;
+                // Back as he loads it, through as he strikes.
+                let swing = if p < 0.6 {
+                    -40.0 * p / 0.6
+                } else {
+                    (p - 0.6) / 0.4 * 95.0 - 40.0
+                };
+                kick = Some((swing, (swing.max(0.0) / 55.0) * 40.0));
+            }
+            Gesture::Jump => {
+                amp = 0.0;
+                lift = arc * 45.0;
+                hands_z = 92.0 + arc * 120.0;
+            }
+            Gesture::Dive(sgn) => {
+                amp = 0.0;
+                over = sgn * arc;
+                hip_z = 92.0 - arc * 60.0;
+                hands_z = 92.0 + arc * 100.0;
+            }
+            Gesture::Slide => {
+                amp = 0.0;
+                hip_z = 92.0 - arc * 70.0;
+                lean = -arc * 25.0;
+                kick = Some((arc * 80.0, 5.0));
+            }
+            Gesture::Lunge => {
+                amp = 0.0;
+                lean = arc * 25.0;
+                kick = Some((arc * 60.0, 8.0));
+            }
+        }
+    }
     let at = |f: f32, sd: f32, z: f32| -> World {
         (
             f.mul_add(fwd.0, sd.mul_add(side.0, x)),
             f.mul_add(fwd.1, sd.mul_add(side.1, y)),
-            z,
+            z + lift,
+        )
+    };
+    // Lying over to a side (the dive): the upper body leans along `side`.
+    let up = |f: f32, sd: f32, z: f32| -> World {
+        let off = over * (z - hip_z).max(0.0) * 0.9;
+        at(
+            f,
+            off.mul_add(1.0, sd),
+            z - over.abs() * (z - hip_z).max(0.0) * 0.6,
         )
     };
     let w = |cm: f32, p: World| geom.len_at(cm, p).max(MIN_LINE);
@@ -346,24 +428,29 @@ pub fn limbs(
     };
     for (k, sd) in [(1.0f32, 11.0f32), (-1.0, -11.0)] {
         let swing = k * ps * amp;
-        let lift = (k * pc).max(0.0) * amp * 0.25;
-        let hip = at(lean * 0.3, sd, 92.0);
-        let foot = at(swing, sd, lift);
-        let knee = at(swing.mul_add(0.5, 6.0), sd, f32::midpoint(lift, 92.0));
+        let step = (k * pc).max(0.0) * amp * 0.25;
+        let hip = at(lean * 0.3, sd, hip_z);
+        // The kicking leg is his right one (k = 1).
+        let (foot_f, foot_z) = match kick {
+            Some((f, z)) if k > 0.0 => (f, z),
+            _ => (swing, step),
+        };
+        let foot = at(foot_f, sd, foot_z);
+        let knee = at(foot_f.mul_add(0.5, 6.0), sd, f32::midpoint(foot_z, hip_z));
         seg(hip, knee, 15.0, Part::Sock);
         seg(knee, foot, 12.0, Part::Sock);
         // The arm swings against the leg on its side.
-        let shoulder = at(lean, sd * 1.8, 145.0);
-        let hand = at(-swing.mul_add(0.6, -lean), sd * 2.0, 92.0);
+        let shoulder = up(lean, sd * 1.8, hip_z + 53.0);
+        let hand = up(-swing.mul_add(0.6, -lean), sd * 2.4, hands_z);
         seg(shoulder, hand, 9.0, Part::Shirt);
     }
     seg(
-        at(lean * 0.3, 0.0, 92.0),
-        at(lean, 0.0, 150.0),
+        at(lean * 0.3, 0.0, hip_z),
+        up(lean, 0.0, hip_z + 58.0),
         32.0,
         Part::Shirt,
     );
-    let head_at = at(lean * 1.1, 0.0, 168.0);
+    let head_at = up(lean * 1.1, 0.0, hip_z + 76.0);
     let head = geom.project(head_at).unwrap_or(Screen {
         x: 0.0,
         y: 0.0,
