@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `0c096ca` - "docs(state): the first presser is missing; the next action"
+**Last commit verified:** `b3f0dd7` - "docs(state): the nearest defender marks instead of pressing beyond 6 m; the next action"
 
 ## Dove siamo (2026-11-14)
 
@@ -27,6 +27,18 @@
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**La notte del 15-16 novembre (SIM 127-133), su main.** Il motore misurato contro dati veri nuovi (tracking Metrica, StatsBomb open data, Wyscout grezzo, FIFA), ogni numero nuovo con la sua fonte in `balance/SOURCES.md`. Da 9 a 11 metriche in banda su 22.
+- 127 e 129: l'ampiezza del blocco misurata sul tracking (47 m con la palla in gioco, 37 senza; al 127 avevo contato anche la palla ferma, errore mio, corretto al 129); la griglia del 4-4-2 letta come i lati del blocco.
+- 128: il pallone rimbalza (FIFA, rimbalzo verticale 0,60-1,00 m da 2 m: 0,632).
+- 130: ogni pallone libero si riceve come un passaggio (ADR-058).
+- 131: le tre forze del contrasto sulla stessa scala (la protezione vinceva il 99%).
+- 132: il passaggio e la spazzata sotto pressione (il colpo ignorava la pressione).
+- Corretto `ds-reference`: non contava i passaggi intercettati; il passaggio non era troppo preciso, era troppo intercettato.
+- 133: l'avversario reagisce al pallone calciato prima di giocarlo. Passaggi riusciti 83,9% (Wyscout 83,3%), tiri 19.7, in porta 10.5, gol 2.35, parate e angoli in banda.
+- Provati e tolti, con la misura in STATE: la fascia della palla sciolta dal lato del difensore, il vantaggio uniforme di chi entra in contrasto (rompeva i dribbling), il duello per il pallone sciolto nello stesso tick, il fallo di chi resta sul portatore con la fascia del contrasto.
+- Aperti: OI-116 (il passaggio vale solo il punto dove arriva, quindi poco gioco sulle fasce: **serve la tua scelta**, raccomando la (A)), OI-117 (i contrasti; il primo pressatore manca oltre 6 m, perché il pressing si misura contro un secondo fisso).
+- Fuori banda al 133: falli 8.5 (StatsBomb: 20,6 dei 28,2 falli nascono nella pressione, che il motore quasi non ha), duelli a terra 125, rimesse 15.1, rinvii dal fondo 7.1, autogol 0.42, troppi passaggi (1.251).
 
 **Fasi 1 e 2 (2026-11-15), su main.** Il ricontrollo è in `plans/L0-AUDIT.md`: 23 OI, i passi del piano, gli ADR, i documenti, il codice morto, l'inventario dei parametri (381: 25 di grado 1, 356 di grado 3). L'aggiornamento:
 - chiusi con la prova OI-27, OI-31, OI-40, OI-49, OI-55, OI-90;
