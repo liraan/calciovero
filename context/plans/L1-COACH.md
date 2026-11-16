@@ -18,13 +18,13 @@ Quanti in panchina e quanti cambi lo dicono le regole, che sono dati modulari co
 
 ## Le caratteristiche dell'allenatore
 
-Come i giocatori (decisione 4 della revisione di `L1.md`). Nascono dal livello del club e da come hanno giocato le squadre vere nella stagione di riferimento (i dati di squadra e delle partite del riferimento Wyscout), con nomi inventati. Ognuna ha grado 2: si misura sull'effetto nelle partite vere ed è citata in `balance/SOURCES.md`.
+Come i giocatori (decisione 4 della revisione di `L1.md`). Nascono dal livello del club e da come hanno giocato le squadre vere nella stagione di riferimento (i dati di squadra e delle partite del riferimento Wyscout), con nomi inventati. Ognuna ha grado 2, misurata sull'effetto nelle partite vere e citata in `balance/SOURCES.md`, tranne la preparazione, che in L1 è di grado 3 (arbitraria dichiarata, con il suo registro) finché lo staff di L2 non la rende misurabile.
 
 | Caratteristica | Cosa decide | Come si misura (grado 2) |
 |---|---|---|
 | **Idea di gioco** | Modulo preferito, blocco, ampiezza, transizioni | Gli schieramenti e le altezze medie delle squadre vere |
 | **Flessibilità** | Quanto si sposta dalla sua idea per l'avversario e per il campo | Come cambiano blocco e modulo con la forza dell'avversario, in casa e in trasferta |
-| **Preparazione** | Quanto bene lui e il suo staff leggono le partite dell'avversario (la larghezza della stima del gioco avversario) | In L1 dichiarata dal livello del club; in L2 diventa lo staff degli analisti |
+| **Preparazione** | Quanto bene lui e il suo staff leggono le partite dell'avversario (la larghezza della stima del gioco avversario) | Grado 3 in L1, dal livello del club; in L2 diventa lo staff degli analisti |
 | **Rotazione** | Quanto pesa la freschezza contro la gerarchia | I minuti e le rotazioni delle rose vere nelle settimane fitte |
 | **Coraggio** | Quanto rischia: un giovane, un attaccante in più, la linea alta | Le scelte delle squadre vere quando sono sotto nel punteggio |
 | **Reazione in partita** | Il momento in cui interviene | Già in L0 (decisione Y), sui minuti dei cambi veri con il risultato del momento |
