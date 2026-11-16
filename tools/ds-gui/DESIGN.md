@@ -40,3 +40,10 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 - **Orizzontale:** la schermata partita della proposta C.
 - Si parte da qui per popolare la GUI di contenuti; poi si migliora con i betatester.
 - Pacchetti grafici leggeri per il telefono (loghi e foto a bassa risoluzione), stessi plugin del PC, distribuzione fuori da Google Play finché la decisione 4 di `context/plans/DECISIONS-2026-11-15.md` non apre un'altra strada.
+
+## La partita in 3D e in 2.5D (16 novembre 2026)
+
+- **Desktop: il 3D, con Fyrox**, quando arriverà (dopo la 0.1). Sarà una "mini rivoluzione" dichiarata: il motore non cambia, perché la vista legge la registrazione della partita e non scrive mai nella simulazione (i float del disegno non toccano il determinismo).
+- **Android: il 2.5D**, la lavagna inclinata in prospettiva con figurine con altezza e il pallone che vola con la sua ombra (prototipo del 16 novembre: un cross e un colpo di testa). Resta con egui.
+- **Da decidere quando si arriva:** se sul desktop Fyrox sostituisce tutta l'interfaccia, oppure solo la vista della partita, lasciando post-it, scheda e il resto in egui come su Android. La seconda strada tiene una sola interfaccia per due piattaforme e limita la rivoluzione alla partita; la prima dà un'interfaccia desktop tutta in Fyrox ma ne mantiene due.
+- Le figurine e i loro colori si generano dai colori della squadra, come gli stemmi; nessun asset protetto (decisioni F–K).
