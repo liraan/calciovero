@@ -67,7 +67,12 @@ impl MatchState {
             return;
         }
         let (from_behind, approach) = self.challenge_geometry(ctx, carrier, challenger, ball);
-        let stakes = Self::duel_stakes(ctx, carrier, ball);
+        let stakes = Self::duel_stakes(
+            ctx,
+            carrier,
+            ball,
+            self.spatial.agent(challenger).map_or(ball, |a| a.position),
+        );
         let outcome = ctx.hidden.resolve_duel(&ds_orchestrator::DuelContext {
             attacker: carrier,
             defender: challenger,
@@ -154,6 +159,7 @@ impl MatchState {
         ctx: &MatchContext<'_>,
         carrier: PlayerId,
         ball: (i32, i32),
+        challenger_at: (i32, i32),
     ) -> (f64, f64, f64) {
         let (length, width) = pitch_cm(ctx);
         let home = ctx.match_.home.players.iter().any(|p| p.id == carrier);
@@ -162,8 +168,15 @@ impl MatchState {
         } else {
             ((0, width / 2), (length, width / 2))
         };
-        let forward = if home { 1 } else { -1 };
-        let past = ((ball.0 + forward * 400).clamp(0, length), ball.1);
+        // Past the man (OI-103, SIM 137, DD-5): on the other side of him,
+        // where taking him on takes the carrier, the space he was closing.
+        // A man goal-side of him is worth beating; one at his back is not.
+        // Before, past was always 4 m nearer the goal, wherever the man was,
+        // and the carrier took him on in half the contacts (Wyscout 18.6%).
+        let past = (
+            (2 * challenger_at.0 - ball.0).clamp(0, length),
+            (2 * challenger_at.1 - ball.1).clamp(0, width),
+        );
         (
             ds_orchestrator::read::space_value(ball, goal, other),
             ds_orchestrator::read::space_value(past, goal, other),
@@ -280,6 +293,36 @@ impl MatchState {
 #[cfg(test)]
 mod tests {
     use ds_match_api::MatchPlugin;
+
+    /// Twin test (OI-103, SIM 137, DD-5): the same carrier, the same man
+    /// coming at him; only where the man stands changes. Goal-side of him,
+    /// beating him is worth more than keeping the ball; at his back,
+    /// beating him gains nothing over keeping it.
+    #[test]
+    fn a_man_in_front_is_worth_beating_one_behind_is_not() {
+        use crate::context::MatchContext;
+        use ds_core::rng::RngRegistry;
+        use ds_stats::EventChain;
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = ds_orchestrator::GroundTruth::new(42, m.id);
+        let mut rng = RngRegistry::new(42);
+        let mut chain = EventChain::new();
+        let ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            rng: &mut rng,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let carrier = m.home.players[6].id;
+        let ball = (6000, 3400);
+        let stakes =
+            |man: (i32, i32)| crate::state::MatchState::duel_stakes(&ctx, carrier, ball, man);
+        let (keep, past_front, _) = stakes((6200, 3400));
+        let (_, past_behind, _) = stakes((5800, 3400));
+        assert!(past_front > keep, "front: past {past_front} keep {keep}");
+        assert!(past_behind < keep, "behind: past {past_behind} keep {keep}");
+    }
 
     #[test]
     fn the_plugin_has_its_card() {

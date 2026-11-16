@@ -10,38 +10,38 @@
   ```
   60 partite, le squadre di prova, blocco medio e ampiezza normale.
 - **Riferimento:** Serie A 2017-18, 380 partite, Wyscout (Pappalardo et al. 2019, *Scientific Data* 6, 236; CC BY 4.0), per partita ed entrambe le squadre.
-- **Motore:** `SIM_VERSION` 136 (rimisurato il 2026-11-16, dopo la marcatura pesata dal passaggio che arriva all'uomo, OI-117 (A); al 135, il passaggio che sbatte sul corpo; al 134, la scelta alla ricezione, la spazzata di prima; al 133, la reazione dell'avversario al pallone calciato e il conteggio dei passaggi intercettati; al 132, la pressione sul passaggio e sulla spazzata; al 131, le forze del contrasto sulla stessa scala; al 130, la ricezione di ogni pallone libero; al 129, l'ampiezza con la palla in gioco, 47 m; al 128, il rimbalzo FIFA, 9 su 22; al 127, l'ampiezza del blocco dal tracking Metrica, 8 su 22; al 126 erano in banda 9 su 22, al 118 pure 9). La misura del 116, del 117 e del 118 è identica riga per riga: il 117 e il 118 cambiano solo le partite di coppa e le squadre con l'allenatore che reagisce.
+- **Motore:** `SIM_VERSION` 137 (rimisurato il 2026-11-16, dopo il punto oltre l'uomo; al 136, la marcatura pesata dal passaggio che arriva all'uomo, OI-117 (A); al 135, il passaggio che sbatte sul corpo; al 134, la scelta alla ricezione, la spazzata di prima; al 133, la reazione dell'avversario al pallone calciato e il conteggio dei passaggi intercettati; al 132, la pressione sul passaggio e sulla spazzata; al 131, le forze del contrasto sulla stessa scala; al 130, la ricezione di ogni pallone libero; al 129, l'ampiezza con la palla in gioco, 47 m; al 128, il rimbalzo FIFA, 9 su 22; al 127, l'ampiezza del blocco dal tracking Metrica, 8 su 22; al 126 erano in banda 9 su 22, al 118 pure 9). La misura del 116, del 117 e del 118 è identica riga per riga: il 117 e il 118 cambiano solo le partite di coppa e le squadre con l'allenatore che reagisce.
 - **La banda:** media reale ± una deviazione standard delle 380 partite reali. La fonte è lo stesso riferimento. È una regola sola per tutte le metriche, presa dalla dispersione del calcio vero e non dai valori del motore. Il caos del motore (circa 1.5 gol fra due esecuzioni che differiscono di un bit, SIM 101) sta dentro questa larghezza.
 - **Non confrontabili:** cross e intercetti. Le definizioni Wyscout e del motore differiscono (`ds-reference`, nota della tabella).
 
 ## La tabella
 
-| Metrica | Reale | ± | Motore 136 | Banda | Dentro? | Causa o OI |
+| Metrica | Reale | ± | Motore 137 | Banda | Dentro? | Causa o OI |
 |---|---|---|---|---|---|---|
-| gol | 2.68 | 1.65 | 2.23 | 1.03–4.33 | sì | — |
-| autogol | 0.10 | 0.31 | 0.43 | 0–0.41 | no | OI-100: dal 132 la spazzata sotto pressione devia di più; da guardare |
-| tiri | 24.60 | 5.46 | 19.22 | 19.1–30.1 | sì | — |
-| tiri in porta | 8.69 | 3.22 | 10.18 | 5.5–11.9 | sì | — |
+| gol | 2.68 | 1.65 | 2.55 | 1.03–4.33 | sì | — |
+| autogol | 0.10 | 0.31 | 0.33 | 0–0.41 | sì | OI-100: dal 132 la spazzata sotto pressione devia di più; da guardare |
+| tiri | 24.60 | 5.46 | 23.13 | 19.1–30.1 | sì | — |
+| tiri in porta | 8.69 | 3.22 | 12.10 | 5.5–11.9 | no | — |
 | rigori | 0.33 | 0.56 | 0.02 | 0–0.89 | sì | — |
-| passaggi | 887.7 | 122.8 | 1318.80 | 765–1011 | no | OI-100: troppi passaggi, e troppi intercettati (290 a partita); dal 2026-11-16 `ds-reference` conta anche i passaggi intercettati, che il motore racconta solo come `Interception` (prima 1065) |
-| passaggi riusciti | 739.2 | 124.8 | 1123.55 | 614–864 | no | OI-100: l'83,9% dei tentati (Wyscout 83,3%), dal 133; troppi passaggi in tutto |
-| duelli aerei | 38.14 | 12.98 | 5.90 | 25.2–51.1 | no | OI-102: il secondo uomo sui palloni alti |
-| duelli a terra | 182.6 | 27.5 | 190.90 | 155–210 | sì | — |
-| dribbling riusciti | 16.03 | 5.67 | 32.88 | 10.4–21.7 | no | OI-103: sopra la banda dal 136 (il difensore va di più sul portatore, e il portatore lo salta) |
-| falli | 26.00 | 6.69 | 13.28 | 19.3–32.7 | no | OI-114: dal 131 il difensore vince più contrasti, e un contrasto vinto non è fallo (ADR-042 §4) |
-| gialli | 3.97 | 1.96 | 5.08 | 2.0–5.9 | sì | — |
+| passaggi | 887.7 | 122.8 | 1318.63 | 765–1011 | no | OI-100: troppi passaggi, e troppi intercettati (290 a partita); dal 2026-11-16 `ds-reference` conta anche i passaggi intercettati, che il motore racconta solo come `Interception` (prima 1065) |
+| passaggi riusciti | 739.2 | 124.8 | 1121.12 | 614–864 | no | OI-100: l'83,9% dei tentati (Wyscout 83,3%), dal 133; troppi passaggi in tutto |
+| duelli aerei | 38.14 | 12.98 | 7.22 | 25.2–51.1 | no | OI-102: il secondo uomo sui palloni alti |
+| duelli a terra | 182.6 | 27.5 | 194.60 | 155–210 | sì | — |
+| dribbling riusciti | 16.03 | 5.67 | 25.88 | 10.4–21.7 | no | OI-103: dal 137 il portatore punta l'uomo nel 35% dei contatti (Wyscout 18,6%) |
+| falli | 26.00 | 6.69 | 14.23 | 19.3–32.7 | no | OI-114: dal 131 il difensore vince più contrasti, e un contrasto vinto non è fallo (ADR-042 §4) |
+| gialli | 3.97 | 1.96 | 5.47 | 2.0–5.9 | sì | — |
 | rossi | 0.24 | 0.49 | 0.07 | 0–0.73 | sì | — |
-| angoli | 10.30 | 3.58 | 11.85 | 6.7–13.9 | sì | — |
-| rimesse laterali | 42.72 | 8.92 | 16.92 | 33.8–51.6 | no | OI-100: raddoppiate dal 127 (3.85) con il rimbalzo; nel calcio vero il 21,5% segue una spazzata, il 19,7% un tocco, il 31% un duello, il 24% un passaggio sbagliato (Wyscout); nel motore un duello non manda quasi mai la palla fuori e il passaggio sbaglia poco |
-| rinvii dal fondo | 17.15 | 4.20 | 8.03 | 13.0–21.4 | no | OI-100: il tiro troppo preciso finisce poco fuori, quindi pochi rinvii |
-| punizioni | 29.45 | 6.81 | 15.97 | 22.6–36.3 | no | OI-112: probabilmente di conteggio |
-| fuorigioco | 4.26 | 2.40 | 4.42 | 1.9–6.7 | sì | — |
-| spazzate | 29.53 | 8.65 | 39.88 | 20.9–38.2 | no | appena sopra la banda dal 135: di testa 29.9 (StatsBomb 13.8), di piede 10.5 (16.2): la spazzata di testa è ancora una regola (ADR-064, passo 2) |
-| parate | 9.37 | 3.37 | 11.20 | 6.0–12.7 | sì | — |
-| recupero, primo tempo (min) | 1.49 | 1.35 | 3.97 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
-| recupero, secondo tempo (min) | 4.08 | 1.61 | 2.69 | 2.5–5.7 | sì | — |
+| angoli | 10.30 | 3.58 | 13.35 | 6.7–13.9 | sì | — |
+| rimesse laterali | 42.72 | 8.92 | 17.27 | 33.8–51.6 | no | OI-100: raddoppiate dal 127 (3.85) con il rimbalzo; nel calcio vero il 21,5% segue una spazzata, il 19,7% un tocco, il 31% un duello, il 24% un passaggio sbagliato (Wyscout); nel motore un duello non manda quasi mai la palla fuori e il passaggio sbaglia poco |
+| rinvii dal fondo | 17.15 | 4.20 | 8.57 | 13.0–21.4 | no | OI-100: il tiro troppo preciso finisce poco fuori, quindi pochi rinvii |
+| punizioni | 29.45 | 6.81 | 16.92 | 22.6–36.3 | no | OI-112: probabilmente di conteggio |
+| fuorigioco | 4.26 | 2.40 | 4.48 | 1.9–6.7 | sì | — |
+| spazzate | 29.53 | 8.65 | 40.45 | 20.9–38.2 | no | appena sopra la banda dal 135: di testa 29.9 (StatsBomb 13.8), di piede 10.5 (16.2): la spazzata di testa è ancora una regola (ADR-064, passo 2) |
+| parate | 9.37 | 3.37 | 12.73 | 6.0–12.7 | no | — |
+| recupero, primo tempo (min) | 1.49 | 1.35 | 4.37 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
+| recupero, secondo tempo (min) | 4.08 | 1.61 | 2.92 | 2.5–5.7 | sì | — |
 
-**In banda (SIM 136): 11 metriche su 22 confrontabili. Fuori banda: 11, ognuna con il suo OI aperto** (al 126: 9; al 127: 8, dentro i duelli a terra e fuori gol e falli; il 128 riporta dentro i gol, al bordo) (OI-100, OI-101, OI-102, OI-103, OI-112, OI-114).
+**In banda (SIM 137): 10 metriche su 22 confrontabili. Fuori banda: 12, ognuna con il suo OI aperto** (al 126: 9; al 127: 8, dentro i duelli a terra e fuori gol e falli; il 128 riporta dentro i gol, al bordo) (OI-100, OI-101, OI-102, OI-103, OI-112, OI-114).
 
 ## I parametri di grado 3 (fase 4.1)
 
