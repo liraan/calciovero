@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `1ce8462` - "docs(state): bookmark after merging docs/readme-tables (three views, one per tool)"
+**Last commit verified:** `8ea554c` - "docs(state): the branches checked; both are in main, their deletion is for the maintainer"
 
 ## Mandato attivo (2026-11-16)
 
@@ -41,7 +41,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 
 ## Per il maintainer
 
-**Rami (2026-11-16):** `docs/readme-tables` e `docs/l1-europe-and-breaks` sono interamente in main (`git rev-list --count origin/main..origin/<ramo>` = 0), ma da questa sessione GitHub non ne accetta la cancellazione (il proxy chiude la connessione): da cancellare dal tuo PC con `git push origin --delete docs/readme-tables docs/l1-europe-and-breaks`. Nessun ramo locale oltre main; main allineato con origin (`## main...origin/main`, senza ahead); codeberg lo allinea il workflow Mirror.
+**Rami (2026-11-16):** `docs/readme-tables` e `docs/l1-europe-and-breaks` cancellati dal maintainer, entrambi interamente in main; su GitHub resta solo `main`, allineato con origin.
 
 **Mandato del 16 novembre, voce (a), primo tratto (SIM 134).**
 - Fatti: i merge di `docs/l1-europe-and-breaks` e `docs/readme-tables`; ADR-064 (DD-3, delegato) e SIM 134: chi riceve sceglie fra controllare e spazzare di prima; spazzate di piede 0,5 -> 7,4 a partita (StatsBomb 16,2), 12 metriche su 22 in banda; README al 134; la partita di prova preparata.
