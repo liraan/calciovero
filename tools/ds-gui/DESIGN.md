@@ -151,3 +151,14 @@ Decisione del maintainer guardando gli omini del 2.5D renderizzati dal codice di
 **Il pallone:** un raggio minimo più grande di oggi e un bordo scuro sottile; in volo, una linea leggera fino all'ombra, come in televisione.
 
 **Il codice degli omini articolati** esce dalla GUI (RULES D3: resta solo ciò che si usa) e vive nella storia di git; il 3D con Bevy avrà il suo. La tabella evento → animazione resta, perché la usano i pallini e la userà il 3D.
+
+## Una partita, molte viste: lo zoom al posto dei preset (16 novembre 2026)
+
+**Il principio** (maintainer): la partita è una sola, la registrazione del motore; ogni vista la guarda da un'altra distanza o con un altro vestito (caratteri nel terminale, pallini nel 2.5D, omini nel 3D) e non cambia mai quello che è successo.
+
+Di conseguenza nel 2.5D "campo intero" e "telecamera vicina" non sono più modi diversi di disegnare, ma solo livelli di zoom. I tre preset diventano:
+- **uno zoom continuo**: rotellina del mouse sul desktop, pizzico con due dita su Android; dal campo intero fino a circa 25 m di campo nella larghezza;
+- **"segui il pallone"** acceso o spento (acceso, la telecamera segue il pallone con un movimento smorzato, senza uscire dal campo; spento, si trascina il campo);
+- **l'inclinazione**, come oggi, con 0° che resta la vista dall'alto.
+
+I pallini, il numero, il bordo e il pallone hanno grandezze minime in pixel, così restano leggibili a ogni zoom. Il rallentatore resta.
