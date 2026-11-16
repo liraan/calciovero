@@ -46,7 +46,38 @@ pub struct Start {
     pub tick: Option<usize>,
     /// The playback speed, times real time.
     pub speed: Option<f64>,
+    /// The camera preset.
+    pub camera: Option<Camera>,
+    /// The slow motion.
+    pub slow: bool,
 }
+
+/// The camera presets (DESIGN.md, "La visuale del 2.5D").
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Camera {
+    /// The whole pitch, tilted: the team's shape, the lines, the distances.
+    Whole,
+    /// About 38 m around the ball, following it with a damped movement:
+    /// the gestures, the duels, the shots.
+    Close,
+    /// From above, 0°: the board as it always was.
+    Above,
+}
+
+/// How much pitch the close camera shows across, cm (DESIGN.md).
+const CLOSE_SPAN_CM: f32 = 3_800.0;
+/// How quickly the close camera catches up with the ball, a share a
+/// second (a drawing choice: the damped movement).
+const FOLLOW_RATE: f32 = 3.0;
+/// The slow motion, a share of the chosen speed (DESIGN.md: about a third).
+const SLOW: f64 = 1.0 / 3.0;
+/// A stride's length at a run, cm: the stride's phase moves on by the
+/// ground covered (a drawing size).
+const STRIDE_CM: f32 = 180.0;
+
+/// Each figure's stride: its phase, radians, and where he stood at the
+/// last frame, cm.
+type Strides = BTreeMap<PlayerId, (f32, (f32, f32))>;
 
 /// The application state.
 pub struct App {
@@ -62,8 +93,18 @@ pub struct App {
     speed: f64,
     carry: f64,
     every_event: bool,
-    /// The camera's tilt from the vertical, degrees (`scene::PRESETS`).
+    /// The camera's tilt from the vertical, degrees.
     tilt: f32,
+    /// The camera preset.
+    camera: Camera,
+    /// The slow motion is on.
+    slow: bool,
+    /// Where the close camera looks, cm (it follows the ball).
+    focus: std::cell::Cell<(f32, f32)>,
+    /// Each figure's stride: its phase and where he was at the last frame.
+    strides: std::cell::RefCell<Strides>,
+    /// The time of the last frame, seconds (for the damped camera).
+    last_dt: std::cell::Cell<f32>,
 }
 
 impl App {
@@ -88,6 +129,11 @@ impl App {
             carry: 0.0,
             every_event: false,
             tilt: scene::PRESETS[2],
+            camera: Camera::Whole,
+            slow: false,
+            focus: std::cell::Cell::new((5_250.0, 3_400.0)),
+            strides: std::cell::RefCell::new(BTreeMap::new()),
+            last_dt: std::cell::Cell::new(0.0),
         };
         app.play_match();
         app
@@ -110,6 +156,10 @@ impl App {
         if let Some(tilt) = start.tilt {
             self.tilt = tilt;
         }
+        if let Some(c) = start.camera {
+            self.camera = c;
+        }
+        self.slow = start.slow;
         if let Some(speed) = start.speed {
             self.speed = speed;
         }
@@ -168,7 +218,12 @@ impl App {
         if !self.playing || game.ticks.is_empty() {
             return;
         }
-        self.carry = (dt * TICKS_PER_SECOND).mul_add(self.speed, self.carry);
+        let speed = if self.slow {
+            self.speed * SLOW
+        } else {
+            self.speed
+        };
+        self.carry = (dt * TICKS_PER_SECOND).mul_add(speed, self.carry);
         let whole = self.carry.floor();
         self.carry -= whole;
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -254,10 +309,17 @@ impl App {
                 ui.selectable_value(&mut self.speed, s, format!("x{s}"));
             }
             ui.separator();
+            ui.toggle_value(&mut self.slow, "Slow");
+            ui.separator();
             ui.label("Camera");
-            for p in scene::PRESETS {
-                ui.selectable_value(&mut self.tilt, p, format!("{p:.0}°"));
-            }
+            ui.selectable_value(&mut self.camera, Camera::Whole, "Whole pitch");
+            ui.selectable_value(&mut self.camera, Camera::Close, "Close");
+            ui.selectable_value(&mut self.camera, Camera::Above, "Above");
+            ui.add(
+                egui::Slider::new(&mut self.tilt, 0.0..=75.0)
+                    .suffix("°")
+                    .text("tilt"),
+            );
             ui.separator();
             ui.spacing_mut().slider_width = (ui.available_width() - 16.0).max(80.0);
             ui.add(egui::Slider::new(&mut self.tick, 0..=last).show_value(false));
@@ -323,19 +385,28 @@ impl App {
         }
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::hover());
         let r = response.rect;
-        let geom = Geometry::fit(
-            (r.min.x, r.min.y),
-            (r.width(), r.height()),
-            16.0,
-            game.pitch_cm,
-            self.tilt,
-        );
-        self.draw_markings(&painter, &geom);
         // One tick behind the playhead, so that the drawing always has the
         // tick before and the tick after (the interpolation layer).
         #[allow(clippy::cast_precision_loss)]
         let instant = (self.tick as f64 + self.carry - 1.0).max(0.0);
         let moment = Moment::at(&game.records, instant);
+        let (origin, size) = ((r.min.x, r.min.y), (r.width(), r.height()));
+        let geom = match self.camera {
+            Camera::Whole => Geometry::fit(origin, size, 16.0, game.pitch_cm, self.tilt),
+            Camera::Above => Geometry::fit(origin, size, 16.0, game.pitch_cm, 0.0),
+            Camera::Close => {
+                // The damped movement: the camera catches up with the ball.
+                let (fx, fy) = self.focus.get();
+                let k = (self.last_dt.get() * FOLLOW_RATE).clamp(0.0, 1.0);
+                let f = (
+                    (moment.ball.0 - fx).mul_add(k, fx),
+                    (moment.ball.1 - fy).mul_add(k, fy),
+                );
+                self.focus.set(f);
+                Geometry::around(origin, size, game.pitch_cm, self.tilt, (f, CLOSE_SPAN_CM))
+            }
+        };
+        self.draw_markings(&painter, &geom);
         let frame = scene::frame(&moment, &geom);
         let t = &self.theme;
         let pos = |s: &scene::Screen| Pos2::new(s.x, s.y);
@@ -356,34 +427,22 @@ impl App {
                             (false, false) => t.away,
                         },
                     };
-                    let (feet, head) = (pos(&f.feet), pos(&f.head));
-                    // His shadow, then where he faces, then the figure.
-                    painter.circle_filled(feet, f.size * 1.2, t.ball_shadow);
-                    painter.line_segment(
-                        [feet, pos(&f.facing)],
-                        Stroke::new((f.size * 0.35).max(1.0), fill),
-                    );
-                    if f.carrier {
-                        painter.circle_stroke(
-                            feet,
-                            f.size * 1.8,
-                            Stroke::new((f.size * 0.3).max(1.5), t.carrier_ring),
-                        );
-                    }
-                    let neck = feet + (head - feet) * 0.82;
-                    painter.line_segment([feet, neck], Stroke::new(f.size * 1.5, fill));
-                    painter.circle_filled(head, f.size, fill);
+                    let (head, head_r) = self.draw_figure(&painter, &geom, f, fill);
                     if matches!(item, Item::Figure(_)) {
-                        painter.text(
-                            head,
-                            Align2::CENTER_CENTER,
-                            f.letter,
-                            FontId::monospace((f.size * 1.4).max(7.0)),
-                            t.player_text,
-                        );
+                        // His letter above him, when he is big enough to
+                        // carry it (the close camera).
+                        if head_r >= 4.0 {
+                            painter.text(
+                                head - egui::vec2(0.0, head_r * 2.6),
+                                Align2::CENTER_CENTER,
+                                f.letter,
+                                FontId::monospace(head_r * 2.0),
+                                fill,
+                            );
+                        }
                         if response
                             .hover_pos()
-                            .is_some_and(|p| p.distance(head) <= f.size * 2.0)
+                            .is_some_and(|p| p.distance(head) <= (head_r * 3.0).max(6.0))
                         {
                             hovered = Some(f.id);
                         }
@@ -404,6 +463,65 @@ impl App {
                 response.on_hover_text(format!("{} {name}", ds_demo::pitchview::marker(id)));
             }
         }
+    }
+
+    /// One articulated figure (DESIGN.md, "Gli omini articolati"): his
+    /// shadow, the ring of the man on the ball, the limbs with his stride,
+    /// the head. Returns where his head is and its radius.
+    fn draw_figure(
+        &self,
+        painter: &Painter,
+        geom: &Geometry,
+        f: &scene::Figure,
+        fill: egui::Color32,
+    ) -> (Pos2, f32) {
+        let t = &self.theme;
+        let pos = |s: &scene::Screen| Pos2::new(s.x, s.y);
+        let feet = pos(&f.feet);
+        // His shadow on the grass, then the figure.
+        painter.circle_filled(feet, f.size * 2.2, t.ball_shadow);
+        if f.carrier {
+            painter.circle_stroke(
+                feet,
+                f.size * 3.0,
+                Stroke::new((f.size * 0.4).max(1.2), t.carrier_ring),
+            );
+        }
+        // The stride moves on with the ground he covers.
+        let phase = {
+            let mut strides = self.strides.borrow_mut();
+            let e = strides.entry(f.id).or_insert((0.0, f.at));
+            let moved = ds_core::dmath::hypot(f64::from(f.at.0 - e.1.0), f64::from(f.at.1 - e.1.1));
+            #[allow(clippy::cast_possible_truncation)]
+            let moved = moved as f32;
+            if moved < 500.0 {
+                e.0 = (moved / STRIDE_CM)
+                    .mul_add(std::f32::consts::TAU, e.0)
+                    .rem_euclid(std::f32::consts::TAU);
+            }
+            e.1 = f.at;
+            e.0
+        };
+        let (parts, head_at, head_r) = scene::limbs(
+            geom,
+            f.at,
+            f.heading,
+            scene::Motion {
+                phase,
+                speed: f.speed,
+            },
+        );
+        let sock = fill.gamma_multiply(0.6);
+        for l in &parts {
+            let c = match l.part {
+                scene::Part::Shirt => fill,
+                scene::Part::Sock => sock,
+            };
+            painter.line_segment([pos(&l.a), pos(&l.b)], Stroke::new(l.width, c));
+        }
+        let head = pos(&head_at);
+        painter.circle_filled(head, head_r, t.skin);
+        (head, head_r)
     }
 
     /// The markings of Law 1 (`laws.json`) and the goals in their height
@@ -506,6 +624,8 @@ const fn width_label(w: Width) -> &'static str {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let dt = f64::from(ctx.input(|i| i.stable_dt).min(0.1));
+        #[allow(clippy::cast_possible_truncation)]
+        self.last_dt.set(dt as f32);
         self.advance(dt);
         ctx.set_visuals(if self.theme.dark {
             egui::Visuals::dark()

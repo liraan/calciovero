@@ -31,6 +31,8 @@ pub struct PlayerAt {
     pub at: (f32, f32),
     /// Which way he faces, degrees, `0` towards positive `y`, clockwise.
     pub heading: f32,
+    /// His speed between the two ticks, cm a tick.
+    pub speed: f32,
 }
 
 /// Everyone and the ball at an instant.
@@ -133,6 +135,8 @@ impl Moment {
                         hermite(p0.1, p1.1, m0.1, m1.1, s),
                     ),
                     heading: turn(f32::from(a.heading), h1, s),
+                    #[allow(clippy::cast_possible_truncation)]
+                    speed: ds_core::dmath::hypot(f64::from(seg.0), f64::from(seg.1)) as f32,
                 }
             })
             .collect();

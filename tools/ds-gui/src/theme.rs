@@ -28,6 +28,7 @@ struct RawTheme {
     keeper_away: String,
     player_text: String,
     carrier_ring: String,
+    skin: String,
     ball: String,
     ball_shadow: String,
     referee: String,
@@ -64,6 +65,8 @@ pub struct Theme {
     pub player_text: Color32,
     /// The ring around the man on the ball.
     pub carrier_ring: Color32,
+    /// A figure's head.
+    pub skin: Color32,
     /// The ball.
     pub ball: Color32,
     /// The ball's shadow on the grass.
@@ -126,6 +129,7 @@ impl Theme {
             keeper_away: parse_hex(&r.keeper_away)?,
             player_text: parse_hex(&r.player_text)?,
             carrier_ring: parse_hex(&r.carrier_ring)?,
+            skin: parse_hex(&r.skin)?,
             ball: parse_hex(&r.ball)?,
             ball_shadow: parse_hex(&r.ball_shadow)?,
             referee: parse_hex(&r.referee)?,

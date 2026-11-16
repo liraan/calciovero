@@ -27,9 +27,10 @@ pub const FIGURE_CM: f32 = 180.0;
 const BALL_RADIUS_CM: f32 = 11.0;
 /// The goal's depth behind the line, cm (a drawing size).
 const GOAL_DEPTH_CM: f32 = 200.0;
-/// How much larger than life the pieces are drawn, so that they read on
-/// the board like the pieces of a tactics board (a drawing choice).
-const PIECE_SCALE: f32 = 2.5;
+/// The thinnest a line of a figure is drawn, points: at true size a man
+/// on the whole pitch is about 10 points high (DESIGN.md, "La grandezza
+/// vera decide"), and he must stay visible.
+pub const MIN_LINE: f32 = 1.2;
 
 /// A point of the pitch, cm, `(x, y, z)`: `z` up from the grass.
 pub type World = (f32, f32, f32);
@@ -113,6 +114,53 @@ impl Geometry {
         g.offset = (
             lo.0.mul_add(-scale, (size.0 - used.0).mul_add(0.5, origin.0)),
             lo.1.mul_add(-scale, (size.1 - used.1).mul_add(0.5, origin.1)),
+        );
+        g
+    }
+
+    /// The close camera (DESIGN.md, "La visuale del 2.5D"): about
+    /// `span_cm` of pitch across the rectangle, centred on `focus` (the
+    /// ball, followed with a damped movement by the caller), never past
+    /// the pitch's edges.
+    #[must_use]
+    #[allow(clippy::many_single_char_names)] // drawing geometry
+    pub fn around(
+        origin: (f32, f32),
+        size: (f32, f32),
+        pitch_cm: (i32, i32),
+        tilt_deg: f32,
+        (focus, span_cm): ((f32, f32), f32),
+    ) -> Self {
+        let (l, w) = (pitch_cm.0.max(1) as f32, pitch_cm.1.max(1) as f32);
+        let half = (span_cm / 2.0).min(l / 2.0);
+        let depth_half = (half * size.1 / size.0.max(1.0)).min(w / 2.0);
+        let fx = focus.0.clamp(half, l - half);
+        let fy = focus.1.clamp(depth_half, w - depth_half);
+        let tilt = tilt_deg.clamp(0.0, 75.0).to_radians();
+        let d = DISTANCE_SHARE * span_cm;
+        #[allow(
+            clippy::disallowed_methods,
+            reason = "drawing only: the view never feeds the simulation"
+        )]
+        let eye = (fx, d.mul_add(-tilt.sin(), fy), d * tilt.cos());
+        let mut g = Self {
+            pitch_cm,
+            tilt,
+            eye,
+            scale: 1.0,
+            offset: (0.0, 0.0),
+        };
+        let (Some(a), Some(b), Some(c)) = (
+            g.raw((fx - half, fy, 0.0)),
+            g.raw((fx + half, fy, 0.0)),
+            g.raw((fx, fy, 0.0)),
+        ) else {
+            return g;
+        };
+        g.scale = size.0 / (b.0 - a.0).max(1e-6);
+        g.offset = (
+            c.0.mul_add(-g.scale, size.0.mul_add(0.5, origin.0)),
+            c.1.mul_add(-g.scale, size.1.mul_add(0.5, origin.1)),
         );
         g
     }
@@ -212,8 +260,116 @@ pub struct Figure {
     pub keeper: bool,
     /// He has the ball.
     pub carrier: bool,
-    /// His size on the screen, points: the radius of his head.
+    /// His size on the screen, points: the radius of his head (11 cm).
     pub size: f32,
+    /// His spot on the grass, cm.
+    pub at: (f32, f32),
+    /// Which way he faces, degrees.
+    pub heading: f32,
+    /// His speed, cm a tick.
+    pub speed: f32,
+}
+
+/// What a limb is dressed in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Part {
+    /// The shirt: the side's colour.
+    Shirt,
+    /// The legs and socks: the side's colour, darker.
+    Sock,
+}
+
+/// One limb of a figure on the screen.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Limb {
+    /// One end.
+    pub a: Screen,
+    /// The other end.
+    pub b: Screen,
+    /// Its thickness, points.
+    pub width: f32,
+    /// What it is dressed in.
+    pub part: Part,
+}
+
+/// How a figure moves at an instant: his stride, and the gesture a fact of
+/// the match gives him (DESIGN.md: an animation only from a fact).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Motion {
+    /// Where his stride is, radians: it moves on with the ground he
+    /// covers.
+    pub phase: f32,
+    /// His speed, cm a tick.
+    pub speed: f32,
+}
+
+/// The articulated figure (DESIGN.md, "Gli omini articolati"): legs,
+/// body, arms and head, from his spot, his facing and his stride, at true
+/// size, never thinner than `MIN_LINE`. Built in the pitch's space and
+/// projected, so it has the camera's perspective.
+#[must_use]
+#[allow(clippy::many_single_char_names)] // drawing geometry
+pub fn limbs(
+    geom: &Geometry,
+    (x, y): (f32, f32),
+    heading: f32,
+    m: Motion,
+) -> (Vec<Limb>, Screen, f32) {
+    #[allow(
+        clippy::disallowed_methods,
+        reason = "drawing only: the view never feeds the simulation"
+    )]
+    let ((hs, hc), (ps, pc)) = (heading.to_radians().sin_cos(), m.phase.sin_cos());
+    let fwd = (hs, hc);
+    let side = (hc, -hs);
+    // A full stride at a run (8 m/s, 80 cm a tick), barely moving still.
+    let amp = (m.speed / 80.0).clamp(0.0, 1.0) * 45.0;
+    let lean = (m.speed / 80.0).clamp(0.0, 1.0) * 14.0;
+    let at = |f: f32, sd: f32, z: f32| -> World {
+        (
+            f.mul_add(fwd.0, sd.mul_add(side.0, x)),
+            f.mul_add(fwd.1, sd.mul_add(side.1, y)),
+            z,
+        )
+    };
+    let w = |cm: f32, p: World| geom.len_at(cm, p).max(MIN_LINE);
+    let mut out = Vec::new();
+    let mut seg = |a: World, b: World, cm: f32, part: Part| {
+        if let (Some(pa), Some(pb)) = (geom.project(a), geom.project(b)) {
+            out.push(Limb {
+                a: pa,
+                b: pb,
+                width: w(cm, a),
+                part,
+            });
+        }
+    };
+    for (k, sd) in [(1.0f32, 11.0f32), (-1.0, -11.0)] {
+        let swing = k * ps * amp;
+        let lift = (k * pc).max(0.0) * amp * 0.25;
+        let hip = at(lean * 0.3, sd, 92.0);
+        let foot = at(swing, sd, lift);
+        let knee = at(swing.mul_add(0.5, 6.0), sd, f32::midpoint(lift, 92.0));
+        seg(hip, knee, 15.0, Part::Sock);
+        seg(knee, foot, 12.0, Part::Sock);
+        // The arm swings against the leg on its side.
+        let shoulder = at(lean, sd * 1.8, 145.0);
+        let hand = at(-swing.mul_add(0.6, -lean), sd * 2.0, 92.0);
+        seg(shoulder, hand, 9.0, Part::Shirt);
+    }
+    seg(
+        at(lean * 0.3, 0.0, 92.0),
+        at(lean, 0.0, 150.0),
+        32.0,
+        Part::Shirt,
+    );
+    let head_at = at(lean * 1.1, 0.0, 168.0);
+    let head = geom.project(head_at).unwrap_or(Screen {
+        x: 0.0,
+        y: 0.0,
+        depth: 0.0,
+    });
+    (out, head, w(11.0, head_at))
 }
 
 /// The ball as drawn.
@@ -265,7 +421,7 @@ pub struct Frame {
 fn figure(
     geom: &Geometry,
     id: PlayerId,
-    (x, y): (f32, f32),
+    ((x, y), speed): ((f32, f32), f32),
     heading: f32,
     (letter, carrier): (char, bool),
 ) -> Option<Figure> {
@@ -287,7 +443,10 @@ fn figure(
         home: letter.is_ascii_uppercase(),
         keeper: letter.eq_ignore_ascii_case(&'a'),
         carrier,
-        size: geom.len_at(22.0 * PIECE_SCALE, (x, y, FIGURE_CM)).max(2.5),
+        size: geom.len_at(11.0, (x, y, FIGURE_CM)).max(MIN_LINE),
+        at: (x, y),
+        heading,
+        speed,
     })
 }
 
@@ -302,7 +461,7 @@ pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
             figure(
                 geom,
                 p.id,
-                p.at,
+                (p.at, p.speed),
                 p.heading,
                 (letter, m.carrier == Some(p.id)),
             )
@@ -316,7 +475,7 @@ pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
     if let Some(r) = figure(
         geom,
         PlayerId::new(u32::MAX, 0),
-        (rx as f32, ry as f32),
+        ((rx as f32, ry as f32), 0.0),
         0.0,
         ('·', false),
     ) {
@@ -329,8 +488,8 @@ pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
         geom.project((bx, by, 0.0)),
     ) {
         let radius = geom
-            .len_at(BALL_RADIUS_CM * PIECE_SCALE, (bx, by, bz))
-            .max(2.5);
+            .len_at(BALL_RADIUS_CM, (bx, by, bz))
+            .max(MIN_LINE * 1.5);
         shadows.push((ground, radius));
         items.push(Item::Ball(Ball {
             at,

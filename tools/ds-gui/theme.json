@@ -19,7 +19,8 @@
       "critical": "#f2c14e",
       "high": "#e6eee8",
       "medium": "#b4bfb7",
-      "low": "#7f8c83"
+      "low": "#7f8c83",
+      "skin": "#e8c4a0"
     },
     {
       "name": "Notte",
@@ -40,7 +41,8 @@
       "critical": "#f2c14e",
       "high": "#e6ecf6",
       "medium": "#aab4c6",
-      "low": "#6f7a8f"
+      "low": "#6f7a8f",
+      "skin": "#d9b391"
     },
     {
       "name": "Carta",
@@ -61,8 +63,9 @@
       "critical": "#a8671a",
       "high": "#222222",
       "medium": "#555555",
-      "low": "#8a8a8a"
+      "low": "#8a8a8a",
+      "skin": "#e2b58e"
     }
   ],
-  "_note": "The GUI's colours (ADR-055, doctrine/00-foundations.md §5: no hardcoded colours), in the three themes of the tactics board (DESIGN.md: Lavagna, Notte, Carta), the first the default. Hex, #rrggbb or #rrggbbaa. dark: the interface around the board is dark (else light). board the background around the pitch; pitch and pitch_stripe the grass in bands; lines the markings and the goals; home and away the two sides, keeper_home and keeper_away their goalkeepers; carrier_ring around the man on the ball; ball_shadow the shadows on the grass; critical, high, medium and low the commentary by the importance of the event."
+  "_note": "The GUI's colours (ADR-055, doctrine/00-foundations.md §5: no hardcoded colours), in the three themes of the tactics board (DESIGN.md: Lavagna, Notte, Carta), the first the default. Hex, #rrggbb or #rrggbbaa. dark: the interface around the board is dark (else light). board the background around the pitch; pitch and pitch_stripe the grass in bands; lines the markings and the goals; home and away the two sides, keeper_home and keeper_away their goalkeepers; carrier_ring around the man on the ball; skin a figure's head; ball_shadow the shadows on the grass; critical, high, medium and low the commentary by the importance of the event."
 }
