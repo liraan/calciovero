@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `fa57508` - "SIM 132: the pass and the clearance under pressure (OI-100)"
+**Last commit verified:** `f8ca1e5` - "docs(state): bookmark after SIM 132; the pass's reception next"
 
 ## Dove siamo (2026-11-14)
 
@@ -95,7 +95,8 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Poi (130): ogni pallone libero si riceve come un passaggio (prima lo prendeva sempre chi arrivava per primo). Effetto piccolo (rimesse 9.07 -> 9.17): i palloni liberi del motore sono lenti. Provato e tolto: il difensore che gioca la palla fra due tocchi riceve il pallone (`plugins/duels.rs`): golden identico, quindi in quel ramo il difensore la controlla sempre, o il ramo non si verifica.
 - Poi (131): misurato contro i duelli Wyscout (stessa popolazione: 144 duelli d'attacco a terra a partita): chi ha la palla vince il 49,7%, neutro il 28,2%, il difensore il 22,0%. Il motore dava 89 / 5 / 6, perché la protezione aveva una scala più grande (pesi 1,30 contro 0,95). Ogni forza ora è la media di ciò che la fa: 40,7 / 30,8 / 28,5, senza adattare numeri. Gol 3.02, tiri 32.5; i falli scendono a 12.2 (il difensore vince di più, e un contrasto vinto non è fallo) e i dribbling riusciti salgono a 26.4.
 - Poi (132): la precisione del passaggio misurata. StatsBomb open data (Liga 2020/21, 20 partite, su azione): 1.073 passaggi a partita, riusciti l'86,2%; fra 10 e 20 m il 93,2% liberi e l'86,4% sotto pressione, fra 0 e 10 m l'85,1% e il 75,6%. Il motore al 131: 96,4%, con la pressione che non toglieva nulla, perché il colpo la ignorava (`resolve_pass`, `resolve_clearance`: pressione 0). Corretto: 95,4%; le rimesse salgono a 14.8 (la spazzata sotto pressione va fuori), gli autogol a 0.50.
-- **Prossima azione esatta:** il resto della distanza dei passaggi (95,4% contro 86,2%) sta nella ricezione e nell'intercetto, non nel colpo. In StatsBomb contare come falliscono i passaggi corti (l'esito del passaggio: incompleto, fuori; l'evento dopo: intercetto, blocco, controllo sbagliato del ricevente, `Miscontrol`) e confrontarlo con il motore (intercetti, deviazioni, ricezioni mancate). Poi gli autogol del 132 (da dove nascono: spazzata, deviazione). Poi i falli (OI-114: il duello per il pallone sciolto deciso dalla corsa). In attesa del maintainer: OI-116. Sveglie: 16 novembre alle 06:10, 17 novembre alle 01:10.
+- Poi: come falliscono i passaggi corti veri (StatsBomb, sotto i 20 m, 774 a partita, l'11% fallisce): 24,6 a partita contro un uomo vicino (`Block`), 13,8 intercettati, 12,7 raccolti da un avversario (`Ball Recovery`), 12,2 giocati da un avversario, 6,8 spazzati, 3,0 fuori.
+- **Prossima azione esatta:** il passaggio corto contro l'uomo vicino (`Block`, 3,2% dei corti, il primo motivo). Nel motore il passaggio è intercettato da un avversario entro `INTERCEPT_RADIUS_CM` della linea solo se il passatore non lo vede (OI-37, F.4-d), e chi la tocca la riceve (`deflects_the_pass`). Misurare nel motore, per i passaggi sotto i 20 m, quanti finiscono contro un avversario e come; poi la causa (il raggio del corpo di chi è sulla linea, il passaggio che parte nel suo piede). Poi gli autogol del 132. Poi i falli (OI-114). In attesa del maintainer: OI-116. Sveglie: 16 novembre alle 06:10, 17 novembre alle 01:10.
 
 ## Decisioni prese da Claude, da rivedere
 
