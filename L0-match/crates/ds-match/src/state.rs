@@ -184,6 +184,9 @@ pub(crate) struct Pending {
     pub closest_cm: Option<i64>,
     /// A through ball (plan L0-CLOSE 10a).
     pub through: bool,
+    /// The tick the ball was struck (SIM 133): an opponent reacts to it
+    /// before he can play it.
+    pub launched: u64,
 }
 /// The in-progress state of a match.
 pub struct MatchState {
@@ -1522,6 +1525,63 @@ mod loose_reception_tests {
         assert_eq!(roll(&mut slow, &mut ctx, 20), Some(away), "slow: his");
         let mut fast = MatchState::new(&m);
         assert_eq!(roll(&mut fast, &mut ctx, 340), None, "fast: it gets away");
+    }
+}
+
+#[cfg(test)]
+mod reaction_tests {
+    use super::*;
+    use ds_core::rng::RngRegistry;
+    use ds_orchestrator::GroundTruth;
+
+    /// Twin test (SIM 133, OI-100): the same opponent, a step from the
+    /// passer, the same ball passing at his feet; only the time since it
+    /// was struck changes. Before his reaction he cannot play it; after
+    /// it, it is his.
+    #[test]
+    fn a_ball_just_struck_is_past_the_man_who_has_not_reacted() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = GroundTruth::new(42, m.id);
+        let mut rng = RngRegistry::new(42);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            rng: &mut rng,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let passer = m.home.players[6].id;
+        let mate = m.home.players[9].id;
+        let opp = m.away.players[5].id;
+        let at = (5000, 3400);
+        let take = |s: &mut MatchState, ctx: &mut MatchContext<'_>, since: u64| {
+            s.spatial.set_position(opp, at);
+            s.spatial.set_position(passer, (at.0 - 150, at.1));
+            s.spatial.set_position(mate, (at.0 + 2000, at.1));
+            s.spatial.set_carrier(None);
+            s.possession = Possession::Home;
+            s.pending = Some(Pending {
+                launched: 100,
+                shot: None,
+                due_tick: 1_000,
+                outcome: Possession::Home,
+                interceptor: None,
+                passer: Some(passer),
+                receiver: Some(mate),
+                closest_cm: None,
+                through: false,
+            });
+            s.spatial.set_ball_in_flight((at.0, at.1, 0), (20, 0, 0));
+            s.ball_from = s.spatial.ball_3d();
+            s.spatial.advance_ball();
+            s.control_loose_ball(ctx, 100 + since);
+            s.spatial.carrier()
+        };
+        let mut early = MatchState::new(&m);
+        assert_eq!(take(&mut early, &mut ctx, 0), None, "not yet reacted");
+        let mut late = MatchState::new(&m);
+        assert_eq!(take(&mut late, &mut ctx, 10), Some(opp), "reacted: his");
     }
 }
 

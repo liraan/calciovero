@@ -418,6 +418,7 @@ impl MatchState {
             };
             self.mark_offside_at_pass(ctx, attacker, from.0);
             self.pending = Some(Pending {
+                launched: tick,
                 due_tick: tick + FLIGHT_TICKS,
                 outcome: expected,
                 interceptor,
@@ -530,6 +531,7 @@ impl MatchState {
                 }
             }
             self.pending = Some(Pending {
+                launched: tick,
                 due_tick: tick + FLIGHT_TICKS,
                 outcome: Self::other(self.possession),
                 interceptor: None,

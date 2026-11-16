@@ -123,6 +123,7 @@ impl MatchState {
         self.spatial.played_by(winner);
         self.spatial.struck_shot();
         self.pending = Some(Pending {
+            launched: tick,
             due_tick: tick + FLIGHT_TICKS,
             outcome: Self::other(self.possession),
             interceptor: None,
@@ -401,6 +402,22 @@ impl MatchState {
             // Nobody receives his own pass.
             if Some(who) == passer || self.challenges.get(&who).is_some_and(|t| tick < *t) {
                 continue;
+            }
+            // A ball just struck is played by an opponent only once he has
+            // reacted to it (SIM 133, OI-100): his reaction from his
+            // reactivity, the keeper's formula. The passer reckons with it
+            // (the thought's `believed_reaction_ticks`); before, the man a
+            // step from him took it as it left the foot.
+            if let (Some(by), Some(launched)) = (passer, self.pending.as_ref().map(|p| p.launched))
+            {
+                let mates = |a: PlayerId, b: PlayerId| {
+                    let home = |x: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == x);
+                    home(a) == home(b)
+                };
+                #[allow(clippy::cast_precision_loss)]
+                if !mates(by, who) && ((tick - launched) as f64) < ctx.hidden.reaction_ticks(who) {
+                    continue;
+                }
             }
             let Some(pos) = self.spatial.agent(who).map(|a| a.position) else {
                 continue;

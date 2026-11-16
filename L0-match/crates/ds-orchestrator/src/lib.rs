@@ -972,6 +972,14 @@ impl GroundTruth {
         Some(f64::from(v))
     }
 
+    /// How long `player` takes to react to a ball just struck, ticks: the
+    /// body's reaction from his reactivity, the keeper's formula
+    /// (`save.json`; SIM 133, OI-100).
+    pub fn reaction_ticks(&mut self, player: PlayerId) -> f64 {
+        let r = self.latents_for(player).physical.reactivity;
+        self.save_balance.reaction_ticks(r)
+    }
+
     /// The save's declared parameters (`balance/save.json`).
     #[must_use]
     pub const fn save_balance(&self) -> ds_calculator::save::SaveBalance {
