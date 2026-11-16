@@ -111,6 +111,9 @@ pub struct OffBallScene {
     pub with_mate: Option<MateBall>,
     /// If an opponent has the ball: the nearest other opponent, to mark.
     pub to_mark: Option<Target>,
+    /// What his coach asks of him in this phase (ADR-059 step 4): the act,
+    /// if any.
+    pub asked: Option<OffBallAct>,
     /// If an opponent has the ball, what each danger is worth to them, in
     /// units of keeping the ball (ADR-052): the carrier's space, the space
     /// of the man to mark, the space he guards in the team's structure.
@@ -165,12 +168,8 @@ impl crate::GroundTruth {
         let discipline = f64::from(l.psychological.discipline);
         let floor = f64::from(self.offball_balance().discipline_floor_milli) / 1000.0;
         let held = th.held * place_weight(discipline, floor);
-        let mut best = (held, OffBallAct::Hold);
-        let mut offer = |score: f64, act: OffBallAct| {
-            if score > best.0 {
-                best = (score, act);
-            }
-        };
+        let mut options = vec![(held, OffBallAct::Hold)];
+        let mut offer = |score: f64, act: OffBallAct| options.push((score, act));
         // In reach he no longer presses: he goes in, or he jockeys, which is
         // a way of going in (ADR-042).
         if !keeper && !s.carrier_in_reach {
@@ -208,7 +207,7 @@ impl crate::GroundTruth {
             };
             offer(th.carrier * f64::from(skill), OffBallAct::Challenge);
         }
-        best.1
+        obey(&options, s.asked, discipline)
     }
 
     /// How far from his feet `player` reaches a ball passing by, cm
@@ -308,11 +307,9 @@ impl crate::GroundTruth {
             // How much the place in his coach's shape weighs for him: his
             // discipline (ADR-059 §4, the same rule as without the ball).
             let floor = milli(b.discipline_floor_milli);
-            let held = spaces.hold * place_weight(f64::from(l.psychological.discipline), floor);
-            let mut best = (held, OffBallAct::Hold);
-            if spaces.offer > best.0 {
-                best = (spaces.offer, OffBallAct::Offer);
-            }
+            let discipline = f64::from(l.psychological.discipline);
+            let held = spaces.hold * place_weight(discipline, floor);
+            let mut options = vec![(held, OffBallAct::Hold), (spaces.offer, OffBallAct::Offer)];
             if m.to_line_cm.is_some() {
                 // His own top speed, as his body has it (movement.json).
                 let mv = &self.movement_balance;
@@ -323,15 +320,41 @@ impl crate::GroundTruth {
                 #[allow(clippy::cast_precision_loss)]
                 let run = spaces.run
                     * thought.race(spaces.run_cm as f64, pace, spaces.defender_cm as f64);
-                if run > best.0 {
-                    best = (run, OffBallAct::Run);
-                }
+                options.push((run, OffBallAct::Run));
             }
             let _ = (proximity, reading);
-            return best.1;
+            return obey(&options, s.asked, discipline);
         }
         best.1
     }
+}
+
+/// The act a player chooses among `options` (value, act), with what his
+/// coach asks of him (ADR-059 §4, step 4).
+///
+/// His own best, unless the act
+/// asked is among them and what he gives up for it is within what his
+/// discipline accepts: the asked act worth at least `1 - discipline` of
+/// his best. The fully disciplined always does it, the undisciplined only
+/// if it is his own choice too. No number of its own. Ties go to the first
+/// option, as before.
+#[must_use]
+pub fn obey(
+    options: &[(f64, OffBallAct)],
+    asked: Option<OffBallAct>,
+    discipline: f64,
+) -> OffBallAct {
+    let mut best = options.first().copied().unwrap_or((0.0, OffBallAct::Hold));
+    for &(v, a) in options.iter().skip(1) {
+        if v > best.0 {
+            best = (v, a);
+        }
+    }
+    let gives_up = 1.0 - discipline.clamp(0.0, 1.0);
+    asked
+        .and_then(|a| options.iter().find(|(_, o)| *o == a))
+        .filter(|(v, _)| *v >= best.0 * gives_up)
+        .map_or(best.1, |(_, a)| *a)
 }
 
 /// How much the place his coach's shape gives him weighs for a player.
@@ -380,6 +403,7 @@ mod tests {
             carrier_in_reach: false,
             with_mate: None,
             to_mark: None,
+            asked: None,
             threats: None,
         }
     }
@@ -403,6 +427,27 @@ mod tests {
             ..scene()
         };
         assert_eq!(choose(&far), OffBallAct::GoToBall);
+    }
+
+    /// Twin test (ADR-059 step 4): two players equal but for discipline,
+    /// the same options, the coach asking for the run that his own reading
+    /// values at half of his best: the disciplined runs, the other does
+    /// what he reads; asked for what is not on, both do what they read.
+    #[test]
+    fn the_disciplined_does_what_he_is_asked() {
+        let options = [
+            (0.4, OffBallAct::Hold),
+            (1.0, OffBallAct::Offer),
+            (0.5, OffBallAct::Run),
+        ];
+        let asked = Some(OffBallAct::Run);
+        assert_eq!(obey(&options, asked, 0.9), OffBallAct::Run);
+        assert_eq!(obey(&options, asked, 0.2), OffBallAct::Offer);
+        assert_eq!(obey(&options, None, 0.9), OffBallAct::Offer);
+        assert_eq!(
+            obey(&options, Some(OffBallAct::Mark), 1.0),
+            OffBallAct::Offer
+        );
     }
 
     /// Twin test (ADR-059 §4): two players equal but for discipline, the

@@ -714,6 +714,7 @@ impl MatchState {
                     crate::perception::perceived_ball(&self.spatial, id, ball).is_some();
                 let scene = ds_orchestrator::OffBallScene {
                     actor: id,
+                    asked: self.spatial.asked(id, carrier_mate.is_some()),
                     place: if keeper {
                         ds_orchestrator::Place::Keeper {
                             // A pass meant for him is his to meet, wherever

@@ -280,3 +280,58 @@ fn the_board_changes_from_its_tick() {
     );
     assert!(now > was + 1_500.0, "he moved across: {was:.0} -> {now:.0}");
 }
+
+/// P1 (ADR-059 step 4): an individual instruction is a responsibility on
+/// the board, changed during the match like the rest of it. The same
+/// matches twice, in one the striker asked from the 15th minute to attack
+/// the depth when his side has the ball: from then, on average over six
+/// matches, he stands farther ahead of the ball when his side has it than
+/// without the ask; before it, the same match.
+#[test]
+#[allow(clippy::cast_precision_loss)] // ticks of a match
+fn a_striker_asked_to_run_stands_farther_ahead() {
+    let upto = usize::try_from(AT).expect("tick fits");
+    let (mut asked, mut free) = (0.0, 0.0);
+    for seed in 50..56 {
+        let plain = match_fixture(seed).expect("fixture");
+        let striker = plain.home.players[9].id;
+        let home: Vec<_> = plain.home.players.iter().map(|p| p.id).collect();
+        let mut m = match_fixture(seed).expect("fixture");
+        let mut board = m.home.board;
+        board.with_ball_tasks[9] = ds_model::Task::Run;
+        m.home = m.home.clone().with_instructions(vec![Instruction {
+            tick: AT,
+            order: Order::Board(board),
+        }]);
+        let (_, before) = simulate_from_seed_recorded(&plain, seed, MatchConfig::default());
+        let (_, after) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
+        assert_eq!(
+            before[..=upto],
+            after[..=upto],
+            "the same match up to the ask"
+        );
+        // How far ahead of the ball he stands, along his attack.
+        let ahead = |r: &[ds_match::TickRecord]| {
+            let xs: Vec<f64> = r
+                .iter()
+                .filter(|t| t.carrier.is_some_and(|c| home.contains(&c) && c != striker))
+                .filter_map(|t| {
+                    t.agents
+                        .iter()
+                        .find(|a| a.id == striker)
+                        .map(|a| f64::from(a.position.0 - t.ball.position.0))
+                })
+                .collect();
+            xs.iter().sum::<f64>() / xs.len().max(1) as f64
+        };
+        let window = upto + 1..upto + 18_000;
+        asked += ahead(&after[window.clone()]);
+        free += ahead(&before[window]);
+    }
+    assert!(
+        asked > free,
+        "asked {:.0} cm ahead, free {:.0} cm",
+        asked / 6.0,
+        free / 6.0
+    );
+}

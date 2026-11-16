@@ -224,6 +224,28 @@ impl TeamOrders {
     }
 }
 
+/// What the coach asks of a player in a phase (ADR-059 step 4, decision
+/// AL): his responsibility in the drawing. `Free` leaves it to his reading.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum Task {
+    /// His own reading (the default).
+    #[default]
+    Free,
+    /// With the ball: attack the space behind the last line.
+    Run,
+    /// With the ball: come to meet it, get free to receive.
+    Offer,
+    /// Keep his place: with the ball, the preventive defence; without it,
+    /// the line.
+    Stay,
+    /// Without the ball: go out at the carrier.
+    Press,
+    /// Without the ball: cover the space behind the one who presses.
+    Cover,
+    /// Without the ball: mark the man near him.
+    Mark,
+}
+
 /// A player's place in his side's block (decision AL, the free board).
 ///
 /// `depth` 0 on the defensive line and 1000 on the forward line, `width`
@@ -260,6 +282,12 @@ pub struct Board {
     /// Without the ball, one drawing per third.
     #[serde(default)]
     pub without_ball_thirds: Option<[Drawing; 3]>,
+    /// Each slot's responsibility with the ball (ADR-059 step 4).
+    #[serde(default)]
+    pub with_ball_tasks: [Task; 11],
+    /// Each slot's responsibility without the ball.
+    #[serde(default)]
+    pub without_ball_tasks: [Task; 11],
 }
 
 /// The 4-4-2 grid of before, as `(x percent, y percent)` per slot: GK, LB,
@@ -298,6 +326,8 @@ impl Default for Board {
             without_ball: d,
             with_ball_thirds: None,
             without_ball_thirds: None,
+            with_ball_tasks: [Task::Free; 11],
+            without_ball_tasks: [Task::Free; 11],
         }
     }
 }
@@ -344,6 +374,8 @@ impl Board {
         let (a, b) = (a.min(10), b.min(10));
         self.with_ball.swap(a, b);
         self.without_ball.swap(a, b);
+        self.with_ball_tasks.swap(a, b);
+        self.without_ball_tasks.swap(a, b);
         for t in self
             .with_ball_thirds
             .iter_mut()

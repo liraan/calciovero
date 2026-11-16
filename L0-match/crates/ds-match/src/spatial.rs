@@ -484,6 +484,31 @@ impl SpatialState {
         self.ball_foot = foot;
     }
 
+    /// What his coach asks of a player in this phase (ADR-059 step 4): the
+    /// responsibility of his slot on the board, as the act it means.
+    #[must_use]
+    pub fn asked(&self, id: PlayerId, with_ball: bool) -> Option<ds_orchestrator::OffBallAct> {
+        use ds_model::Task as T;
+        use ds_orchestrator::OffBallAct as A;
+        let slot = (*self.roles.get(&id)?).min(10);
+        let home = crate::perception::team_of(id) == 0;
+        let board = if home { &self.boards.0 } else { &self.boards.1 };
+        let task = if with_ball {
+            board.with_ball_tasks[slot]
+        } else {
+            board.without_ball_tasks[slot]
+        };
+        match task {
+            T::Free => None,
+            T::Run => Some(A::Run),
+            T::Offer => Some(A::Offer),
+            T::Stay => Some(A::Hold),
+            T::Press => Some(A::Press),
+            T::Cover => Some(A::Cover),
+            T::Mark => Some(A::Mark),
+        }
+    }
+
     /// The coach of one side changes his whole board (decision AG): from
     /// now on his players read it.
     pub const fn set_board(&mut self, home: bool, board: ds_model::Board) {
