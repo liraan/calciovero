@@ -10,9 +10,9 @@
 
 | Livello | Cos'è | Stato | Piano |
 |---|---|---|---|
-| L0 · La partita | Ventidue giocatori che pensano, il pallone con la fisica, le Leggi, la panchina | quasi chiuso, in taratura | [`L0-CLOSE`](L0-CLOSE.md), [`L0-CALIBRATION`](L0-CALIBRATION.md), [`L0-AUDIT`](L0-AUDIT.md) |
+| L0 · La partita | Ventidue giocatori che pensano, il pallone con la fisica, le Leggi, la panchina | quasi chiuso, in taratura; si riprende con il 2.5D (decisione S) | [`L0-CLOSE`](L0-CLOSE.md), [`L0-CALIBRATION`](L0-CALIBRATION.md), [`L0-AUDIT`](L0-AUDIT.md) |
 | L0 · Plugin | La partita divisa in plugin dietro un contratto (ADR-063) | fatto | [`PLUGINS`](PLUGINS.md) |
-| Vista 2.5D | La lavagna inclinata, la vista della GUI su desktop e Android | dopo L0 | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
+| Vista 2.5D | La lavagna inclinata, la vista della GUI su desktop e Android | adesso, prima della chiusura di L0 (decisione S) | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
 | L1 · La stagione | Tre serie e la coppa nel formato reale, ogni partita dal motore | dopo il 2.5D | [`L1`](L1.md) |
 | L2 · La carriera | Contratti, mercato, osservatori, vivaio, crescita, finanze, società, spogliatoio, la vita dell'allenatore | dopo la 0.1 | ADR-060; il piano si scrive alla fine di L1 |
 | L3 · Il gioco che si modifica | Editor, pacchetti, importatore locale, plugin esterni in WebAssembly | dopo L2 | decisioni 4, F–K |
@@ -22,8 +22,8 @@
 
 Ogni passo si chiude con la sua prova, e il successivo non parte prima.
 
-1. **Chiudere L0.** Prova: almeno **16 metriche su 22 in banda**, e ogni metrica fuori banda con la sua causa scritta e il suo OI (decisione L). Poi il golden su glibc, musl e Windows, la durata di una partita in `STATE.md` e la partita di prova preparata per il maintainer.
-2. **La vista 2.5D** (sezione "Il lavoro del 2.5D" di `DESIGN.md`). Prova: la finestra mostra la partita inclinata, con le figurine, il pallone con l'ombra e l'interpolazione alla frequenza dello schermo; il golden identico; il README con la GIF del 2.5D.
+1. **La vista 2.5D** (sezione "Il lavoro del 2.5D" di `DESIGN.md`; prima della chiusura di L0, decisione S: le metriche più lontane dal vero sono in altezza, e il 2.5D serve a vederne le cause). Prova: la finestra mostra la partita inclinata, con le figurine, il pallone con l'ombra e l'interpolazione alla frequenza dello schermo; il golden identico; il README con l'animazione del 2.5D (WebP a 60 fotogrammi, o MP4 se GitHub non la anima).
+2. **Chiudere L0**, con il 2.5D come strumento: prima OI-102 (il gioco aereo), poi i tiri da vicino (OI-100), poi il resto. Prova: almeno **16 metriche su 22 in banda**, e ogni metrica fuori banda con la sua causa scritta e il suo OI (decisione L). Poi il golden su glibc, musl e Windows, la durata di una partita in `STATE.md` e la partita di prova preparata per il maintainer.
 3. **L1, i dieci passi di [`L1.md`](L1.md).** Prova: dieci stagioni con lo stesso hash, il formato reale, i plugin spenti.
 4. **La versione 0.1 · Stagione.** Prova: la lista congelata qui sotto, completa.
 5. **L2, prima metà** (contratti, finanze, mercato, gli altri club, osservatori). Prova: dieci anni di mercato deterministici. Poi la **0.2 · Mercato**.
@@ -35,8 +35,8 @@ Ogni passo si chiude con la sua prova, e il successivo non parte prima.
 
 Decisione N: quello che non è in questa lista va dopo la 0.1, salvo decisione esplicita del maintainer.
 
-- [ ] L0 chiuso (passo 1)
-- [ ] La vista 2.5D nella GUI (passo 2)
+- [ ] La vista 2.5D nella GUI (passo 1)
+- [ ] L0 chiuso (passo 2)
 - [ ] L1 completo: tre serie, la coppa, il calendario, le classifiche, l'allenatore, il corpo, la disciplina, la settimana
 - [ ] La GUI della stagione: la lavagna, i post-it a linguette, il calendario con l'agenda, la rosa, la classifica, la scheda giocatore, la partita
 - [ ] Il file di segnalazione (seme, scelte datate, versione del motore) con il pulsante "segnala un problema"; il registro locale degli errori, senza invii
