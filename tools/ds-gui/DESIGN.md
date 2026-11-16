@@ -47,7 +47,7 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 - **Desktop, quando arriverà il 3D (dopo la 0.1): Bevy, se sarà abbastanza maturo.** Conta la comunità: è la più grande del mondo Rust per i giochi. Fyrox è escluso, con dispiacere: ha l'editor e API stabili dalla 1.0 (marzo 2026), ma una comunità piccola e una grafica ancora OpenGL, a rischio su macOS. Bevy usa wgpu (Vulkan, Metal, DirectX 12).
 - **"Abbastanza maturo" si misura così,** al momento della scelta: un anno senza cambiamenti incompatibili che costringano a riscrivere la vista, oppure la 1.0; Windows, Linux e macOS che girano senza problemi noti; bevy_egui mantenuto. Se non ci siamo, il 3D aspetta: il 2.5D in egui basta.
 - **La migrazione è piccola per costruzione:** la vista 3D è un programma o un crate separato che legge la registrazione della partita, e non scrive mai nella simulazione (i float del disegno non toccano il determinismo). Con bevy_egui i pannelli egui esistenti (post-it, scheda, lavagna) possono girare dentro Bevy, quindi non si riscrive l'interfaccia.
-- **Il 2.5D in egui, su desktop e Android:** la lavagna inclinata in prospettiva, con figurine con altezza e il pallone con la sua ombra (prototipo del 16 novembre). Lo stesso codice per le due piattaforme, quindi il costo è uno solo. Sul desktop resta accanto al 2D dall'alto e, quando arriverà, al 3D: chi gioca sceglie la vista.
+- **Il 2.5D in egui, su desktop e Android:** la lavagna inclinata in prospettiva, con figurine con altezza e il pallone con la sua ombra (prototipo del 16 novembre). Lo stesso codice per le due piattaforme, quindi il costo è uno solo. **Il 2.5D sostituisce il 2D** (maintainer, 16 novembre 2026): è più utile anche per osservare, perché mostra l'altezza del pallone. Non si perde niente: l'inclinazione a 0° è la vista dall'alto di oggi, e resta come preset della telecamera, non come codice a parte. Sul desktop, quando arriverà, si aggiunge il 3D.
 - Le figurine si generano dai colori della squadra, come gli stemmi; nessun asset protetto (decisioni F–K).
 
 ## Lo strato di interpolazione della vista (16 novembre 2026)
@@ -64,3 +64,12 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 - A velocità molto accelerata (più tick di gioco al secondo che fotogrammi) l'interpolazione non serve più e la vista salta da tick a tick.
 
 **Da verificare nel codice prima di iniziare:** se la registrazione della partita contiene già la velocità di giocatori e pallone, l'altezza del pallone e l'orientamento dei corpi. Se contiene solo le posizioni, la velocità si ricava dai tick vicini, con meno precisione nelle frenate brusche. Aggiungere un campo alla registrazione cambia il formato del salvataggio e del replay, quindi va fatto con il suo ADR.
+
+## Il lavoro del 2.5D
+
+La registrazione della partita ha già quello che serve (`ds-match/src/record.rs`): la posizione del pallone in (x, y, z) con la sua altezza, lo stato del pallone, l'orientamento di ogni giocatore (`heading`), la fatica visibile e gli eventi di ogni tick. Le velocità si ricavano dai tick vicini. Nessun cambio al motore né al formato del salvataggio.
+
+1. La proiezione in prospettiva con l'inclinazione e i preset della telecamera (0° = dall'alto), al posto del disegno di `tools/ds-gui/src/scene.rs`.
+2. Le figurine con i colori della squadra e l'orientamento; il pallone con l'ombra; le porte con pali e traversa in altezza; l'ordine di disegno per profondità.
+3. Lo strato di interpolazione (sopra).
+4. I tre temi della lavagna; la prova su Android.
