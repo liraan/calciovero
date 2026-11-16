@@ -1,0 +1,253 @@
+diff --git a/L0-match/crates/ds-match/src/plugins/technique.rs b/L0-match/crates/ds-match/src/plugins/technique.rs
+index 4bdc681..abb1427 100644
+--- a/L0-match/crates/ds-match/src/plugins/technique.rs
++++ b/L0-match/crates/ds-match/src/plugins/technique.rs
+@@ -404,21 +404,10 @@ impl MatchState {
+                 continue;
+             }
+             // A ball just struck is played by an opponent only once he has
+-            // reacted to it (SIM 133, OI-100): his reaction from his
+-            // reactivity, the keeper's formula. The passer reckons with it
+-            // (the thought's `believed_reaction_ticks`); before, the man a
+-            // step from him took it as it left the foot.
+-            if let (Some(by), Some(launched)) = (passer, self.pending.as_ref().map(|p| p.launched))
+-            {
+-                let mates = |a: PlayerId, b: PlayerId| {
+-                    let home = |x: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == x);
+-                    home(a) == home(b)
+-                };
+-                #[allow(clippy::cast_precision_loss)]
+-                if !mates(by, who) && ((tick - launched) as f64) < ctx.hidden.reaction_ticks(who) {
+-                    continue;
+-                }
+-            }
++            // reacted to it (SIM 133, OI-100); but a man who has not
++            // reacted still stands where he stands, and a ball struck into
++            // his body hits him (SIM 135, DD-4).
++            let unready = self.unready(ctx, tick, passer, who);
+             let Some(pos) = self.spatial.agent(who).map(|a| a.position) else {
+                 continue;
+             };
+@@ -430,7 +419,11 @@ impl MatchState {
+                 continue;
+             }
+             let d = distance_squared(pos, near);
+-            let reach = ctx.hidden.ball_reach_cm(who, radius);
++            let reach = if unready {
++                i64::from(crate::spatial::BODY_RADIUS_CM)
++            } else {
++                ctx.hidden.ball_reach_cm(who, radius)
++            };
+             if d <= reach * reach && best.is_none_or(|(bd, _)| d < bd) {
+                 best = Some((d, who));
+             }
+@@ -521,6 +514,26 @@ impl MatchState {
+         true
+     }
+ 
++    /// Whether `who`, an opponent of the passer, has not yet reacted to the
++    /// pass just struck (SIM 133, OI-100): his reaction from his
++    /// reactivity, the keeper's formula. Until then he cannot play it; a
++    /// ball struck into his body still hits him (SIM 135, DD-4).
++    pub(crate) fn unready(
++        &self,
++        ctx: &mut MatchContext<'_>,
++        tick: u64,
++        passer: Option<PlayerId>,
++        who: PlayerId,
++    ) -> bool {
++        let (Some(by), Some(launched)) = (passer, self.pending.as_ref().map(|p| p.launched)) else {
++            return false;
++        };
++        let home = |x: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == x);
++        #[allow(clippy::cast_precision_loss)]
++        let early = ((tick - launched) as f64) < ctx.hidden.reaction_ticks(who);
++        home(by) != home(who) && early
++    }
++
+     /// Where `id` would meet a pass rolling on the grass, with his own
+     /// speed, acceleration and top speed (ADR-052: who gets there first;
+     /// ADR-058). `None` if the ball is not rolling.
+@@ -748,6 +761,23 @@ impl MatchState {
+                     return;
+                 }
+             } else {
++                // Struck into him before he reacted: it hits him and runs on.
++                if self.unready(ctx, tick, Some(by), id) {
++                    let v = self.spatial.ball_velocity();
++                    self.spatial
++                        .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
++                    self.spatial.deflected_by(id);
++                    let retry = ctx.hidden.duel_balance().retry_ticks;
++                    self.challenges.insert(id, tick + retry);
++                    self.emit_event(
++                        ctx,
++                        tick,
++                        Some(ActorId::Player(id)),
++                        EventType::Block,
++                        serde_json::json!({ "pass": true, "from": by.slot() }),
++                    );
++                    return;
++                }
+                 if self.deflects_the_pass(ctx, tick, (id, by)) {
+                     return;
+                 }
+diff --git a/L0-match/crates/ds-match/src/plugins/thought.rs b/L0-match/crates/ds-match/src/plugins/thought.rs
+index 64a27fa..59cf9b7 100644
+--- a/L0-match/crates/ds-match/src/plugins/thought.rs
++++ b/L0-match/crates/ds-match/src/plugins/thought.rs
+@@ -671,6 +671,13 @@ impl MatchState {
+                 .map(|a| a.position);
+             let mut view = TeamView::new(&self.spatial, other, home, length, carrier);
+             view.mate_carrier = carrier_mate;
++            view.ours = squad
++                .players
++                .iter()
++                .filter_map(|p| self.spatial.agent(p.id))
++                .map(|a| a.position)
++                .collect();
++            view.ground_keep = f64::from(self.spatial.ground_friction_milli()) / 1000.0;
+             view.mate_pressing = squad.players.iter().any(|p| {
+                 matches!(
+                     self.spatial.act(p.id),
+diff --git a/L0-match/crates/ds-match/src/save.rs b/L0-match/crates/ds-match/src/save.rs
+index 6e735c3..18abcb2 100644
+--- a/L0-match/crates/ds-match/src/save.rs
++++ b/L0-match/crates/ds-match/src/save.rs
+@@ -74,7 +74,7 @@ pub const SCHEMA_VERSION: u32 = 2;
+ /// event emission). A bump requires a `L0-match/CHANGELOG-SIM.md` entry and a
+ /// golden-test regeneration. See `doctrine/adr/003-plane-a-enforcement.md` and
+ /// `L0-match/CHANGELOG-SIM.md`.
+-pub const SIM_VERSION: u32 = 134;
++pub const SIM_VERSION: u32 = 135;
+ 
+ /// The save of a single match.
+ #[derive(Debug, Clone, Serialize, Deserialize)]
+diff --git a/L0-match/crates/ds-match/src/state.rs b/L0-match/crates/ds-match/src/state.rs
+index 4d10abf..6f4f0c2 100644
+--- a/L0-match/crates/ds-match/src/state.rs
++++ b/L0-match/crates/ds-match/src/state.rs
+@@ -392,6 +392,12 @@ pub(crate) struct TeamView {
+     /// Where our carrier is, if we have the ball (plan L0-CLOSE 10c: the
+     /// free line to offer on).
+     pub(crate) mate_carrier: Option<(i32, i32)>,
++    /// Where our own players stand (OI-117, SIM 134: who would reach a
++    /// pass to the man first).
++    pub(crate) ours: Vec<(i32, i32)>,
++    /// The share of a rolling ball's speed the grass keeps per tick
++    /// (`ball.json`).
++    pub(crate) ground_keep: f64,
+ }
+ 
+ impl TeamView {
+@@ -437,6 +443,8 @@ impl TeamView {
+                 .map(|a| a.position),
+             mate_pressing: false,
+             mate_carrier: None,
++            ours: Vec::new(),
++            ground_keep: 0.957,
+         }
+     }
+ 
+@@ -501,7 +509,15 @@ impl TeamView {
+         let dist = |p: (i32, i32)| distance_squared(me, p).isqrt();
+         ds_orchestrator::Threats {
+             carrier: threat(carrier),
+-            man: self.man_to_mark(me).map_or(0.0, threat),
++            // The man is a danger as much as a pass can reach him first
++            // (OI-117 (A), SIM 134): the defender imagines the carrier's
++            // ground pass to him as a passer does (ADR-052, `who_first`),
++            // everyone at the pace and reaction he believes. Before, the man
++            // weighed his whole danger, as if he already had the ball, and
++            // beyond 6 m the defender nearest the carrier marked him.
++            man: self
++                .man_to_mark(me)
++                .map_or(0.0, |m| threat(m) * self.reaches(carrier, m)),
+             held: threat(held) * into,
+             cover: self
+                 .mate_pressing
+@@ -512,6 +528,44 @@ impl TeamView {
+         }
+     }
+ 
++    /// How sure a ground pass from `carrier` to the man at `man` reaches
++    /// one of theirs before one of ours, `[0, 1]`, by the thought's own
++    /// forecast (ADR-052): the pass weighed as a passer weighs it.
++    pub(crate) fn reaches(&self, carrier: (i32, i32), man: (i32, i32)) -> f64 {
++        let thought = ds_calculator::thought::ThoughtBalance::load();
++        let kick = ds_calculator::kick::KickBalance::load();
++        let imagined = |at: (i32, i32), mate: bool| ds_calculator::thought::Imagined {
++            at,
++            speed: thought.believed_speed_cm_per_tick,
++            reaction: thought.believed_reaction_ticks,
++            mate,
++        };
++        let players: Vec<_> = self
++            .opponents
++            .iter()
++            .filter(|p| **p != carrier)
++            .map(|p| imagined(*p, true))
++            .chain(self.ours.iter().map(|p| imagined(*p, false)))
++            .collect();
++        #[allow(clippy::cast_precision_loss)]
++        let dist = distance_squared(carrier, man).isqrt() as f64;
++        let v0 = dist
++            .mul_add(1.0 - self.ground_keep, kick.pass_arrive_cm_per_tick)
++            .min(kick.speed(1.0, 0.5));
++        let forecast = ds_calculator::thought::who_first(
++            carrier,
++            man,
++            (v0, self.ground_keep),
++            &players,
++            thought.forecast_step_cm,
++        );
++        match forecast.first {
++            Some(first) if players[first].mate => thought.confidence(forecast.margin),
++            Some(_) => thought.confidence(-forecast.margin),
++            None => 0.0,
++        }
++    }
++
+     /// The man a defender at `me` would mark: the nearest of their outfield
+     /// players other than the carrier.
+     pub(crate) fn man_to_mark(&self, me: (i32, i32)) -> Option<(i32, i32)> {
+@@ -1528,6 +1582,39 @@ mod loose_reception_tests {
+     }
+ }
+ 
++#[cfg(test)]
++mod marking_tests {
++    use super::*;
++
++    fn view(ours: Vec<(i32, i32)>) -> TeamView {
++        TeamView {
++            forward: 1,
++            their_goal_x: 0,
++            last_line: None,
++            opponents: vec![(5000, 3400), (6500, 3400)],
++            men: vec![(6500, 3400)],
++            carrier_at: Some((5000, 3400)),
++            mate_pressing: false,
++            mate_carrier: None,
++            ours,
++            ground_keep: 0.957,
++        }
++    }
++
++    /// Twin test (OI-117 (A), SIM 134): the same man, the same carrier;
++    /// only a defender standing on the line between them changes. With
++    /// the line open a pass reaches him and he is a danger; with the line
++    /// shut he is far less of one, so the defender nearest the carrier
++    /// goes to the carrier instead of marking him.
++    #[test]
++    fn a_man_no_pass_can_reach_is_less_of_a_danger() {
++        let open = view(vec![(1000, 1000)]).reaches((5000, 3400), (6500, 3400));
++        let shut = view(vec![(5750, 3400)]).reaches((5000, 3400), (6500, 3400));
++        assert!(open > 0.5, "open {open}");
++        assert!(shut < open / 2.0, "shut {shut} open {open}");
++    }
++}
++
+ #[cfg(test)]
+ mod reaction_tests {
+     use super::*;
