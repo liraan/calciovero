@@ -210,6 +210,43 @@ impl MatchState {
         false
     }
 
+    /// A quick instruction or the transition choices (ADR-059 step 3):
+    /// set for the side, and the fact as it is told.
+    fn set_team_orders(&mut self, home: bool, order: ds_model::Order) -> serde_json::Value {
+        let side = if home { "home" } else { "away" };
+        let mut orders = self.spatial.orders(home);
+        let told = match order {
+            ds_model::Order::Quick { quick, on } => {
+                orders = orders.with(quick, on);
+                let name = match quick {
+                    ds_model::Quick::MorePressing => "more_pressing",
+                    ds_model::Quick::EveryoneForward => "everyone_forward",
+                };
+                serde_json::json!({ "side": side, "quick": name, "on": on })
+            }
+            ds_model::Order::Transitions { lost, won } => {
+                orders.lost = lost;
+                orders.won = won;
+                let lost = match lost {
+                    ds_model::OnLoss::Shape => "shape",
+                    ds_model::OnLoss::CounterPress => "counter_press",
+                    ds_model::OnLoss::DropBack => "drop_back",
+                };
+                let won = match won {
+                    ds_model::OnWin::Shape => "shape",
+                    ds_model::OnWin::Counter => "counter",
+                    ds_model::OnWin::Keep => "keep",
+                };
+                serde_json::json!({ "side": side, "lost": lost, "won": won })
+            }
+            ds_model::Order::Intention(_) | ds_model::Order::Substitute { .. } => {
+                serde_json::json!({ "side": side })
+            }
+        };
+        self.spatial.set_orders(home, orders);
+        told
+    }
+
     /// The coaches' instructions due (ADR-059): each takes effect at the
     /// tick after the one he gave it at, for his whole team, at once; the
     /// fact is told at its minute.
@@ -235,6 +272,12 @@ impl MatchState {
             for i in &due {
                 let intention = match i.order {
                     ds_model::Order::Intention(intention) => intention,
+                    order @ (ds_model::Order::Quick { .. }
+                    | ds_model::Order::Transitions { .. }) => {
+                        let fields = self.set_team_orders(home, order);
+                        self.emit_event(ctx, tick, None, EventType::Instruction, fields);
+                        continue;
+                    }
                     ds_model::Order::Substitute { outgoing, incoming } => {
                         // Made at the first stoppage (the bench plugin);
                         // the order is told now, at its minute.

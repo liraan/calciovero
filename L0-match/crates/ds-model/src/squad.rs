@@ -115,6 +115,20 @@ pub struct Instruction {
 pub enum Order {
     /// The team's intention from now on.
     Intention(Intention),
+    /// A quick instruction turned on or off (ADR-059 §6, step 3).
+    Quick {
+        /// Which.
+        quick: Quick,
+        /// On or off.
+        on: bool,
+    },
+    /// The two transition choices (ADR-059 §6, step 3).
+    Transitions {
+        /// When the ball is lost.
+        lost: OnLoss,
+        /// When the ball is won.
+        won: OnWin,
+    },
     /// A substitution decided during the match (decision T): `incoming`
     /// from the bench takes the place of `outgoing` at the first stoppage
     /// after the tick he orders it (Law 3), as a planned one.
@@ -124,6 +138,83 @@ pub enum Order {
         /// The player who comes on, from the bench.
         incoming: ds_core::ids::PlayerId,
     },
+}
+
+/// A quick instruction (ADR-059 §6): a part of the team's intention that
+/// moves the block on the board, never a player's number.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Quick {
+    /// Out of possession the block engages nearer the ball and higher.
+    MorePressing,
+    /// With the ball the whole block pushes up.
+    EveryoneForward,
+}
+
+/// What the team does in the seconds after losing the ball (ADR-059 §6).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum OnLoss {
+    /// Take the shape without the ball at once (the default).
+    #[default]
+    Shape,
+    /// Stay up and close on the ball: counter-press.
+    CounterPress,
+    /// Drop back into a low block.
+    DropBack,
+}
+
+/// What the team does in the seconds after winning the ball (ADR-059 §6).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum OnWin {
+    /// Take the shape with the ball at once (the default).
+    #[default]
+    Shape,
+    /// Push everyone up at once: counter-attack.
+    Counter,
+    /// Hold the line back and keep the ball.
+    Keep,
+}
+
+/// The parts of the team's intention the quick instructions and the
+/// transition choices set (ADR-059 step 3).
+///
+/// How far each moves the block
+/// is the coach's choice shown on the board, not a value of `balance/`:
+/// the steps here are declared arbitrary until L3 (`balance/SOURCES.md`).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TeamOrders {
+    /// More pressing: how much nearer the ball the block engages, cm
+    /// (`0` off).
+    pub press_cm: i32,
+    /// Everyone forward: how much higher the block stands with the ball,
+    /// cm (`0` off).
+    pub forward_cm: i32,
+    /// After losing the ball.
+    pub lost: OnLoss,
+    /// After winning it.
+    pub won: OnWin,
+}
+
+impl TeamOrders {
+    /// The step of "more pressing", cm: arbitrary until L3.
+    pub const PRESS_STEP_CM: i32 = 800;
+    /// The step of "everyone forward", cm: arbitrary until L3.
+    pub const FORWARD_STEP_CM: i32 = 1_200;
+    /// How long a transition lasts, seconds: the six seconds of the
+    /// counter-pressing rule of Guardiola's Barcelona (Perarnau, *Pep
+    /// Confidential*, 2014), a coach's rule, not a measure.
+    pub const TRANSITION_S: u32 = 6;
+
+    /// The orders with `quick` turned on or off.
+    #[must_use]
+    pub const fn with(mut self, quick: Quick, on: bool) -> Self {
+        match quick {
+            Quick::MorePressing => self.press_cm = if on { Self::PRESS_STEP_CM } else { 0 },
+            Quick::EveryoneForward => {
+                self.forward_cm = if on { Self::FORWARD_STEP_CM } else { 0 };
+            }
+        }
+        self
+    }
 }
 
 /// The most substitutions a side may make (Law 3).

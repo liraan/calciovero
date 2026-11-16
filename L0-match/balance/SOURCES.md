@@ -33,6 +33,16 @@ To be filled as each row is completed: full reference, what it measures, which p
 | FIFA, *Natural-Pitch Rating System* (Natural Playing Surfaces Quality Programme, May 2022, version 1.0; digitalhub.fifa.com, read 2026-11-15), the rating table: vertical ball rebound, 'excellent quality' 0.60-1.00 m; ball roll, 'excellent quality' 4.0-10.0 m. FIFA, *Quality Programme for Football Turf, Test Manual I: Test Methods* (2024), the vertical ball rebound (release from 2.00 +/- 0.01 m), the ball roll (a ramp 1,000 +/- 5 mm high at 45 degrees) and the angle ball rebound (30 +/- 2 degrees at 50 +/- 2 km/h; its requirement is in Test Manual II, not read) | how a ball bounces and rolls on a good pitch | `ball.json` `restitution_milli`; `ground_friction_milli` can be checked against the ball roll |
 | [to complete] | | |
 
+## The coach's steps (not in `balance/`, ADR-059)
+
+The quick instructions move the block by a step that is the coach's choice shown on the board, not a value of the game's physics or minds; ADR-059 keeps them out of `balance/` and declares them here. They live in `ds_model::TeamOrders`.
+
+| Step | Value | Status | Note |
+|---|---|---|---|
+| `PRESS_STEP_CM` | 800 | arbitrary, declared | "More pressing": out of possession the block engages this much nearer the ball and half as much higher. Until L3. |
+| `FORWARD_STEP_CM` | 1200 | arbitrary, declared | "Everyone forward": with the ball the line stands this much higher; the counter-attack after winning the ball uses it, keeping the ball holds the line half as much back. Until L3. |
+| `TRANSITION_S` | 6 | sourced (a coach's rule) | The seconds after the ball changes side in which the transition choices hold: the six-second counter-pressing rule of Guardiola's Barcelona (Martí Perarnau, *Pep Confidential*, 2014). A rule of coaching, not a measure of play. |
+
 ## Parameter by parameter
 
 ### `ball.json`
