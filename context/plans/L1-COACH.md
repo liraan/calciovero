@@ -1,6 +1,6 @@
 # L1 · L'allenatore (`ds-coach`)
 
-Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni da AF ad AJ (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
+Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni da AF ad AL (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
 
 Il quadro è in [`L1.md`](L1.md); le istruzioni in partita sono dell'[ADR-059](../../doctrine/adr/059-the-coach-speaks-during-the-match.md).
 
@@ -77,6 +77,32 @@ Ogni allenatore prepara la partita sull'avversario; l'adattabilità decide quant
 - **Le contromisure sono quelle del calcio moderno:** il raddoppio sulla stella, l'attenzione preventiva di chi le sta vicino, la pressione su chi le passa il pallone, il blocco che toglie lo spazio da cui l'avversario è pericoloso. La marcatura a uomo è una scelta rara, di un allenatore che la ha nella sua idea.
 - **Solo istruzioni che il motore sa eseguire** (ADR-059 §6). Se ne serve una nuova, nasce in L0 con il suo ADR e il suo `SIM_VERSION`, poi il piano la usa.
 - **Il costo è causato:** un raddoppio lascia libero qualcun altro, una linea alta lascia spazio dietro (ADR-059 §5). Nessun bonus né malus assegnato.
+
+## La lavagna libera (decisione AL)
+
+Le scelte dell'allenatore sono il più libere possibile. L'allenatore **disegna**, non sceglie da un menu: un 4-3-3 è un disegno salvato con un nome, come "la mia costruzione a tre". Ogni elemento è geometria o una scelta che il giocatore legge, e ognuno lo segue con la sua disciplina e la sua lettura (ADR-059 §3-4); i costi sono causati, mai assegnati (ADR-059 §5).
+
+**Oggi il motore conosce un solo modulo:** la griglia del 4-4-2 in `shape.rs`, a cui ogni altro modulo ricade. In L0, nella lista della decisione T, la griglia fissa lascia il posto ai disegni liberi: ogni giocatore ha il suo punto nel blocco (profondità e ampiezza, la rappresentazione che il motore usa già), e il motore lo legge per fase.
+
+**Cosa si può dire alla squadra:**
+
+1. **Le posizioni libere per fase.** Due disegni obbligatori, con la palla e senza; facoltativi, un disegno per terzo di campo (costruzione, sviluppo, rifinitura; senza palla: pressione alta, blocco medio, difesa bassa), e il motore passa dall'uno all'altro con continuità secondo dove sta il pallone. Forme asimmetriche ammesse (il 3-2-5 in possesso e il 4-4-2 senza, il terzino che entra dentro).
+2. **Le responsabilità di ogni giocatore,** dentro ogni disegno: ognuno ha i suoi compiti in quella fase (chi esce in pressione e chi copre, chi resta nella difesa preventiva, chi attacca la profondità e chi viene incontro, chi segue chi sui calci piazzati). È il modo moderno di dare un ruolo: non un nome, ma cosa fa in ogni fase.
+3. **Il blocco con valori continui:** l'altezza della linea, l'ampiezza, la distanza fra i reparti, in metri (oggi tre scatti: alto, medio, basso).
+4. **Il pressing:** dove comincia, cosa lo fa scattare (il retropassaggio, il controllo sbagliato, la palla al terzino), chi esce per primo e chi copre, se si spinge l'avversario verso la fascia o verso il centro.
+5. **Le marcature:** a zona, a uomo o miste, per fase e per calcio piazzato, con l'avversario preciso.
+6. **La costruzione e il ritmo:** il portiere corto o lungo, quanto si rischia nel passaggio, il ritmo.
+7. **I movimenti e le rotazioni:** attaccare la profondità, venire incontro, sovrapporsi, restare largo, accentrarsi; due giocatori che si scambiano il posto durante l'azione; lo scambio di posizione (decisione AG).
+8. **La difesa preventiva:** quanti restano dietro la palla quando si attacca, e dove.
+9. **Le transizioni:** quanti secondi di riaggressione dopo la palla persa, e chi la fa.
+10. **I calci piazzati disegnati:** posizioni, corse e tiratori per angoli, punizioni e rimesse, in attacco e in difesa, salvati come schemi.
+11. **La gestione:** perdere tempo, il ritmo a fine partita.
+
+**La libertà comprende l'errore.** Una tattica assurda (dieci uomini in attacco) si può fare; le conseguenze arrivano da sole, e il motore le racconta. In L2 lo staff lo fa notare prima.
+
+**Gli allenatori attori usano la stessa lavagna:** la loro idea di gioco è un disegno, preso dalle posizioni medie per fase delle squadre vere della stagione di riferimento (grado 2).
+
+**Le tattiche sono dati:** file di testo, che si salvano, si caricano e si scambiano come i pacchetti (decisione AD, punto 9). Un verbo nuovo della lavagna nasce in L0 con il suo ADR.
 
 ## Lo scambio di posizione (decisione AG)
 
