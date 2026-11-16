@@ -83,21 +83,37 @@ impl Actor {
         // as for the other causes of his strike since `SIM_VERSION` 88):
         // the base of the kick's error angle for his finishing and his
         // better foot, which a poor reader of the game underrates.
-        let own_error = {
+        // With the foot the ball is on (ADR-031); in front of him, the
+        // better one. If it is on the weaker foot he also reckons the
+        // better one, for the touch that would move it there.
+        let (own_error, strong_error) = {
             let mut custodian = hidden.custodian(self.player);
             let reading = custodian.value(ds_calculator::Characteristic::GameReading);
             let finishing = custodian.value(ds_calculator::Characteristic::Finishing);
-            let foot = custodian
-                .value(ds_calculator::Characteristic::LeftFoot)
-                .max(custodian.value(ds_calculator::Characteristic::RightFoot));
-            hidden
-                .kick_balance()
-                .miss_reckoned(finishing, foot, reading)
+            let left = custodian.value(ds_calculator::Characteristic::LeftFoot);
+            let right = custodian.value(ds_calculator::Characteristic::RightFoot);
+            let now = match scene.ball_foot {
+                Some(crate::Side::Left) => left,
+                Some(crate::Side::Right) => right,
+                None => left.max(right),
+            };
+            let k = hidden.kick_balance();
+            (
+                k.miss_reckoned(finishing, now, reading),
+                k.miss_reckoned(finishing, left.max(right), reading),
+            )
         };
         // What he reckons of his teammates' reception (ADR-058): their
         // first touch, which he knows from playing with them, and the
         // difficulty, as well as he reads the game.
         let mut scene = scene.clone();
+        if scene.ball_foot.is_some_and(|f| f != preferred_foot) {
+            if let Some((_, closing)) = scene.shift {
+                scene.shift = Some((strong_error, closing));
+            }
+        } else {
+            scene.shift = None;
+        }
         scene.reception.reading = hidden
             .custodian(self.player)
             .value(ds_calculator::Characteristic::GameReading);
@@ -198,6 +214,8 @@ mod tests {
         let mut opponents = vec![forward];
         opponents.extend(upfield);
         let scene = crate::read::PerceivedScene {
+            ball_foot: None,
+            shift: None,
             actor: me,
             teammates: vec![me, mate],
             opponents,

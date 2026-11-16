@@ -317,6 +317,8 @@ pub(crate) enum ChosenAction {
     /// Hold the ball up, shielding it, while the team comes up (plan
     /// L0-CLOSE 11): he keeps it at his feet until his next decision.
     Hold,
+    /// Touch the ball inside, onto his better foot (ADR-031).
+    Shift,
 }
 
 /// Builds the `PerceivedScene` from the engine's spatial state.
@@ -342,6 +344,11 @@ pub(crate) fn scene_from(
     }
     ds_orchestrator::PerceivedScene {
         actor: attacker,
+        ball_foot: spatial.ball_foot(),
+        // A touch onto the better foot moves the ball across his body, two
+        // body radii, and in its time the opponents come as near (ADR-031);
+        // the actor keeps it only if the ball is on his weaker foot.
+        shift: Some((0.0, i64::from(2 * crate::spatial::BODY_RADIUS_CM))),
         teammates,
         opponents,
         positions,

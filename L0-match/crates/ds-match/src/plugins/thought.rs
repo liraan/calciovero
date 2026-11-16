@@ -228,6 +228,7 @@ impl MatchState {
             ds_orchestrator::ChoiceKind::Carry { to } => ChosenAction::Carry(to),
             ds_orchestrator::ChoiceKind::Clear { to } => ChosenAction::Clear(to),
             ds_orchestrator::ChoiceKind::Hold => ChosenAction::Hold,
+            ds_orchestrator::ChoiceKind::Shift => ChosenAction::Shift,
         };
 
         // Only the restart's first pass is free of offside: any other play
@@ -311,6 +312,32 @@ impl MatchState {
                     .set_carry_target(Some((x + dx * step / len, y + dy * step / len)));
             }
         }
+        if chosen == ChosenAction::Shift {
+            // A touch inside, towards the middle, onto his better foot.
+            let strong = {
+                let left = ctx
+                    .hidden
+                    .characteristic(attacker, "left_foot")
+                    .unwrap_or(0.0);
+                let right = ctx
+                    .hidden
+                    .characteristic(attacker, "right_foot")
+                    .unwrap_or(0.0);
+                if left > right {
+                    ds_orchestrator::Side::Left
+                } else {
+                    ds_orchestrator::Side::Right
+                }
+            };
+            self.spatial.set_ball_foot(Some(strong));
+            if let Some(a) = self.spatial.agent(attacker) {
+                let (x, y) = a.position;
+                let mid = i32::from(ctx.match_.pitch.width_m) * 50;
+                let step = (2 * crate::spatial::BODY_RADIUS_CM).min((mid - y).abs());
+                self.spatial
+                    .set_carry_target(Some((x, y + step * (mid - y).signum())));
+            }
+        }
         if chosen == ChosenAction::Hold {
             // He stays on it, his body between it and the man on him.
             let at = self.spatial.agent(attacker).map(|a| a.position);
@@ -327,6 +354,11 @@ impl MatchState {
                 self.spatial
                     .set_carry_target(Some((x + dx * step / len, y + dy * step / len)));
             }
+        }
+        if matches!(chosen, ChosenAction::Carry(_) | ChosenAction::Advance) {
+            // Running with it, the ball goes back to the foot of the side
+            // where it is (ADR-031).
+            self.spatial.set_ball_foot(None);
         }
 
         if let ChosenAction::Pass {
@@ -373,6 +405,7 @@ impl MatchState {
                     <= i64::from(ctx.hidden.kick_balance().throw_max_cm).pow(2);
             let ctx_pass = ds_orchestrator::PassContext {
                 passer: attacker,
+                foot: self.spatial.ball_foot(),
                 from,
                 to,
                 throw,
@@ -390,7 +423,13 @@ impl MatchState {
             // A cross is the ball from wide into the area, lofted or low
             // (the low cross, the cut-back): not a keeper's throw.
             if !throw {
-                self.tell_cross(ctx, tick, attacker, (from.0, from.1), (to.0, to.1));
+                self.tell_cross(
+                    ctx,
+                    tick,
+                    attacker,
+                    ((from.0, from.1), (to.0, to.1)),
+                    ctx_pass.foot,
+                );
             }
             // MD-25/F.4-c: carrier released at launch, ball flies, pending
             // resolves the possession (MD-37).
@@ -865,6 +904,7 @@ impl MatchState {
             });
         let ctx_shot = ds_orchestrator::ShotContext {
             shooter: attacker,
+            foot: self.spatial.ball_foot(),
             from,
             to,
             difficulty,
@@ -915,7 +955,11 @@ impl MatchState {
                 shot_type: outcome.shot_type,
             },
         };
-        for c in crate::fact::classify(&fact) {
+        let foot = super::technique::foot_name(ctx_shot.foot);
+        for mut c in crate::fact::classify(&fact) {
+            if c.event_type == EventType::Shot {
+                c.fields["foot"] = foot.into();
+            }
             self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
         }
         match self.possession {

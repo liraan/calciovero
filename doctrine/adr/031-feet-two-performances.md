@@ -142,3 +142,5 @@ imply, and a second source of the same fact.
 ## Dated notes
 
 - **2026-11-07 (OI-65).** The `Foot` enum is removed from `pcfm-model`. The label is derived from `left_foot`/`right_foot` (§1, §3); keeping a stored `Foot` would be a second source for the same value (D7). No consumer reads it (verified: `Foot::` = 0 in `crates/`). `preferred_foot` is removed from `Player` in the same commit; the catalogue terms are the next step.
+
+- **2026-11-16 — applied** (`SIM_VERSION` 143; the maintainer: no new ADR, apply ADR-031, and the foot is the player's choice). Every kick is struck with the foot the ball is on: the foot of the side where it is, the outside one on the wing, either in the middle third; with it on his weaker foot the player may touch it onto the stronger one, at the cost of a touch and its time under the pressure there is (`ChoiceKind::Shift`). The label is still derived (the stronger of `left_foot` and `right_foot`), never stored.

@@ -218,6 +218,10 @@ pub struct SpatialState {
     /// Each outfield player's place in the block: `(depth, width)` in
     /// thousandths, from the formation (0 = defensive line / left).
     roles: BTreeMap<PlayerId, usize>,
+    /// The foot the carrier chose to touch the ball onto (ADR-031), until
+    /// he runs with it again or loses it; otherwise the ball is on the foot
+    /// of the side where it is.
+    ball_foot: Option<ds_orchestrator::Side>,
     /// The coaches' boards, home and away (decision AL): each slot's place
     /// in the block, with the ball and without.
     boards: (ds_model::Board, ds_model::Board),
@@ -339,6 +343,7 @@ impl SpatialState {
             block: crate::balance::BlockBalance::load(),
             roles: crate::shape::slots(home, away),
             boards: (home.board, away.board),
+            ball_foot: None,
             intentions: (home.intention, away.intention),
             orders: (
                 ds_model::TeamOrders::default(),
@@ -433,6 +438,50 @@ impl SpatialState {
         }
         self.home_in_possession = home;
         self.transition.1 = tick;
+    }
+
+    /// The foot a man who gets the ball has it on (ADR-031): on the wing,
+    /// the outside foot, the one towards the touchline he is near, in his
+    /// own frame (attacking `+x`, his left is `+y`); in the middle third of
+    /// the pitch's width, in front of him.
+    fn natural_foot(&self, p: PlayerId) -> Option<ds_orchestrator::Side> {
+        let y = self.agents.get(&p)?.position.1;
+        self.natural_foot_at(p, y)
+    }
+
+    /// The foot the ball is on for `p` at the width `y` (ADR-031): the
+    /// outside foot on the wing, none in the middle third.
+    #[must_use]
+    pub fn natural_foot_at(&self, p: PlayerId, y: i32) -> Option<ds_orchestrator::Side> {
+        let width = self.pitch_cm.1.max(1);
+        let home = crate::perception::team_of(p) == 0;
+        let high = y > width - width / 3;
+        let low = y < width / 3;
+        match (home, low, high) {
+            (true, false, true) | (false, true, false) => Some(ds_orchestrator::Side::Left),
+            (true, true, false) | (false, false, true) => Some(ds_orchestrator::Side::Right),
+            _ => None,
+        }
+    }
+
+    /// Where the carrier is taking the ball, if he chose to carry it.
+    #[must_use]
+    pub const fn carry_target(&self) -> Option<(i32, i32)> {
+        self.carry_target
+    }
+
+    /// The foot the carrier has the ball on (ADR-031): the one he touched
+    /// it onto, else the foot of the side where he is (the outside foot on
+    /// the wing), else none, in front of him.
+    #[must_use]
+    pub fn ball_foot(&self) -> Option<ds_orchestrator::Side> {
+        self.ball_foot
+            .or_else(|| self.carrier.and_then(|p| self.natural_foot(p)))
+    }
+
+    /// He touches the ball onto `foot` (ADR-031): his choice.
+    pub const fn set_ball_foot(&mut self, foot: Option<ds_orchestrator::Side>) {
+        self.ball_foot = foot;
     }
 
     /// The coach of one side changes his whole board (decision AG): from
@@ -858,7 +907,10 @@ impl SpatialState {
     }
 
     /// Sets the carrier. `None` means the ball is loose.
-    pub const fn set_carrier(&mut self, carrier: Option<PlayerId>) {
+    pub fn set_carrier(&mut self, carrier: Option<PlayerId>) {
+        if carrier != self.carrier {
+            self.ball_foot = None;
+        }
         self.carrier = carrier;
         self.carry_target = None;
         self.touch = None;

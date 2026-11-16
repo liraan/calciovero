@@ -29,6 +29,12 @@ use crate::{ChoiceCandidate, ChoiceContext, ChoiceKind, Side};
 pub struct PerceivedScene {
     /// The actor who reads the scene.
     pub actor: PlayerId,
+    /// The foot the ball is on (ADR-031): `None` in front of him.
+    pub ball_foot: Option<Side>,
+    /// What moving it onto his better foot costs and gives (ADR-031): the
+    /// miss he expects of that foot, and how much nearer the opponents get
+    /// while he touches it there, cm. `None`: it is already on it.
+    pub shift: Option<(f64, i64)>,
     /// His teammates (the actor excluded).
     pub teammates: Vec<PlayerId>,
     /// The opponents.
@@ -439,13 +445,14 @@ fn kick_pressure(
     pos: (i32, i32),
     scene: &PerceivedScene,
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+    closing_cm: i64,
 ) -> f64 {
     scene
         .opponents
         .iter()
         .filter(|o| Some(**o) != scene.keeper)
         .filter_map(|o| scene.positions.get(o).copied())
-        .map(|opos| distance_squared(pos, opos).isqrt())
+        .map(|opos| (distance_squared(pos, opos).isqrt() - closing_cm).max(0))
         .min()
         .map_or(0.0, |d| {
             let r = balance.kick_pressure_radius_cm.max(1);
@@ -681,7 +688,7 @@ fn shot_candidates(
     scene: &PerceivedScene,
     pos: (i32, i32),
     (preferred_foot, own_error): (Side, f64),
-    risk_appetite: f64,
+    (risk_appetite, closing_cm): (f64, i64),
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
 ) -> Vec<ChoiceCandidate> {
     let goal = scene.goal;
@@ -695,7 +702,7 @@ fn shot_candidates(
         // reach the line of the shot; missed, the ball is theirs by our
         // goal line. The risk is in the worth: none on top of it.
         let m = mind();
-        let hurry = kick_pressure(pos, scene, balance);
+        let hurry = kick_pressure(pos, scene, balance, closing_cm);
         let keeper_at = scene.keeper.and_then(|k| scene.positions.get(&k)).copied();
         let off = keeper_at.map_or_else(
             || keeper_off(goal_dist as f64),
@@ -751,10 +758,13 @@ fn shot_candidates(
                 let aim_y = side.mul_add(edge, f64::from(goal.1));
                 // How far the keeper leans towards this post, at his depth.
                 let shift = keeper_at.map_or(0.0, |k| side * f64::from(k.1 - goal.1));
-                let chance = ds_calculator::thought::chance(
+                // His own spread (ADR-052, ADR-031): the foot he strikes
+                // with, the power, the pressure he feels.
+                let spread = own_spread(own_error, power, hurry, scene.strike_error_rad);
+                let chance = ds_calculator::thought::chance_with(
                     (goal_dist as f64, off, shift),
                     goal_cone(pos, goal),
-                    &m.kick,
+                    (&m.kick, spread),
                     &m.save,
                     &m.thought,
                 );
@@ -796,6 +806,90 @@ fn shot_candidates(
     candidates
 }
 
+/// The touch onto the better foot (ADR-031, the maintainer 2026-11-16):
+/// with the ball on his weaker foot he also imagines moving it onto the
+/// better one, and the shot that follows, with the opponents nearer by the
+/// time the touch takes. The same measure as every option: no bonus for
+/// the strong foot.
+fn shift_candidate(
+    scene: &PerceivedScene,
+    pos: (i32, i32),
+    (preferred_foot, risk_appetite): (Side, f64),
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> Option<ChoiceCandidate> {
+    let (strong_error, closing_cm) = scene.shift?;
+    // While he touches it, each outfield opponent comes that much nearer
+    // the ball: the man on him can be on the line of the shot by then.
+    let mut later = scene.clone();
+    for o in &scene.opponents {
+        if Some(*o) == scene.keeper {
+            continue;
+        }
+        if let Some(at) = later.positions.get_mut(o) {
+            let d = distance_squared(*at, pos).isqrt().max(1);
+            let step = closing_cm.min(d);
+            let toward = |a: i32, b: i32| {
+                a + i32::try_from((i64::from(b) - i64::from(a)) * step / d).unwrap_or(0)
+            };
+            *at = (toward(at.0, pos.0), toward(at.1, pos.1));
+        }
+    }
+    let after = shot_candidates(
+        &later,
+        pos,
+        (preferred_foot, strong_error),
+        (risk_appetite, 0),
+        balance,
+    );
+    let best = after
+        .iter()
+        .max_by(|a, b| a.geometric.total_cmp(&b.geometric))?;
+    // Whether he keeps it through the touch: his touch across his body
+    // against the nearest outfield opponent's run to the ball, the race he
+    // reckons for every ball (ADR-052 §5). Lost there, the opponents have
+    // the ball where he is.
+    let m = mind();
+    let nearest = scene
+        .opponents
+        .iter()
+        .filter(|o| Some(**o) != scene.keeper)
+        .filter_map(|o| scene.positions.get(o))
+        .map(|at| distance_squared(*at, pos).isqrt())
+        .min();
+    #[allow(clippy::cast_precision_loss)] // cm on a pitch
+    let keep = nearest.map_or(1.0, |d| {
+        m.thought.race(
+            closing_cm as f64,
+            m.thought.believed_speed_cm_per_tick,
+            (d as f64 - scene.reception.reach_cm).max(0.0),
+        )
+    });
+    let lost = space_value(pos, scene.own_goal, scene.goal);
+    Some(ChoiceCandidate {
+        kind: ChoiceKind::Shift,
+        geometric: ds_calculator::thought::ThoughtBalance::expected(
+            keep,
+            best.geometric,
+            lost,
+            risk_appetite,
+        ),
+        risk: 0.0,
+        visibility: best.visibility,
+    })
+}
+
+/// The angle of his own kick's miss as he reckons it (ADR-052, ADR-031):
+/// the same the engine gives the kick, his own error widened by the power,
+/// and the pressure he feels.
+fn own_spread(own_error: f64, power: f64, pressure: f64, strike: f64) -> f64 {
+    let k = &mind().kick;
+    (own_error * k.error_power_gain.mul_add(power, 0.5)).mul_add(
+        1.0,
+        k.error_pressure_rad
+            .mul_add(pressure.clamp(0.0, 1.0), strike),
+    )
+}
+
 /// Where he aims across the goal, from its centre, cm (ADR-052, he knows
 /// his own foot): inside the post by the miss he expects of himself at
 /// this distance and power, so a poor finisher aims nearer the middle;
@@ -807,14 +901,7 @@ fn aim_inside(
     power: f64,
     aim_edge_cm: f64,
 ) -> f64 {
-    // The same angle the engine gives his kick: his own error, widened by
-    // the power, and the pressure he feels.
-    let k = &mind().kick;
-    let angle = (own_error * k.error_power_gain.mul_add(power, 0.5)).mul_add(
-        1.0,
-        k.error_pressure_rad
-            .mul_add(pressure.clamp(0.0, 1.0), strike),
-    );
+    let angle = own_spread(own_error, power, pressure, strike);
     let expected_miss = goal_dist_cm * angle;
     #[allow(clippy::cast_precision_loss)] // 732 cm
     let half = GOAL_WIDTH_CM as f64 * 0.5;
@@ -1350,8 +1437,14 @@ pub fn build_choice(
     candidates.extend(shot_candidates(
         scene,
         pos,
-        (preferred_foot, own_error),
-        risk_appetite,
+        (scene.ball_foot.unwrap_or(preferred_foot), own_error),
+        (risk_appetite, 0),
+        balance,
+    ));
+    candidates.extend(shift_candidate(
+        scene,
+        pos,
+        (preferred_foot, risk_appetite),
         balance,
     ));
     if scene.penalty_kick && !candidates.is_empty() {
@@ -1462,6 +1555,8 @@ mod keeper_visibility_tests {
             positions.insert(keeper, (10500, y));
         }
         PerceivedScene {
+            ball_foot: None,
+            shift: None,
             actor: shooter,
             teammates: vec![shooter],
             opponents: if keeper_y.is_some() {
@@ -1574,6 +1669,42 @@ mod keeper_visibility_tests {
             .find(|c| matches!(c.kind, ChoiceKind::Shoot { .. }))
             .map(|c| c.visibility)
             .expect("a shoot candidate")
+    }
+
+    /// Twin test (ADR-031, the maintainer 2026-11-16: the foot is his
+    /// choice). The same right-footer, the ball on his left foot on the
+    /// left of the box: with space he moves it onto his right with a touch
+    /// (the touch is worth more than the shot with the weak foot); with a
+    /// man on him the touch is worth less than striking it now.
+    #[test]
+    fn with_space_he_moves_it_onto_his_strong_foot_under_pressure_he_strikes() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let (weak, strong) = (0.07, 0.02);
+        let best = |defender: Option<(i32, i32)>| {
+            let mut s = scene_with(Some(3400));
+            s.positions.insert(PlayerId::new(1, 0), (9100, 4400));
+            s.ball_foot = Some(Side::Left);
+            s.shift = Some((strong, 90));
+            if let Some(at) = defender {
+                let d = PlayerId::new(104, 0);
+                s.opponents.push(d);
+                s.positions.insert(d, at);
+            }
+            let (ctx, _) = build_choice(&s, Side::Right, 0.5, weak, &balance);
+            let worth = |shift: bool| {
+                ctx.candidates
+                    .iter()
+                    .filter(|c| matches!(c.kind, ChoiceKind::Shift) == shift)
+                    .filter(|c| matches!(c.kind, ChoiceKind::Shift | ChoiceKind::Shoot { .. }))
+                    .map(|c| c.geometric)
+                    .fold(f64::MIN, f64::max)
+            };
+            (worth(true), worth(false))
+        };
+        let (shift, now) = best(None);
+        assert!(shift > now, "with space: touch {shift} now {now}");
+        let (shift, now) = best(Some((9250, 4300)));
+        assert!(shift < now, "under pressure: touch {shift} now {now}");
     }
 
     /// Twin test (ADR-052, he knows his own foot): two shooters identical
@@ -1841,6 +1972,8 @@ mod keeper_visibility_tests {
                 positions.insert(opp, o);
             }
             PerceivedScene {
+                ball_foot: None,
+                shift: None,
                 actor: me,
                 teammates: vec![me, them],
                 opponents: opponent.map_or_else(Vec::new, |_| vec![opp]),

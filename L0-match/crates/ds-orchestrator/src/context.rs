@@ -47,6 +47,9 @@ pub struct DuelContext {
 pub struct ShotContext {
     /// The shooter.
     pub shooter: PlayerId,
+    /// The foot the ball is on when he strikes it (ADR-031): `None` when
+    /// he has it in front of him and strikes with the better one.
+    pub foot: Option<crate::Side>,
     /// Where the shot starts (the ball), in centimetres, 3D.
     pub from: (i32, i32, i32),
     /// The goal centre, in centimetres, 3D.
@@ -90,6 +93,9 @@ pub struct ShotContext {
 pub struct PassContext {
     /// The passer.
     pub passer: PlayerId,
+    /// The foot the ball is on when he plays it (ADR-031): `None` when he
+    /// has it in front of him and plays it with the better one.
+    pub foot: Option<crate::Side>,
     /// Where the pass starts (the ball), in centimetres, 3D.
     pub from: (i32, i32, i32),
     /// The receiver position, in centimetres, 3D.

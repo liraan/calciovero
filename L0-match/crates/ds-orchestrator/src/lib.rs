@@ -347,16 +347,16 @@ impl GroundTruth {
         // kicks with (the side he aims at), the power and the pressure: the
         // same player misses by more from farther away. No die (ADR-035).
         let k = self.kick_balance;
-        // The foot that kicks to the side he aims at, in his own frame:
-        // facing the goal, to his right he kicks with the right foot. Before
-        // `SIM_VERSION` 74 the side was read on the pitch, so one team used
-        // the other foot.
-        let facing_plus_x = ctx.to.0 >= ctx.from.0;
-        let to_his_left = (ctx.aim_y >= f64::from(ctx.to.1)) == facing_plus_x;
-        let foot = if to_his_left {
-            shooter.technical.left_foot
-        } else {
-            shooter.technical.right_foot
+        // The foot the ball is on (ADR-031, the maintainer 2026-11-16: the
+        // foot is his choice, made before the kick by moving the ball onto
+        // it or not); in front of him, the better one.
+        let foot = match ctx.foot {
+            Some(Side::Left) => shooter.technical.left_foot,
+            Some(Side::Right) => shooter.technical.right_foot,
+            None => shooter
+                .technical
+                .left_foot
+                .max(shooter.technical.right_foot),
         };
         let pressure = f64::from(ctx.difficulty.clamp(0, 100)) / 100.0;
         // On the run (plan L0-CLOSE 11): the faster he runs when he strikes
@@ -577,11 +577,12 @@ impl GroundTruth {
             k.speed(1.0, passer.physical.explosive_force)
         };
         let weighed = distance.mul_add(loss, k.pass_arrive_cm_per_tick);
-        // The foot he kicks with: the receiver's side of him.
-        let foot = if dy >= 0.0 {
-            passer.technical.left_foot
-        } else {
-            passer.technical.right_foot
+        // The foot the ball is on (ADR-031): before, the receiver's side on
+        // the pitch, which gave one team the other foot.
+        let foot = match ctx.foot {
+            Some(Side::Left) => passer.technical.left_foot,
+            Some(Side::Right) => passer.technical.right_foot,
+            None => passer.technical.left_foot.max(passer.technical.right_foot),
         };
         // Thrown, with his hands (both of them); kicked, with his foot.
         let (skill, foot) = if ctx.throw {
@@ -1688,6 +1689,7 @@ mod choice_filter_tests {
         let mut drift = |p: PlayerId| {
             g.resolve_pass(
                 &PassContext {
+                    foot: None,
                     passer: p,
                     from: (500, 3400, 0),
                     to: (3500, 3400, 0),
@@ -1798,6 +1800,7 @@ mod choice_filter_tests {
         let v = g
             .resolve_pass(
                 &PassContext {
+                    foot: None,
                     passer: PlayerId::new(0, 0),
                     from: (500, 3400, 0),
                     to: (3500, 3400, 0),
@@ -1838,6 +1841,7 @@ mod choice_filter_tests {
         let mut vy = |pressure: f64| {
             g.resolve_pass(
                 &PassContext {
+                    foot: None,
                     passer: PlayerId::new(0, 0),
                     from: (500, 3400, 0),
                     to: (4000, 3400, 0),
@@ -1867,6 +1871,7 @@ mod choice_filter_tests {
         let mut vy = |gait: f64| {
             g.resolve_pass(
                 &PassContext {
+                    foot: None,
                     passer: PlayerId::new(0, 0),
                     from: (500, 3400, 0),
                     to: (4000, 3400, 0),
@@ -1894,6 +1899,7 @@ mod choice_filter_tests {
             let v = g
                 .resolve_pass(
                     &PassContext {
+                        foot: None,
                         passer: PlayerId::new(0, 0),
                         from: (500, 3400, 0),
                         to: (4000, 3400, 0),

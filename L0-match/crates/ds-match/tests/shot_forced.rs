@@ -21,6 +21,7 @@ const fn shooter(slot: u32) -> PlayerId {
 
 const fn ctx_at(from_y: i32, difficulty: i32) -> ShotContext {
     ShotContext {
+        foot: None,
         shooter: shooter(9),
         from: (9000, from_y, 0),
         to: (10500, 3400, 244),
@@ -39,6 +40,7 @@ const fn ctx_at(from_y: i32, difficulty: i32) -> ShotContext {
 
 const fn ctx_contact(from_y: i32, difficulty: i32, contact_height: f64) -> ShotContext {
     ShotContext {
+        foot: None,
         shooter: shooter(9),
         from: (9000, from_y, 0),
         to: (10500, 3400, 244),

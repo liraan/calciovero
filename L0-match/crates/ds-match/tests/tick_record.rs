@@ -546,7 +546,22 @@ fn the_players_tire_and_half_time_rests_them() {
 /// changes, the ball was just by a goal line, towards the goal.
 #[test]
 fn every_goal_is_a_ball_over_the_line_between_the_posts() {
-    let (_, records) = recorded();
+    // Every goal of the first matches that have any (one match can end
+    // 0-0, as a real one can).
+    let mut goals = 0;
+    for seed in SEED..SEED + 6 {
+        if goals > 0 {
+            break;
+        }
+        let m = match_fixture(seed).expect("fixture");
+        let (_, records) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
+        goals += goals_over_the_line(&records);
+    }
+    assert!(goals > 0, "the sample has goals");
+}
+
+/// The goals of one match's record, each checked against Law 10.
+fn goals_over_the_line(records: &[TickRecord]) -> usize {
     let mut goals = 0;
     for pair in records.windows(2) {
         let (before, after) = (&pair[0], &pair[1]);
@@ -565,5 +580,5 @@ fn every_goal_is_a_ball_over_the_line_between_the_posts() {
             );
         }
     }
-    assert!(goals > 0, "the sample has goals");
+    goals
 }

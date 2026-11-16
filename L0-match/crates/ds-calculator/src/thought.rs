@@ -225,9 +225,30 @@ pub fn who_first(
 /// of the goal he sees.
 #[must_use]
 pub fn chance(
-    (distance_cm, keeper_off_cm, keeper_shift_cm): (f64, f64, f64),
+    position: (f64, f64, f64),
     goal_cone: f64,
     kick: &KickBalance,
+    save: &SaveBalance,
+    t: &ThoughtBalance,
+) -> f64 {
+    chance_with(
+        position,
+        goal_cone,
+        (kick, kick.error_rad(0.5, 0.75, 0.85, 0.0)),
+        save,
+        t,
+    )
+}
+
+/// The chance of his own shot (ADR-052, he knows his own foot; ADR-031).
+///
+/// As [`chance`], with the spread of his own kick, `spread_rad`, instead of
+/// an average shooter's: the foot he strikes with, the power, the pressure.
+#[must_use]
+pub fn chance_with(
+    (distance_cm, keeper_off_cm, keeper_shift_cm): (f64, f64, f64),
+    goal_cone: f64,
+    (kick, spread_rad): (&KickBalance, f64),
     save: &SaveBalance,
     t: &ThoughtBalance,
 ) -> f64 {
@@ -243,7 +264,7 @@ pub fn chance(
     // (negative: away from it), at his depth.
     let half = f64::from(t.goal_width_cm) / 2.0 * share;
     let open = (half - keeper_shift_cm - reach).max(0.0);
-    let spread = meet * kick.error_rad(0.5, 0.75, 0.85, 0.0);
+    let spread = meet * spread_rad;
     let hit = if open + spread > 0.0 {
         open / (open + spread)
     } else {

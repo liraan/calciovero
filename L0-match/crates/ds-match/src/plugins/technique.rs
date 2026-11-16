@@ -27,14 +27,15 @@ impl MatchState {
     /// next decision, and the match stood still around it (OI-97).
     /// A pass from a wide position into the opponents' penalty area is a
     /// cross (ADR-051), lofted or low (since `SIM_VERSION` 92: the real
-    /// definition counts the low cross and the cut-back): it is told as one.
+    /// definition counts the low cross and the cut-back): it is told as one,
+    /// with the foot it was struck with (ADR-031).
     pub(crate) fn tell_cross(
         &mut self,
         ctx: &mut MatchContext<'_>,
         tick: u64,
         crosser: PlayerId,
-        from: (i32, i32),
-        to: (i32, i32),
+        (from, to): ((i32, i32), (i32, i32)),
+        foot: Option<ds_orchestrator::Side>,
     ) {
         let (length, width) = pitch_cm(ctx);
         let home = ctx.match_.home.players.iter().any(|p| p.id == crosser);
@@ -45,7 +46,7 @@ impl MatchState {
                 tick,
                 Some(ActorId::Player(crosser)),
                 EventType::Cross,
-                serde_json::json!({ "x": from.0, "y": from.1 }),
+                serde_json::json!({ "x": from.0, "y": from.1, "foot": foot_name(foot) }),
             );
         }
     }
@@ -920,6 +921,16 @@ impl MatchState {
         let after_carry = self.spatial.ball_3d();
         self.check_goal_line(ctx, tick, before_carry, after_carry);
         self.restart_if_out(ctx, tick);
+    }
+}
+
+/// The foot a ball was struck with, as the facts tell it (ADR-031):
+/// `either` when he had it in front of him.
+pub(crate) const fn foot_name(foot: Option<ds_orchestrator::Side>) -> &'static str {
+    match foot {
+        Some(ds_orchestrator::Side::Left) => "left",
+        Some(ds_orchestrator::Side::Right) => "right",
+        None => "either",
     }
 }
 

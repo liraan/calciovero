@@ -67,6 +67,10 @@ pub enum ChoiceKind {
     /// Hold the ball up: keep it, shielding it, while the team comes up
     /// (plan L0-CLOSE 11).
     Hold,
+    /// Move the ball onto his stronger foot with a touch inside (ADR-031,
+    /// the maintainer 2026-11-16): a touch and its time, under the pressure
+    /// there is, for the kick that follows with the better foot.
+    Shift,
 }
 
 /// The side of the body: which foot the actor prefers (ADR-047, forma (d)).
@@ -156,6 +160,7 @@ impl GroundTruth {
                 | ChoiceKind::Advance
                 | ChoiceKind::Carry { .. }
                 | ChoiceKind::Hold
+                | ChoiceKind::Shift
                 | ChoiceKind::Clear { .. } => ctx.actor.slot(),
             };
             tiebreaks.push(tiebreak);
