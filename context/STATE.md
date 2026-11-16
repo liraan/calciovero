@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `f080a5c` - "SIM 145: the starting state of each player (ADR-067, decision AB)"
+**Last commit verified:** `15bdaed` - "Merge docs/plan-3d: the FM graphics packs, the 3D crowd and choices, decisions BG and BH"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,8 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**Merge di `docs/plan-3d` (2026-11-16).** L3.md (i pacchetti grafici), DESIGN.md (il pubblico in 3D e le scelte del 3D), le decisioni BG e BH. Niente cambia per L0. Il ramo va cancellato a mano se il proxy rifiuta la mia cancellazione.
 
 **Lo stato di partenza (SIM 145, ADR-067, DD-9, decisione AB).** Freschezza fisica (la fatica di partenza), freschezza cognitiva (una fatica mentale che si somma alla fisica nel rallentare la decisione), condizione (pesa la resistenza: fuori condizione si stanca prima), danno muscolare (una fatica che la partita non restituisce, neanche all'intervallo). Ognuno letto da un consumatore che il motore ha già, nessun numero nuovo; golden identici. `match_sharpness` resta senza consumatore: L1 deciderà se è distinto dalla condizione.
 
