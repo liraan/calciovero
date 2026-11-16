@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `01f76c0` - "SIM 143: the foot is the player's choice (ADR-031 applied)"
+**Last commit verified:** `826208f` - "ADR-065: the future inputs of the match, from the plan of L2"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,8 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**Merge di `docs/plan-l2` (2026-11-16).** L2.md, le decisioni da AS a BD, GAME.md, L1-COACH.md, la tabella delle versioni del README. Niente cambia per L0 adesso: gli input futuri della partita (misure e manto del campo, decisione AZ; intesa fra coppie, decisione BB) sono annotati in ADR-065 come nota datata, per quando arriva il loro blocco (0.4). Il ramo `docs/plan-l2` è tutto in main: va cancellato a mano se il proxy rifiuta la mia cancellazione.
 
 **La lavagna libera e il piede come scelta (SIM 142 e 143).**
 - 142: la griglia del 4-4-2 lascia il posto alla lavagna (`ds_model::Board`): un disegno con la palla e uno senza, facoltativi quelli per terzo di campo con il passaggio continuo; `Order::Board` la cambia in partita al suo tick; lo scambio di due posti è un caso. La lavagna di base è il 4-4-2: golden identici.
