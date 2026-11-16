@@ -63,6 +63,7 @@ Ogni versione: cosa porta, la prova che la chiude, a chi va, cosa serve prima di
 | **1.0** | L3: l'editor (il giocatore nasce dalle sue statistiche), i pacchetti, l'importatore, i plugin esterni, l'accessibilità, il tutorial, la cura ([`L3.md`](L3.md)) | un dato modificato dall'editor e un pacchetto esterno lasciano la partita deterministica; il ritorno dei dati; ogni schermata da tastiera e dal lettore di schermo | tutti, sul desktop | la revisione legale di pacchetti e importatore (decisioni G–K); la documentazione dei formati |
 | **1.1** | Android (ADR-061), poi tifosi e stampa (decisione BC) | lo stesso golden su Android; dieci anni di tifosi e stampa con lo stesso hash | tutti, anche sul telefono | i profili leggeri dei moduli misurati sul telefono |
 | **Dopo** | il 3D sul desktop, se Bevy è maturo | — | — | — |
+| **Dopo il 3D** | la carriera da calciatore, con il pad o la tastiera (decisione BI, [`L2.md`](L2.md)), con molta calma | i passi piccoli in L0 e la parte di taratura che toccano rifatta; lo stesso hash con e senza un umano in campo | tutti | l'ADR dei passi piccoli |
 
 **Come esce una versione:** il tag `v*` lo mette il maintainer (un agente non può pushare tag su GitHub); il workflow costruisce i binari per Linux, Windows e macOS; su Codeberg la release si crea con la sua API; il registro delle modifiche e la tabella del README si aggiornano nello stesso giro.
 

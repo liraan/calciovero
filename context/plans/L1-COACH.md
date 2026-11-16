@@ -229,7 +229,7 @@ Ogni ruolo diventa giocabile quando esistono le scelte che gli spettano. I tre p
 | L1 | Direttore sportivo | Il mercato è in L1 (decisione AR): acquisti, cessioni, contratti, rinnovi |
 | L2 | Presidente | Arrivano società e bilancio completo: nomine ed esoneri, la gerarchia che avoca, le offerte di lavoro |
 | L2 (0.4), come moduli | Capo osservatori, responsabile del vivaio, allenatore del vivaio, osservatore del vivaio (decisione AU) | Ogni posto è un modulo con le sue scelte e la sua GUI |
-| Dopo la 0.4, come modulo | Calciatore, con il pad o la tastiera in partita (decisione BI) | Il calciatore ha caratteristiche, a differenza degli altri posti umani |
+| Dopo il 3D, come modulo | Calciatore, con il pad o la tastiera in partita (decisione BI) | Il calciatore ha caratteristiche, a differenza degli altri posti umani |
 | Dopo, un modulo alla volta (anche dai modder) | Vice, direttore tecnico, amministratore delegato, preparatore, allenatore dei portieri, analista, team manager | Ruoli in dati, si aggiungono senza toccare il nucleo |
 
 ## Fuori da L1
