@@ -7,10 +7,12 @@
 //! decision. It is the substrate the narrator reads and the 2D projects
 //! (IDEA-INFRA-021: tick record -> narrator -> 2D).
 //!
-//! **Derived, never saved.** The record is regenerated from the seed (a
-//! match is about 0.2 s in release): it does not enter the save and does
-//! not change the state hash. Recording a match must not change it: the
-//! golden test is the proof.
+//! **A contract (ADR-065).** The record never changes the state hash:
+//! recording a match must not change it, and the golden test is the proof.
+//! A finished match keeps it in its save, packed with its header and its
+//! own format version (`recording.rs`), so that it can be watched as it was
+//! even after the engine changes. A field added here is optional and comes
+//! with a new `RECORD_FORMAT_VERSION`; the views read only this format.
 
 use std::ops::Range;
 

@@ -34,6 +34,9 @@ struct Game {
     names: BTreeMap<PlayerId, String>,
     why: String,
     pitch_cm: (i32, i32),
+    /// The record's header (ADR-065): the physics the match was played
+    /// with, for the ball's flight between two ticks.
+    header: ds_match::RecordHeader,
 }
 
 /// What the command line asks of the window (`ds-gui --help`).
@@ -205,7 +208,12 @@ impl App {
                     .chain(m.away.bench.iter())
                     .map(|p| (p.id, p.name.clone()))
                     .collect();
+                let header = ds_match::RecordHeader::current(
+                    MatchConfig::default().ticks_per_second,
+                    (m.pitch.length_m, m.pitch.width_m),
+                );
                 self.game = Some(Game {
+                    header,
                     ticks,
                     records: kept,
                     gestures,
@@ -402,7 +410,7 @@ impl App {
         // tick before and the tick after (the interpolation layer).
         #[allow(clippy::cast_precision_loss)]
         let instant = (self.tick as f64 + self.carry - 1.0).max(0.0);
-        let moment = Moment::at(&game.records, instant);
+        let moment = Moment::at(&game.records, instant, &game.header.physics);
         let (origin, size) = ((r.min.x, r.min.y), (r.width(), r.height()));
         let geom = match self.camera {
             Camera::Whole => Geometry::fit(origin, size, 16.0, game.pitch_cm, self.tilt),
@@ -687,7 +695,6 @@ fn gestures(
     records: &[ds_match::TickRecord],
     events: &[ds_stats::MatchEvent],
 ) -> BTreeMap<PlayerId, Vec<(usize, scene::Gesture)>> {
-    use ds_stats::EventType as E;
     let mut out: BTreeMap<PlayerId, Vec<(usize, scene::Gesture)>> = BTreeMap::new();
     let flag = |e: &ds_stats::MatchEvent, k: &str| {
         e.fields.get(k).and_then(serde_json::Value::as_bool) == Some(true)
@@ -703,11 +710,13 @@ fn gestures(
                 .and_then(serde_json::Value::as_str)
                 == Some("header")
                 || flag(e, "header");
-            let g = match e.event_type {
-                E::Shot | E::Clearance if header => scene::Gesture::Jump,
-                E::Duel if flag(e, "aerial") => scene::Gesture::Jump,
-                E::Pass | E::Cross | E::Shot | E::Clearance => scene::Gesture::Kick,
-                E::Save => {
+            let g = match crate::animation::animation(e.event_type) {
+                crate::animation::Animation::KickOrHeader if header => scene::Gesture::Jump,
+                crate::animation::Animation::KickOrHeader => scene::Gesture::Kick,
+                crate::animation::Animation::JumpIfAerial if flag(e, "aerial") => {
+                    scene::Gesture::Jump
+                }
+                crate::animation::Animation::Dive => {
                     // Towards the ball's side, as he faces.
                     let side = r.agents.iter().find(|a| a.id == p).map_or(1.0, |a| {
                         #[allow(
@@ -728,7 +737,7 @@ fn gestures(
                     });
                     scene::Gesture::Dive(side)
                 }
-                E::Foul => {
+                crate::animation::Animation::Foul => {
                     // The man fouled falls (the field `against`, his slot).
                     let fouled = e
                         .fields
@@ -744,16 +753,19 @@ fn gestures(
                         continue;
                     }
                 }
-                E::Card => {
+                crate::animation::Animation::Card => {
                     out.entry(scene::REFEREE)
                         .or_default()
                         .push((k, scene::Gesture::Card));
                     continue;
                 }
-                E::ThrowIn => scene::Gesture::Throw,
-                E::Goal => scene::Gesture::Celebrate,
-                E::Tackle => scene::Gesture::Lunge,
-                _ => continue,
+                crate::animation::Animation::Throw => scene::Gesture::Throw,
+                crate::animation::Animation::Celebrate => scene::Gesture::Celebrate,
+                crate::animation::Animation::Lunge => scene::Gesture::Lunge,
+                // The fallback pose: no gesture.
+                crate::animation::Animation::JumpIfAerial | crate::animation::Animation::Rest => {
+                    continue;
+                }
             };
             out.entry(p).or_default().push((k, g));
         }

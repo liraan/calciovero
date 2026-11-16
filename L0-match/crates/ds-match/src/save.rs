@@ -9,6 +9,9 @@
 //! - The `MatchResult` (score, stats, state hash, narrative).
 //! - Metadata: `schema_version`, `sim_version`, `world_seed`, `match_id`,
 //!   `created_at`.
+//! - For a finished match, its tick record, packed (ADR-065, schema v3):
+//!   the match can always be watched as it was, even when a newer engine
+//!   would play it differently. Optional: a v2 save has none and loads.
 //!
 //! # What is NOT saved
 //!
@@ -57,6 +60,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::context::{MatchConfig, MatchContext};
 use crate::engine::{MatchEngine, TextMatchEngine};
+use crate::record::TickRecord;
+use crate::recording::{PackedRecord, RecordHeader};
 use crate::result::MatchResult;
 
 /// The current schema version.
@@ -66,7 +71,10 @@ use crate::result::MatchResult;
 ///
 /// v1 -> v2 (2026-11-07, OI-65): `Player.preferred_foot` removed (ADR-031).
 /// No migration script: no save exists in the repo (Phase 1, prototype).
-pub const SCHEMA_VERSION: u32 = 2;
+///
+/// v2 -> v3 (2026-11-16, ADR-065): the optional packed tick record
+/// (`record`). A v2 save loads unchanged, with no record; no migration.
+pub const SCHEMA_VERSION: u32 = 3;
 
 /// The current simulation version.
 ///
@@ -95,6 +103,10 @@ pub struct MatchSave {
     pub events: EventChain,
     /// The result of the simulation (score, stats, state hash, narrative).
     pub result: MatchResult,
+    /// The tick record of the finished match, packed (ADR-065). Absent in
+    /// a v2 save, and in a save made without it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub record: Option<PackedRecord>,
 }
 
 impl MatchSave {
@@ -115,7 +127,20 @@ impl MatchSave {
             match_: match_.clone(),
             events: result.events.clone(),
             result: result.clone(),
+            record: None,
         }
+    }
+
+    /// The same save, keeping the match's tick record (ADR-065): what a
+    /// finished match saves, so that it can be watched as it was.
+    #[must_use]
+    pub fn with_record(mut self, ticks: &[TickRecord], ticks_per_second: u8) -> Self {
+        let pitch = (self.match_.pitch.length_m, self.match_.pitch.width_m);
+        self.record = Some(PackedRecord::pack(
+            RecordHeader::current(ticks_per_second, pitch),
+            ticks,
+        ));
+        self
     }
 
     /// Serialises the save to bytes.
@@ -157,6 +182,11 @@ impl MatchSave {
         }
         if !self.events.verify(self.result.state_hash) {
             return Err(SaveError::ChainHashMismatch);
+        }
+        if let Some(r) = &self.record
+            && r.header.sim_version != self.sim_version
+        {
+            return Err(SaveError::RecordMismatch);
         }
         Ok(())
     }
@@ -222,6 +252,10 @@ pub enum SaveError {
     /// The chain hash does not match the expected hash.
     #[error("chain hash mismatch: the save has been tampered with")]
     ChainHashMismatch,
+
+    /// The record was not played by the engine the save names.
+    #[error("the saved record was played by another engine than the save's")]
+    RecordMismatch,
 }
 
 #[cfg(test)]
@@ -304,6 +338,45 @@ mod tests {
         // individual event fields (a serde_json::Value) may lose 1 ulp on f64
         // roundtrip through JSON.
         assert_eq!(loaded.events.len(), save.events.len());
+    }
+
+    /// A finished match saves its record and gets it back, tick for tick.
+    #[test]
+    fn the_record_is_saved_and_comes_back() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let (result, ticks) = crate::simulate_from_seed_recorded(&m, 42, MatchConfig::default());
+        let save = MatchSave::from_result(&result, &m, 42, GameInstant::from_raw(0))
+            .with_record(&ticks, MatchConfig::default().ticks_per_second);
+        let loaded = MatchSave::from_bytes(&save.to_bytes().unwrap()).unwrap();
+        let back = loaded.record.expect("record").unpack().expect("unpack");
+        assert_eq!(back, ticks);
+    }
+
+    /// Compatibility (ADR-065): a schema v2 save, without the record,
+    /// still loads under v3 and replays to the same match.
+    #[test]
+    fn a_v2_save_still_loads() {
+        let (match_, result) = simulate(42);
+        let save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
+        let mut v2: serde_json::Value = serde_json::from_slice(&save.to_bytes().unwrap()).unwrap();
+        v2["schema_version"] = 2.into();
+        assert!(v2.get("record").is_none(), "v2 had no record");
+        let loaded = MatchSave::from_bytes(&serde_json::to_vec(&v2).unwrap()).unwrap();
+        assert_eq!(loaded.schema_version, 2);
+        assert!(loaded.record.is_none());
+        assert_eq!(replay(&loaded).state_hash, result.state_hash);
+    }
+
+    /// A record from another engine than the save's is refused.
+    #[test]
+    fn a_record_from_another_engine_is_refused() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let (result, ticks) = crate::simulate_from_seed_recorded(&m, 42, MatchConfig::default());
+        let mut save = MatchSave::from_result(&result, &m, 42, GameInstant::from_raw(0))
+            .with_record(&ticks[..10], 10);
+        save.sim_version += 1;
+        let err = MatchSave::from_bytes(&save.to_bytes().unwrap()).unwrap_err();
+        assert!(matches!(err, SaveError::RecordMismatch));
     }
 
     #[test]

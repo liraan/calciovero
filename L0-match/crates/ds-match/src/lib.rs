@@ -35,6 +35,7 @@ pub mod narrative;
 pub mod perception;
 pub mod plugins;
 pub mod record;
+pub mod recording;
 pub mod registry;
 pub mod result;
 pub use plugins::referee as rules;
@@ -52,6 +53,9 @@ pub use perception::{
     Neighbour, distance_squared, nearest_opponents, nearest_teammates, nearest_to_point,
 };
 pub use record::{AgentFrame, BallFrame, TickRecord};
+pub use recording::{
+    PackedRecord, RECORD_FORMAT_VERSION, RecordError, RecordHeader, RecordPhysics,
+};
 pub use result::{MatchResult, MatchStatistics, Score};
 pub use save::{MatchSave, SCHEMA_VERSION, SIM_VERSION, SaveError, replay};
 pub use simulate::{simulate_match, simulate_match_recorded};

@@ -6,6 +6,7 @@
 //!
 //! `ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--camera whole|close|above] [--slow] [--record DIR --frames N]` It reads Plane B only (ADR-022 §3).
 
+mod animation;
 mod app;
 mod interp;
 mod scene;

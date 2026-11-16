@@ -19,6 +19,7 @@ ds-narrative.workspace = true
 ds-stats.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+miniz_oxide.workspace = true
 thiserror.workspace = true
 
 [lints]

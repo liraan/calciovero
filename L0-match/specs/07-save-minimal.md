@@ -56,6 +56,10 @@ pub struct MatchSave {
     pub events: EventChain,
     pub result: MatchResult,
 
+    // The tick record of the finished match, packed (ADR-065, schema v3;
+    // optional: a v2 save has none and loads unchanged)
+    pub record: Option<PackedRecord>,
+
     // Metadata
     pub command_log: Vec<Command>,       // for replay
 }

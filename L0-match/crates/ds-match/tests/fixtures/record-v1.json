@@ -1,0 +1,22 @@
+{
+  "header": {
+    "format_version": 1,
+    "sim_version": 137,
+    "physics": {
+      "ticks_per_second": 10,
+      "ball": {
+        "gravity_cm_per_tick2": 10,
+        "air_friction_milli": 990,
+        "ground_friction_milli": 957,
+        "stop_threshold_cm_per_tick": 1,
+        "restitution_milli": 632
+      },
+      "pitch_m": [
+        105,
+        68
+      ]
+    }
+  },
+  "ticks": 30,
+  "data": "7Ve/bxxFFH7vzU9bAVvZJdhSlHYXmQ6dKIzkfwAp0eVPMCU9LhExUiQicUWEXESKOyjouA4KK7oiQgghhAAhlNYNRUpKvjczd969WxuhkFT39m5v7ptvv3nvzZubORL6H0x4tXU8vjcWMZ7cJlPYVpyJtZ/lXJ7JlkxGn48CxS3a3hXaeYssiQjpi+T9d+SFnLlxWe8bNb1Uk4FW/ir/0klvXy1sfdy89vr29frG9/wD/8g/8c/8C//Kv/Mf/Cc/Y1rb2ta2trUVm5izW09wnd2avVuuO8fjv0959unF68mHs3zdnd3VvUPUvNAWrNJbIBOccc4ZthRgG3qjOepYuigHxwnlAa6hHpdAEmMM9XSLCfUU8v6R9pAlruTbMpeM9HXFw1NvXNY1c389GxNN2nRDEC4KFttJTLpArS+oB+q1lyxQvMUoqmGJ+gt9AdcjfWjlPY7Jeq9cRRMEN5SL70lF8jC4RWRCDVxrF2kAOud6X+LNKJ5NClGD1XNDyFwo4G1TCsgBva66YiPQXWQcW6kTerMobAK9mVGTfCgoDi9kM5pCTGi0Fk0DOYwId3J+I/I558qG17lDKtQt9dZq0oPPCteiiNOjjvXoVVQd345iNyajhzsP944PHoxPdr7Y++Tg/vhkbzKajB7tnOx9fHA8nn/qXaWhYTheVAzhMEUOeXZuCRUXojVulZvQuML1UOlyEQ0zzm7M4eKYERZnGI7SUdAlBDIqsquw4PYUMhePB+lydZ5tdBy73Og9pjXmx7SC8mgeT1uohDnISSGKlpnqMpeBwfWppHq6qVITJ6YFyYVbyo9LdlgXtPIS1yzQHBunoUzJg6IuLW5VMjF7wCaVfkgLULIChnMYGHl12mPNa0UB6E0Ul8NMoOWLN0B3sR4xOQFV5EsStD45oeh3vmRSUawOTDqk56gUrqKgeE4rL6EaB+rYa2EuuPgBwZII6BWfF6+uBpry1/Kcj957zk/5lI+mPOVHduiij6ZMR4/5M36A6/C0c0g9pPv2zpk85Zn9y35wtF9ddFVU1VRT07YdECjls3vvBF+tNJJNuYAgfzNwNK4GoYH/Bpf9XWiXFeoWYLtMV6Cuq6VxWnC/dDRArlbHq+shJ751g0FcEluKo2qHyPUQ2lC7JFhlbt0b4yuHz+8cnN7vjbTfkCKH/Tm93VT1/nJGm6ZqfrPgt7c7yudyT5rqMeoKPXV1nqu3TlPUQKlejbPSq6WmGoq9uXqS1/bqTfp/iBN0CfMqlRd24+UE9x/J8g8="
+}

@@ -683,7 +683,10 @@ mod tests {
         let (_, records) =
             ds_match::simulate_from_seed_recorded(&m, 42, ds_match::MatchConfig::default());
         let g = fit(45.0);
-        let f = frame(&crate::interp::Moment::at(&records, 500.0), &g);
+        let f = frame(
+            &crate::interp::Moment::at(&records, 500.0, &crate::interp::tests::physics()),
+            &g,
+        );
         let depths: Vec<f32> = f.items.iter().map(Item::depth).collect();
         assert!(depths.windows(2).all(|w| w[0] >= w[1]));
         assert!(f.items.len() >= 22, "{}", f.items.len());
@@ -702,7 +705,14 @@ mod tests {
                 |s: &Screen| (-1.0..=1201.0).contains(&s.x) && (-1.0..=801.0).contains(&s.y);
             for t in (0..records.len()).step_by(197) {
                 #[allow(clippy::cast_precision_loss)]
-                let f = frame(&crate::interp::Moment::at(&records, t as f64), &g);
+                let f = frame(
+                    &crate::interp::Moment::at(
+                        &records,
+                        t as f64,
+                        &crate::interp::tests::physics(),
+                    ),
+                    &g,
+                );
                 for i in &f.items {
                     if let Item::Figure(p) = i {
                         assert!(inside(&p.feet), "tilt {tilt} tick {t}: {:?}", p.feet);

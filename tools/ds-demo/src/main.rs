@@ -259,14 +259,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         Output::Tui(t) => return run_tui(&match_, args.seed, t),
         _ => {}
     }
-    let result = ds_match::simulate_from_seed(&match_, args.seed, MatchConfig::default());
+    let (result, ticks) =
+        ds_match::simulate_from_seed_recorded(&match_, args.seed, MatchConfig::default());
     if let Some(path) = &args.save {
+        // A finished match keeps its tick record (ADR-065): it can be
+        // watched as it was even after the engine changes.
         let save = ds_match::MatchSave::from_result(
             &result,
             &match_,
             args.seed,
             ds_core::time::GameInstant::from_raw(0),
-        );
+        )
+        .with_record(&ticks, MatchConfig::default().ticks_per_second);
         std::fs::write(path, save.to_bytes()?)?;
         eprintln!("match saved to {path}");
     }
@@ -291,6 +295,9 @@ fn run_load(path: &str, args: &Args) -> Result<(), Box<dyn std::error::Error>> {
             save.sim_version,
             ds_match::SIM_VERSION
         );
+        if save.record.is_some() {
+            eprintln!("the match as it was played is kept in the save's record");
+        }
     }
     let result = ds_match::replay(&save);
     print_result(&result, args)?;

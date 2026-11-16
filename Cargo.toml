@@ -55,6 +55,9 @@ libm = "=0.2.16"
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The packed match record (ADR-065): pure Rust deflate, already in the
+# lock through the GUI. Pinned exactly: the packed bytes stay the same.
+miniz_oxide = { version = "=0.8.9", default-features = false, features = ["with-alloc"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

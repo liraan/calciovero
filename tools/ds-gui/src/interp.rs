@@ -11,8 +11,8 @@
 //!
 //! - The players on Hermite curves, their velocity taken from the ticks
 //!   either side; their facing turned the short way round.
-//! - The ball, in the air, on the parabola of the engine's own gravity
-//!   (`ball.json`) between the two ticks; at someone's feet or on the
+//! - The ball, in the air, on the parabola of the gravity the match was
+//!   played with (the record's header, ADR-065) between the two ticks; at someone's feet or on the
 //!   grass, straight.
 //! - A contact (a shot, a pass, a header) happens on a tick, and the ball's
 //!   path is never smoothed across a tick: it breaks there.
@@ -20,7 +20,7 @@
 //!   always has the tick before and the tick after (the caller's delay).
 
 use ds_core::ids::PlayerId;
-use ds_match::{BallState, TickRecord};
+use ds_match::{BallState, RecordPhysics, TickRecord};
 
 /// One player at an instant.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -93,7 +93,8 @@ fn turn(a: f32, b: f32, s: f32) -> f32 {
 impl Moment {
     /// The instant `t`, in ticks from the first record (fractional): the
     /// tick `floor(t)` and the next, and how far between them. Past the
-    /// last record, the last record.
+    /// last record, the last record. The ball flies with `physics`, the
+    /// record's own.
     #[must_use]
     #[allow(
         clippy::cast_possible_truncation,
@@ -101,7 +102,7 @@ impl Moment {
         clippy::cast_precision_loss
     )]
     #[allow(clippy::many_single_char_names)] // drawing geometry
-    pub fn at(records: &[TickRecord], t: f64) -> Self {
+    pub fn at(records: &[TickRecord], t: f64, physics: &RecordPhysics) -> Self {
         let last = records.len().saturating_sub(1);
         let t = t.clamp(0.0, last as f64);
         let i = (t.floor() as usize).min(last);
@@ -150,7 +151,7 @@ impl Moment {
         let z = if r0.ball.state == BallState::InFlight && (z0 > 0.0 || z1 > 0.0) {
             // In the air: the engine's gravity bends the path between the
             // two ticks, and it ends on the next tick's height.
-            let g = f32::from(ds_match::balance::BallBalance::load().gravity_cm_per_tick2);
+            let g = f32::from(physics.ball.gravity_cm_per_tick2);
             let half = g / 2.0;
             (half * s)
                 .mul_add(-s, (z1 - z0 + half).mul_add(s, z0))
@@ -168,8 +169,12 @@ impl Moment {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
+
+    pub fn physics() -> RecordPhysics {
+        ds_match::RecordHeader::current(10, (105, 68)).physics
+    }
 
     fn records() -> Vec<TickRecord> {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
@@ -182,7 +187,7 @@ mod tests {
         let r = records();
         for t in [0_usize, 300, 1_234, r.len() - 1] {
             #[allow(clippy::cast_precision_loss)]
-            let m = Moment::at(&r, t as f64);
+            let m = Moment::at(&r, t as f64, &physics());
             #[allow(clippy::cast_precision_loss)]
             for (p, a) in m.players.iter().zip(&r[t].agents) {
                 assert!((p.at.0 - a.position.0 as f32).abs() < 1e-3);
@@ -201,7 +206,7 @@ mod tests {
         let r = records();
         for t in (100..r.len() - 2).step_by(211) {
             #[allow(clippy::cast_precision_loss)]
-            let m = Moment::at(&r, t as f64 + 0.5);
+            let m = Moment::at(&r, t as f64 + 0.5, &physics());
             for p in &m.players {
                 let (Some(a), Some(b)) = (pos(&r[t], p.id), pos(&r[t + 1], p.id)) else {
                     continue;
