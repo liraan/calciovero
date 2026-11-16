@@ -40,3 +40,27 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 - **Orizzontale:** la schermata partita della proposta C.
 - Si parte da qui per popolare la GUI di contenuti; poi si migliora con i betatester.
 - Pacchetti grafici leggeri per il telefono (loghi e foto a bassa risoluzione), stessi plugin del PC, distribuzione fuori da Google Play finché la decisione 4 di `context/plans/DECISIONS-2026-11-15.md` non apre un'altra strada.
+
+## La partita in 3D e in 2.5D (16 novembre 2026)
+
+- **Oggi e fino al 3D: egui**, su desktop e Android (ADR-055).
+- **Desktop, quando arriverà il 3D (dopo la 0.1): Bevy, se sarà abbastanza maturo.** Conta la comunità: è la più grande del mondo Rust per i giochi. Fyrox è escluso, con dispiacere: ha l'editor e API stabili dalla 1.0 (marzo 2026), ma una comunità piccola e una grafica ancora OpenGL, a rischio su macOS. Bevy usa wgpu (Vulkan, Metal, DirectX 12).
+- **"Abbastanza maturo" si misura così,** al momento della scelta: un anno senza cambiamenti incompatibili che costringano a riscrivere la vista, oppure la 1.0; Windows, Linux e macOS che girano senza problemi noti; bevy_egui mantenuto. Se non ci siamo, il 3D aspetta: il 2.5D in egui basta.
+- **La migrazione è piccola per costruzione:** la vista 3D è un programma o un crate separato che legge la registrazione della partita, e non scrive mai nella simulazione (i float del disegno non toccano il determinismo). Con bevy_egui i pannelli egui esistenti (post-it, scheda, lavagna) possono girare dentro Bevy, quindi non si riscrive l'interfaccia.
+- **Il 2.5D in egui, su desktop e Android:** la lavagna inclinata in prospettiva, con figurine con altezza e il pallone con la sua ombra (prototipo del 16 novembre). Lo stesso codice per le due piattaforme, quindi il costo è uno solo. Sul desktop resta accanto al 2D dall'alto e, quando arriverà, al 3D: chi gioca sceglie la vista.
+- Le figurine si generano dai colori della squadra, come gli stemmi; nessun asset protetto (decisioni F–K).
+
+## Lo strato di interpolazione della vista (16 novembre 2026)
+
+**La regola:** il motore resta a 10 tick al secondo di gioco, deterministico e veloce; la vista disegna alla frequenza dello schermo (60, 120, 144 Hz o più), ricostruendo ogni fotogramma per l'istante esatto. "120 Hz" vuol dire 120 immagini al secondo, non una partita più veloce: il tempo di gioco scorre alla velocità scelta da chi gioca. Uno strato solo, scritto una volta, per il 2D, il 2.5D e il 3D.
+
+1. **Un tick di ritardo.** La vista disegna 100 ms indietro rispetto all'ultimo tick calcolato, così ha sempre il tick prima e quello dopo: interpola, non estrapola mai.
+2. **I giocatori con le curve.** Tra due tick la traiettoria usa posizione e velocità (interpolazione di Hermite), non una linea retta; l'orientamento del corpo si interpola sull'angolo.
+3. **Il pallone con la sua fisica.** Tra due tick il pallone vola: la vista ricalcola gravità, resistenza dell'aria e rimbalzo a piccoli passi, con la forma della fisica del motore. È solo disegno, in float, e non torna mai nella simulazione; dove il disegno e il tick successivo non coincidono, vince il tick.
+4. **I momenti di contatto.** Un tiro, un passaggio o un colpo di testa avvengono a un tick preciso, noto dagli eventi: la traiettoria del pallone si spezza lì, invece di arrotondare l'angolo. Le figurine possono anticipare il gesto di qualche fotogramma.
+
+**I limiti:**
+- Ogni fotogramma si calcola dall'ora esatta, non contando i fotogrammi: se il telefono abbassa la frequenza per batteria o calore, la vista si adegua da sola.
+- A velocità molto accelerata (più tick di gioco al secondo che fotogrammi) l'interpolazione non serve più e la vista salta da tick a tick.
+
+**Da verificare nel codice prima di iniziare:** se la registrazione della partita contiene già la velocità di giocatori e pallone, l'altezza del pallone e l'orientamento dei corpi. Se contiene solo le posizioni, la velocità si ricava dai tick vicini, con meno precisione nelle frenate brusche. Aggiungere un campo alla registrazione cambia il formato del salvataggio e del replay, quindi va fatto con il suo ADR.
