@@ -53,3 +53,7 @@ Una partita giocata è un fatto: resta com'è stata, chi la guarda dopo vede que
 - **Rigiocare dal seme con il motore vecchio:** vorrebbe dire tenere ogni motore di ogni versione dentro il gioco.
 - **La registrazione come JSON compresso:** 9,2 MB a partita contro 1,9 MB, e un JSON che cambia forma a ogni campo nuovo.
 - **Una nuova versione del salvataggio a ogni campo nuovo della registrazione:** lega due cose che cambiano per ragioni diverse. La versione del formato della registrazione esiste per questo.
+
+## Note datate
+
+- **2026-11-16 — gli input futuri della partita** (il piano di L2, `context/plans/L2.md`, decisioni AZ e BB): le misure e il manto del campo (0.4, fisica di grado 1: le misure vere, i coefficienti del manto dalle norme e dagli studi) e l'intesa di ogni coppia di compagni (0.4, la precisione con cui uno immagina il movimento dell'altro quando sceglie il passaggio, grado 2 sugli effetti degli studi). Entrano nel contratto della partita quando arriva il loro blocco, ognuno con il suo `SIM_VERSION` e, se la registrazione li deve portare, con un campo facoltativo nuovo e la sua `RECORD_FORMAT_VERSION` (§2). Non sono nella lista di L0 di oggi.
