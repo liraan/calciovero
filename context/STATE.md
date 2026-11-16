@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `92dbc4c` - "Merge docs/l1-europe-and-breaks: tools/ds-gui/DESIGN.md, the maintainer's GUI decisions"
+**Last commit verified:** `9ef1dc9` - "Merge docs/l1-europe-and-breaks: the first player card render is the base (tools/ds-gui/DESIGN.md)"
 
 ## Mandato attivo (2026-11-16)
 
@@ -13,7 +13,7 @@ Il mandato di autonomia del maintainer del 16 novembre 2026: Claude Code continu
 - (d) L1, seguendo `plans/L1.md` e `DECISIONS-2026-11-15`;
 - (e) la versione 0.1 · Stagione pronta (la pubblicazione è del maintainer).
 
-L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1 con coppe e nazionali come settimane vuote, le decisioni F-K del 16 novembre su dati reali e asset, `tools/ds-gui/DESIGN.md`), con C2 verde.
+L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1 con coppe e nazionali come settimane vuote, le decisioni F-K del 16 novembre su dati reali e asset, `tools/ds-gui/DESIGN.md`, con la prima scheda del giocatore come base), con C2 verde.
 
 ## Dove siamo (2026-11-14)
 
