@@ -33,6 +33,14 @@ To be filled as each row is completed: full reference, what it measures, which p
 | FIFA, *Natural-Pitch Rating System* (Natural Playing Surfaces Quality Programme, May 2022, version 1.0; digitalhub.fifa.com, read 2026-11-15), the rating table: vertical ball rebound, 'excellent quality' 0.60-1.00 m; ball roll, 'excellent quality' 4.0-10.0 m. FIFA, *Quality Programme for Football Turf, Test Manual I: Test Methods* (2024), the vertical ball rebound (release from 2.00 +/- 0.01 m), the ball roll (a ramp 1,000 +/- 5 mm high at 45 degrees) and the angle ball rebound (30 +/- 2 degrees at 50 +/- 2 km/h; its requirement is in Test Manual II, not read) | how a ball bounces and rolls on a good pitch | `ball.json` `restitution_milli`; `ground_friction_milli` can be checked against the ball roll |
 | [to complete] | | |
 
+## The coach who reads the match (`coach.json`, decision Y)
+
+| Parameter | Value | Status | Note |
+|---|---|---|---|
+| `reaction_minute_losing` | 58, 67, 79 | derived (grade 2) | The medians of the minutes of the first, second and third real substitutions of a side that was losing at that minute, Serie A 2017-18 (Wyscout public dataset, Pappalardo et al. 2019, *Scientific Data* 6, 236: `matches_Italy.json`, the substitutions with their minute; the score at that minute from the goals of `events_Italy.json`, 2.68 a match, the known value). Fitted on the 190 matches with an even id (1109 substitutions); held out the 190 with an odd id (1112): 55, 67, 78, each inside the fitted quartiles. |
+| `reaction_minute_drawing` | 59, 73, 84 | derived (grade 2) | The same, level at that minute. Held out: 55, 70, 82, inside the fitted quartiles. |
+| `reaction_minute_winning` | 66, 76, 84 | derived (grade 2) | The same, winning at that minute. Held out: 65, 74, 84, inside the fitted quartiles. |
+
 ## The coach's steps (not in `balance/`, ADR-059)
 
 The quick instructions move the block by a step that is the coach's choice shown on the board, not a value of the game's physics or minds; ADR-059 keeps them out of `balance/` and declares them here. They live in `ds_model::TeamOrders`.

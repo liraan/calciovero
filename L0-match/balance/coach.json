@@ -1,0 +1,6 @@
+{
+  "reaction_minute_losing": [58, 67, 79],
+  "reaction_minute_drawing": [59, 73, 84],
+  "reaction_minute_winning": [66, 76, 84],
+  "_note": "The coach who reads the match (decision Y, 2026-11-16; ADR-059): when a coach makes his first, second and third change, by the score at that moment. Grade 2: the medians of the minutes of the real substitutions of Serie A 2017-18 (Wyscout public dataset, Pappalardo et al. 2019, matches_Italy.json, 380 matches), with the score at that minute from the goals of events_Italy.json (2.68 goals a match, the known value), fitted on the matches with an even id (1109 substitutions); verified on those with an odd id (1112): every held-out median falls inside the fitted quartiles (losing 55, 67, 78; drawing 55, 70, 82; winning 65, 74, 84). What he does then is the engine's: a fresher man for the most tired, an attacker more when he is losing, a defender more and a lower block when he is winning, a lower block when he is a man down. The real coaches made at most three changes in 2017-18: after the third he changes nobody of his own accord."
+}

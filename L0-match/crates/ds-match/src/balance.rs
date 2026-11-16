@@ -582,6 +582,8 @@ mod carry_tests {
 
 /// The embedded team block (VISION §3, the role as a default intention).
 const BLOCK_JSON: &str = include_str!("../../../balance/block.json");
+/// The coach who reads the match (decision Y).
+const COACH_JSON: &str = include_str!("../../../balance/coach.json");
 
 /// The team block: where each outfield player stands without instructions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
@@ -679,5 +681,48 @@ mod pressure_tests {
     fn embedded_pressure_is_valid() {
         let p = super::PressureBalance::load();
         assert!(p.pressure_radius_cm > 0 && p.pressure_exit_milli >= 1000);
+    }
+}
+
+/// When the coach who reads the match makes his first, second and third
+/// change, by the score (decision Y): grade 2, from the real changes of
+/// Serie A 2017-18 (`balance/coach.json`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub struct CoachBalance {
+    /// Losing, the minutes of his three changes.
+    pub reaction_minute_losing: [u16; 3],
+    /// Drawing.
+    pub reaction_minute_drawing: [u16; 3],
+    /// Winning.
+    pub reaction_minute_winning: [u16; 3],
+}
+
+impl Default for CoachBalance {
+    fn default() -> Self {
+        serde_json::from_str(COACH_JSON).expect("embedded coach file is valid JSON")
+    }
+}
+
+impl CoachBalance {
+    /// Loads the embedded file.
+    ///
+    /// # Panics
+    ///
+    /// If the embedded JSON is invalid; the tests catch it.
+    #[must_use]
+    pub fn load() -> Self {
+        Self::default()
+    }
+
+    /// The minute of his `k`-th change (from 0), by the goal difference
+    /// for his side; `None` after the third.
+    #[must_use]
+    pub fn minute(&self, k: usize, difference: i32) -> Option<u16> {
+        let row = match difference {
+            d if d < 0 => &self.reaction_minute_losing,
+            0 => &self.reaction_minute_drawing,
+            _ => &self.reaction_minute_winning,
+        };
+        row.get(k).copied()
     }
 }
