@@ -1,5 +1,5 @@
-//! The friendly match window (ADR-055): the manager's choices, the 2D pitch
-//! from the tick record, the clock and the score, the commentary and the
+//! The friendly match window (ADR-055): the manager's choices, the tilted
+//! board of the 2.5D view from the tick record (decision R, `DESIGN.md`), the clock and the score, the commentary and the
 //! reasons for every goal conceded.
 //!
 //! It reads Plane B only (ADR-022 §3): the narrated tick record, the
@@ -11,13 +11,12 @@ use std::collections::BTreeMap;
 use ds_core::ids::PlayerId;
 use ds_demo::friendly::{self, Choices};
 use ds_match::balance::LawsBalance;
-use ds_match::{BallState, Importance, MatchConfig, NarratedTick};
+use ds_match::{Importance, MatchConfig, NarratedTick};
 use ds_model::{BlockHeight, Width};
-use eframe::egui::{
-    self, Align2, Color32, FontId, Painter, Pos2, Rect, RichText, Sense, Stroke, StrokeKind, Vec2,
-};
+use eframe::egui::{self, Align2, Color32, FontId, Painter, Pos2, RichText, Sense, Shape, Stroke};
 
-use crate::scene::{self, Geometry};
+use crate::interp::Moment;
+use crate::scene::{self, Geometry, Item};
 use crate::theme::Theme;
 
 /// Ticks a second of match time (MD-18).
@@ -28,6 +27,7 @@ const SPEEDS: [f64; 5] = [1.0, 4.0, 16.0, 64.0, 256.0];
 /// A match played and narrated, ready to watch.
 struct Game {
     ticks: Vec<NarratedTick>,
+    records: Vec<ds_match::TickRecord>,
     names: BTreeMap<PlayerId, String>,
     why: String,
     pitch_cm: (i32, i32),
@@ -46,6 +46,8 @@ pub struct App {
     speed: f64,
     carry: f64,
     every_event: bool,
+    /// The camera's tilt from the vertical, degrees (`scene::PRESETS`).
+    tilt: f32,
 }
 
 impl App {
@@ -64,6 +66,7 @@ impl App {
             speed: 16.0,
             carry: 0.0,
             every_event: false,
+            tilt: scene::PRESETS[2],
         };
         app.play_match();
         app
@@ -78,6 +81,7 @@ impl App {
                 let (result, records) =
                     ds_match::simulate_from_seed_recorded(&m, self.seed, MatchConfig::default());
                 let why = friendly::why_conceded(&m, result.events.events());
+                let kept = records.clone();
                 let ticks = ds_match::narrate_ticks(&m, &result.events, records);
                 let names = m
                     .home
@@ -90,6 +94,7 @@ impl App {
                     .collect();
                 self.game = Some(Game {
                     ticks,
+                    records: kept,
                     names,
                     why,
                     pitch_cm: (
@@ -184,6 +189,11 @@ impl App {
                 ui.selectable_value(&mut self.speed, s, format!("x{s}"));
             }
             ui.separator();
+            ui.label("Camera");
+            for p in scene::PRESETS {
+                ui.selectable_value(&mut self.tilt, p, format!("{p:.0}°"));
+            }
+            ui.separator();
             ui.spacing_mut().slider_width = (ui.available_width() - 16.0).max(80.0);
             ui.add(egui::Slider::new(&mut self.tick, 0..=last).show_value(false));
         });
@@ -243,9 +253,9 @@ impl App {
 
     fn pitch(&self, ui: &mut egui::Ui) {
         let Some(game) = &self.game else { return };
-        let Some(now) = game.ticks.get(self.tick) else {
+        if game.records.is_empty() {
             return;
-        };
+        }
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::hover());
         let r = response.rect;
         let geom = Geometry::fit(
@@ -253,61 +263,77 @@ impl App {
             (r.width(), r.height()),
             16.0,
             game.pitch_cm,
+            self.tilt,
         );
         self.draw_markings(&painter, &geom);
-        let frame = scene::frame(&now.record, &geom);
+        // One tick behind the playhead, so that the drawing always has the
+        // tick before and the tick after (the interpolation layer).
+        #[allow(clippy::cast_precision_loss)]
+        let instant = (self.tick as f64 + self.carry - 1.0).max(0.0);
+        let moment = Moment::at(&game.records, instant);
+        let frame = scene::frame(&moment, &geom);
         let t = &self.theme;
-        let radius = geom.len(90).max(5.0);
-        let pos = |(x, y): (f32, f32)| Pos2::new(x, y);
-        // The referee, then the players, then the ball on top.
-        painter.circle_filled(pos(frame.referee), radius * 0.6, t.referee);
+        let pos = |s: &scene::Screen| Pos2::new(s.x, s.y);
+        // The ball's shadow on the grass, under everything.
+        for (g, radius) in &frame.shadows {
+            painter.circle_filled(pos(g), *radius, t.ball_shadow);
+        }
         let mut hovered = None;
-        for d in &frame.dots {
-            let fill = match (d.home, d.keeper) {
-                (true, true) => t.keeper_home,
-                (true, false) => t.home,
-                (false, true) => t.keeper_away,
-                (false, false) => t.away,
-            };
-            let c = pos(d.at);
-            painter.circle_filled(c, radius, fill);
-            // Where he faces: a short tick on the rim.
-            let a = f32::from(d.heading).to_radians();
-            #[allow(
-                clippy::disallowed_methods,
-                reason = "drawing only: the view never feeds the simulation"
-            )]
-            let tip = c + Vec2::new(a.sin(), -a.cos()) * radius * 1.4;
-            painter.line_segment([c, tip], Stroke::new(1.5_f32, fill));
-            if d.carrier {
-                painter.circle_stroke(c, radius + 2.5, Stroke::new(2.0_f32, t.carrier_ring));
-            }
-            painter.text(
-                c,
-                Align2::CENTER_CENTER,
-                d.letter,
-                FontId::monospace(radius * 1.1),
-                t.player_text,
-            );
-            if response
-                .hover_pos()
-                .is_some_and(|p| p.distance(c) <= radius + 2.0)
-            {
-                hovered = Some(d.id);
+        for item in &frame.items {
+            match item {
+                Item::Figure(f) | Item::Referee(f) => {
+                    let fill = match item {
+                        Item::Referee(_) => t.referee,
+                        _ => match (f.home, f.keeper) {
+                            (true, true) => t.keeper_home,
+                            (true, false) => t.home,
+                            (false, true) => t.keeper_away,
+                            (false, false) => t.away,
+                        },
+                    };
+                    let (feet, head) = (pos(&f.feet), pos(&f.head));
+                    // His shadow, then where he faces, then the figure.
+                    painter.circle_filled(feet, f.size * 1.2, t.ball_shadow);
+                    painter.line_segment(
+                        [feet, pos(&f.facing)],
+                        Stroke::new((f.size * 0.35).max(1.0), fill),
+                    );
+                    if f.carrier {
+                        painter.circle_stroke(
+                            feet,
+                            f.size * 1.8,
+                            Stroke::new((f.size * 0.3).max(1.5), t.carrier_ring),
+                        );
+                    }
+                    let neck = feet + (head - feet) * 0.82;
+                    painter.line_segment([feet, neck], Stroke::new(f.size * 1.5, fill));
+                    painter.circle_filled(head, f.size, fill);
+                    if matches!(item, Item::Figure(_)) {
+                        painter.text(
+                            head,
+                            Align2::CENTER_CENTER,
+                            f.letter,
+                            FontId::monospace((f.size * 1.4).max(7.0)),
+                            t.player_text,
+                        );
+                        if response
+                            .hover_pos()
+                            .is_some_and(|p| p.distance(head) <= f.size * 2.0)
+                        {
+                            hovered = Some(f.id);
+                        }
+                    }
+                }
+                Item::Ball(b) => {
+                    painter.circle_filled(pos(&b.at), b.radius, t.ball);
+                    painter.circle_stroke(
+                        pos(&b.at),
+                        b.radius,
+                        Stroke::new((b.radius * 0.2).max(0.8), t.ball_shadow),
+                    );
+                }
             }
         }
-        let b = frame.ball;
-        let ground = pos(b.ground);
-        #[allow(clippy::cast_precision_loss)] // cm of height
-        let lift = geom.len(b.height_cm) * 0.5;
-        painter.circle_filled(ground, radius * 0.45, t.ball_shadow);
-        let ball_at = ground - Vec2::new(0.0, lift);
-        let ball_r = if matches!(b.state, BallState::InFlight) && b.height_cm > 50 {
-            radius * 0.55
-        } else {
-            radius * 0.45
-        };
-        painter.circle_filled(ball_at, ball_r, t.ball);
         if let Some(id) = hovered {
             if let Some(name) = game.names.get(&id) {
                 response.on_hover_text(format!("{} {name}", ds_demo::pitchview::marker(id)));
@@ -315,54 +341,83 @@ impl App {
         }
     }
 
-    /// The markings of Law 1, from `laws.json`.
+    /// The markings of Law 1 (`laws.json`) and the goals in their height
+    /// (`obstacles.json`), on the tilted board.
+    #[allow(clippy::cast_precision_loss)] // cm on a pitch
+    #[allow(clippy::many_single_char_names)] // drawing geometry
     fn draw_markings(&self, painter: &Painter, geom: &Geometry) {
         let t = &self.theme;
         let (length, width) = geom.pitch_cm;
-        let p = |x: i32, y: i32| {
+        let on = |x: i32, y: i32| {
             let (sx, sy) = geom.at((x, y));
             Pos2::new(sx, sy)
         };
-        let field = Rect::from_two_pos(p(0, 0), p(length, width));
-        painter.rect_filled(field.expand(geom.len(150)), 0.0, t.pitch);
+        let quad = |x0: i32, y0: i32, x1: i32, y1: i32| {
+            vec![on(x0, y0), on(x1, y0), on(x1, y1), on(x0, y1)]
+        };
+        let m = 150;
+        painter.add(Shape::convex_polygon(
+            quad(-m - 200, -m, length + m + 200, width + m),
+            t.pitch,
+            Stroke::NONE,
+        ));
         // Bands of grass across the pitch.
         let bands = 12;
         for i in (0..bands).step_by(2) {
-            let band =
-                Rect::from_two_pos(p(length * i / bands, 0), p(length * (i + 1) / bands, width));
-            painter.rect_filled(band, 0.0, t.pitch_stripe);
+            painter.add(Shape::convex_polygon(
+                quad(length * i / bands, 0, length * (i + 1) / bands, width),
+                t.pitch_stripe,
+                Stroke::NONE,
+            ));
         }
         let line = Stroke::new(1.5_f32, t.lines);
-        painter.rect_stroke(field, 0.0, line, StrokeKind::Middle);
-        painter.line_segment([p(length / 2, 0), p(length / 2, width)], line);
-        let centre = p(length / 2, width / 2);
-        painter.circle_stroke(centre, geom.len(self.laws.centre_circle_radius_cm), line);
-        painter.circle_filled(centre, 2.0, t.lines);
+        painter.add(Shape::closed_line(quad(0, 0, length, width), line));
+        painter.line_segment([on(length / 2, 0), on(length / 2, width)], line);
+        let circle = |cx: i32, cy: i32, radius: i32| {
+            (0..48)
+                .map(|k| {
+                    let a = (k as f32) * std::f32::consts::TAU / 48.0;
+                    #[allow(
+                        clippy::disallowed_methods,
+                        reason = "drawing only: the view never feeds the simulation"
+                    )]
+                    let (s, c) = a.sin_cos();
+                    #[allow(clippy::cast_possible_truncation)]
+                    on(
+                        cx + (c * radius as f32) as i32,
+                        cy + (s * radius as f32) as i32,
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
         let l = self.laws;
+        painter.add(Shape::closed_line(
+            circle(length / 2, width / 2, l.centre_circle_radius_cm),
+            line,
+        ));
+        painter.circle_filled(on(length / 2, width / 2), 2.0, t.lines);
         for (line_x, dir) in [(0, 1), (length, -1)] {
             let mid = width / 2;
-            let area = |depth: i32, half: i32| {
-                Rect::from_two_pos(p(line_x, mid - half), p(line_x + dir * depth, mid + half))
-            };
-            painter.rect_stroke(
-                area(l.penalty_area_depth_cm, l.penalty_area_half_width_cm),
-                0.0,
-                line,
-                StrokeKind::Middle,
-            );
-            painter.rect_stroke(
-                area(l.goal_area_depth_cm, l.goal_area_half_width_cm),
-                0.0,
-                line,
-                StrokeKind::Middle,
-            );
-            painter.circle_filled(p(line_x + dir * l.penalty_spot_cm, mid), 2.0, t.lines);
-            // The goal, behind the line.
-            let goal = Rect::from_two_pos(
-                p(line_x, mid - l.goal_half_width_cm),
-                p(line_x - dir * 200, mid + l.goal_half_width_cm),
-            );
-            painter.rect_stroke(goal, 0.0, Stroke::new(2.5_f32, t.lines), StrokeKind::Middle);
+            for (depth, half) in [
+                (l.penalty_area_depth_cm, l.penalty_area_half_width_cm),
+                (l.goal_area_depth_cm, l.goal_area_half_width_cm),
+            ] {
+                painter.add(Shape::closed_line(
+                    quad(line_x, mid - half, line_x + dir * depth, mid + half),
+                    line,
+                ));
+            }
+            painter.circle_filled(on(line_x + dir * l.penalty_spot_cm, mid), 2.0, t.lines);
+        }
+        // The goals: posts and crossbar in their height, the net behind.
+        let o = ds_match::balance::ObstacleBalance::load();
+        for (a, b) in geom.goals(o.goal_half_width_cm as f32, o.goal_height_cm as f32) {
+            if let (Some(p), Some(q)) = (geom.project(a), geom.project(b)) {
+                painter.line_segment(
+                    [Pos2::new(p.x, p.y), Pos2::new(q.x, q.y)],
+                    Stroke::new(2.0_f32, t.lines),
+                );
+            }
         }
     }
 }

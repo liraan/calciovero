@@ -5,6 +5,7 @@
 //! reasons for every goal conceded. It reads Plane B only (ADR-022 §3).
 
 mod app;
+mod interp;
 mod scene;
 mod theme;
 
