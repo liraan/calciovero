@@ -223,6 +223,24 @@ impl World for StateWorld<'_> {
         }
     }
 
+    fn knocked(&self, home: bool) -> Vec<PlayerKey> {
+        let squad = self.squad(home);
+        self.state
+            .knocked
+            .iter()
+            .filter(|id| squad.players.iter().any(|q| q.id == **id))
+            .filter(|id| self.state.spatial.agent(**id).is_some())
+            .map(|id| key(*id))
+            .collect()
+    }
+
+    fn carry_off(&mut self, p: PlayerKey) {
+        if let Some(id) = self.id(p) {
+            let half = i32::from(self.live.pitch.length_m) * 50;
+            self.state.spatial.send_off(id, (half, -300));
+        }
+    }
+
     fn on_pitch(&self, p: PlayerKey) -> bool {
         self.state.spatial.on_pitch().any(|(id, _)| key(*id) == p)
     }

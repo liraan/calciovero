@@ -582,6 +582,8 @@ mod carry_tests {
 
 /// The embedded team block (VISION §3, the role as a default intention).
 const BLOCK_JSON: &str = include_str!("../../../balance/block.json");
+/// The knock that forces a substitution (decision Y, ADR-066).
+const KNOCK_JSON: &str = include_str!("../../../balance/knock.json");
 /// The coach who reads the match (decision Y).
 const COACH_JSON: &str = include_str!("../../../balance/coach.json");
 
@@ -724,5 +726,40 @@ impl CoachBalance {
             _ => &self.reaction_minute_winning,
         };
         row.get(k).copied()
+    }
+}
+
+/// The knock that forces a substitution (decision Y, ADR-066): the force
+/// of a foul's contact at which the fouled man cannot go on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub struct KnockBalance {
+    /// The threshold, thousandths of the reference speed, on the approach
+    /// weighed by the body (`approach x (0.5 + injury_proneness)`).
+    pub knock_force_milli: i32,
+}
+
+impl Default for KnockBalance {
+    fn default() -> Self {
+        serde_json::from_str(KNOCK_JSON).expect("embedded knock file is valid JSON")
+    }
+}
+
+impl KnockBalance {
+    /// Loads the embedded file.
+    ///
+    /// # Panics
+    ///
+    /// If the embedded JSON is invalid; the tests catch it.
+    #[must_use]
+    pub fn load() -> Self {
+        Self::default()
+    }
+
+    /// Whether a contact at `approach_milli` knocks out a man of this
+    /// `injury_proneness` (no die: the same contact, the same body, the
+    /// same outcome).
+    #[must_use]
+    pub fn knocks(&self, approach_milli: i32, injury_proneness: f64) -> bool {
+        f64::from(approach_milli) * (0.5 + injury_proneness) >= f64::from(self.knock_force_milli)
     }
 }

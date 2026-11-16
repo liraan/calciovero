@@ -264,6 +264,9 @@ pub struct MatchState {
     /// How many of each coach's instructions have taken effect, home and
     /// away (ADR-059).
     pub(crate) instructed: (usize, usize),
+    /// The men a knock forced off (decision Y, ADR-066): replaced at the
+    /// stoppage, or carried off if no change is left.
+    pub(crate) knocked: BTreeSet<PlayerId>,
     /// The substitutions each side's manager ordered during the match,
     /// waiting for a stoppage (decision T): off, on.
     pub(crate) ordered: (Vec<Ordered>, Vec<Ordered>),
@@ -810,6 +813,7 @@ impl MatchState {
             pending: None,
             ball_from: (0, 0, 0),
             instructed: (0, 0),
+            knocked: BTreeSet::new(),
             ordered: (Vec::new(), Vec::new()),
             scan_balance: crate::balance::ScanningBalance::load(),
             perception: crate::plugins::perception::Perception::default(),

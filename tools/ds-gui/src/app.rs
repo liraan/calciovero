@@ -1277,6 +1277,7 @@ fn gestures(
                     ));
                     continue;
                 }
+                crate::animation::Animation::Down => scene::Gesture::Fall,
                 crate::animation::Animation::Throw => scene::Gesture::Throw,
                 crate::animation::Animation::Celebrate => scene::Gesture::Celebrate,
                 crate::animation::Animation::Lunge => scene::Gesture::Lunge,

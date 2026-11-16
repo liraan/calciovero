@@ -18,10 +18,28 @@ fn changes(seed: u64, react: bool) -> (Vec<u32>, usize) {
         .chain(&m.home.bench)
         .map(|p| p.id)
         .collect();
+    // The men a knock forced off are replaced whatever the coach (ADR-066):
+    // their changes are not his.
+    let hurt: Vec<u64> = r
+        .events
+        .events()
+        .iter()
+        .filter(|e| e.event_type == EventType::Injury)
+        .filter_map(|e| match e.actor {
+            Some(ds_core::ids::ActorId::Player(p)) => Some(u64::from(p.slot())),
+            _ => None,
+        })
+        .collect();
     let mut minutes = Vec::new();
     for rec in &records {
         for e in r.events.events().get(rec.events.clone()).unwrap_or(&[]) {
+            let forced = e
+                .fields
+                .get("out")
+                .and_then(serde_json::Value::as_u64)
+                .is_some_and(|o| hurt.contains(&o));
             if e.event_type == EventType::Substitution
+                && !forced
                 && let Some(ds_core::ids::ActorId::Player(p)) = e.actor
                 && home.contains(&p)
             {

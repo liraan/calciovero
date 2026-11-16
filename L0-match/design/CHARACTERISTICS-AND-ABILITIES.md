@@ -186,7 +186,7 @@ one says so. Reading back is an estimate (Plane C), never an extraction.
 |---|---|---|---|---|
 | `explosive_force` | Run, sprint; Jump; Dribble past a man; Long pass, switch, through ball | `the_explosive_twin_kicks_harder`, `the_explosive_twin_dives_farther` | his acceleration over the first metres of a sprint, from tracking data; no source read yet | measured |
 | `max_speed` | Run, sprint | `the_fast_twin_wins_the_race` | his top speed in the match, from tracking data; no source read yet | measured |
-| `injury_proneness` | none yet (its consumer is in L1: OI-110) | — | his injuries per thousand hours played, from the club records (UEFA ECIS, Ekstrand et al.); no source read yet | measured |
+| `injury_proneness` | the knock (ADR-066, SIM 141): a foul's force x (0.5 + injury_proneness) against `knock.json` | — | his injuries per thousand hours played, from the club records (UEFA ECIS, Ekstrand et al.); no source read yet | measured |
 | `reactivity` | Intercept; Block a shot or pass; Get set; Dive, stop the shot | `the_reactive_twin_reaches_farther` | the time from a cue to his first movement (a keeper's reaction to a shot), from video or tracking; no source read yet | measured |
 | `maximal_force` | Shield; Challenge, tackle; Aerial duel (defend) | `the_strong_twin_shields_the_ball`, `the_strong_twin_keeps_the_ball` | the duels he wins against the body, from event data with the opponent's weight; no source read yet | measured |
 | `body_control` | Turn, change direction; Stop, decelerate; Receive, control; Dribble past a man | `the_steadier_body_holds_off_the_challenge` | his deceleration and the duels he stays on his feet in, from tracking and event data; no source read yet | measured |

@@ -82,6 +82,17 @@ pub trait World {
         let _ = player;
         true
     }
+    /// The men of a side a knock forced off who are still on the pitch
+    /// (decision Y).
+    fn knocked(&self, home: bool) -> Vec<PlayerKey> {
+        let _ = home;
+        Vec::new()
+    }
+    /// A man who cannot go on and cannot be replaced leaves the pitch: his
+    /// side plays a man short (Law 3).
+    fn carry_off(&mut self, player: PlayerKey) {
+        let _ = player;
+    }
     /// Whether a side's coach changes players from what he sees.
     fn coach_reacts(&self, home: bool) -> bool {
         let _ = home;

@@ -38,14 +38,26 @@ impl MatchPlugin for Bench {
         let carrier = world.carrier();
         let allowed = world.subs_allowed();
         for home in [true, false] {
-            let mut due: Vec<(PlayerKey, PlayerKey)> = world
-                .planned(home)
-                .into_iter()
-                .filter(|(m, off, _)| u64::from(*m) <= minute && !world.substituted(*off))
-                // Not the taker of the restart: he is on the ball.
-                .filter(|(_, off, _)| Some(*off) != carrier)
-                .map(|(_, off, on)| (off, on))
-                .collect();
+            // First the men a knock forced off (decision Y): a man of the
+            // same role, or any outfield man, or none left and he is
+            // carried off (Law 3).
+            let mut due: Vec<(PlayerKey, PlayerKey)> = Vec::new();
+            for hurt in world.knocked(home) {
+                let left = allowed.saturating_sub(made(world, home) + due.len());
+                match replacement(world, home, hurt, &due) {
+                    Some(on) if left > 0 => due.push((hurt, on)),
+                    _ => world.carry_off(hurt),
+                }
+            }
+            due.extend(
+                world
+                    .planned(home)
+                    .into_iter()
+                    .filter(|(m, off, _)| u64::from(*m) <= minute && !world.substituted(*off))
+                    // Not the taker of the restart: he is on the ball.
+                    .filter(|(_, off, _)| Some(*off) != carrier)
+                    .map(|(_, off, on)| (off, on)),
+            );
             // Then those he ordered during the match (decision T), within
             // the substitutions the Laws allow (Law 3).
             let left = allowed.saturating_sub(made(world, home) + due.len());
@@ -77,6 +89,34 @@ impl MatchPlugin for Bench {
             }
         }
     }
+}
+
+/// Who replaces a man who cannot go on: a fresh man of his role (the
+/// keeper for the keeper), else any fresh outfield man.
+fn replacement(
+    world: &dyn World,
+    home: bool,
+    hurt: PlayerKey,
+    taken: &[(PlayerKey, PlayerKey)],
+) -> Option<PlayerKey> {
+    let role = world.role(hurt);
+    let fresh: Vec<PlayerKey> = world
+        .bench(home)
+        .into_iter()
+        .filter(|&b| !world.substituted(b) && !taken.iter().any(|t| t.1 == b))
+        .collect();
+    fresh
+        .iter()
+        .copied()
+        .find(|&b| world.role(b) == role)
+        .or_else(|| {
+            (role.as_deref() != Some("goalkeeper")).then(|| {
+                fresh
+                    .iter()
+                    .copied()
+                    .find(|&b| world.role(b).as_deref() != Some("goalkeeper"))
+            })?
+        })
 }
 
 /// The substitutions a side has made: the men who came off.

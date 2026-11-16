@@ -21,6 +21,8 @@ pub enum Animation {
     Dive,
     /// The fouled man falls; the foul is a slide if the event says so.
     Foul,
+    /// The man lies on the grass and gets up slowly (an injury).
+    Down,
     /// The referee shows the card.
     Card,
     /// The throw-in.
@@ -42,6 +44,8 @@ pub const fn animation(kind: EventType) -> Animation {
         E::Duel => Animation::JumpIfAerial,
         E::Save => Animation::Dive,
         E::Foul => Animation::Foul,
+        // The man a knock forced off lies on the grass, then gets up slowly.
+        E::Injury => Animation::Down,
         E::Card => Animation::Card,
         E::ThrowIn => Animation::Throw,
         E::Goal => Animation::Celebrate,
@@ -57,7 +61,6 @@ pub const fn animation(kind: EventType) -> Animation {
         | E::FreeKick
         | E::Penalty
         | E::Substitution
-        | E::Injury
         | E::Assist
         | E::ProgressiveCarry
         | E::ProgressivePass
@@ -163,6 +166,6 @@ mod tests {
             .iter()
             .filter(|&&t| animation(t) != Animation::Rest)
             .count();
-        assert_eq!(moving, 11);
+        assert_eq!(moving, 12);
     }
 }

@@ -389,6 +389,23 @@ impl MatchState {
             EventType::Foul,
             serde_json::json!({ "against": fouled.slot(), "x": spot.0, "y": spot.1, "slide": facts.slide, "from_behind": facts.from_behind }),
         );
+        // The knock (decision Y, ADR-066): a contact this strong on this
+        // body, and the fouled man cannot go on.
+        let proneness = ctx
+            .hidden
+            .characteristic(fouled, "injury_proneness")
+            .unwrap_or(0.0);
+        if crate::balance::KnockBalance::load().knocks(facts.approach_milli, proneness)
+            && self.knocked.insert(fouled)
+        {
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(fouled)),
+                EventType::Injury,
+                serde_json::json!({ "by": offender.slot(), "force_milli": facts.approach_milli }),
+            );
+        }
         let card = crate::rules::card_for(
             &facts,
             laws.reckless_speed_milli,
