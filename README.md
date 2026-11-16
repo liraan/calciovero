@@ -11,7 +11,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-477_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-485_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -111,7 +111,7 @@ of the classic Italian ones. The longer version is in
 
 ## Where we are, honestly
 
-**There is no playable game yet.** The match engine is close to complete and is being calibrated against real football, one verified step at a time, in the open. Engine version **133**; **477 tests** and a health check run on every commit.
+**There is no playable game yet.** The match engine is close to complete and is being calibrated against real football, one verified step at a time, in the open. Engine version **134**; **485 tests** and a health check run on every commit.
 
 ### The road, level by level
 
@@ -138,17 +138,17 @@ The game is built in four concentric levels; each one widens the previous and de
 
 ### The match against real football
 
-Measured on 60 matches against Serie A 2017-18 (380 real matches, Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one standard deviation of the real matches. **Today 11 of 22 metrics are in band**; every metric outside has an open item with its cause. No number is ever tuned to hit a target: a distance is a question about how the players perceive, think or move.
+Measured on 60 matches against Serie A 2017-18 (380 real matches, Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one standard deviation of the real matches. **Today 12 of 22 metrics are in band**; every metric outside has an open item with its cause. No number is ever tuned to hit a target: a distance is a question about how the players perceive, think or move.
 
 | In band | Real | Engine | | Not yet | Real | Engine |
 |---|---|---|---|---|---|---|
-| goals | 2.68 | 2.35 | | aerial duels | 38.1 | 7.4 |
-| shots | 24.6 | 19.7 | | fouls | 26.0 | 8.5 |
-| shots on target | 8.7 | 10.5 | | throw-ins | 42.7 | 15.1 |
-| pass accuracy | 83.3% | 83.9% | | goal kicks | 17.2 | 7.1 |
-| corners | 10.3 | 12.4 | | free kicks | 29.5 | 12.8 |
-| saves | 9.4 | 10.9 | | passes | 888 | 1251 |
-| offsides | 4.3 | 5.8 | | ground duels | 183 | 125 |
+| goals | 2.68 | 2.62 | | aerial duels | 38.1 | 8.6 |
+| shots | 24.6 | 21.6 | | fouls | 26.0 | 8.6 |
+| shots on target | 8.7 | 11.8 | | throw-ins | 42.7 | 16.5 |
+| pass accuracy | 83.3% | 83.9% | | goal kicks | 17.2 | 8.0 |
+| corners | 10.3 | 13.5 | | free kicks | 29.5 | 12.9 |
+| saves | 9.4 | 12.4 | | passes | 888 | 1245 |
+| clearances | 29.5 | 37.6 | | ground duels | 183 | 124 |
 
 The full table, with the cause of every distance, is in [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md).
 
@@ -160,7 +160,7 @@ Every value an act reads comes from the player's characteristics; the full catal
 |---|---|---|---|
 | **The body** | top speed and acceleration by his characteristics; brake, stop, turn; his own pace; fatigue against endurance, rest at half-time | jump in the aerial duel | the timing of the jump; the second man on high balls |
 | **The mind** ([ADR-052](doctrine/adr/052-every-player-thinks.md)) | every player imagines his options and picks the best he sees; a cone of sight; the memory of his last look, so he decides on what he has seen; vision, reading, anticipation, creativity, concentration; courage and composure | perception with its error ([ADR-062](doctrine/adr/062-what-a-player-sees-is-not-exact.md)) | |
-| **With the ball** | control; short and lofted pass, cross, switch, through ball; carry and dribble or shield; shot with power, foot and lob; header; clearance with its error, into touch when he chooses | | |
+| **With the ball** | control; short and lofted pass, cross, switch, through ball; carry and dribble or shield; shot with power, foot and lob; header; clearance with its error, into touch when he chooses, first time when he would be robbed before he plays ([ADR-064](doctrine/adr/064-the-choice-at-the-reception.md)) | | |
 | **Without the ball** | press, challenge standing, sliding or jockeying; mark, offer, run in behind; hold the block's shape and width; intercept; cover; block a shot; react to a ball before it is played | | |
 | **In goal** | dive, hold or parry, claim crosses; split the angle of his posts; throw | coming out (in his area only) | reading the shot to position himself; getting set |
 | **The ball** | flight with air resistance, bounce from FIFA's rebound test, rolling, posts and crossbar, in integers so the match is the same everywhere | | spin |

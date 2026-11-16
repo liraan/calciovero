@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `35996d1` - "docs(state): OI-119, the deflected pass; SIM 135 (OI-117 A) kept as a patch on 134"
+**Last commit verified:** `3145447` - "docs(state): OI-119, the deflected pass measured; the next action"
 
 ## Mandato attivo (2026-11-16)
 
