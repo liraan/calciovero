@@ -176,3 +176,14 @@ Il 3D (desktop, Bevy se maturo, dopo la 1.1) mostra anche gli spalti e il pubbli
 - **Il sonoro serve anche all'accessibilità:** con la radiocronaca e i suoni del campo (decisione BE).
 - **Nell'elenco ufficiale** solo pacchetti di pubblico con licenze pulite e senza contenuti discriminatori (decisione K).
 
+## Le scelte del 3D (decisione BH, 16 novembre 2026)
+
+Decise con i filtri (partita vera, LUNA, futuribilità), con il maintainer.
+
+1. **Gli omini sono generati,** come stemmi e figurine (decisione F): un modello parametrico dal corpo che si vede (altezza, corporatura; piano B, mai il piano A), colori e numero dalla squadra. Le animazioni vengono dalla tabella evento → animazione (decisione V), sui movimenti veri della registrazione; sono solo disegno. **Il formato è aperto:** modelli e texture dell'utente in glTF, il formato standard, dentro un pacchetto documentato (decisione G).
+2. **I volti nel 3D:** teste generate, coerenti con il modello. Le foto dei pacchetti di FM (decisione BG) restano nell'interfaccia (schede, menu, la panchina), perché una foto piatta su una testa 3D sembra una maschera. Proposta, da confermare.
+3. **Le telecamere:** la televisiva (alta, di lato), la tattica dall'alto, dietro la porta, quella del giocatore, e la libera che gira intorno al campo; il "segui il pallone" come nel 2.5D.
+4. **I replay:** ogni azione si rivede da ogni telecamera, perché la registrazione è un contratto (ADR-065) e la partita è deterministica: il replay è la partita stessa, non un video. Gli highlights si compongono da soli dagli eventi più importanti, con il racconto di `ds-narrative`.
+5. **Il computer minimo:** una scheda grafica integrata di fascia media di circa cinque anni fa, a 1080p e 60 fotogrammi al secondo, con i livelli di dettaglio (il pubblico lontano disegnato come sagome, quello vicino in 3D). Il numero si fissa misurando un prototipo, non stimando; la GUI mostra il costo come per i moduli (decisione AX).
+6. **Dal 3D si danno le istruzioni:** è lo stesso gioco. I pannelli egui (la lavagna, i post-it, la scheda) girano dentro Bevy con bevy_egui; le istruzioni sono input della partita (ADR-059), non scritture della vista, quindi il determinismo resta intatto.
+
