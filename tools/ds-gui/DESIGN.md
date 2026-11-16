@@ -86,3 +86,39 @@ La registrazione della partita ha già quello che serve (`ds-match/src/record.rs
 3. Lo strato di interpolazione (sopra).
 4. I tre temi della lavagna; la prova su Android.
 5. **Il README** (maintainer, 16 novembre 2026): appena il 2.5D è disponibile, entra nel README. Una GIF della vista 2.5D (un cross e un colpo di testa, con il seme e la versione del motore nella didascalia) al posto di `assets/demo-match.gif` in cima, lo screenshot della finestra aggiornato, e la vista nelle tabelle dello stato e in "Try the engine today".
+
+## La visuale del 2.5D: telecamere, omini, animazioni (16 novembre 2026)
+
+Decisa dal maintainer guardando il prototipo con gli omini articolati alla grandezza vera.
+
+**La grandezza vera decide.** Un giocatore è alto 1,8 m. Sul campo intero, in una finestra larga circa 700 pixel, è alto circa 10 pixel: si vede che corre e che salta, non la gamba che calcia. Con la telecamera vicina (circa 38 m di campo nella larghezza) è alto circa 40 pixel e ogni gesto si legge. Le animazioni servono solo insieme alla telecamera giusta.
+
+**Le telecamere:**
+
+| Preset | Cosa mostra | A cosa serve |
+|---|---|---|
+| Campo intero | tutto il campo, inclinato | la forma della squadra, le linee, le distanze |
+| Telecamera vicina | circa 38 m attorno al pallone; segue il pallone con un movimento smorzato, senza uscire dal campo | l'azione: i gesti, i duelli, i tiri |
+| Dall'alto | inclinazione 0° | la lavagna di sempre |
+
+Più il cursore dell'inclinazione e un tasto per il rallentatore (circa un terzo della velocità), utile anche per trovare i difetti del motore.
+
+**Gli omini articolati.** Gambe, busto, braccia e testa disegnati dal codice, nessun asset: maglia del colore della squadra, calzettoni più scuri, il portiere nel suo colore, l'ombra a terra. Lo spessore delle linee e la testa hanno un minimo in pixel, così sul campo intero restano visibili.
+
+**Le animazioni nascono solo dai fatti della partita.** Mai una posa per riempire: se il giocatore salta, c'è un duello aereo; se cade, c'è un fallo. Così la vista resta uno specchio del motore.
+
+| Animazione | Da dove la ricava la vista |
+|---|---|
+| La falcata, con il ritmo e l'ampiezza dalla velocità; fermo, quasi immobile | la velocità ricavata dai tick |
+| L'inclinazione del busto in accelerazione, frenata e curva | il cambio di velocità e di orientamento (`heading`) |
+| Il tiro, il passaggio, il cross: la gamba che carica e calcia | l'evento al tick del contatto, anticipato di qualche fotogramma |
+| Il salto con le braccia alte, nel colpo di testa e nel duello aereo | l'evento del duello o del colpo di testa, con l'altezza del pallone |
+| Il tuffo del portiere, la presa, la respinta | l'evento della parata e la posizione del pallone |
+| La scivolata e il contrasto in piedi | l'evento del contrasto |
+| La caduta dopo un fallo, il rialzarsi | l'evento del fallo |
+| La rimessa con le mani sopra la testa, il rilancio del portiere | l'evento della ripresa di gioco |
+| L'esultanza dopo il gol | l'evento del gol |
+| La stanchezza: passo più pesante, busto curvo | la fatica visibile (`fatigue_milli`) |
+| L'arbitro che mostra il cartellino | l'evento del cartellino |
+
+**L'ordine:** prima le telecamere e gli omini con la falcata; poi tiro, salto, tuffo e scivolata; poi il resto della tabella. Anche questo è solo disegno: niente `SIM_VERSION`, golden identico.
