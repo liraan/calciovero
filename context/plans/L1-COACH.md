@@ -96,7 +96,7 @@ Le scelte dell'allenatore sono il più libere possibile. L'allenatore **disegna*
 4. **Il pressing:** dove comincia, cosa lo fa scattare (il retropassaggio, il controllo sbagliato, la palla al terzino), chi esce per primo e chi copre, se si spinge l'avversario verso la fascia o verso il centro.
 5. **Le marcature:** a zona, a uomo o miste, per fase e per calcio piazzato, con l'avversario preciso.
 6. **La costruzione e il ritmo:** il portiere corto o lungo, quanto si rischia nel passaggio, il ritmo.
-7. **I movimenti e le rotazioni:** attaccare la profondità, venire incontro, sovrapporsi, restare largo, accentrarsi; due giocatori che si scambiano il posto durante l'azione; lo scambio di posizione (decisione AG).
+7. **I movimenti e le rotazioni:** attaccare la profondità, venire incontro, sovrapporsi, restare largo, accentrarsi; due giocatori che si scambiano il posto durante l'azione; il cambio della lavagna in partita (decisione AG).
 8. **La difesa preventiva:** quanti restano dietro la palla quando si attacca, e dove.
 9. **Le transizioni non si disegnano: si scelgono.** Palla persa: riaggredire, ricomporsi, abbassarsi; palla recuperata: ripartire o tenere palla (ADR-059 §6); con quanti secondi di riaggressione e chi la fa. Una scelta di base prima della partita, che l'allenatore cambia con le fasi della partita, quando la legge.
 10. **I calci piazzati disegnati:** posizioni, corse e tiratori per angoli, punizioni e rimesse, in attacco e in difesa, salvati come schemi.
@@ -130,11 +130,13 @@ La stessa regola della tattica: chi parla sceglie liberamente cosa dire, chi asc
 
 **L'intervallo e i richiami dalla panchina** sono durante la partita: input del motore con il loro tick, come le istruzioni (ADR-059), letti dal plugin psicologia di L0. Vanno in L0, nella lista della decisione T, con un'aggiunta all'ADR-059. I discorsi fuori dalla partita sono di L1.
 
-## Lo scambio di posizione (decisione AG)
+## La lavagna si cambia in partita (decisione AG)
 
-Un allenatore può scambiare due giocatori sulla lavagna, prima e durante la partita: invertire le ali, spostare un centrocampista a terzino, allargare il centravanti. È geometria del piano, non un numero del giocatore (ADR-059 §3). Le conseguenze vengono dal piede di ciascuno: il destro a sinistra si accentra per tirare (l'ala a piede invertito), il terzino sul lato sbagliato crossa col piede debole. Nessun effetto da inventare.
+Tutto quello che l'allenatore disegna e sceglie prima della partita lo può cambiare durante: le posizioni di ogni fase, le responsabilità di ognuno, il blocco, il pressing, le marcature, le transizioni, i calci piazzati. Non c'è un elenco di "cambi tattici" a parte: in partita c'è la stessa lavagna, con le stesse libertà. Ogni cambio è un'istruzione con il suo tick (ADR-059 §1-2).
 
-Va in L0, nella lista della decisione T, con il suo test gemello: la stessa partita con le ali invertite, e ognuna tira e crossa con il piede che ha.
+Lo scambio di posizione (invertire le ali, spostare un centrocampista a terzino) è un caso, non una funzione: due pallini che si spostano sulla lavagna. Le conseguenze vengono dal giocatore: il destro a sinistra si accentra per tirare, il terzino sul lato sbagliato crossa col piede debole. Nessun effetto da inventare.
+
+Va in L0, nella lista della decisione T, insieme ai disegni liberi (decisione AL): il motore legge la lavagna, quella di partenza e ogni sua modifica. Test gemello: la stessa partita con le ali invertite al minuto 30, e da lì ognuna tira e crossa con il piede che ha.
 
 ## Come sceglie, senza dadi
 
