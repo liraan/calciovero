@@ -13,7 +13,7 @@ use ds_demo::friendly::{self, Choices};
 use ds_match::balance::LawsBalance;
 use ds_match::{Importance, MatchConfig, NarratedTick};
 use ds_model::{BlockHeight, Width};
-use eframe::egui::{self, Align2, Color32, FontId, Painter, Pos2, RichText, Sense, Shape, Stroke};
+use eframe::egui::{self, Align2, FontId, Painter, Pos2, RichText, Sense, Shape, Stroke};
 
 use crate::interp::Moment;
 use crate::scene::{self, Geometry, Item};
@@ -33,9 +33,25 @@ struct Game {
     pitch_cm: (i32, i32),
 }
 
+/// What the command line asks of the window (`ds-gui --help`).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Start {
+    /// The board's theme, by name.
+    pub theme: Option<String>,
+    /// The camera's tilt, degrees.
+    pub tilt: Option<f32>,
+    /// The seed of the match.
+    pub seed: Option<u64>,
+    /// The tick to start from.
+    pub tick: Option<usize>,
+    /// The playback speed, times real time.
+    pub speed: Option<f64>,
+}
+
 /// The application state.
 pub struct App {
     theme: Theme,
+    themes: Vec<Theme>,
     laws: LawsBalance,
     seed: u64,
     choices: Choices,
@@ -53,9 +69,14 @@ pub struct App {
 impl App {
     /// A window with the default choices, the match not played yet.
     #[must_use]
-    pub fn new(theme: Theme) -> Self {
+    ///
+    /// # Panics
+    ///
+    /// If `themes` is empty (`Theme::all` never returns an empty list).
+    pub fn new(themes: Vec<Theme>) -> Self {
         let mut app = Self {
-            theme,
+            theme: themes[0].clone(),
+            themes,
             laws: LawsBalance::load(),
             seed: 42,
             choices: Choices::default(),
@@ -70,6 +91,36 @@ impl App {
         };
         app.play_match();
         app
+    }
+
+    /// The window as the command line asks: the board's theme by name,
+    /// the camera's tilt, the seed, the tick to start from, the speed.
+    /// Anything not given keeps the default.
+    #[must_use]
+    pub fn with_start(mut self, start: &Start) -> Self {
+        if let Some(name) = &start.theme {
+            if let Some(t) = self
+                .themes
+                .iter()
+                .find(|t| t.name.eq_ignore_ascii_case(name))
+            {
+                self.theme = t.clone();
+            }
+        }
+        if let Some(tilt) = start.tilt {
+            self.tilt = tilt;
+        }
+        if let Some(speed) = start.speed {
+            self.speed = speed;
+        }
+        if let Some(seed) = start.seed {
+            self.seed = seed;
+            self.play_match();
+        }
+        if let Some(tick) = start.tick {
+            self.tick = tick;
+        }
+        self
     }
 
     /// Plays the match with the current seed and choices.
@@ -151,6 +202,20 @@ impl App {
                 .show_ui(ui, |ui| {
                     for w in [Width::Narrow, Width::Normal, Width::Wide] {
                         ui.selectable_value(width, w, width_label(w));
+                    }
+                });
+            ui.label("Board");
+            let current = self.theme.name.clone();
+            egui::ComboBox::from_id_salt("theme")
+                .selected_text(current.as_str())
+                .show_ui(ui, |ui| {
+                    for t in &self.themes {
+                        if ui
+                            .selectable_label(t.name == current, t.name.as_str())
+                            .clicked()
+                        {
+                            self.theme = t.clone();
+                        }
                     }
                 });
             if ui.button("Play the match").clicked() {
@@ -442,13 +507,18 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let dt = f64::from(ctx.input(|i| i.stable_dt).min(0.1));
         self.advance(dt);
+        ctx.set_visuals(if self.theme.dark {
+            egui::Visuals::dark()
+        } else {
+            egui::Visuals::light()
+        });
         egui::TopBottomPanel::top("choices").show(ctx, |ui| self.choices_bar(ui));
         egui::TopBottomPanel::bottom("playback").show(ctx, |ui| self.playback_bar(ui));
         egui::SidePanel::right("commentary")
             .default_width(380.0)
             .show(ctx, |ui| self.commentary(ui));
         egui::CentralPanel::default()
-            .frame(egui::Frame::NONE.fill(Color32::TRANSPARENT))
+            .frame(egui::Frame::NONE.fill(self.theme.board))
             .show(ctx, |ui| self.pitch(ui));
         if self.playing {
             ctx.request_repaint();
@@ -461,7 +531,7 @@ mod tests {
     use super::*;
 
     fn app() -> App {
-        App::new(Theme::load().expect("theme"))
+        App::new(Theme::all().expect("themes"))
     }
 
     #[test]

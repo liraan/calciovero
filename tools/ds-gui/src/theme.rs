@@ -7,9 +7,18 @@ use serde::Deserialize;
 /// The embedded theme.
 const THEME_JSON: &str = include_str!("../theme.json");
 
-/// The theme as written in the file: every colour a hex string.
+/// The file: the themes, the default first.
+#[derive(Debug, Clone, Deserialize)]
+struct RawFile {
+    themes: Vec<RawTheme>,
+}
+
+/// A theme as written in the file: every colour a hex string.
 #[derive(Debug, Clone, Deserialize)]
 struct RawTheme {
+    name: String,
+    dark: bool,
+    board: String,
     pitch: String,
     pitch_stripe: String,
     lines: String,
@@ -29,8 +38,14 @@ struct RawTheme {
 }
 
 /// The colours the GUI paints with.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Theme {
+    /// Its name, as the window shows it.
+    pub name: String,
+    /// The interface around the board is dark.
+    pub dark: bool,
+    /// The background around the pitch.
+    pub board: Color32,
     /// The grass.
     pub pitch: Color32,
     /// The grass of every other band.
@@ -97,9 +112,11 @@ impl Theme {
     /// # Errors
     ///
     /// If the JSON or a colour is invalid.
-    pub fn from_json(text: &str) -> Result<Self, String> {
-        let r: RawTheme = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    fn from_raw(r: &RawTheme) -> Result<Self, String> {
         Ok(Self {
+            name: r.name.clone(),
+            dark: r.dark,
+            board: parse_hex(&r.board)?,
             pitch: parse_hex(&r.pitch)?,
             pitch_stripe: parse_hex(&r.pitch_stripe)?,
             lines: parse_hex(&r.lines)?,
@@ -119,14 +136,32 @@ impl Theme {
         })
     }
 
-    /// The embedded theme.
+    /// The themes from a JSON text.
     ///
     /// # Errors
     ///
-    /// If `theme.json` is invalid; `the_embedded_theme_is_valid` catches it
+    /// If the JSON or a colour is invalid, or there is no theme.
+    pub fn all_from_json(text: &str) -> Result<Vec<Self>, String> {
+        let f: RawFile = serde_json::from_str(text).map_err(|e| e.to_string())?;
+        let themes = f
+            .themes
+            .iter()
+            .map(Self::from_raw)
+            .collect::<Result<Vec<_>, _>>()?;
+        if themes.is_empty() {
+            return Err("no theme".to_string());
+        }
+        Ok(themes)
+    }
+
+    /// The embedded themes, the default first.
+    ///
+    /// # Errors
+    ///
+    /// If `theme.json` is invalid; `the_embedded_themes_are_valid` catches it
     /// at test time.
-    pub fn load() -> Result<Self, String> {
-        Self::from_json(THEME_JSON)
+    pub fn all() -> Result<Vec<Self>, String> {
+        Self::all_from_json(THEME_JSON)
     }
 }
 
@@ -134,9 +169,12 @@ impl Theme {
 mod tests {
     use super::*;
 
+    /// The three themes of the board (DESIGN.md), the default first.
     #[test]
-    fn the_embedded_theme_is_valid() {
-        assert!(Theme::load().is_ok());
+    fn the_embedded_themes_are_valid() {
+        let themes = Theme::all().expect("themes");
+        let names: Vec<&str> = themes.iter().map(|t| t.name.as_str()).collect();
+        assert_eq!(names, ["Lavagna", "Notte", "Carta"]);
     }
 
     #[test]
