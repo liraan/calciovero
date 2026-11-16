@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `bd67436` - "docs(state): the night of 15-16 November for the maintainer"
+**Last commit verified:** `cfe4d78` - "docs(state): OI-117, the defender's marking against pressing, alternatives for the maintainer"
 
 ## Dove siamo (2026-11-14)
 
@@ -117,7 +117,8 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Misurato: gli avversari entro 5 m dal portatore. Metrica (partite 1 e 2): nessuno il 49,5-54,2% del tempo, uno il 36,4-37,7%, due l'8,0-10,7%, tre o più l'1,4-1,9%. Motore 133: nessuno il 67,3%, uno il 24,8%, due il 6,3%, tre o più l'1,3%. Manca il primo pressatore, non il raddoppio.
 - Sonda (seme 42, SIM 133, il difensore più vicino al portatore, fuori portata): entro 3 m pressa nell'84% dei casi; fra 3 e 6 m nel 66%; fra 6 e 10 m nel 30%, e nel 54% marca un altro uomo. Il pressing vale il pericolo del portatore per `in_time`, la fiducia di arrivare con `trust_ticks` (1 s) di margine alla velocità creduta: a 8 m vale 0,40 e perde contro la marcatura di un uomo più vicino. Il secondo di `trust_ticks` è un tempo senza riferimento: arrivare in tempo per cosa?
 - Verificato: la latenza che il difensore crederebbe al portatore medio è 10,5 tick, quasi il secondo fisso di `trust_ticks`; cambiarlo non cambierebbe il pressing. La causa è la misura della marcatura (OI-117, alternative per il maintainer).
-- **Prossima azione esatta:** in attesa delle scelte del maintainer (OI-116, OI-117 (A)), il fallo nella pressione (OI-114) dopo il pressing; nel frattempo gli autogol del 132-133 (0.42 contro 0.10: da dove nascono, spazzata o deviazione; Wyscout e StatsBomb hanno l'evento prima dell'autogol) e i rinvii dal fondo (7.1 contro 17.2: i tiri fuori dal fondo e i passaggi lunghi che escono). Sveglia: 17 novembre alle 01:10.
+- Gli autogol del motore (SIM 133, semi 42-101: 25 in 60 partite, 0.42 contro 0.10): 10 seguono un passaggio non riuscito, 6 uno riuscito, 3 un duello, 2 un intercetto. Il sospetto è il retropassaggio: sotto pressione (dal 132) devia, e il portiere che non lo controlla col piede (Regola 12: niente mani su un retropassaggio calciato) lo lascia correre a metà velocità verso la porta.
+- **Prossima azione esatta:** in attesa delle scelte del maintainer (OI-116, OI-117 (A)), gli autogol: per ognuno dei 25, dove parte il passaggio, chi doveva riceverlo (il portiere?), a che velocità arriva e con quale controllo; contro il vero (StatsBomb: l'evento prima di ogni `Own Goal Against`). Poi i rinvii dal fondo (7.1 contro 17.2). Sveglia: 17 novembre alle 01:10.
 
 ## Decisioni prese da Claude, da rivedere
 
