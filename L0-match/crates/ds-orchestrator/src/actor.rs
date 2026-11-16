@@ -114,6 +114,56 @@ impl Actor {
             crate::read::build_choice(&scene, preferred_foot, risk_appetite, own_error, balance);
         (hidden.resolve_choice(&ctx).chosen, freedoms)
     }
+
+    /// The choice at the reception (ADR-064): before his touch, from the
+    /// scene he will have with the ball where it reaches him, he weighs
+    /// controlling it against clearing it first time. Controlling is worth
+    /// his best option afterwards if his touch masters the ball
+    /// (`controls`, ADR-058: he knows his touch, he sees its speed and the
+    /// man on him), else the ball lost where he stands; the clearance is
+    /// worth what its landing is worth, as for the carrier (ADR-052). The
+    /// first-time pass and shot are the next step of ADR-064. Returns the
+    /// clearance's landing if he clears.
+    ///
+    /// Controlled, he keeps it to his decision only as far as the man on
+    /// him lets him: `kept` is how sure he is that he plays it before he
+    /// is challenged, or that his body holds the challenge (the man's run
+    /// at the pace he believes against his own time to decide, and his
+    /// shield, the quantities of `hold_candidate`).
+    pub fn first_time(
+        &self,
+        scene: &crate::read::PerceivedScene,
+        hidden: &mut GroundTruth,
+        (controls, kept): (bool, f64),
+    ) -> Option<(i32, i32)> {
+        let risk_appetite = hidden
+            .custodian(self.player)
+            .value(ds_calculator::Characteristic::RiskManagement);
+        let at = scene.positions.get(&self.player).copied()?;
+        let balance = hidden.shot_choice_balance();
+        let (ctx, _) =
+            crate::read::build_choice(scene, crate::Side::Right, risk_appetite, 0.0, balance);
+        let clear = ctx.candidates.iter().find_map(|c| match c.kind {
+            crate::ChoiceKind::Clear { to } => Some((c.geometric, to)),
+            _ => None,
+        })?;
+        let loss = crate::read::space_value(at, scene.own_goal, scene.goal);
+        let lost_here =
+            ds_calculator::thought::ThoughtBalance::expected(0.0, 0.0, loss, risk_appetite);
+        let control = if controls {
+            let best = ctx
+                .candidates
+                .iter()
+                .filter(|c| !matches!(c.kind, crate::ChoiceKind::Clear { .. }))
+                .map(|c| c.geometric)
+                .fold(f64::NEG_INFINITY, f64::max);
+            let kept = kept.clamp(0.0, 1.0);
+            kept.mul_add(best, (1.0 - kept) * lost_here)
+        } else {
+            lost_here
+        };
+        (clear.0 > control).then_some(clear.1)
+    }
 }
 
 #[cfg(test)]
@@ -124,5 +174,60 @@ mod tests {
     fn actor_is_a_player() {
         let a = Actor::new(PlayerId::new(7, 0));
         assert_eq!(a.player(), PlayerId::new(7, 0));
+    }
+
+    /// Twin test (ADR-064, SIM 134): the same defender in his own area, a
+    /// forward on him, the same ball coming; only how sure he is to keep
+    /// it once controlled changes. Sure to keep it, he controls; sure to
+    /// be robbed first, he clears it first time.
+    #[test]
+    fn a_defender_who_would_be_robbed_clears_first_time() {
+        use std::collections::BTreeMap;
+        let me = PlayerId::new(2, 0);
+        let mate = PlayerId::new(5, 0);
+        let forward = PlayerId::new(109, 0);
+        let mut positions = BTreeMap::new();
+        positions.insert(me, (800, 3000));
+        positions.insert(mate, (3000, 1000));
+        positions.insert(forward, (950, 3100));
+        // Their men upfield, where a clearance comes down.
+        let upfield: Vec<PlayerId> = (0..3).map(|k| PlayerId::new(110 + k, 0)).collect();
+        for (k, y) in [680, 3400, 6120].into_iter().enumerate() {
+            positions.insert(upfield[k], (4800, y));
+        }
+        let mut opponents = vec![forward];
+        opponents.extend(upfield);
+        let scene = crate::read::PerceivedScene {
+            actor: me,
+            teammates: vec![me, mate],
+            opponents,
+            positions,
+            goal: (10500, 3400),
+            own_goal: (0, 3400),
+            ground_keep: 0.957,
+            keeper: None,
+            keeper_reach_cm: 0.0,
+            can_carry: false,
+            penalty_kick: false,
+            runs: BTreeMap::new(),
+            horizon_cm: f64::MAX,
+            strike_error_rad: 0.0,
+            soon: BTreeMap::new(),
+            shield_keep: 0.0,
+            foresight: 1.0,
+            motion: BTreeMap::new(),
+            level_share: 0.0,
+            reception: crate::read::ReceptionReckoning::default(),
+        };
+        let mut g = GroundTruth::new(42, ds_core::ids::MatchId::new(1, 0));
+        let a = Actor::new(me);
+        assert!(
+            a.first_time(&scene, &mut g, (true, 1.0)).is_none(),
+            "sure to keep it: he controls"
+        );
+        assert!(
+            a.first_time(&scene, &mut g, (true, 0.0)).is_some(),
+            "sure to be robbed: he clears"
+        );
     }
 }

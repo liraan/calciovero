@@ -438,6 +438,89 @@ impl MatchState {
         best.map(|(_, id)| id)
     }
 
+    /// The choice at the reception (ADR-064, OI-118, SIM 134): before his
+    /// touch, `id` imagines the scene he will have with the ball where it
+    /// reaches him and weighs controlling it (`controls`: whether his touch
+    /// masters it) against clearing it first time. Returns whether he
+    /// cleared it.
+    pub(crate) fn plays_first_time(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        id: PlayerId,
+        controls: bool,
+    ) -> bool {
+        let (length, _) = pitch_cm(ctx);
+        let home = ctx.match_.home.players.iter().any(|p| p.id == id);
+        let (own, other) = if home {
+            (&ctx.match_.home, &ctx.match_.away)
+        } else {
+            (&ctx.match_.away, &ctx.match_.home)
+        };
+        let teammates: Vec<PlayerId> = own.players.iter().map(|p| p.id).collect();
+        let opponents: Vec<PlayerId> = other.players.iter().map(|p| p.id).collect();
+        let goal = (if home { length } else { 0 }, 3400);
+        let own_goal = (length - goal.0, goal.1);
+        let gk = opponents.first().copied();
+        let keeper_reach_cm = gk.and_then(|g| self.bodies.get(&g)).map_or(0.0, |b| {
+            b.height_cm * ctx.hidden.save_balance().standing_reach_share
+        });
+        let mut scene = crate::state::scene_from(
+            &self.spatial,
+            id,
+            (goal, own_goal),
+            teammates,
+            opponents,
+            (gk, keeper_reach_cm),
+            false,
+        );
+        scene.positions = self.as_seen_by(id, std::mem::take(&mut scene.positions));
+        // He imagines himself where the ball reaches him.
+        scene.positions.insert(id, self.spatial.ball());
+        scene.horizon_cm = ctx.hidden.horizon_cm(id);
+        // Controlled, does he play it before the man on him gets there? His
+        // own time to decide (`latency.json`, the carrier's), against the
+        // nearest opponent's run at the pace and reaction he believes; if
+        // he is challenged first, his body may still hold it (his shield).
+        let (crowding, nearest_threat) = self.latency_scene(id, &scene.opponents);
+        let decide = ctx
+            .hidden
+            .resolve_latency(&ds_orchestrator::LatencyContext {
+                player: id,
+                crowding,
+                nearest_threat,
+                fatigue: self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
+            })
+            .ticks;
+        let thought = ds_calculator::thought::ThoughtBalance::load();
+        let ball = self.spatial.ball();
+        #[allow(clippy::cast_precision_loss)]
+        let arrive = scene
+            .opponents
+            .iter()
+            .filter_map(|o| self.spatial.agent(*o))
+            .map(|a| distance_squared(a.position, ball).isqrt() as f64)
+            .fold(f64::INFINITY, f64::min)
+            / thought.believed_speed_cm_per_tick.max(1.0)
+            + thought.believed_reaction_ticks;
+        #[allow(clippy::cast_precision_loss)]
+        let challenged = thought.confidence(decide as f64 - arrive);
+        let kept = challenged.mul_add(-(1.0 - ctx.hidden.shield_confidence(id)), 1.0);
+        let Some(to) =
+            ds_orchestrator::Actor::new(id).first_time(&scene, ctx.hidden, (controls, kept))
+        else {
+            return false;
+        };
+        self.pending = None;
+        self.possession = if home {
+            Possession::Home
+        } else {
+            Possession::Away
+        };
+        self.play_clearance(ctx, tick, id, to);
+        true
+    }
+
     /// Where `id` would meet a pass rolling on the grass, with his own
     /// speed, acceleration and top speed (ADR-052: who gets there first;
     /// ADR-058). `None` if the ball is not rolling.
@@ -617,7 +700,11 @@ impl MatchState {
         if pass.is_none() && self.spatial.ball_state() == crate::spatial::BallState::InFlight {
             let params = self.reception_params(ctx);
             let rctx = self.arrival(ctx, id, !home(id));
-            if !ctx.hidden.resolve_reception(&rctx, &params).controlled {
+            let controls = ctx.hidden.resolve_reception(&rctx, &params).controlled;
+            if self.plays_first_time(ctx, tick, id, controls) {
+                return;
+            }
+            if !controls {
                 let v = self.spatial.ball_velocity();
                 self.spatial
                     .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
@@ -705,6 +792,9 @@ impl MatchState {
         let params = self.reception_params(ctx);
         let rctx = self.arrival(ctx, id, by_home);
         let rec = ctx.hidden.resolve_reception(&rctx, &params);
+        if self.plays_first_time(ctx, tick, id, rec.controlled) {
+            return true;
+        }
         if rec.controlled {
             return false;
         }
