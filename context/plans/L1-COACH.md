@@ -186,6 +186,22 @@ La formazione si annuncia in un momento della giornata, prima del calcio d'inizi
 
 Quando il manager apre la formazione trova **la proposta del vice**: quella che sceglierebbe un vice con le caratteristiche dell'allenatore del club, scritta come tale. Il vice è un attore come gli altri, con il suo albero. Il manager la cambia come vuole; un pulsante "come l'ultima" riprende la formazione della partita precedente. Le scelte del manager entrano come input datati (ADR-060). In L2 il vice diventa una persona dello staff, con le sue caratteristiche; il meccanismo resta questo. È anche il modo per chi gioca sul telefono di non rifare la formazione ogni settimana.
 
+## Da provare, in moduli
+
+Tutto questo si scrive adesso e si prova giocando: quello che non ha senso alla prova si cambia (prima completo, poi perfetto, decisione M). Per questo ogni pezzo sta in un modulo con la sua fascia (decisione X), e spegnerlo non rompe niente:
+
+| Pezzo | Fascia | Se è spento |
+|---|---|---|
+| La lavagna libera, che si cambia in partita | core | — |
+| I canali dalla panchina | consigliato | ogni istruzione arriva a tutti dal tick successivo, come l'ADR-059 §2 di oggi |
+| I piani "se, allora" e i segnali preparati | consigliato | si decide tutto dal vivo |
+| I discorsi e la credibilità | consigliato | nessun discorso; il rapporto con l'allenatore resta neutro |
+| La riunione tattica e la comprensione del piano | consigliato | tutti capiscono il piano per intero |
+| Il gruppo dei leader | consigliato, dentro la psicologia | nessun contagio fra compagni |
+| Lo studio dell'arbitro e dei rigoristi | opzionale, dentro l'analisi | il piano gara non ne tiene conto |
+
+Le fasce sono una prima proposta: si spostano dopo le prove, come i pezzi.
+
 ## Le regole che non si violano
 
 Nessun giocatore squalificato, infortunato o fuori lista. La lista si fissa all'inizio della stagione (in L1 non c'è il mercato), con le regole della lista come dati modulari.
