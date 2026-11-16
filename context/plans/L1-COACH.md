@@ -1,6 +1,6 @@
 # L1 · L'allenatore (`ds-coach`)
 
-Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni AF, AG e AH (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
+Il piano del plugin allenatore di L1: cosa sceglie ogni allenatore prima della partita, da cosa, e come lo fa senza dadi. In partita reagisce la panchina di L0 (decisione T), che legge il piano scritto qui. Decisioni AF, AG, AH e AI (maintainer, 16 novembre 2026), con i filtri partita vera, LUNA e futuribilità.
 
 Il quadro è in [`L1.md`](L1.md); le istruzioni in partita sono dell'[ADR-059](../../doctrine/adr/059-the-coach-speaks-during-the-match.md).
 
@@ -25,7 +25,16 @@ L'allenatore avversario non è un'intelligenza artificiale a parte: è un **atto
 - **gli stati del momento** le attenuano, e ognuno si vede da un segno nel piano B;
 - **la scelta** è dell'attore (ADR-043): riceve la scena percepita, fatti osservabili e stime, mai un elenco di opzioni già valutate, e decide con le sue abilità.
 
-Il tipo `Actor` di `ds-orchestrator`, oggi solo il giocatore, diventa l'attore di ogni tipo (giocatore, allenatore, poi staff e dirigente), con la stessa porta verso il caveau. Serve un ADR prima del passo 5 di L1. Il manager umano è l'unico senza caratteristiche: le sue scelte sono input datati.
+Il tipo `Actor` di `ds-orchestrator`, oggi solo il giocatore, diventa l'attore di ogni tipo (giocatore, allenatore, poi staff e dirigente), con la stessa porta verso il caveau. Serve un ADR prima del passo 5 di L1.
+
+## Il giocatore umano sceglie il suo ruolo (decisione AI)
+
+Chi gioca a Calcio Vero non è per forza l'allenatore: all'inizio della carriera sceglie il suo posto nel club, l'allenatore, il vice, il direttore sportivo, il direttore tecnico, il presidente, l'amministratore delegato. Per questo **ogni posto è occupato da un attore**, con le sue caratteristiche e abilità; il giocatore umano prende un posto, e le scelte di quel posto diventano sue, come input datati. Tutti gli altri posti restano agli attori.
+
+- **I ruoli sono dati.** Ogni ruolo è dichiarato in una scheda: quali scelte gli spettano, cosa vede e con che precisione (un presidente non conosce la condizione dei giocatori come l'allenatore che li allena), a chi risponde. Ogni scelta di ogni plugin dichiara il ruolo a cui spetta. Un modder può aggiungere un ruolo (il preparatore dei portieri, il team manager) senza toccare il nucleo.
+- **Le scelte degli altri restano degli altri.** Se sei il presidente, la formazione la fa l'allenatore attore, e la partita la guardi dalla tribuna; se sei l'allenatore, i giocatori li compra il direttore sportivo attore, e tu glieli chiedi. Si chiede, si propone, si discute attraverso i canali del ruolo; chi decide decide con le sue caratteristiche.
+- **In L1 c'è il meccanismo, con i posti che L1 ha.** Le scelte di L1 (la formazione, il piano, l'allenamento) sono già dichiarate con il loro ruolo dal primo giorno, così L2 aggiunge ruoli senza riscrivere niente. Il posto giocabile in L1 è l'allenatore; gli altri posti arrivano con i plugin che hanno le loro scelte (mercato, staff, società, finanze: L2).
+- Le domande aperte sul ruolo sono in fondo a questo file.
 
 ## L'albero dell'allenatore
 
@@ -99,6 +108,12 @@ Nessun giocatore squalificato, infortunato o fuori lista. La lista si fissa all'
 - **Determinismo:** lo stesso mondo dà la stessa formazione e lo stesso piano.
 - **Le regole:** nessuna formazione con un giocatore squalificato, infortunato o fuori lista; panchina e cambi come dicono le regole della stagione.
 - **Taratura (grado 2, sui dati tenuti da parte):** la distribuzione dei moduli, delle altezze del blocco e della rotazione nelle settimane fitte del campionato simulato contro quelle vere.
+
+## Domande aperte sul ruolo
+
+- [ ] Un giocatore umano può tenere due posti insieme (il presidente che fa anche il direttore sportivo)?
+- [ ] Si cambia posto durante la carriera (il vice che diventa allenatore, l'allenatore che diventa direttore tecnico), e come: scelta tra una stagione e l'altra, o una carriera vera, con offerte ed esoneri (L2)?
+- [ ] Il vice umano in L1: propone all'allenatore attore, che accetta o no secondo le sue caratteristiche. In L1 o con lo staff di L2?
 
 ## Fuori da L1
 
