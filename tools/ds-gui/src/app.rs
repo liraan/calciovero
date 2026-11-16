@@ -108,6 +108,11 @@ pub struct App {
     record: Option<(String, usize, usize)>,
     /// The bench post-it: who comes off and who comes on, as chosen.
     pick: (Option<PlayerId>, Option<PlayerId>),
+    /// The recording's clock: the tick it starts from, the frames asked
+    /// for so far, and whether a screenshot is on its way.
+    rec_clock: (usize, usize, bool),
+    /// The camera has been put on the ball once (it starts there).
+    placed: bool,
 }
 
 impl App {
@@ -139,6 +144,8 @@ impl App {
             last_dt: 0.0,
             record: None,
             pick: (None, None),
+            rec_clock: (0, 0, false),
+            placed: false,
         };
         app.play_match();
         app
@@ -179,6 +186,7 @@ impl App {
         if let Some(tick) = start.tick {
             self.tick = tick;
         }
+        self.rec_clock.0 = self.tick;
         self
     }
 
@@ -548,6 +556,11 @@ impl App {
         let instant = (self.tick as f64 + self.carry - 1.0).max(0.0);
         let moment = Moment::at(&game.records, instant, &game.header.physics);
         let (origin, size) = ((r.min.x, r.min.y), (r.width(), r.height()));
+        if self.follow && !self.placed {
+            // The camera starts on the ball.
+            self.focus = (moment.ball.0, moment.ball.1);
+            self.placed = true;
+        }
         if self.follow {
             // The damped movement: the camera catches up with the ball.
             let (fx, fy) = self.focus;
@@ -871,6 +884,7 @@ impl App {
                 eprintln!("ds-gui: {}: {e}", path.display());
             }
             *saved += 1;
+            self.rec_clock.2 = false;
         }
         if *saved >= *wanted {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -1196,17 +1210,43 @@ const fn width_label(w: Width) -> &'static str {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let mut dt = f64::from(ctx.input(|i| i.stable_dt).min(0.1));
+        let dt = f64::from(ctx.input(|i| i.stable_dt).min(0.1));
         if self.record.is_some() {
-            // Recording: each frame is 1/60 s of playback, however long it
-            // takes to draw.
-            dt = 1.0 / 60.0;
+            // Recording: frame n is exactly n/60 s of playback, however
+            // many times egui draws it; the camera moves once a frame. A
+            // new frame is asked for only when the last one is saved, and
+            // each carries its number in a corner pixel, so that a frame
+            // saved twice is dropped and none is missing.
             self.save_screenshots(ctx);
+            let moving = !self.rec_clock.2;
+            if moving {
+                self.rec_clock.1 += 1;
+            }
+            let n = self.rec_clock.1 - 1;
+            #[allow(clippy::cast_precision_loss)]
+            let ticks = n as f64 * TICKS_PER_SECOND * self.speed / 60.0;
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let whole = ticks.floor() as usize;
+            self.tick = self.rec_clock.0 + whole;
+            self.carry = ticks - ticks.floor();
+            self.last_dt = if moving { 1.0 / 60.0 } else { 0.0 };
+            #[allow(clippy::cast_possible_truncation)]
+            let stamp = egui::Color32::from_rgb((n % 256) as u8, (n / 256 % 256) as u8, 77);
+            ctx.layer_painter(egui::LayerId::new(
+                egui::Order::Foreground,
+                egui::Id::new("stamp"),
+            ))
+            .rect_filled(
+                egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(3.0, 3.0)),
+                0.0,
+                stamp,
+            );
+        } else {
+            #[allow(clippy::cast_possible_truncation)]
+            let dt32 = dt as f32;
+            self.last_dt = dt32;
+            self.advance(dt);
         }
-        #[allow(clippy::cast_possible_truncation)]
-        let dt32 = dt as f32;
-        self.last_dt = dt32;
-        self.advance(dt);
         ctx.set_visuals(if self.theme.dark {
             egui::Visuals::dark()
         } else {
@@ -1224,7 +1264,12 @@ impl eframe::App for App {
             self.bench_postit(ctx);
         }
         if self.record.is_some() {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::default()));
+            // One screenshot at a time: the next frame is drawn only after
+            // this one is saved.
+            if !self.rec_clock.2 {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::default()));
+                self.rec_clock.2 = true;
+            }
             ctx.request_repaint();
         } else if self.playing {
             ctx.request_repaint();
