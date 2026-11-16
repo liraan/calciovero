@@ -32,8 +32,8 @@ Il tipo `Actor` di `ds-orchestrator`, oggi solo il giocatore, diventa l'attore d
 Chi gioca a Calcio Vero non è per forza l'allenatore: all'inizio della carriera sceglie il suo posto nel club, l'allenatore, il vice, il direttore sportivo, il direttore tecnico, il presidente, l'amministratore delegato. Per questo **ogni posto è occupato da un attore**, con le sue caratteristiche e abilità; il giocatore umano prende un posto, e le scelte di quel posto diventano sue, come input datati. Tutti gli altri posti restano agli attori.
 
 - **I ruoli sono dati.** Ogni ruolo è dichiarato in una scheda: quali scelte gli spettano, cosa vede e con che precisione (un presidente non conosce la condizione dei giocatori come l'allenatore che li allena), a chi risponde. Ogni scelta di ogni plugin dichiara il ruolo a cui spetta. Un modder può aggiungere un ruolo (il preparatore dei portieri, il team manager) senza toccare il nucleo.
-- **Le scelte degli altri restano degli altri.** Se sei il presidente, la formazione la fa l'allenatore attore, e la partita la guardi dalla tribuna; se sei l'allenatore, i giocatori li compra il direttore sportivo attore, e tu glieli chiedi. Si chiede, si propone, si discute attraverso i canali del ruolo; chi decide decide con le sue caratteristiche.
-- **In L1 c'è il meccanismo, con i posti che L1 ha.** Le scelte di L1 (la formazione, il piano, l'allenamento) sono già dichiarate con il loro ruolo dal primo giorno, così L2 aggiunge ruoli senza riscrivere niente. Il posto giocabile in L1 è l'allenatore; gli altri posti arrivano con i plugin che hanno le loro scelte (mercato, staff, società, finanze: L2).
+- **Le scelte degli altri restano degli altri.** Se sei il presidente, la formazione la fa l'allenatore attore, e la partita la guardi dalla tribuna; se sei l'allenatore, i giocatori li compra il direttore sportivo attore, e tu glieli chiedi ([`L1-MARKET.md`](L1-MARKET.md)). Si chiede, si propone, si discute attraverso i canali del ruolo; chi decide decide con le sue caratteristiche.
+- **In L1 c'è il meccanismo, con i posti che L1 ha.** Le scelte di L1 (la formazione, il piano, l'allenamento) sono già dichiarate con il loro ruolo dal primo giorno, così L2 aggiunge ruoli senza riscrivere niente. I posti giocabili in L1 sono l'allenatore e il direttore sportivo (decisione AR); gli altri arrivano con i plugin che hanno le loro scelte (mercato, staff, società, finanze: L2).
 - Le risposte del maintainer sul ruolo sono più sotto (decisione AJ).
 
 ## L'albero dell'allenatore
@@ -204,7 +204,7 @@ Le fasce sono una prima proposta: si spostano dopo le prove, come i pezzi.
 
 ## Le regole che non si violano
 
-Nessun giocatore squalificato, infortunato o fuori lista. La lista si fissa all'inizio della stagione (in L1 non c'è il mercato), con le regole della lista come dati modulari.
+Nessun giocatore squalificato, infortunato o fuori lista. La lista si fissa all'inizio della stagione e si aggiorna a ogni finestra di mercato ([`L1-MARKET.md`](L1-MARKET.md)), con le regole della lista come dati modulari.
 
 ## I test
 
@@ -226,8 +226,8 @@ Ogni ruolo diventa giocabile quando esistono le scelte che gli spettano. I tre p
 | Quando | Ruolo giocabile | Perché allora |
 |---|---|---|
 | L1 | Allenatore | Le scelte di L1 sono le sue: formazione, piano, allenamento |
-| L2 | Direttore sportivo | Arriva il mercato: acquisti, cessioni, contratti, osservatori |
-| L2 | Presidente | Arrivano società e finanze: budget, nomine ed esoneri, la gerarchia che avoca, le offerte di lavoro |
+| L1 | Direttore sportivo | Il mercato è in L1 (decisione AR): acquisti, cessioni, contratti, rinnovi |
+| L2 | Presidente | Arrivano società e bilancio completo: nomine ed esoneri, la gerarchia che avoca, le offerte di lavoro |
 | Dopo (L3 o i modder) | Vice, direttore tecnico, amministratore delegato, preparatore, team manager | Ruoli in dati, si aggiungono senza toccare il nucleo |
 
 ## Fuori da L1

@@ -14,7 +14,7 @@
 | L0 · Plugin | La partita divisa in plugin dietro un contratto (ADR-063) | fatto | [`PLUGINS`](PLUGINS.md) |
 | Vista 2.5D | La lavagna inclinata, la vista della GUI su desktop e Android | adesso, prima della chiusura di L0 (decisione S) | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
 | L1 · La stagione | Tre serie e la coppa nel formato reale, ogni partita dal motore | dopo il 2.5D | [`L1`](L1.md) |
-| L2 · La carriera | Contratti, mercato, osservatori, vivaio, crescita, finanze, società, spogliatoio, la vita dell'allenatore | dopo la 0.1 | ADR-060; il piano si scrive alla fine di L1 |
+| L2 · La carriera | Procuratori, osservatori, vivaio, crescita, bilancio completo, società, spogliatoio, la vita dell'allenatore (contratti e mercato sono in L1, decisione AR) | dopo la 0.1 | ADR-060; il piano si scrive alla fine di L1 |
 | L3 · Il gioco che si modifica | Editor, pacchetti, importatore locale, plugin esterni in WebAssembly | dopo L2 | decisioni 4, F–K |
 | 3D | Solo desktop, con Bevy se maturo | dopo la 1.0 | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
 
@@ -28,7 +28,7 @@ Ogni passo si chiude con la sua prova, e il successivo non parte prima.
 4. **L1, i dieci passi di [`L1.md`](L1.md).** Prova: dieci stagioni con lo stesso hash, il formato reale, i plugin spenti.
 5. **La versione 0.1 · Stagione.** Prova: la lista congelata qui sotto, completa.
 6. **La 0.2 · Panchina:** i moduli consigliati dell'allenatore di [`L1-COACH.md`](L1-COACH.md) (canali dalla panchina, discorsi e credibilità, piani "se, allora" e segnali, riunione tattica e comprensione del piano, gruppo dei leader), uno alla volta, ognuno spento senza rompere nulla (decisione AQ). Prova: ogni modulo acceso e spento lascia il golden deterministico.
-7. **L2, prima metà** (contratti, finanze, mercato, gli altri club, osservatori; i posti giocabili di direttore sportivo e presidente, decisione AK). Prova: dieci anni di mercato deterministici. Poi la **0.3 · Mercato**.
+7. **L2, prima metà** (procuratori, osservatori, il bilancio completo, la società; il posto giocabile di presidente, decisione AK). Prova: dieci anni di società e bilancio deterministici. Poi la **0.3 · Società**.
 8. **L2, seconda metà** (crescita, vivaio, tattica nel tempo, società, staff, strutture, spogliatoio, l'allenatore). Prova: una carriera di dieci anni con lo stesso hash. Poi la **0.4 · Carriera**.
 9. **L3.** Prova: un dato modificato dall'editor e un pacchetto esterno lasciano la partita deterministica. Poi la **1.0** sul desktop.
 10. **Android**, poi la **1.1** (stampa e tifosi), poi il **3D** sul desktop, se Bevy è maturo.
@@ -40,7 +40,7 @@ Decisione N: quello che non è in questa lista va dopo la 0.1, salvo decisione e
 - [ ] La vista 2.5D nella GUI (passo 1)
 - [ ] La panchina in partita: cambi dal vivo, istruzioni rapide, l'allenatore avversario che legge la partita (passo 2)
 - [ ] L0 chiuso (passo 2)
-- [ ] L1 completo: tre serie, la coppa, il calendario, le classifiche, l'allenatore, il corpo, la disciplina, la settimana
+- [ ] L1 completo: tre serie, la coppa, il calendario, le classifiche, l'allenatore, il corpo, la disciplina, la settimana, il mercato con contratti e cassa (decisione AR), il posto di direttore sportivo
 - [ ] Le fondamenta del 16 novembre (decisione AQ): il modello di attore per ogni ruolo (AH), i ruoli in dati con il posto di allenatore (AI, AK), il database (AD, AE), la lavagna libera che si cambia in partita (AL, AG)
 - [ ] La GUI della stagione: la lavagna, i post-it a linguette, il calendario con l'agenda, la rosa, la classifica, la scheda giocatore, la partita
 - [ ] Il file di segnalazione (seme, scelte datate, versione del motore) con il pulsante "segnala un problema"; il registro locale degli errori, senza invii
