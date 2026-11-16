@@ -437,114 +437,14 @@ impl MatchState {
             contact_height,
         } = chosen
         {
-            let from = match self.spatial.agent(attacker) {
-                Some(a) => (a.position.0, a.position.1, 0),
-                None => self.spatial.ball_3d(),
-            };
-            let to = match self.possession {
-                Possession::Home => (i32::from(ctx.match_.pitch.length_m) * 100, 3400, 244),
-                Possession::Away => (0, 3400, 244),
-            };
-            // Difficulty: the pressure on the kick, the same the shooter
-            // reckons with (`shot_choice.json` `kick_pressure_radius_cm`):
-            // 0 cm -> 100, the radius -> 0. Their
-            // keeper on his line does not press the kicker (before
-            // `SIM_VERSION` 74 he did, and a penalty was a kick under
-            // pressure).
-            let difficulty = opponents
-                .iter()
-                .skip(1)
-                .filter(|_| !dead_ball)
-                .filter_map(|o| {
-                    self.spatial
-                        .agent(*o)
-                        .map(|a| distance_squared(a.position, (from.0, from.1)).isqrt())
-                })
-                .min()
-                .map_or(0, |d| {
-                    let r = ctx
-                        .hidden
-                        .shot_choice_balance()
-                        .kick_pressure_radius_cm
-                        .max(1);
-                    i32::try_from(((r - d).max(0) * 100) / r).unwrap_or(0)
-                });
-            let ctx_shot = ds_orchestrator::ShotContext {
-                shooter: attacker,
-                from,
-                to,
-                difficulty,
-                aim_y,
-                power,
-                contact_height,
-                momentum_y: self
-                    .spatial
-                    .agent(attacker)
-                    .map_or(0, |a| i32::from(a.velocity.1)),
-                gravity_cm_per_tick2: self.spatial.gravity_cm_per_tick2(),
-                gait: self
-                    .spatial
-                    .agent(attacker)
-                    .map_or(0.5, |a| f64::from(a.gait_milli) / 1000.0),
-                run_cm_per_tick: self.spatial.agent(attacker).map_or(0.0, |a| {
-                    dmath::hypot(f64::from(a.velocity.0), f64::from(a.velocity.1))
-                }),
-                across: self.spatial.agent(attacker).map_or(0.0, |a| {
-                    let (vx, vy) = (f64::from(a.velocity.0), f64::from(a.velocity.1));
-                    let (sx, sy) = (f64::from(to.0 - from.0), aim_y - f64::from(from.1));
-                    let (v, s) = (dmath::hypot(vx, vy), dmath::hypot(sx, sy));
-                    if v < 1.0 || s < 1.0 {
-                        0.0
-                    } else {
-                        (vx.mul_add(sy, -(vy * sx)) / (v * s)).abs()
-                    }
-                }),
-                fatigue: self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
-            };
-            let outcome = ctx.hidden.resolve_shot(&ctx_shot);
-            // F.3-b3: carrier released, ball flies. Goal (or Save) is
-            // emitted at the crossing tick by `check_shot_crossing`, not
-            // at launch: the goal is geometric, not the die's outcome.
-            self.spatial.set_carrier(None);
-            self.spatial
-                .set_ball_in_flight(from, outcome.initial_velocity);
-            self.spatial.struck_shot();
-            let fact = crate::fact::Fact::Trajectory {
-                actor: attacker,
-                kind: crate::fact::TrajectoryKind::Shot {
-                    on_target: outcome.on_target,
-                    from,
-                    to: outcome.to,
-                    initial_velocity: outcome.initial_velocity,
-                    shot_type: outcome.shot_type,
-                },
-            };
-            for c in crate::fact::classify(&fact) {
-                self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
-            }
-            match self.possession {
-                Possession::Home => {
-                    self.shots.0 += 1;
-                }
-                Possession::Away => {
-                    self.shots.1 += 1;
-                }
-            }
-            self.pending = Some(Pending {
-                launched: tick,
-                due_tick: tick + FLIGHT_TICKS,
-                outcome: Self::other(self.possession),
-                interceptor: None,
-                passer: None,
-                receiver: None,
-                closest_cm: None,
-                through: false,
-                shot: Some(ShotPending {
-                    attacker,
-                    struck: tick,
-                    from,
-                }),
-            });
+            self.play_shot(
+                ctx,
+                tick,
+                attacker,
+                (&opponents, dead_ball),
+                (aim_y, power, contact_height),
+                None,
+            );
         // Reachable from the carrier's scene only when `ChoiceKind::Duel`
         // is emitted; `build_choice` no longer emits it (a carrier has
         // the ball, the opponent does not; `ball_contested` is false by
@@ -915,6 +815,132 @@ impl MatchState {
                 fatigue: self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
             })
             .ticks
+    }
+
+    /// The shot (ADR-051, the family "the kick"): from his feet, at the
+    /// goal he attacks, with the pressure on him and his run. `run`, when
+    /// given, is the speed of the ball he strikes first time (ADR-064),
+    /// which spoils the contact as his own run does.
+    #[allow(clippy::too_many_lines)]
+    pub(crate) fn play_shot(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        attacker: PlayerId,
+        (opponents, dead_ball): (&[PlayerId], bool),
+        (aim_y, power, contact_height): (f64, f64, f64),
+        run: Option<f64>,
+    ) {
+        let from = match self.spatial.agent(attacker) {
+            Some(a) => (a.position.0, a.position.1, 0),
+            None => self.spatial.ball_3d(),
+        };
+        let to = match self.possession {
+            Possession::Home => (i32::from(ctx.match_.pitch.length_m) * 100, 3400, 244),
+            Possession::Away => (0, 3400, 244),
+        };
+        // Difficulty: the pressure on the kick, the same the shooter
+        // reckons with (`shot_choice.json` `kick_pressure_radius_cm`):
+        // 0 cm -> 100, the radius -> 0. Their
+        // keeper on his line does not press the kicker (before
+        // `SIM_VERSION` 74 he did, and a penalty was a kick under
+        // pressure).
+        let difficulty = opponents
+            .iter()
+            .skip(1)
+            .filter(|_| !dead_ball)
+            .filter_map(|o| {
+                self.spatial
+                    .agent(*o)
+                    .map(|a| distance_squared(a.position, (from.0, from.1)).isqrt())
+            })
+            .min()
+            .map_or(0, |d| {
+                let r = ctx
+                    .hidden
+                    .shot_choice_balance()
+                    .kick_pressure_radius_cm
+                    .max(1);
+                i32::try_from(((r - d).max(0) * 100) / r).unwrap_or(0)
+            });
+        let ctx_shot = ds_orchestrator::ShotContext {
+            shooter: attacker,
+            from,
+            to,
+            difficulty,
+            aim_y,
+            power,
+            contact_height,
+            momentum_y: self
+                .spatial
+                .agent(attacker)
+                .map_or(0, |a| i32::from(a.velocity.1)),
+            gravity_cm_per_tick2: self.spatial.gravity_cm_per_tick2(),
+            gait: self
+                .spatial
+                .agent(attacker)
+                .map_or(0.5, |a| f64::from(a.gait_milli) / 1000.0),
+            run_cm_per_tick: run.unwrap_or_else(|| {
+                self.spatial.agent(attacker).map_or(0.0, |a| {
+                    dmath::hypot(f64::from(a.velocity.0), f64::from(a.velocity.1))
+                })
+            }),
+            across: self.spatial.agent(attacker).map_or(0.0, |a| {
+                let (vx, vy) = (f64::from(a.velocity.0), f64::from(a.velocity.1));
+                let (sx, sy) = (f64::from(to.0 - from.0), aim_y - f64::from(from.1));
+                let (v, s) = (dmath::hypot(vx, vy), dmath::hypot(sx, sy));
+                if v < 1.0 || s < 1.0 {
+                    0.0
+                } else {
+                    (vx.mul_add(sy, -(vy * sx)) / (v * s)).abs()
+                }
+            }),
+            fatigue: self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
+        };
+        let outcome = ctx.hidden.resolve_shot(&ctx_shot);
+        // F.3-b3: carrier released, ball flies. Goal (or Save) is
+        // emitted at the crossing tick by `check_shot_crossing`, not
+        // at launch: the goal is geometric, not the die's outcome.
+        self.spatial.set_carrier(None);
+        self.spatial
+            .set_ball_in_flight(from, outcome.initial_velocity);
+        self.spatial.struck_shot();
+        let fact = crate::fact::Fact::Trajectory {
+            actor: attacker,
+            kind: crate::fact::TrajectoryKind::Shot {
+                on_target: outcome.on_target,
+                from,
+                to: outcome.to,
+                initial_velocity: outcome.initial_velocity,
+                shot_type: outcome.shot_type,
+            },
+        };
+        for c in crate::fact::classify(&fact) {
+            self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
+        }
+        match self.possession {
+            Possession::Home => {
+                self.shots.0 += 1;
+            }
+            Possession::Away => {
+                self.shots.1 += 1;
+            }
+        }
+        self.pending = Some(Pending {
+            launched: tick,
+            due_tick: tick + FLIGHT_TICKS,
+            outcome: Self::other(self.possession),
+            interceptor: None,
+            passer: None,
+            receiver: None,
+            closest_cm: None,
+            through: false,
+            shot: Some(ShotPending {
+                attacker,
+                struck: tick,
+                from,
+            }),
+        });
     }
 
     pub(crate) fn latency_scene(&self, actor: PlayerId, opponents: &[PlayerId]) -> (f64, f64) {
