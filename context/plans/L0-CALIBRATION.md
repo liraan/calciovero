@@ -21,7 +21,7 @@
 | gol | 2.68 | 1.65 | 2.55 | 1.03–4.33 | sì | — |
 | autogol | 0.10 | 0.31 | 0.33 | 0–0.41 | sì | OI-100: dal 132 la spazzata sotto pressione devia di più; da guardare |
 | tiri | 24.60 | 5.46 | 23.13 | 19.1–30.1 | sì | — |
-| tiri in porta | 8.69 | 3.22 | 12.10 | 5.5–11.9 | no | — |
+| tiri in porta | 8.69 | 3.22 | 9.22 | 5.5–11.9 | sì | dal 2026-11-16 `ds-reference` conta i tiri respinti fuori dallo specchio, come Wyscout e StatsBomb; il tiro sotto gli 11 m resta troppo preciso (96% contro 46%, OI-100, il criterio di fallimento di `error_pressure_rad`) |
 | rigori | 0.33 | 0.56 | 0.02 | 0–0.89 | sì | — |
 | passaggi | 887.7 | 122.8 | 1318.63 | 765–1011 | no | OI-100: troppi passaggi, e troppi intercettati (290 a partita); dal 2026-11-16 `ds-reference` conta anche i passaggi intercettati, che il motore racconta solo come `Interception` (prima 1065) |
 | passaggi riusciti | 739.2 | 124.8 | 1121.12 | 614–864 | no | OI-100: l'83,9% dei tentati (Wyscout 83,3%), dal 133; troppi passaggi in tutto |
@@ -41,7 +41,7 @@
 | recupero, primo tempo (min) | 1.49 | 1.35 | 4.37 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 2.92 | 2.5–5.7 | sì | — |
 
-**In banda (SIM 137): 10 metriche su 22 confrontabili. Fuori banda: 12, ognuna con il suo OI aperto** (al 126: 9; al 127: 8, dentro i duelli a terra e fuori gol e falli; il 128 riporta dentro i gol, al bordo) (OI-100, OI-101, OI-102, OI-103, OI-112, OI-114).
+**In banda (SIM 137): 11 metriche su 22 confrontabili. Fuori banda: 11, ognuna con il suo OI aperto** (al 126: 9; al 127: 8, dentro i duelli a terra e fuori gol e falli; il 128 riporta dentro i gol, al bordo) (OI-100, OI-101, OI-102, OI-103, OI-112, OI-114).
 
 ## I parametri di grado 3 (fase 4.1)
 

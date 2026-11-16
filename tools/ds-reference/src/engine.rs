@@ -41,11 +41,21 @@ fn minutes(e: &MatchEvent) -> f64 {
 #[must_use]
 pub fn count(events: &[MatchEvent]) -> MatchCounts {
     let mut c = MatchCounts::default();
+    // The last shot, while it is still on its way on target: a shot an
+    // outfield player blocks is off target, as Wyscout and StatsBomb count
+    // it (2026-11-16; before, a blocked shot aimed inside the goal counted
+    // on target).
+    let mut on_its_way = false;
     for e in events {
+        if e.event_type == EventType::Block && e.fields.get("pass").is_none() && on_its_way {
+            c.add(Metric::ShotsOnTarget, -1.0);
+            on_its_way = false;
+        }
         match e.event_type {
             EventType::Shot => {
                 c.add(Metric::Shots, 1.0);
-                if flag(e, "on_target") {
+                on_its_way = flag(e, "on_target");
+                if on_its_way {
                     c.add(Metric::ShotsOnTarget, 1.0);
                 }
             }
@@ -133,5 +143,31 @@ mod tests {
         let told = (of(EventType::Pass) + of(EventType::Interception)) as f64;
         assert!(of(EventType::Interception) > 0);
         assert!((c.get(Metric::Passes) - told).abs() < 1e-9);
+    }
+
+    /// A shot an outfield player blocks is off target, as the real data
+    /// count it (2026-11-16).
+    #[test]
+    fn a_blocked_shot_is_off_target() {
+        let m = ds_fixtures::match_fixture(42).unwrap();
+        let r = ds_match::simulate_from_seed(&m, 42, MatchConfig::default());
+        let ev = r.events.events();
+        let on = ev
+            .iter()
+            .filter(|e| e.event_type == EventType::Shot && flag(e, "on_target"))
+            .count();
+        let blocked_on = ev
+            .windows(2)
+            .filter(|w| {
+                w[0].event_type == EventType::Shot
+                    && flag(&w[0], "on_target")
+                    && w[1].event_type == EventType::Block
+                    && w[1].fields.get("pass").is_none()
+            })
+            .count();
+        #[allow(clippy::cast_precision_loss)]
+        let expected = (on - blocked_on) as f64;
+        assert!(count(ev).get(Metric::ShotsOnTarget) <= expected + 1e-9);
+        assert!(count(ev).get(Metric::ShotsOnTarget) >= 0.0);
     }
 }
