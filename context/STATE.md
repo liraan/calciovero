@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `29c0dbd` - "fix(ds-reference): a blocked shot is off target; the failure criterion of the shot's error"
+**Last commit verified:** `a048b85` - "Merge docs/view-cameras-animations: the 2.5D view's cameras, figures and animations (tools/ds-gui/DESIGN.md)"
 
 ## Mandato attivo (2026-11-16)
 
@@ -141,7 +141,7 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Sonda (seme 42, SIM 133, il difensore più vicino al portatore, fuori portata): entro 3 m pressa nell'84% dei casi; fra 3 e 6 m nel 66%; fra 6 e 10 m nel 30%, e nel 54% marca un altro uomo. Il pressing vale il pericolo del portatore per `in_time`, la fiducia di arrivare con `trust_ticks` (1 s) di margine alla velocità creduta: a 8 m vale 0,40 e perde contro la marcatura di un uomo più vicino. Il secondo di `trust_ticks` è un tempo senza riferimento: arrivare in tempo per cosa?
 - Verificato: la latenza che il difensore crederebbe al portatore medio è 10,5 tick, quasi il secondo fisso di `trust_ticks`; cambiarlo non cambierebbe il pressing. La causa è la misura della marcatura (OI-117, alternative per il maintainer).
 - Gli autogol del motore (SIM 133, semi 42-101: 25 in 60 partite, 0.42 contro 0.10): 10 seguono un passaggio non riuscito, 6 uno riuscito, 3 un duello, 2 un intercetto. Il sospetto è il retropassaggio: sotto pressione (dal 132) devia, e il portiere che non lo controlla col piede (Regola 12: niente mani su un retropassaggio calciato) lo lascia correre a metà velocità verso la porta.
-- **Prossima azione esatta:** la vista 2.5D (decisione S), passo (a): la prospettiva con l'inclinazione e i preset della telecamera (0° = la vista dall'alto) al posto del disegno di `tools/ds-gui/src/scene.rs`; poi (b) figurine, pallone con ombra, porte in altezza; (c) l'interpolazione; (d) i temi e Android; poi il README (WebP a 60 fotogrammi). Ripresa della taratura dopo il 2.5D: OI-102, poi OI-100 (il tiro da vicino: il criterio di fallimento di `error_pressure_rad` è soddisfatto, 96% contro 46% sotto gli 11 m, quindi l'ADR delegato sull'errore del tiro dal tempo disponibile e dall'impostazione del corpo). Sveglia: 17 novembre alle 01:10.
+- **Prossima azione esatta:** la vista 2.5D secondo "La visuale del 2.5D" di `tools/ds-gui/DESIGN.md`: fatti la prospettiva, le figurine, l'interpolazione e i tre temi (Lavagna, Notte, Carta); ora (1) i tre preset di telecamera (campo intero, vicina che segue il pallone su circa 38 m con un movimento smorzato, dall'alto), il cursore dell'inclinazione e il rallentatore (un terzo); le figure alla grandezza vera con un minimo in pixel (togliere `PIECE_SCALE`); (2) gli omini articolati con la falcata; (3) tiro, salto, tuffo e scivolata dagli eventi; (4) il resto della tabella; poi l'animazione WebP del README (seme 43, il cross al tick 22900 e il colpo di testa al 22924, 38'). Android: il percorso di build non esiste ancora (ADR-061, `android-activity`), da aprire come voce. Ripresa della taratura dopo il 2.5D. Sveglia: 17 novembre alle 01:10.
 
 ## Decisioni prese da Claude, da rivedere
 
