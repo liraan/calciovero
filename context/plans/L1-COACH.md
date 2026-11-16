@@ -115,6 +115,17 @@ Nessun giocatore squalificato, infortunato o fuori lista. La lista si fissa all'
 2. **La carriera con le offerte di lavoro.** Durante la carriera arrivano offerte da altri club, anche per ruoli diversi da quello che hai. Le fanno i dirigenti attori di quei club, con le loro caratteristiche, leggendo la tua storia: i risultati e le scelte che hai fatto, come le vede chiunque (piano B). Serve la società come attori: L2.
 3. **Il resto più avanti.** Il vice umano, gli altri posti giocabili e la gerarchia che avoca arrivano con i plugin che hanno le loro scelte. In L1 resta il meccanismo: ogni scelta dichiara il suo ruolo dal primo giorno.
 
+## Le carriere giocabili (decisione AK)
+
+Ogni ruolo diventa giocabile quando esistono le scelte che gli spettano. I tre poli di un club vero: il campo, il mercato, i soldi.
+
+| Quando | Ruolo giocabile | Perché allora |
+|---|---|---|
+| L1 | Allenatore | Le scelte di L1 sono le sue: formazione, piano, allenamento |
+| L2 | Direttore sportivo | Arriva il mercato: acquisti, cessioni, contratti, osservatori |
+| L2 | Presidente | Arrivano società e finanze: budget, nomine ed esoneri, la gerarchia che avoca, le offerte di lavoro |
+| Dopo (L3 o i modder) | Vice, direttore tecnico, amministratore delegato, preparatore, team manager | Ruoli in dati, si aggiungono senza toccare il nucleo |
+
 ## Fuori da L1
 
 L'esonero e il cambio di allenatore (vengono dalla società, L2); lo staff come persone (L2); gli osservatori per il mercato (L2).
