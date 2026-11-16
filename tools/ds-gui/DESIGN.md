@@ -43,6 +43,16 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 
 ## La partita in 3D e in 2.5D (16 novembre 2026)
 
+**Le tre viste, una per strumento** (maintainer, 16 novembre 2026):
+
+| Vista | Dove | Con cosa |
+|---|---|---|
+| 2D dall'alto, a caratteri | il terminale (`ds-demo --tui`) | testo, com'è oggi |
+| 2.5D, la lavagna inclinata | la GUI, su desktop e Android | egui |
+| 3D | solo desktop, quando arriverà | Bevy, se sarà maturo |
+
+Tutte e tre leggono la stessa registrazione della partita e non scrivono mai nella simulazione.
+
 - **Oggi e fino al 3D: egui**, su desktop e Android (ADR-055).
 - **Desktop, quando arriverà il 3D (dopo la 0.1): Bevy, se sarà abbastanza maturo.** Conta la comunità: è la più grande del mondo Rust per i giochi. Fyrox è escluso, con dispiacere: ha l'editor e API stabili dalla 1.0 (marzo 2026), ma una comunità piccola e una grafica ancora OpenGL, a rischio su macOS. Bevy usa wgpu (Vulkan, Metal, DirectX 12).
 - **"Abbastanza maturo" si misura così,** al momento della scelta: un anno senza cambiamenti incompatibili che costringano a riscrivere la vista, oppure la 1.0; Windows, Linux e macOS che girano senza problemi noti; bevy_egui mantenuto. Se non ci siamo, il 3D aspetta: il 2.5D in egui basta.
@@ -67,9 +77,12 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 
 ## Il lavoro del 2.5D
 
+**Quando:** appena L0 è chiuso, prima di aprire L1 (maintainer, 16 novembre 2026). Stima: circa 2–4 sessioni di Claude Code.
+
 La registrazione della partita ha già quello che serve (`ds-match/src/record.rs`): la posizione del pallone in (x, y, z) con la sua altezza, lo stato del pallone, l'orientamento di ogni giocatore (`heading`), la fatica visibile e gli eventi di ogni tick. Le velocità si ricavano dai tick vicini. Nessun cambio al motore né al formato del salvataggio.
 
 1. La proiezione in prospettiva con l'inclinazione e i preset della telecamera (0° = dall'alto), al posto del disegno di `tools/ds-gui/src/scene.rs`.
 2. Le figurine con i colori della squadra e l'orientamento; il pallone con l'ombra; le porte con pali e traversa in altezza; l'ordine di disegno per profondità.
 3. Lo strato di interpolazione (sopra).
 4. I tre temi della lavagna; la prova su Android.
+5. **Il README** (maintainer, 16 novembre 2026): appena il 2.5D è disponibile, entra nel README. Una GIF della vista 2.5D (un cross e un colpo di testa, con il seme e la versione del motore nella didascalia) al posto di `assets/demo-match.gif` in cima, lo screenshot della finestra aggiornato, e la vista nelle tabelle dello stato e in "Try the engine today".
