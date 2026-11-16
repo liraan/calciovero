@@ -67,6 +67,8 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 
 ## Il lavoro del 2.5D
 
+**Quando:** appena L0 è chiuso, prima di aprire L1 (maintainer, 16 novembre 2026). Stima: circa 2–4 sessioni di Claude Code.
+
 La registrazione della partita ha già quello che serve (`ds-match/src/record.rs`): la posizione del pallone in (x, y, z) con la sua altezza, lo stato del pallone, l'orientamento di ogni giocatore (`heading`), la fatica visibile e gli eventi di ogni tick. Le velocità si ricavano dai tick vicini. Nessun cambio al motore né al formato del salvataggio.
 
 1. La proiezione in prospettiva con l'inclinazione e i preset della telecamera (0° = dall'alto), al posto del disegno di `tools/ds-gui/src/scene.rs`.
