@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `b652979` - "docs(state): OI-114, the fouls of pressing; the jockey foul tried and dropped"
+**Last commit verified:** `23cd5e9` - "docs(state): the pressing contact barely exists in the engine; the next action"
 
 ## Dove siamo (2026-11-14)
 
@@ -101,7 +101,8 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Poi (SIM 133, semi 42-71): i contatti a palla al piede sono 90,8 a partita contro i 143,5 duelli difensivi a terra Wyscout; i falli per contatto sono l'8,8% (Wyscout 11,4%: 16,4 su 143,5). Mancano i contatti, non il fallo. Il portatore non si libera troppo presto: tiene la palla 1,9 s di mediana (Metrica, tracking ed eventi: 1,1-1,2 s). Quindi i difensori lo attaccano troppo poco.
 - Poi: i contatti non mancano davvero (StatsBomb: 54 sfide registrate a partita fra contrasti e dribbling subiti; il motore ne ha 91 a palla al piede più 38 fra due tocchi; i duelli Wyscout sono una definizione più larga). I falli che mancano sono quelli nella pressione: 20,6 dei 28,2 di StatsBomb. Nuova proposta nell'OI-114 (un numero di grado 2).
 - Contato (SIM 133, semi 42-71): il difensore che resta sul portatore senza entrare (`Jockey`) lo fa 4 volte a partita; gli altri, in portata, entrano (91 contatti) o non sono in portata. La pressione a contatto senza contrasto, da cui nascono 20,6 falli veri a partita su 314 pressioni StatsBomb, nel motore quasi non c'è: chi pressa arriva e entra, o resta fuori portata.
-- **Prossima azione esatta:** OI-114, come la pressione diventa contatto. Misurare nel motore il tempo che un pressatore passa entro la portata del contrasto del portatore senza entrare, e confrontarlo con il tracking Metrica (la distanza del difensore più vicino dal portatore, quanto spesso sotto 1-2 m); da lì la popolazione dei contatti di pressione e la soglia del loro fallo (grado 2 dal 6,6% StatsBomb). Poi perché tanti passaggi (OI-100). In attesa del maintainer: OI-116. Sveglie: 16 novembre alle 06:10, 17 novembre alle 01:10.
+- Misurato (2026-11-16): l'avversario più vicino al portatore. Metrica, partite campione 1 e 2 (il portatore: l'uomo della squadra in possesso entro 1,5 m dalla palla): mediana 5,0-5,5 m; sotto 1 m il 5,2-6,6% del tempo, sotto 2 m il 14,5-17,6%, sotto 3 m il 25-29%. Motore 133 (semi 42-46): mediana 8,2 m; sotto 1 m il 3,3%, sotto 2 m l'11,8%, sotto 3 m il 19,2%. Il portatore del motore è lasciato più libero: la pressione è più larga.
+- **Prossima azione esatta:** OI-114 e OI-117, perché il portatore è più libero. Nella scelta del difensore (`offball.rs` `defend`) va a pressare solo il più vicino (`rank` 0), il secondo vale la metà per la lettura del gioco, gli altri nulla; e `in_time` scarta chi non arriva entro `trust_ticks`. Misurare quanti pressano lo stesso portatore nel motore e nel vero (Metrica: gli avversari entro 5 m dal portatore), poi la causa nella scelta, senza numeri nuovi se si può. Poi il fallo nella pressione (grado 2), poi perché tanti passaggi (OI-100). In attesa del maintainer: OI-116. Sveglia: 17 novembre alle 01:10.
 
 ## Decisioni prese da Claude, da rivedere
 
