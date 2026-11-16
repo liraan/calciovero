@@ -400,25 +400,16 @@ impl MatchState {
         let mut best: Option<(i64, PlayerId)> = None;
         for who in players {
             // Nobody receives his own pass.
-            if Some(who) == passer || self.challenges.get(&who).is_some_and(|t| tick < *t) {
+            if Some(who) == passer {
                 continue;
             }
-            // A ball just struck is played by an opponent only once he has
-            // reacted to it (SIM 133, OI-100): his reaction from his
-            // reactivity, the keeper's formula. The passer reckons with it
-            // (the thought's `believed_reaction_ticks`); before, the man a
-            // step from him took it as it left the foot.
-            if let (Some(by), Some(launched)) = (passer, self.pending.as_ref().map(|p| p.launched))
-            {
-                let mates = |a: PlayerId, b: PlayerId| {
-                    let home = |x: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == x);
-                    home(a) == home(b)
-                };
-                #[allow(clippy::cast_precision_loss)]
-                if !mates(by, who) && ((tick - launched) as f64) < ctx.hidden.reaction_ticks(who) {
-                    continue;
-                }
+            // A man whose touch just failed, or who just went in, needs a
+            // moment before he plays a ball; a pass struck into his body
+            // still hits him (SIM 135, DD-4, OI-119).
+            if self.challenges.get(&who).is_some_and(|t| tick < *t) {
+                continue;
             }
+            let unready = self.unready(ctx, tick, passer, who);
             let Some(pos) = self.spatial.agent(who).map(|a| a.position) else {
                 continue;
             };
@@ -430,7 +421,11 @@ impl MatchState {
                 continue;
             }
             let d = distance_squared(pos, near);
-            let reach = ctx.hidden.ball_reach_cm(who, radius);
+            let reach = if unready {
+                i64::from(crate::spatial::BODY_RADIUS_CM)
+            } else {
+                ctx.hidden.ball_reach_cm(who, radius)
+            };
             if d <= reach * reach && best.is_none_or(|(bd, _)| d < bd) {
                 best = Some((d, who));
             }
@@ -518,6 +513,96 @@ impl MatchState {
             Possession::Away
         };
         self.play_clearance(ctx, tick, id, to);
+        true
+    }
+
+    /// Whether `who`, an opponent of the passer, has not yet reacted to the
+    /// pass just struck (SIM 133, OI-100): his reaction from his
+    /// reactivity, the keeper's formula. Until then he cannot play it; a
+    /// ball struck into his body still hits him (SIM 135, DD-4).
+    pub(crate) fn unready(
+        &self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        passer: Option<PlayerId>,
+        who: PlayerId,
+    ) -> bool {
+        let (Some(by), Some(launched)) = (passer, self.pending.as_ref().map(|p| p.launched)) else {
+            return false;
+        };
+        let home = |x: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == x);
+        #[allow(clippy::cast_precision_loss)]
+        let early = ((tick - launched) as f64) < ctx.hidden.reaction_ticks(who);
+        home(by) != home(who) && early
+    }
+
+    /// A pass struck into the body of `id`, who had not reacted to it,
+    /// comes off it (OI-119, SIM 135): reflected about the line from his
+    /// body's centre to the ball, at the half speed of a ball nobody
+    /// masters; the pass is already over.
+    fn off_the_body(&mut self, ctx: &mut MatchContext<'_>, tick: u64, id: PlayerId, by: PlayerId) {
+        // It comes off his body (OI-119): reflected about the
+        // line from his body's centre to the ball, at the half
+        // speed of a ball nobody masters (the heavy touch).
+        let v = self.spatial.ball_velocity();
+        let ball = self.spatial.ball();
+        let body = self.spatial.agent(id).map_or(ball, |a| a.position);
+        let (nx, ny) = (f64::from(ball.0 - body.0), f64::from(ball.1 - body.1));
+        let len = dmath::hypot(nx, ny);
+        let (vx, vy) = (f64::from(v.0), f64::from(v.1));
+        let (rx, ry) = if len > 0.0 {
+            let (ux, uy) = (nx / len, ny / len);
+            let dot = vx.mul_add(ux, vy * uy);
+            if dot < 0.0 {
+                ((2.0 * dot).mul_add(-ux, vx), (2.0 * dot).mul_add(-uy, vy))
+            } else {
+                (vx, vy)
+            }
+        } else {
+            (-vx, -vy)
+        };
+        #[allow(clippy::cast_possible_truncation)]
+        self.spatial.deflect_ball(
+            self.spatial.ball_3d(),
+            ((rx / 2.0) as i16, (ry / 2.0) as i16, 0),
+        );
+        self.spatial.deflected_by(id);
+        let retry = ctx.hidden.duel_balance().retry_ticks;
+        self.challenges.insert(id, tick + retry);
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(id)),
+            EventType::Block,
+            serde_json::json!({ "pass": true, "from": by.slot() }),
+        );
+    }
+
+    /// A moving ball nobody played to `id` (SIM 130, ADR-058; ADR-064):
+    /// he chooses to play it first time or to control it, and his touch
+    /// masters it or not. Returns whether he has it at his feet.
+    fn receives_loose(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        id: PlayerId,
+        their_side_home: bool,
+    ) -> bool {
+        let params = self.reception_params(ctx);
+        let rctx = self.arrival(ctx, id, their_side_home);
+        let controls = ctx.hidden.resolve_reception(&rctx, &params).controlled;
+        if self.plays_first_time(ctx, tick, id, controls) {
+            return false;
+        }
+        if !controls {
+            let v = self.spatial.ball_velocity();
+            self.spatial
+                .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
+            self.spatial.deflected_by(id);
+            let retry = ctx.hidden.duel_balance().retry_ticks;
+            self.challenges.insert(id, tick + retry);
+            return false;
+        }
         true
     }
 
@@ -697,24 +782,15 @@ impl MatchState {
         // opponent as it reaches him. Not mastered, it runs on, slower, for
         // whoever. Before, whoever reached it first had it at his feet,
         // whatever its speed.
-        if pass.is_none() && self.spatial.ball_state() == crate::spatial::BallState::InFlight {
-            let params = self.reception_params(ctx);
-            let rctx = self.arrival(ctx, id, !home(id));
-            let controls = ctx.hidden.resolve_reception(&rctx, &params).controlled;
-            if self.plays_first_time(ctx, tick, id, controls) {
-                return;
-            }
-            if !controls {
-                let v = self.spatial.ball_velocity();
-                self.spatial
-                    .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
-                self.spatial.deflected_by(id);
-                let retry = ctx.hidden.duel_balance().retry_ticks;
-                self.challenges.insert(id, tick + retry);
-                return;
-            }
+        if pass.is_none()
+            && self.spatial.ball_state() == crate::spatial::BallState::InFlight
+            && !self.receives_loose(ctx, tick, id, !home(id))
+        {
+            return;
         }
         if let Some((Some(by), through)) = pass {
+            // Before the pass is over: whether he had reacted to it (OI-119).
+            let struck = self.unready(ctx, tick, Some(by), id);
             self.pending = None;
             if home(by) == home(id) && self.offside_at_pass.contains(&id) {
                 self.call_offside(ctx, tick, id, home(id), ball);
@@ -748,6 +824,11 @@ impl MatchState {
                     return;
                 }
             } else {
+                // Struck into him before he reacted: it hits him and runs on.
+                if struck {
+                    self.off_the_body(ctx, tick, id, by);
+                    return;
+                }
                 if self.deflects_the_pass(ctx, tick, (id, by)) {
                     return;
                 }

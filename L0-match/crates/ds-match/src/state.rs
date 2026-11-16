@@ -1586,6 +1586,70 @@ mod reaction_tests {
 }
 
 #[cfg(test)]
+mod body_block_tests {
+    use super::*;
+    use ds_core::rng::RngRegistry;
+    use ds_orchestrator::GroundTruth;
+
+    /// Twin test (OI-119, SIM 135, DD-4): the same pass just struck, the
+    /// same opponent who has not reacted yet; only where he stands
+    /// changes. On the ball's line it hits his body and comes off it (a
+    /// pass blocked); two metres off the line it goes past him.
+    #[test]
+    fn a_pass_struck_into_a_body_comes_off_it() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = GroundTruth::new(42, m.id);
+        let mut rng = RngRegistry::new(42);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            rng: &mut rng,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let passer = m.home.players[6].id;
+        let mate = m.home.players[9].id;
+        let opp = m.away.players[5].id;
+        let at = (5000, 3400);
+        let strike = |s: &mut MatchState, ctx: &mut MatchContext<'_>, off: i32| {
+            s.spatial.set_position(opp, (at.0, at.1 + off));
+            s.spatial.set_position(passer, (at.0 - 150, at.1));
+            s.spatial.set_position(mate, (at.0 + 2000, at.1));
+            s.spatial.set_carrier(None);
+            s.possession = Possession::Home;
+            s.pending = Some(Pending {
+                launched: 100,
+                shot: None,
+                due_tick: 1_000,
+                outcome: Possession::Home,
+                interceptor: None,
+                passer: Some(passer),
+                receiver: Some(mate),
+                closest_cm: None,
+                through: false,
+            });
+            s.spatial
+                .set_ball_in_flight((at.0 - 60, at.1, 0), (120, 0, 0));
+            s.ball_from = s.spatial.ball_3d();
+            s.spatial.advance_ball();
+            let before = ctx.chain.events().len();
+            s.control_loose_ball(ctx, 100);
+            ctx.chain.events()[before..]
+                .iter()
+                .any(|e| e.event_type == EventType::Block)
+        };
+        let mut on_line = MatchState::new(&m);
+        assert!(strike(&mut on_line, &mut ctx, 0), "on the line: blocked");
+        let mut off_line = MatchState::new(&m);
+        assert!(
+            !strike(&mut off_line, &mut ctx, 200),
+            "off the line: past him"
+        );
+    }
+}
+
+#[cfg(test)]
 mod memory_tests {
     use super::*;
 
