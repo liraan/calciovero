@@ -118,3 +118,75 @@ fn the_team_plays_wider_when_the_coach_asks() {
     let (wide, narrow) = (spread(Width::Wide), spread(Width::Narrow));
     assert!(wide > narrow, "wide {wide:.0} cm, narrow {narrow:.0} cm");
 }
+
+/// The home side with these substitutions ordered at `at` (decision T).
+fn ordered(seed: u64, at: u64, pairs: &[(usize, usize)]) -> Match {
+    let mut m = match_fixture(seed).expect("fixture");
+    let orders = pairs
+        .iter()
+        .map(|&(off, on)| Instruction {
+            tick: at,
+            order: Order::Substitute {
+                outgoing: m.home.players[off].id,
+                incoming: m.home.bench[on].id,
+            },
+        })
+        .collect();
+    m.home = m.home.clone().with_instructions(orders);
+    m
+}
+
+/// P1 (decision T): a substitution ordered during the match is an input
+/// with its tick. The match is the same up to that tick; the order is told
+/// at its minute; the man comes on at the first stoppage after it, for the
+/// man named, and the replay plays it back.
+#[test]
+fn a_substitution_ordered_live_is_made_at_the_next_stoppage() {
+    let plain = match_fixture(46).expect("fixture");
+    let (_, before) = simulate_from_seed_recorded(&plain, 46, MatchConfig::default());
+    let m = ordered(46, AT, &[(9, 0)]);
+    let (off, on) = (m.home.players[9].id, m.home.bench[0].id);
+    let (result, after) = simulate_from_seed_recorded(&m, 46, MatchConfig::default());
+    let upto = usize::try_from(AT).expect("tick fits");
+    assert_eq!(
+        before[..=upto],
+        after[..=upto],
+        "nothing changes before he orders it"
+    );
+    let events = result.events.events();
+    let told = events
+        .iter()
+        .find(|e| e.event_type == EventType::Instruction)
+        .expect("the order is told");
+    assert_eq!(told.fields["off"], off.slot());
+    let made = after
+        .iter()
+        .position(|r| r.agents.iter().any(|a| a.id == on))
+        .expect("he comes on");
+    assert!(made > upto, "not before the order");
+    assert!(
+        after[made].agents.iter().all(|a| a.id != off),
+        "the man named goes off"
+    );
+    assert!(
+        events
+            .iter()
+            .any(|e| e.event_type == EventType::Substitution),
+        "the substitution is told"
+    );
+    let save = MatchSave::from_result(&result, &m, 46, GameInstant::from_raw(0));
+    assert_eq!(replay(&save).state_hash, result.state_hash);
+}
+
+/// P1 (Law 3): the orders beyond the substitutions allowed are not made.
+#[test]
+fn no_more_substitutions_than_the_laws_allow() {
+    let mut m = ordered(47, AT, &[(1, 0), (2, 1), (3, 2), (4, 3), (5, 4)]);
+    m.rules.subs_allowed = 3;
+    let allowed = usize::from(m.rules.subs_allowed);
+    let (_, records) = simulate_from_seed_recorded(&m, 47, MatchConfig::default());
+    let bench: Vec<_> = m.home.bench.iter().map(|p| p.id).collect();
+    let last = records.last().expect("records");
+    let on = last.agents.iter().filter(|a| bench.contains(&a.id)).count();
+    assert_eq!(on, allowed, "{on} came on, {allowed} allowed");
+}

@@ -188,6 +188,9 @@ pub(crate) struct Pending {
     /// before he can play it.
     pub launched: u64,
 }
+/// A substitution ordered during the match: off, on (decision T).
+pub(crate) type Ordered = (PlayerId, PlayerId);
+
 /// The in-progress state of a match.
 pub struct MatchState {
     pub(crate) score: Score,
@@ -261,6 +264,9 @@ pub struct MatchState {
     /// How many of each coach's instructions have taken effect, home and
     /// away (ADR-059).
     pub(crate) instructed: (usize, usize),
+    /// The substitutions each side's manager ordered during the match,
+    /// waiting for a stoppage (decision T): off, on.
+    pub(crate) ordered: (Vec<Ordered>, Vec<Ordered>),
     /// Per-actor latency (IDEA-DESIGN-011): the tick at which the actor
     /// can decide again. Absent = 0 = due. The map is cleared on possession
     /// change? No: the actor's pace is his own, persistent across possessions.
@@ -804,6 +810,7 @@ impl MatchState {
             pending: None,
             ball_from: (0, 0, 0),
             instructed: (0, 0),
+            ordered: (Vec::new(), Vec::new()),
             scan_balance: crate::balance::ScanningBalance::load(),
             perception: crate::plugins::perception::Perception::default(),
             fatigue_plugin: crate::plugins::fatigue::Fatigue::default(),

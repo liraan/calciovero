@@ -47,14 +47,48 @@ impl MatchPlugin for Bench {
                 .filter(|(_, off, _)| Some(*off) != carrier)
                 .map(|(_, off, on)| (off, on))
                 .collect();
+            // Then those he ordered during the match (decision T), within
+            // the substitutions the Laws allow (Law 3).
+            let left = allowed.saturating_sub(made(world, home) + due.len());
+            due.extend(
+                world
+                    .ordered(home)
+                    .into_iter()
+                    .filter(|(off, on)| {
+                        !world.substituted(*off) && !world.substituted(*on) && Some(*off) != carrier
+                    })
+                    .take(left),
+            );
             if world.coach_reacts(home) {
-                due.extend(tired_for_fresh(world, home, carrier, allowed));
+                // What is already due at this stoppage counts against the
+                // Law 3 limit, and its men are not his to change.
+                let taken: BTreeSet<PlayerKey> = due
+                    .iter()
+                    .flat_map(|&p| <[PlayerKey; 2]>::from(p))
+                    .collect();
+                let fresh =
+                    tired_for_fresh(world, home, carrier, allowed.saturating_sub(due.len()));
+                due.extend(
+                    fresh
+                        .into_iter()
+                        .filter(|(o, i)| !taken.contains(o) && !taken.contains(i)),
+                );
             }
             for (off, on) in due {
                 world.substitute(off, on);
             }
         }
     }
+}
+
+/// The substitutions a side has made: the men who came off.
+fn made(world: &dyn World, home: bool) -> usize {
+    world
+        .lineup(home)
+        .iter()
+        .chain(world.bench(home).iter())
+        .filter(|p| world.substituted(**p))
+        .count()
 }
 
 /// The changes a coach decides from what he sees (no number of its own:
@@ -67,12 +101,7 @@ fn tired_for_fresh(
 ) -> Vec<(PlayerKey, PlayerKey)> {
     let lineup = world.lineup(home);
     let bench = world.bench(home);
-    let made = lineup
-        .iter()
-        .chain(bench.iter())
-        .filter(|p| world.substituted(**p))
-        .count();
-    let mut left = allowed.saturating_sub(made);
+    let mut left = allowed.saturating_sub(made(world, home));
     let mut used: BTreeSet<PlayerKey> = BTreeSet::new();
     let mut out = Vec::new();
     for &p in lineup.iter().skip(1) {
@@ -204,7 +233,31 @@ impl MatchState {
                 .copied()
                 .collect();
             for i in &due {
-                let ds_model::Order::Intention(intention) = i.order;
+                let intention = match i.order {
+                    ds_model::Order::Intention(intention) => intention,
+                    ds_model::Order::Substitute { outgoing, incoming } => {
+                        // Made at the first stoppage (the bench plugin);
+                        // the order is told now, at its minute.
+                        let side = if home {
+                            &mut self.ordered.0
+                        } else {
+                            &mut self.ordered.1
+                        };
+                        side.push((outgoing, incoming));
+                        self.emit_event(
+                            ctx,
+                            tick,
+                            None,
+                            EventType::Instruction,
+                            serde_json::json!({
+                                "side": if home { "home" } else { "away" },
+                                "off": outgoing.slot(),
+                                "on": incoming.slot(),
+                            }),
+                        );
+                        continue;
+                    }
+                };
                 self.spatial.set_intention(home, intention);
                 let name = |b: ds_model::BlockHeight| match b {
                     ds_model::BlockHeight::High => "high",

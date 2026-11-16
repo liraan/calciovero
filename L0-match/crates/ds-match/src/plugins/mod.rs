@@ -202,6 +202,15 @@ impl World for StateWorld<'_> {
             .collect()
     }
 
+    fn ordered(&self, home: bool) -> Vec<(PlayerKey, PlayerKey)> {
+        let side = if home {
+            &self.state.ordered.0
+        } else {
+            &self.state.ordered.1
+        };
+        side.iter().map(|&(off, on)| (key(off), key(on))).collect()
+    }
+
     fn coach_reacts(&self, home: bool) -> bool {
         self.squad(home).coach_reacts
     }

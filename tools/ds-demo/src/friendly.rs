@@ -32,6 +32,9 @@ pub struct Choices {
     /// His instructions during the match (ADR-059): after this many minutes
     /// of play, this intention.
     pub instructions: Vec<(u16, Intention)>,
+    /// The orders he gives while he watches (decision T): each an input
+    /// with its tick, as the window took it.
+    pub live: Vec<ds_model::Instruction>,
 }
 
 /// Parses an intention's block height.
@@ -191,7 +194,7 @@ pub fn apply(mut m: Match, c: &Choices) -> Result<Match, String> {
     }
     m.home = m.home.with_intention(c.home);
     m.away = m.away.with_intention(c.away);
-    if !c.instructions.is_empty() {
+    if !c.instructions.is_empty() || !c.live.is_empty() {
         // After MIN minutes of play: ten ticks a second (the match's clock,
         // continuous across the halves; stoppage time is not counted).
         let instructions = c
@@ -201,6 +204,7 @@ pub fn apply(mut m: Match, c: &Choices) -> Result<Match, String> {
                 tick: u64::from(*minute) * 600,
                 order: ds_model::Order::Intention(*intention),
             })
+            .chain(c.live.iter().copied())
             .collect();
         m.home = m.home.with_instructions(instructions);
     }

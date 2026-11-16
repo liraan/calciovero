@@ -95,8 +95,8 @@ pub struct Substitution {
 
 /// An instruction the coach gives during the match (ADR-059).
 ///
-/// An input with its tick, which takes effect from the next tick for the
-/// whole team. The same seed, the same teams and the same instructions at the same ticks
+/// An input with its tick, which takes effect from the next tick (a
+/// substitution: at the first stoppage after it). The same seed, the same teams and the same instructions at the same ticks
 /// give the same match.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Instruction {
@@ -115,6 +115,15 @@ pub struct Instruction {
 pub enum Order {
     /// The team's intention from now on.
     Intention(Intention),
+    /// A substitution decided during the match (decision T): `incoming`
+    /// from the bench takes the place of `outgoing` at the first stoppage
+    /// after the tick he orders it (Law 3), as a planned one.
+    Substitute {
+        /// The player who comes off.
+        outgoing: ds_core::ids::PlayerId,
+        /// The player who comes on, from the bench.
+        incoming: ds_core::ids::PlayerId,
+    },
 }
 
 /// The most substitutions a side may make (Law 3).

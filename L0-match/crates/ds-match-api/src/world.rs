@@ -66,6 +66,12 @@ pub trait World {
         let _ = home;
         Vec::new()
     }
+    /// The substitutions a side's manager ordered during the match and
+    /// not yet made: off, on (decision T).
+    fn ordered(&self, home: bool) -> Vec<(PlayerKey, PlayerKey)> {
+        let _ = home;
+        Vec::new()
+    }
     /// Whether a side's coach changes players from what he sees.
     fn coach_reacts(&self, home: bool) -> bool {
         let _ = home;

@@ -34,6 +34,9 @@ struct Game {
     names: BTreeMap<PlayerId, String>,
     why: String,
     pitch_cm: (i32, i32),
+    /// The home side at the kick-off: the eleven and the bench (the bench
+    /// post-it).
+    home: (Vec<PlayerId>, Vec<PlayerId>),
     /// The record's header (ADR-065): the physics the match was played
     /// with, for the ball's flight between two ticks.
     header: ds_match::RecordHeader,
@@ -117,6 +120,8 @@ pub struct App {
     last_dt: std::cell::Cell<f32>,
     /// The recording: the folder, the frames wanted, the frames saved.
     record: Option<(String, usize, usize)>,
+    /// The bench post-it: who comes off and who comes on, as chosen.
+    pick: (Option<PlayerId>, Option<PlayerId>),
 }
 
 impl App {
@@ -147,6 +152,7 @@ impl App {
             strides: std::cell::RefCell::new(BTreeMap::new()),
             last_dt: std::cell::Cell::new(0.0),
             record: None,
+            pick: (None, None),
         };
         app.play_match();
         app
@@ -212,7 +218,12 @@ impl App {
                     MatchConfig::default().ticks_per_second,
                     (m.pitch.length_m, m.pitch.width_m),
                 );
+                let home = (
+                    m.home.players.iter().map(|p| p.id).collect(),
+                    m.home.bench.iter().map(|p| p.id).collect(),
+                );
                 self.game = Some(Game {
+                    home,
                     header,
                     ticks,
                     records: kept,
@@ -230,6 +241,119 @@ impl App {
                 self.playing = true;
             }
             Err(e) => self.error = Some(e),
+        }
+    }
+
+    /// An order given while watching (decision T): an input at the tick
+    /// on the screen. The match is played again from the same seed with
+    /// it; up to that tick it is the same match, so the view stays where
+    /// it was and goes on from there.
+    fn order(&mut self, order: ds_model::Order) {
+        let Some(game) = &self.game else { return };
+        let Some(now) = game.records.get(self.tick) else {
+            return;
+        };
+        self.choices.live.push(ds_model::Instruction {
+            tick: now.tick,
+            order,
+        });
+        let (tick, carry, playing) = (self.tick, self.carry, self.playing);
+        self.play_match();
+        self.tick = tick;
+        self.carry = carry;
+        self.playing = playing;
+    }
+
+    /// The bench as a post-it over the match (DESIGN.md, decision T): who
+    /// is on, who is on the bench, the orders given and whether they have
+    /// been made.
+    fn bench_postit(&mut self, ctx: &egui::Context) {
+        let Some(game) = &self.game else { return };
+        let Some(now) = game.records.get(self.tick) else {
+            return;
+        };
+        let (xi, subs) = &game.home;
+        let home: Vec<PlayerId> = xi.iter().chain(subs).copied().collect();
+        let on: Vec<PlayerId> = now
+            .agents
+            .iter()
+            .map(|a| a.id)
+            .filter(|id| home.contains(id))
+            .collect();
+        // A man who has come off cannot come back (Law 3): the bench is
+        // the substitutes not yet on.
+        let came_on = |id: &PlayerId| {
+            game.records[..=self.tick]
+                .iter()
+                .any(|r| r.agents.iter().any(|a| a.id == *id))
+        };
+        let bench: Vec<PlayerId> = subs.iter().copied().filter(|id| !came_on(id)).collect();
+        let name = |id: PlayerId| game.names.get(&id).cloned().unwrap_or_default();
+        let orders: Vec<(u64, PlayerId, PlayerId, bool)> = self
+            .choices
+            .live
+            .iter()
+            .filter_map(|i| match i.order {
+                ds_model::Order::Substitute { outgoing, incoming } => {
+                    Some((i.tick, outgoing, incoming, on.contains(&incoming)))
+                }
+                ds_model::Order::Intention(_) => None,
+            })
+            .collect();
+        let paper = egui::Color32::from_rgb(0xf6, 0xe0, 0x7a);
+        let ink = egui::Color32::from_rgb(0x2a, 0x26, 0x1c);
+        let mut give = None;
+        egui::Area::new(egui::Id::new("bench-postit"))
+            .anchor(egui::Align2::LEFT_TOP, egui::vec2(12.0, 52.0))
+            .show(ctx, |ui| {
+                egui::Frame::NONE
+                    .fill(paper)
+                    .inner_margin(10.0)
+                    .shadow(egui::epaint::Shadow {
+                        offset: [2, 3],
+                        blur: 6,
+                        spread: 0,
+                        color: egui::Color32::from_black_alpha(90),
+                    })
+                    .show(ui, |ui| {
+                        ui.visuals_mut().override_text_color = Some(ink);
+                        ui.set_max_width(220.0);
+                        ui.strong("Bench");
+                        let (out, inn) = &mut self.pick;
+                        egui::ComboBox::from_id_salt("sub-off")
+                            .selected_text(out.map_or_else(|| "off…".to_owned(), name))
+                            .show_ui(ui, |ui| {
+                                for &p in on.iter().skip(1) {
+                                    ui.selectable_value(out, Some(p), name(p));
+                                }
+                            });
+                        egui::ComboBox::from_id_salt("sub-on")
+                            .selected_text(inn.map_or_else(|| "on…".to_owned(), name))
+                            .show_ui(ui, |ui| {
+                                for &p in &bench {
+                                    ui.selectable_value(inn, Some(p), name(p));
+                                }
+                            });
+                        let ready = out.is_some_and(|o| on.contains(&o))
+                            && inn.is_some_and(|i| bench.contains(&i));
+                        if ui
+                            .add_enabled(ready, egui::Button::new("Make the change"))
+                            .on_hover_text("at the next stoppage, as the Laws say")
+                            .clicked()
+                        {
+                            give = out.zip(*inn);
+                            *out = None;
+                            *inn = None;
+                        }
+                        for (tick, o, i, made) in &orders {
+                            let min = tick / 600;
+                            let state = if *made { "made" } else { "waiting" };
+                            ui.small(format!("{min}' {} → {}: {state}", name(*o), name(*i)));
+                        }
+                    });
+            });
+        if let Some((outgoing, incoming)) = give {
+            self.order(ds_model::Order::Substitute { outgoing, incoming });
         }
     }
 
@@ -295,6 +419,8 @@ impl App {
                     }
                 });
             if ui.button("Play the match").clicked() {
+                // A new match: the orders given watching the old one go.
+                self.choices.live.clear();
                 self.play_match();
             }
             if let Some(e) = &self.error {
@@ -814,6 +940,9 @@ impl eframe::App for App {
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE.fill(self.theme.board))
             .show(ctx, |ui| self.pitch(ui));
+        if self.record.is_none() {
+            self.bench_postit(ctx);
+        }
         if self.record.is_some() {
             ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::default()));
             ctx.request_repaint();
@@ -862,5 +991,34 @@ mod tests {
         a.play_match();
         let after = a.game.as_ref().map(|g| g.ticks.last().cloned());
         assert_ne!(before, after);
+    }
+
+    /// A substitution made while watching (decision T): the view stays at
+    /// its tick, the match up to it is the same, and the man comes on
+    /// after it.
+    #[test]
+    fn a_change_from_the_bench_keeps_the_match_up_to_now() {
+        let mut a = app();
+        a.tick = 6_000;
+        let before: Vec<_> = a.game.as_ref().expect("game").records[..=6_000].to_vec();
+        let m = ds_fixtures::match_fixture(a.seed).expect("fixture");
+        let (off, on) = (m.home.players[9].id, m.home.bench[0].id);
+        a.order(ds_model::Order::Substitute {
+            outgoing: off,
+            incoming: on,
+        });
+        assert_eq!(a.tick, 6_000, "the view stays where it was");
+        let game = a.game.as_ref().expect("game");
+        assert_eq!(
+            game.records[..=6_000],
+            before[..],
+            "the same match up to now"
+        );
+        let came = game
+            .records
+            .iter()
+            .position(|r| r.agents.iter().any(|x| x.id == on))
+            .expect("he comes on");
+        assert!(came > 6_000);
     }
 }
