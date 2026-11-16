@@ -234,6 +234,29 @@ impl MatchState {
         // by the taker ends it.
         // A dead ball is kicked unchallenged: nobody presses it (Laws 13-14).
         let dead_ball = self.restart_pass.is_some();
+        // The pressure on his kick, `[0, 1]`: the nearest outfield opponent,
+        // the one the shooter and the passer reckon with
+        // (`shot_choice.json` `kick_pressure_radius_cm`). Their keeper does
+        // not press the kicker; a dead ball is kicked unchallenged.
+        let kick_pressure = {
+            let at = self.spatial.ball();
+            let r = ctx
+                .hidden
+                .shot_choice_balance()
+                .kick_pressure_radius_cm
+                .max(1);
+            opponents
+                .iter()
+                .skip(1)
+                .filter(|_| !dead_ball)
+                .filter_map(|o| {
+                    self.spatial
+                        .agent(*o)
+                        .map(|a| distance_squared(a.position, at).isqrt())
+                })
+                .min()
+                .map_or(0, |d| (r - d).max(0) * 100 / r)
+        };
         // The ball leaves the keeper's hands as he plays it.
         let from_hands = self.in_hands.take() == Some(attacker);
         // A penalty is a kick at the goal and nothing else (Law 14): a taker
@@ -360,6 +383,8 @@ impl MatchState {
                     .agent(attacker)
                     .map_or(0.5, |a| f64::from(a.gait_milli) / 1000.0),
                 lofted: lofted.then(|| self.spatial.gravity_cm_per_tick2()),
+                #[allow(clippy::cast_precision_loss)]
+                pressure: kick_pressure as f64 / 100.0,
             };
             let outcome = ctx.hidden.resolve_pass(&ctx_pass, &params);
             // A cross is the ball from wide into the area, lofted or low

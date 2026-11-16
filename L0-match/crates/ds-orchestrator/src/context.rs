@@ -109,6 +109,10 @@ pub struct PassContext {
     /// The keeper throws it from his hands (plan L0-CLOSE 10d): its
     /// precision is his hands', its speed his arm's.
     pub throw: bool,
+    /// The pressure on the kick, `[0, 1]`: the nearest outfield opponent,
+    /// 1 on him, 0 at `shot_choice.json` `kick_pressure_radius_cm` (the
+    /// same the passer reckons with; SIM 132, OI-100).
+    pub pressure: f64,
 }
 
 /// The context of a reception (REC): the receiver and the geometry of

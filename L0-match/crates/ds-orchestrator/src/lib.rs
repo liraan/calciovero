@@ -589,11 +589,20 @@ impl GroundTruth {
         } else {
             (passer.technical.passing, foot)
         };
-        let error = k.error_rad(
+        // Under pressure he misses as the shooter does, as much as his
+        // composure lets it disturb him (SIM 132, OI-100): before, the
+        // passer reckoned with the pressure but the pass he struck ignored
+        // it.
+        let error = k.error_rad_composed(
             skill,
             foot,
             (weighed / k.speed_ref_cm_per_tick).min(1.0),
-            0.0,
+            if ctx.throw { 0.0 } else { ctx.pressure },
+            if self.psychology {
+                passer.psychological.composure
+            } else {
+                0.5
+            },
         ) * k.pass_error_ref_rad
             / k.error_ref_rad.max(1e-6);
         let speed = (weighed * (1.0 + error)).min(max);
@@ -735,7 +744,7 @@ impl GroundTruth {
         kicker: PlayerId,
         from: (i32, i32, i32),
         to: (i32, i32),
-        gait: f64,
+        (gait, pressure): (f64, f64),
     ) -> (i16, i16, i16) {
         let k = self.kick_balance;
         let l = self.latents_for(kicker);
@@ -753,7 +762,14 @@ impl GroundTruth {
         } else {
             l.technical.right_foot
         };
-        let error = k.error_rad(l.technical.passing, foot, 1.0, 0.0) * k.pass_error_ref_rad
+        // Under pressure, as the pass (SIM 132, OI-100).
+        let composure = if self.psychology {
+            l.psychological.composure
+        } else {
+            0.5
+        };
+        let error = k.error_rad_composed(l.technical.passing, foot, 1.0, pressure, composure)
+            * k.pass_error_ref_rad
             / k.error_ref_rad.max(1e-6);
         let contact = gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
         let foot_side = if dy >= 0.0 { 1.0 } else { -1.0 };
@@ -1617,7 +1633,7 @@ mod choice_filter_tests {
         let mut g = GroundTruth::new(42, MatchId::new(1, 0));
         let (weak, strong) = ends(&mut g, |l| l.technical.passing);
         let mut side = |p: PlayerId, gait: f64| {
-            let v = g.resolve_clearance(p, (1500, 1000, 0), (5500, 1000), gait);
+            let v = g.resolve_clearance(p, (1500, 1000, 0), (5500, 1000), (gait, 0.0));
             i32::from(v.1).abs()
         };
         assert!(side(strong, 0.0) < side(weak, 0.0));
@@ -1672,6 +1688,7 @@ mod choice_filter_tests {
                     gait: 0.0,
                     lofted: None,
                     throw: false,
+                    pressure: 0.0,
                 },
                 &crate::reception_tests::params(),
             )
@@ -1781,6 +1798,7 @@ mod choice_filter_tests {
                     gait: 0.5,
                     lofted: Some(10),
                     throw: false,
+                    pressure: 0.0,
                 },
                 &crate::reception_tests::params(),
             )
@@ -1802,6 +1820,36 @@ mod choice_filter_tests {
         );
     }
 
+    /// Twin test (SIM 132, OI-100): the same pass by the same man, struck
+    /// late in his step; only the pressure on him changes. Pressed, it
+    /// strays farther off its line, as a shot does (before, the pass he
+    /// struck ignored the pressure he had reckoned with).
+    #[test]
+    fn the_pressed_passer_strays_more() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let mut vy = |pressure: f64| {
+            g.resolve_pass(
+                &PassContext {
+                    passer: PlayerId::new(0, 0),
+                    from: (500, 3400, 0),
+                    to: (4000, 3400, 0),
+                    ground_friction_milli: 957,
+                    air_friction_milli: 990,
+                    gait: 0.9,
+                    lofted: None,
+                    throw: false,
+                    pressure,
+                },
+                &crate::reception_tests::params(),
+            )
+            .initial_velocity
+            .1
+            .abs()
+        };
+        let (free, pressed) = (vy(0.0), vy(1.0));
+        assert!(pressed > free, "free {free}, pressed {pressed}");
+    }
+
     /// The pass's contact (P1, `SIM_VERSION` 109, ADR-054 as for the shot):
     /// met in the middle of the step it goes straight; met late or early it
     /// drifts to opposite sides of its line; never always to the same side.
@@ -1819,6 +1867,7 @@ mod choice_filter_tests {
                     gait,
                     lofted: None,
                     throw: false,
+                    pressure: 0.0,
                 },
                 &crate::reception_tests::params(),
             )
@@ -1845,6 +1894,7 @@ mod choice_filter_tests {
                         gait: 0.5,
                         lofted: None,
                         throw,
+                        pressure: 0.0,
                     },
                     &crate::reception_tests::params(),
                 )

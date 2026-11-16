@@ -277,13 +277,37 @@ impl MatchState {
         let from = (fx, fy);
         let (length, width) = pitch_cm(ctx);
         let to = (to.0.clamp(0, length), to.1.clamp(0, width));
+        // The pressure on his kick, as for the pass (SIM 132, OI-100).
+        let pressure = {
+            let (_, opponents) = self.squads(ctx);
+            let r = ctx
+                .hidden
+                .shot_choice_balance()
+                .kick_pressure_radius_cm
+                .max(1);
+            opponents
+                .players
+                .iter()
+                .skip(1)
+                .filter_map(|o| self.spatial.agent(o.id))
+                .map(|a| distance_squared(a.position, from).isqrt())
+                .min()
+                .map_or(0.0, |d| {
+                    #[allow(clippy::cast_precision_loss)]
+                    let p = ((r - d).max(0) as f64) / (r as f64);
+                    p
+                })
+        };
         let v = ctx.hidden.resolve_clearance(
             kicker,
             (from.0, from.1, 0),
             to,
-            self.spatial
-                .agent(kicker)
-                .map_or(0.5, |a| f64::from(a.gait_milli) / 1000.0),
+            (
+                self.spatial
+                    .agent(kicker)
+                    .map_or(0.5, |a| f64::from(a.gait_milli) / 1000.0),
+                pressure,
+            ),
         );
         self.spatial.set_carrier(None);
         self.spatial.set_ball_in_flight((from.0, from.1, 0), v);
