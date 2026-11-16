@@ -671,6 +671,13 @@ impl MatchState {
                 .map(|a| a.position);
             let mut view = TeamView::new(&self.spatial, other, home, length, carrier);
             view.mate_carrier = carrier_mate;
+            view.ours = squad
+                .players
+                .iter()
+                .filter_map(|p| self.spatial.agent(p.id))
+                .map(|a| a.position)
+                .collect();
+            view.ground_keep = f64::from(self.spatial.ground_friction_milli()) / 1000.0;
             view.mate_pressing = squad.players.iter().any(|p| {
                 matches!(
                     self.spatial.act(p.id),
