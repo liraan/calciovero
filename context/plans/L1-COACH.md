@@ -86,7 +86,7 @@ Le scelte dell'allenatore sono il più libere possibile. L'allenatore **disegna*
 
 **Cosa si può dire alla squadra:**
 
-1. **Le posizioni libere per fase.** Due disegni obbligatori, con la palla e senza; facoltativi, un disegno per terzo di campo (costruzione, sviluppo, rifinitura; senza palla: pressione alta, blocco medio, difesa bassa), e il motore passa dall'uno all'altro con continuità secondo dove sta il pallone. Forme asimmetriche ammesse (il 3-2-5 in possesso e il 4-4-2 senza, il terzino che entra dentro).
+1. **Le posizioni libere per fase.** Le fasi sono tre: con la palla, senza la palla, in transizione. Si disegnano solo le prime due, e sono obbligatorie; facoltativi, un disegno per terzo di campo (costruzione, sviluppo, rifinitura; senza palla: pressione alta, blocco medio, difesa bassa), e il motore passa dall'uno all'altro con continuità secondo dove sta il pallone. Forme asimmetriche ammesse (il 3-2-5 in possesso e il 4-4-2 senza, il terzino che entra dentro).
 2. **Le responsabilità di ogni giocatore,** dentro ogni disegno: ognuno ha i suoi compiti in quella fase (chi esce in pressione e chi copre, chi resta nella difesa preventiva, chi attacca la profondità e chi viene incontro, chi segue chi sui calci piazzati). È il modo moderno di dare un ruolo: non un nome, ma cosa fa in ogni fase.
 3. **Il blocco con valori continui:** l'altezza della linea, l'ampiezza, la distanza fra i reparti, in metri (oggi tre scatti: alto, medio, basso).
 4. **Il pressing:** dove comincia, cosa lo fa scattare (il retropassaggio, il controllo sbagliato, la palla al terzino), chi esce per primo e chi copre, se si spinge l'avversario verso la fascia o verso il centro.
@@ -94,7 +94,7 @@ Le scelte dell'allenatore sono il più libere possibile. L'allenatore **disegna*
 6. **La costruzione e il ritmo:** il portiere corto o lungo, quanto si rischia nel passaggio, il ritmo.
 7. **I movimenti e le rotazioni:** attaccare la profondità, venire incontro, sovrapporsi, restare largo, accentrarsi; due giocatori che si scambiano il posto durante l'azione; lo scambio di posizione (decisione AG).
 8. **La difesa preventiva:** quanti restano dietro la palla quando si attacca, e dove.
-9. **Le transizioni:** quanti secondi di riaggressione dopo la palla persa, e chi la fa.
+9. **Le transizioni non si disegnano: si scelgono.** Palla persa: riaggredire, ricomporsi, abbassarsi; palla recuperata: ripartire o tenere palla (ADR-059 §6); con quanti secondi di riaggressione e chi la fa. Una scelta di base prima della partita, che l'allenatore cambia in partita quando la legge.
 10. **I calci piazzati disegnati:** posizioni, corse e tiratori per angoli, punizioni e rimesse, in attacco e in difesa, salvati come schemi.
 11. **La gestione:** perdere tempo, il ritmo a fine partita.
 
