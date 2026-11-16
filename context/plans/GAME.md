@@ -27,7 +27,7 @@ Ogni passo si chiude con la sua prova, e il successivo non parte prima.
 3. **Chiudere L0**, con il 2.5D come strumento: prima OI-102 (il gioco aereo), poi i tiri da vicino (OI-100), poi il resto. Prova: almeno **16 metriche su 22 in banda**, e ogni metrica fuori banda con la sua causa scritta e il suo OI (decisione L). Poi il golden su glibc, musl e Windows, la durata di una partita in `STATE.md` e la partita di prova preparata per il maintainer.
 4. **L1, i dieci passi di [`L1.md`](L1.md).** Prova: dieci stagioni con lo stesso hash, il formato reale, i plugin spenti.
 5. **La versione 0.1 · Stagione.** Prova: la lista congelata qui sotto, completa.
-6. **La 0.2 · Panchina:** i moduli consigliati dell'allenatore di [`L1-COACH.md`](L1-COACH.md) (canali dalla panchina, discorsi e credibilità, piani "se, allora" e segnali, riunione tattica e comprensione del piano, gruppo dei leader), uno alla volta, ognuno spento senza rompere nulla (decisione AQ). Prova: ogni modulo acceso e spento lascia il golden deterministico.
+6. **La 0.2 · Mercato e panchina:** il mercato di [`L1-MARKET.md`](L1-MARKET.md) (contratti, cassa, finestre, trasferimenti, prestiti, il posto di direttore sportivo, decisione AR) e i moduli consigliati dell'allenatore di [`L1-COACH.md`](L1-COACH.md) (canali, discorsi, piani "se, allora", riunione tattica, leader, decisione AQ), uno alla volta, ognuno spento senza rompere nulla. Prova: dieci anni di mercato con lo stesso hash; ogni modulo acceso e spento lascia il golden deterministico.
 7. **L2, prima metà** (procuratori, osservatori, il bilancio completo, la società; il posto giocabile di presidente, decisione AK). Prova: dieci anni di società e bilancio deterministici. Poi la **0.3 · Società**.
 8. **L2, seconda metà** (crescita, vivaio, tattica nel tempo, società, staff, strutture, spogliatoio, l'allenatore). Prova: una carriera di dieci anni con lo stesso hash. Poi la **0.4 · Carriera**.
 9. **L3.** Prova: un dato modificato dall'editor e un pacchetto esterno lasciano la partita deterministica. Poi la **1.0** sul desktop.
@@ -40,7 +40,7 @@ Decisione N: quello che non è in questa lista va dopo la 0.1, salvo decisione e
 - [ ] La vista 2.5D nella GUI (passo 1)
 - [ ] La panchina in partita: cambi dal vivo, istruzioni rapide, l'allenatore avversario che legge la partita (passo 2)
 - [ ] L0 chiuso (passo 2)
-- [ ] L1 completo: tre serie, la coppa, il calendario, le classifiche, l'allenatore, il corpo, la disciplina, la settimana, il mercato con contratti e cassa (decisione AR), il posto di direttore sportivo
+- [ ] L1 completo: tre serie, la coppa, il calendario, le classifiche, l'allenatore, il corpo, la disciplina, la settimana
 - [ ] Le fondamenta del 16 novembre (decisione AQ): il modello di attore per ogni ruolo (AH), i ruoli in dati con il posto di allenatore (AI, AK), il database (AD, AE), la lavagna libera che si cambia in partita (AL, AG)
 - [ ] La GUI della stagione: la lavagna, i post-it a linguette, il calendario con l'agenda, la rosa, la classifica, la scheda giocatore, la partita
 - [ ] Il file di segnalazione (seme, scelte datate, versione del motore) con il pulsante "segnala un problema"; il registro locale degli errori, senza invii

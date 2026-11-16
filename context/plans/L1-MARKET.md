@@ -1,6 +1,6 @@
 # L1 · Il mercato (`ds-contracts`, `ds-market`, `ds-budget`)
 
-Il piano del mercato di L1: contratti, trasferimenti, prestiti e il minimo di soldi che li regge. Decisione AR (maintainer, 16 novembre 2026): il mercato si fa subito, dentro L1 e dentro la 0.1. Con i filtri partita vera, LUNA e futuribilità; come per l'allenatore, si scrive adesso e si prova giocando (decisione M).
+Il piano del mercato di L1: contratti, trasferimenti, prestiti e il minimo di soldi che li regge. Decisione AR (maintainer, 16 novembre 2026): il mercato è in L1, e arriva subito dopo la 0.1, nella 0.2 · Mercato e panchina. Con i filtri partita vera, LUNA e futuribilità; come per l'allenatore, si scrive adesso e si prova giocando (decisione M).
 
 Il quadro è in [`L1.md`](L1.md); gli attori e i ruoli in [`L1-COACH.md`](L1-COACH.md) (decisioni AH, AI).
 
