@@ -2,7 +2,7 @@
 
 Le scelte di design della GUI prese con il maintainer tra il 13 e il 16 novembre 2026. I render sono nella tela del design (artifact "Calcio Vero - GUI", pagine Lavagna e Android). La GUI legge e non scrive: ogni post-it mostra le viste di un plugin dietro il view model (ADR-055); le scelte del manager tornano come input datati.
 
-**Regola di lavoro:** il design si discute prima di applicarlo (RULES A1). I gruppi e i post-it nuovi si decidono quando c'è il contenuto da metterci, non prima.
+**Regola di lavoro:** il design si discute prima di applicarlo (RULES A1), e **ogni cambio visivo si mostra prima al maintainer con un'anteprima** (maintainer, 16 novembre 2026: "dammi sempre una preview"): un prototipo o uno screenshot, prima di passarlo al codice. I gruppi e i post-it nuovi si decidono quando c'è il contenuto da metterci, non prima.
 
 ## La lavagna, sfondo di tutto
 
