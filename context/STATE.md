@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `e800a77` - "SIM 136: the man to mark is a danger as much as a pass can reach him (OI-117 A)"
+**Last commit verified:** `b33a602` - "Merge docs/readme-tables: three views, one per tool (tools/ds-gui/DESIGN.md)"
 
 ## Mandato attivo (2026-11-16)
 
