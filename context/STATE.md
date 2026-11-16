@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `dc839c8` - "SIM 135: a pass struck into a body comes off it (OI-119)"
+**Last commit verified:** `6ed2d6c` - "Merge docs/readme-tables: the 2.5D view replaces the 2D one (tools/ds-gui/DESIGN.md)"
 
 ## Mandato attivo (2026-11-16)
 
@@ -12,6 +12,8 @@ Il mandato di autonomia del maintainer del 16 novembre 2026: Claude Code continu
 - (c) l'ADR e la divisione in plugin a golden identico;
 - (d) L1, seguendo `plans/L1.md` e `DECISIONS-2026-11-15`;
 - (e) la versione 0.1 · Stagione pronta (la pubblicazione è del maintainer).
+
+**Cambio d'ordine (maintainer, 2026-11-16):** appena L0 è chiuso, e prima di aprire L1, la vista 2.5D secondo la sezione "Il lavoro del 2.5D" di `tools/ds-gui/DESIGN.md`: (1) la prospettiva con l'inclinazione e i preset della telecamera (0° è la vista dall'alto), al posto del disegno di `scene.rs`; (2) le figurine, il pallone con l'ombra, le porte con l'altezza; (3) lo strato di interpolazione; (4) i tre temi della lavagna e la prova su Android.
 
 L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1 con coppe e nazionali come settimane vuote, le decisioni F-K del 16 novembre su dati reali e asset, `tools/ds-gui/DESIGN.md`, con la prima scheda del giocatore come base), con C2 verde; poi `docs/readme-tables` (il README con lo stato in tabelle, al SIM 133, il motore di main).
 
