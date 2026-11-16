@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `685f5f8` - "SIM 139: the quick instructions and the transitions (ADR-059 step 3)"
+**Last commit verified:** `db07f50` - "docs(state): bookmark after SIM 139; the lines that touch the plans"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,8 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**Decisione Y (2026-11-16).** Scritta in `DECISIONS-2026-11-15.md`; in STATE le mie decisioni 14 e 18 superate dalla T, la 16 confermata con il suo significato, che è anche in `L0-CALIBRATION.md` (in `L1.md` quando il piano arriva). Prossimo: l'allenatore che legge la partita, acceso di base (grado 2 sui minuti dei cambi Wyscout, metà delle partite per fissare, metà per verificare), poi il colpo (Ekstrand: verifico se lo studio dà la quota di infortuni da contatto con uscita immediata; se no, il limite va nell'OI).
 
 **Istruzioni rapide e transizioni (SIM 139, ADR-059 passo 3, decisione T passo 2).** Anteprima: `context/previews/2026-11-16-quick-instructions.png`.
 - "Più pressing" e "tutti avanti" (on/off), e le transizioni (palla persa: forma, contropressing, ripiegare; palla vinta: forma, contropiede, tenerla): ordini con il loro tick, raccontati al loro minuto, rigiocati dal replay. Spostano il blocco (8 m più vicino al pallone, 12 m più alto, 6 s dopo il cambio di possesso), mai i numeri dei giocatori; i passi sono scelte dell'allenatore dichiarate in `SOURCES.md`. Golden identici. Nella GUI il post-it "Quick instructions".
@@ -184,11 +186,11 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 | 11 | La monetina: chi vince il sorteggio batte il calcio d'inizio (anche nei supplementari) e calcia per primo ai rigori; il default di `Match.tosses` è "la squadra di casa vince", l'ordine di prima | il possesso vale più di un lato su un campo neutro; il default lascia identiche le partite di prima | SIM 117 |
 | 12 | Ai rigori ogni squadra calcia verso la porta che attacca nel secondo tempo, non una sola porta | la Regola 10 vuole una porta sola, scelta dall'arbitro con una monetina; in L0 le due porte sono identiche (nessun terreno né vento), il risultato non cambia | SIM 117 |
 | 13 | Il calcio ai rigori finisce alla parata, anche se la palla respinta potrebbe poi entrare | semplificazione dichiarata della Regola 10 ("finché la palla si ferma"); la respinta che entra da sola è rara | SIM 117 |
-| 14 | L'allenatore che reagisce cambia solo per la velocità, e solo se lo chiede la sua squadra (`coach_reacts`, spento di default) | è l'unico confronto ricavabile senza numeri nuovi; acceso di default avrebbe cambiato tutte le partite e la misura prima della taratura | SIM 118 |
+| 14 | L'allenatore che reagisce cambia solo per la velocità, e solo se lo chiede la sua squadra (`coach_reacts`, spento di default) **Superata dalla decisione T (decisione Y, 2026-11-16):** l'allenatore che legge la partita è acceso di base, con il momento della reazione di grado 2 sui cambi veri Wyscout. | è l'unico confronto ricavabile senza numeri nuovi; acceso di default avrebbe cambiato tutte le partite e la misura prima della taratura | SIM 118 |
 | 15 | Coraggio, compostezza, barriera e colpo non fatti, scritti come OI-109 e OI-110 | il punto 3b del mandato: una scelta che contraddice una regola scritta (niente numeri nuovi di grado 3 in L0) non si fa | SIM 118 |
-| 16 | La banda della taratura è media reale ± una deviazione standard delle 380 partite, uguale per tutte le metriche | una regola sola, presa dalla dispersione del calcio vero; una banda per metrica sarebbe scelta guardando i valori | fase 4 |
+| 16 | La banda della taratura è media reale ± una deviazione standard delle 380 partite, uguale per tutte le metriche **Confermata (decisione Y, 2026-11-16), con il suo significato:** L0 si chiude sulla credibilità della singola partita; L1 si chiuderà sulle medie del campionato, con la banda sull'errore della media su una stagione. | una regola sola, presa dalla dispersione del calcio vero; una banda per metrica sarebbe scelta guardando i valori | fase 4 |
 | 17 | OI-109, opzione A: coraggio e compostezza come radici, profili di prova uguali per ogni ruolo (0.5 ± 0.15), effetto in una forma senza numeri | partita vera: si riconoscono in campo; luna: sono dati dei giocatori, i veri dai pacchetti; modularità: il futuro plugin "psicologia", che si può spegnere | SIM 119 |
-| 18 | OI-110, il colpo, rinviato a L1 | salute del progetto: una soglia inventata andrebbe rifatta; il colpo e lo stop sono un fatto solo | SIM 119 |
+| 18 | OI-110, il colpo, rinviato a L1 **Superata dalla decisione T (decisione Y, 2026-11-16):** il colpo che costringe al cambio resta in L0, letto dalla forza del contatto e da `injury_proneness`, la frequenza di grado 2 sull'effetto. | salute del progetto: una soglia inventata andrebbe rifatta; il colpo e lo stop sono un fatto solo | SIM 119 |
 | 19 | La compostezza scala il termine di pressione con 2 (1 - c): il giocatore medio resta com'era | l'effetto medio non cambia, cambia solo come si distribuisce fra i giocatori; nessuna statistica si sposta in media per costruzione | SIM 119 |
 | 20 | `run` del contratto solo per i plugin con una fase loro; portiere, palle inattive e gesti tecnici restano servizi chiamati dal passo che li contiene | il loro lavoro avviene dentro il passo di un altro plugin; come un plugin esterno chiami un servizio lo deciderà un ADR con i plugin esterni | dopo la panchina |
 | 21 | Il confine del contratto per L0: attraverso `World` solo i plugin che il contratto sa dire senza i tipi del motore (fatica, percezione, panchina); gli altri restano plugin ufficiali nei loro moduli | rifare `DuelContext`, la scena e la parata nel contratto sarebbe un secondo modello del calcio da tenere allineato (luna); i tipi per i plugin esterni li decide il loro ADR | dopo la panchina |
