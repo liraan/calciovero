@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `c9b0ab4` - "SIM 133: an opponent reacts to a ball before he plays it (OI-100)"
+**Last commit verified:** `1e936db` - "docs(state): bookmark after SIM 133; fouls and ground duels next"
 
 ## Dove siamo (2026-11-14)
 
@@ -98,7 +98,8 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Poi: come falliscono i passaggi corti veri (StatsBomb, sotto i 20 m, 774 a partita, l'11% fallisce): 24,6 a partita contro un uomo vicino (`Block`), 13,8 intercettati, 12,7 raccolti da un avversario (`Ball Recovery`), 12,2 giocati da un avversario, 6,8 spazzati, 3,0 fuori.
 - Poi: trovato un errore della misura. `ds-reference` non contava i passaggi intercettati (il motore li racconta come `Interception`, senza `Pass`). Corretto lo strumento, con il suo test (`an_intercepted_pass_is_a_pass`): il motore fa 1.356 passaggi a partita, riusciti il 74,6% (Wyscout 83,3%), 290 intercettati. Il passaggio non è troppo preciso: è troppo spesso intercettato.
 - Poi (133): l'avversario vicino al passatore prendeva il pallone nel tick in cui partiva (118 intercetti a partita fra 1 e 3 m); ora prima reagisce, con la formula della reazione del portiere. Il motore cambia di molto, verso il vero: passaggi riusciti 83,9%, tiri 19.7, in porta 10.5, parate 10.9, angoli 12.4, gol 2.35; 11 metriche su 22 in banda. Scendono i duelli a terra (125) e i falli (8.5).
-- **Prossima azione esatta:** i falli e i duelli a terra, scesi al 133 (OI-114, OI-117): contare i contatti a palla al piede per partita contro i 144 duelli d'attacco Wyscout, e il duello per il pallone sciolto deciso dalla corsa. Poi perché tanti passaggi (OI-100). In attesa del maintainer: OI-116. Sveglie: 16 novembre alle 06:10, 17 novembre alle 01:10.
+- Poi (SIM 133, semi 42-71): i contatti a palla al piede sono 90,8 a partita contro i 143,5 duelli difensivi a terra Wyscout; i falli per contatto sono l'8,8% (Wyscout 11,4%: 16,4 su 143,5). Mancano i contatti, non il fallo. Il portatore non si libera troppo presto: tiene la palla 1,9 s di mediana (Metrica, tracking ed eventi: 1,1-1,2 s). Quindi i difensori lo attaccano troppo poco.
+- **Prossima azione esatta:** perché il difensore va poco sul portatore (OI-117). Contare nel motore, per ogni portatore, quanti avversari sono entro la portata del contrasto e quanti scelgono `Challenge` (`offball.rs` `choose_off_ball`, `defend`; `offball.json`), contro la frequenza reale dei duelli (Wyscout: 144 difensivi a terra a partita, cioè circa uno ogni due possessi del portatore). Poi il duello per il pallone sciolto deciso dalla corsa (OI-114). Poi perché tanti passaggi (OI-100). In attesa del maintainer: OI-116. Sveglie: 16 novembre alle 06:10, 17 novembre alle 01:10.
 
 ## Decisioni prese da Claude, da rivedere
 
