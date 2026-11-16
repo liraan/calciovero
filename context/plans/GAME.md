@@ -15,7 +15,7 @@
 | Vista 2.5D | La lavagna inclinata, la vista della GUI su desktop e Android | adesso, prima della chiusura di L0 (decisione S) | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
 | L1 · La stagione | Tre serie e la coppa nel formato reale, ogni partita dal motore | dopo il 2.5D | [`L1`](L1.md) |
 | L2 · La carriera | Procuratori, osservatori, vivaio, crescita, bilancio completo, società, spogliatoio, la vita dell'allenatore (contratti e mercato sono in L1, decisione AR) | dopo la 0.1 | ADR-060; il piano in [`L2.md`](L2.md), un blocco alla volta |
-| L3 · Il gioco che si modifica | Editor, pacchetti, importatore locale, plugin esterni in WebAssembly | dopo L2 | decisioni 4, F–K |
+| L3 · Il gioco che si modifica | Editor (il giocatore nasce dai suoi dati), pacchetti, importatore locale, plugin esterni in WebAssembly, accessibilità, tutorial | dopo L2 | [`L3.md`](L3.md); decisioni 4, F–K, BE |
 | 3D | Solo desktop, con Bevy se maturo | dopo la 1.0 | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
 
 ## L'ordine di lavoro
