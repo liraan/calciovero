@@ -31,8 +31,8 @@ pub use pitch::{Pitch, Weather};
 pub use player::{PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId};
 pub use referee::Referee;
 pub use squad::{
-    BlockHeight, FormationId, Instruction, Intention, MAX_SUBSTITUTIONS, OnLoss, OnWin, Order,
-    Quick, Squad, Substitution, TeamOrders, Width,
+    BlockHeight, Board, Drawing, FormationId, Instruction, Intention, MAX_SUBSTITUTIONS, OnLoss,
+    OnWin, Order, Quick, Spot, Squad, Substitution, TeamOrders, Width,
 };
 
 /// Returns the version of `ds-model`, as declared in `Cargo.toml`.

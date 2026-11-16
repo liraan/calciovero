@@ -240,3 +240,43 @@ fn quick_instructions_take_effect_from_their_tick() {
     let save = MatchSave::from_result(&result, &m, 48, GameInstant::from_raw(0));
     assert_eq!(replay(&save).state_hash, result.state_hash);
 }
+
+/// P1 (decisions AL and AG): the board changes during the match as an
+/// order with its tick. The wide men swapped at the 15th minute: the match
+/// is the same up to then; from then the man who stood on one side stands
+/// on the other.
+#[test]
+#[allow(clippy::cast_precision_loss)] // ticks of a match
+fn the_board_changes_from_its_tick() {
+    let plain = match_fixture(49).expect("fixture");
+    let (_, before) = simulate_from_seed_recorded(&plain, 49, MatchConfig::default());
+    let mut m = match_fixture(49).expect("fixture");
+    let swapped = m.home.board.swapped(5, 8);
+    m.home = m.home.clone().with_instructions(vec![Instruction {
+        tick: AT,
+        order: Order::Board(swapped),
+    }]);
+    let left = m.home.players[5].id;
+    let (_, after) = simulate_from_seed_recorded(&m, 49, MatchConfig::default());
+    let upto = usize::try_from(AT).expect("tick fits");
+    assert_eq!(
+        before[..=upto],
+        after[..=upto],
+        "the same match up to the order"
+    );
+    // His mean side in the ten minutes after the order, against the
+    // ten minutes before it.
+    let mean_y = |r: &[ds_match::TickRecord]| {
+        let ys: Vec<f64> = r
+            .iter()
+            .filter_map(|t| t.agents.iter().find(|a| a.id == left))
+            .map(|a| f64::from(a.position.1))
+            .collect();
+        ys.iter().sum::<f64>() / ys.len().max(1) as f64
+    };
+    let (was, now) = (
+        mean_y(&after[upto - 6_000..upto]),
+        mean_y(&after[upto + 600..upto + 6_600]),
+    );
+    assert!(now > was + 1_500.0, "he moved across: {was:.0} -> {now:.0}");
+}

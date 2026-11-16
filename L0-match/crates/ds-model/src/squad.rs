@@ -112,9 +112,16 @@ pub struct Instruction {
 /// first one is the
 /// intention he can also set before the kick-off: the block and the width.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "a board is a few hundred bytes and an order is rare: kept Copy like the rest"
+)]
 pub enum Order {
     /// The team's intention from now on.
     Intention(Intention),
+    /// The whole board from now on (decision AG): new drawings, a swap of
+    /// places, a new shape.
+    Board(Board),
     /// A quick instruction turned on or off (ADR-059 §6, step 3).
     Quick {
         /// Which.
@@ -217,6 +224,139 @@ impl TeamOrders {
     }
 }
 
+/// A player's place in his side's block (decision AL, the free board).
+///
+/// `depth` 0 on the defensive line and 1000 on the forward line, `width`
+/// 0 on the touchline at `y = 0` and 1000 on the other, in thousandths of
+/// the block. The representation the block already reads (`shape.rs`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct Spot {
+    /// Depth in the block, thousandths.
+    pub depth: i16,
+    /// Width in the block, thousandths.
+    pub width: i16,
+}
+
+/// The players of a side: the eleven places, by the squad's order (the
+/// first is the keeper, who has his own place and is not drawn).
+pub type Drawing = [Spot; 11];
+
+/// The coach's board (decisions AL and AG).
+///
+/// A drawing with the ball and one without, both required; optionally one for each third of the pitch
+/// (own, middle, final, by where the ball is), between which the team
+/// passes continuously. The transition is not drawn: it is chosen
+/// (`TeamOrders`). A place belongs to the slot in the squad's order, so the
+/// man who comes on takes the place of the man who comes off.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Board {
+    /// With the ball.
+    pub with_ball: Drawing,
+    /// Without the ball.
+    pub without_ball: Drawing,
+    /// With the ball, one drawing per third (own, middle, final).
+    #[serde(default)]
+    pub with_ball_thirds: Option<[Drawing; 3]>,
+    /// Without the ball, one drawing per third.
+    #[serde(default)]
+    pub without_ball_thirds: Option<[Drawing; 3]>,
+}
+
+/// The 4-4-2 grid of before, as `(x percent, y percent)` per slot: GK, LB,
+/// CB, CB, RB, LM, CM, CM, RM, ST, ST. The default board draws it.
+const GRID_4_4_2: [(i16, i16); 11] = [
+    (5, 50),
+    (25, 15),
+    (25, 38),
+    (25, 62),
+    (25, 85),
+    (50, 15),
+    (50, 38),
+    (50, 62),
+    (50, 85),
+    (75, 38),
+    (75, 62),
+];
+
+impl Default for Board {
+    /// The 4-4-2, the same drawing with the ball and without: the widest
+    /// slots on the block's sides (OI-100), the backs at depth 0 and the
+    /// forwards at 1000.
+    fn default() -> Self {
+        let mut d = [Spot::default(); 11];
+        for (i, &(px, py)) in GRID_4_4_2.iter().enumerate() {
+            // In i32: a thousandth times a percent overflows an i16.
+            let (px, py) = (i32::from(px), i32::from(py));
+            let thousandths = |v: i32| i16::try_from(v.clamp(0, 1000)).unwrap_or(0);
+            d[i] = Spot {
+                depth: thousandths((px - 25) * 1000 / 50),
+                width: thousandths((py - 15) * 1000 / (85 - 15)),
+            };
+        }
+        Self {
+            with_ball: d,
+            without_ball: d,
+            with_ball_thirds: None,
+            without_ball_thirds: None,
+        }
+    }
+}
+
+impl Board {
+    /// The place of slot `slot`, with or without the ball, the ball `u`
+    /// thousandths of the pitch along the side's attack (0 at its own goal
+    /// line): between the drawings of the thirds, continuously, if they
+    /// are drawn; else the phase's drawing.
+    #[must_use]
+    #[allow(clippy::many_single_char_names, reason = "the geometry of a place")]
+    pub fn spot(&self, slot: usize, with_ball: bool, u: i32) -> Spot {
+        let slot = slot.min(10);
+        let (one, thirds) = if with_ball {
+            (&self.with_ball, &self.with_ball_thirds)
+        } else {
+            (&self.without_ball, &self.without_ball_thirds)
+        };
+        let Some(t) = thirds else {
+            return one[slot];
+        };
+        // The thirds' centres at 1/6, 1/2 and 5/6 of the pitch; between two
+        // centres the place moves in a straight line.
+        let u = u.clamp(167, 833);
+        let (a, b, k) = if u <= 500 {
+            (t[0][slot], t[1][slot], (u - 167) * 1000 / 333)
+        } else {
+            (t[1][slot], t[2][slot], (u - 500) * 1000 / 333)
+        };
+        let mix = |p: i16, q: i16| {
+            let v = i32::from(p) + (i32::from(q) - i32::from(p)) * k / 1000;
+            i16::try_from(v).unwrap_or(p)
+        };
+        Spot {
+            depth: mix(a.depth, b.depth),
+            width: mix(a.width, b.width),
+        }
+    }
+
+    /// The board with the places of slots `a` and `b` exchanged, in every
+    /// drawing (the swap is a case of the board, decision AG).
+    #[must_use]
+    pub fn swapped(mut self, a: usize, b: usize) -> Self {
+        let (a, b) = (a.min(10), b.min(10));
+        self.with_ball.swap(a, b);
+        self.without_ball.swap(a, b);
+        for t in self
+            .with_ball_thirds
+            .iter_mut()
+            .chain(self.without_ball_thirds.iter_mut())
+        {
+            for d in t.iter_mut() {
+                d.swap(a, b);
+            }
+        }
+        self
+    }
+}
+
 /// The most substitutions a side may make (Law 3).
 pub const MAX_SUBSTITUTIONS: usize = 5;
 
@@ -248,6 +388,10 @@ pub struct Squad {
     /// fatigue. Off for the side the manager plays himself.
     #[serde(default = "on")]
     pub coach_reacts: bool,
+    /// The coach's board (decision AL): where each slot stands in the
+    /// block, with the ball and without. The default is the 4-4-2.
+    #[serde(default)]
+    pub board: Board,
 }
 
 /// Serde's default for a coach who reads the match: on (decision Y).
@@ -288,6 +432,7 @@ impl Squad {
             intention: Intention::default(),
             substitutions: Vec::new(),
             coach_reacts: true,
+            board: Board::default(),
             instructions: Vec::new(),
         })
     }
@@ -341,6 +486,56 @@ impl Squad {
 
 #[cfg(test)]
 mod tests {
+
+    /// The default board is the 4-4-2 of before: the backs at depth 0, the
+    /// forwards at 1000, the widest slots on the block's edges.
+    #[test]
+    fn the_default_board_is_the_four_four_two() {
+        let b = Board::default();
+        assert_eq!(b.with_ball, b.without_ball);
+        assert_eq!(b.with_ball[1], Spot { depth: 0, width: 0 });
+        assert_eq!(
+            b.with_ball[8],
+            Spot {
+                depth: 500,
+                width: 1000
+            }
+        );
+        assert_eq!(b.with_ball[10].depth, 1000);
+    }
+
+    /// With drawings per third the place moves continuously with the ball:
+    /// at a third's centre it is that third's place, between two it is in
+    /// between, never a jump.
+    #[test]
+    fn between_the_thirds_the_place_moves_continuously() {
+        let mut b = Board::default();
+        let mut thirds = [b.with_ball; 3];
+        thirds[0][1].depth = 0;
+        thirds[1][1].depth = 300;
+        thirds[2][1].depth = 600;
+        b.with_ball_thirds = Some(thirds);
+        assert_eq!(b.spot(1, true, 167).depth, 0);
+        assert_eq!(b.spot(1, true, 500).depth, 300);
+        assert_eq!(b.spot(1, true, 833).depth, 600);
+        let mut last = b.spot(1, true, 0).depth;
+        for u in (0..=1000).step_by(10) {
+            let d = b.spot(1, true, u).depth;
+            assert!(d >= last && d - last <= 20, "u {u}: {last} -> {d}");
+            last = d;
+        }
+        assert_eq!(b.spot(1, false, 833), Board::default().without_ball[1]);
+    }
+
+    /// The swap of two places is a case of the board (decision AG): the
+    /// wide men change sides in every drawing.
+    #[test]
+    fn swapping_two_places_exchanges_them_everywhere() {
+        let b = Board::default().swapped(5, 8);
+        assert_eq!(b.with_ball[5], Board::default().with_ball[8]);
+        assert_eq!(b.without_ball[8], Board::default().without_ball[5]);
+    }
+
     use super::*;
     use crate::player::{PhysicalStateMinimal, PsychologicalStateMinimal, RoleId};
     use ds_core::ids::PlayerId;

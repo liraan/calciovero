@@ -253,6 +253,10 @@ impl App {
     /// on the screen. The match is played again from the same seed with
     /// it; up to that tick it is the same match, so the view stays where
     /// it was and goes on from there.
+    #[allow(
+        clippy::large_types_passed_by_value,
+        reason = "an order is kept by value in the choices"
+    )]
     fn order(&mut self, order: ds_model::Order) {
         let Some(game) = &self.game else { return };
         let Some(now) = game.records.get(self.tick) else {
@@ -304,7 +308,8 @@ impl App {
                 }
                 ds_model::Order::Intention(_)
                 | ds_model::Order::Quick { .. }
-                | ds_model::Order::Transitions { .. } => None,
+                | ds_model::Order::Transitions { .. }
+                | ds_model::Order::Board(_) => None,
             })
             .collect();
         let paper = self.theme.postit;
@@ -381,7 +386,9 @@ impl App {
                     now.lost = lost;
                     now.won = won;
                 }
-                ds_model::Order::Intention(_) | ds_model::Order::Substitute { .. } => {}
+                ds_model::Order::Intention(_)
+                | ds_model::Order::Substitute { .. }
+                | ds_model::Order::Board(_) => {}
             }
         }
         let t = &self.theme;

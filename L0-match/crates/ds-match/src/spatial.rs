@@ -217,7 +217,10 @@ pub struct SpatialState {
     block: crate::balance::BlockBalance,
     /// Each outfield player's place in the block: `(depth, width)` in
     /// thousandths, from the formation (0 = defensive line / left).
-    roles: BTreeMap<PlayerId, crate::shape::Role>,
+    roles: BTreeMap<PlayerId, usize>,
+    /// The coaches' boards, home and away (decision AL): each slot's place
+    /// in the block, with the ball and without.
+    boards: (ds_model::Board, ds_model::Board),
     /// The coaches' intentions, home and away (OI-27).
     intentions: (ds_model::Intention, ds_model::Intention),
     /// The coaches' quick instructions and transition choices, home and
@@ -334,7 +337,8 @@ impl SpatialState {
             touches: Touches::default(),
             ball_physics: crate::balance::BallBalance::load(),
             block: crate::balance::BlockBalance::load(),
-            roles: crate::shape::roles(home, away),
+            roles: crate::shape::slots(home, away),
+            boards: (home.board, away.board),
             intentions: (home.intention, away.intention),
             orders: (
                 ds_model::TeamOrders::default(),
@@ -431,6 +435,16 @@ impl SpatialState {
         self.transition.1 = tick;
     }
 
+    /// The coach of one side changes his whole board (decision AG): from
+    /// now on his players read it.
+    pub const fn set_board(&mut self, home: bool, board: ds_model::Board) {
+        if home {
+            self.boards.0 = board;
+        } else {
+            self.boards.1 = board;
+        }
+    }
+
     /// The coach of one side changes his quick instructions or his
     /// transition choices (ADR-059 step 3).
     pub const fn set_orders(&mut self, home: bool, orders: ds_model::TeamOrders) {
@@ -462,8 +476,14 @@ impl SpatialState {
         in_possession: bool,
         own_half: bool,
     ) -> Option<(i32, i32)> {
-        let role = *self.roles.get(&id)?;
+        let slot = *self.roles.get(&id)?;
         let home = crate::perception::team_of(id) == 0;
+        let board = if home { &self.boards.0 } else { &self.boards.1 };
+        let length = self.pitch_cm.0.max(1);
+        let along = if home { ball.0 } else { length - ball.0 };
+        let role = board
+            .spot(slot, in_possession, along * 1000 / length)
+            .into();
         let situation = crate::shape::Situation {
             ball,
             in_possession,

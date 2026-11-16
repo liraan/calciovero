@@ -1,7 +1,8 @@
 //! The team's shape without instructions: the block (VISION §3).
 //!
 //! **One responsibility:** where an outfield player stands, given his
-//! role in the formation, where the ball is, and whether his side has it.
+//! place on the coach's board (decision AL), where the ball is, and
+//! whether his side has it.
 //! Pure functions: data in, a point out; the movement takes the player
 //! there with his own body (the movement formula). The coach's
 //! instructions (L2) will change the numbers in `balance/block.json`;
@@ -14,29 +15,6 @@ use ds_model::Squad;
 
 use crate::balance::BlockBalance;
 
-/// The 4-4-2 grid, as `(x percent, y percent)` per slot.
-///
-/// Slot order: GK, LB, CB, CB, RB, LM, CM, CM, RM, ST, ST. It matches
-/// `Squad.players` **by index**. The formation parser is deferred (D3): a
-/// non-4-4-2 formation falls back to this grid.
-const GRID_4_4_2: [(i32, i32); 11] = [
-    (5, 50),
-    (25, 15),
-    (25, 38),
-    (25, 62),
-    (25, 85),
-    (50, 15),
-    (50, 38),
-    (50, 62),
-    (50, 85),
-    (75, 38),
-    (75, 62),
-];
-
-/// The widest outfield slots of the grid, in percent.
-const GRID_MIN_Y: i32 = 15;
-const GRID_MAX_Y: i32 = 85;
-
 /// A player's place in the block, in thousandths: `depth` 0 for the
 /// defensive line and 1000 for the forward line; `width` 0 on the left
 /// and 1000 on the right.
@@ -48,28 +26,28 @@ pub struct Role {
     pub width: i32,
 }
 
-/// Every outfield player's role, read from the formation (goalkeepers
-/// have no place in the block: they have their own target).
+/// Every outfield player's slot in his squad's order.
+///
+/// Goalkeepers have no place in the block: they have their own target. The place itself is
+/// read from the coach's board (decision AL), and a man who comes on takes
+/// the slot of the man who comes off.
 #[must_use]
-pub fn roles(home: &Squad, away: &Squad) -> BTreeMap<PlayerId, Role> {
+pub fn slots(home: &Squad, away: &Squad) -> BTreeMap<PlayerId, usize> {
     let mut out = BTreeMap::new();
     for squad in [home, away] {
         for (i, player) in squad.players.iter().enumerate().skip(1) {
-            out.insert(player.id, slot_role(i));
+            out.insert(player.id, i);
         }
     }
     out
 }
 
-/// The role of the formation's slot `i` (1 to 10).
-fn slot_role(i: usize) -> Role {
-    let (px, py) = GRID_4_4_2[i.min(10)];
-    Role {
-        depth: ((px - 25) * 1000 / 50).clamp(0, 1000),
-        // The block's own edges (OI-100, SIM 127): the widest slots stand
-        // on the block's sides, so the block's width is the distance
-        // between its widest players.
-        width: ((py - GRID_MIN_Y) * 1000 / (GRID_MAX_Y - GRID_MIN_Y)).clamp(0, 1000),
+impl From<ds_model::Spot> for Role {
+    fn from(s: ds_model::Spot) -> Self {
+        Self {
+            depth: i32::from(s.depth),
+            width: i32::from(s.width),
+        }
     }
 }
 

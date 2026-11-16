@@ -270,10 +270,10 @@ impl MatchState {
 
     /// A quick instruction or the transition choices (ADR-059 step 3):
     /// set for the side, and the fact as it is told.
-    fn set_team_orders(&mut self, home: bool, order: ds_model::Order) -> serde_json::Value {
+    fn set_team_orders(&mut self, home: bool, order: &ds_model::Order) -> serde_json::Value {
         let side = if home { "home" } else { "away" };
         let mut orders = self.spatial.orders(home);
-        let told = match order {
+        let told = match *order {
             ds_model::Order::Quick { quick, on } => {
                 orders = orders.with(quick, on);
                 let name = match quick {
@@ -297,9 +297,9 @@ impl MatchState {
                 };
                 serde_json::json!({ "side": side, "lost": lost, "won": won })
             }
-            ds_model::Order::Intention(_) | ds_model::Order::Substitute { .. } => {
-                serde_json::json!({ "side": side })
-            }
+            ds_model::Order::Intention(_)
+            | ds_model::Order::Substitute { .. }
+            | ds_model::Order::Board(_) => serde_json::json!({ "side": side }),
         };
         self.spatial.set_orders(home, orders);
         told
@@ -332,8 +332,23 @@ impl MatchState {
                     ds_model::Order::Intention(intention) => intention,
                     order @ (ds_model::Order::Quick { .. }
                     | ds_model::Order::Transitions { .. }) => {
-                        let fields = self.set_team_orders(home, order);
+                        let fields = self.set_team_orders(home, &order);
                         self.emit_event(ctx, tick, None, EventType::Instruction, fields);
+                        continue;
+                    }
+                    ds_model::Order::Board(board) => {
+                        // The whole board from the next tick (decision AG).
+                        self.spatial.set_board(home, board);
+                        self.emit_event(
+                            ctx,
+                            tick,
+                            None,
+                            EventType::Instruction,
+                            serde_json::json!({
+                                "side": if home { "home" } else { "away" },
+                                "board": true,
+                            }),
+                        );
                         continue;
                     }
                     ds_model::Order::Substitute { outgoing, incoming } => {
