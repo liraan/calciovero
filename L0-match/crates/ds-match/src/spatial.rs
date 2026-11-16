@@ -542,6 +542,12 @@ impl SpatialState {
         }
     }
 
+    /// A side's board as its players have it now.
+    #[must_use]
+    pub const fn board(&self, home: bool) -> &ds_model::Board {
+        if home { &self.boards.0 } else { &self.boards.1 }
+    }
+
     /// The coach of one side changes his whole board (decision AG): from
     /// now on his players read it.
     pub const fn set_board(&mut self, home: bool, board: ds_model::Board) {

@@ -59,10 +59,12 @@ fn golden_l0_with_instructions_is_deterministic() {
         let mut m = match_fixture(seed).expect("fixture");
         m.home = m.home.clone().with_instructions(vec![Instruction {
             tick: 18_000,
+            channel: None,
             order: order(BlockHeight::High, Width::Wide),
         }]);
         m.away = m.away.clone().with_instructions(vec![Instruction {
             tick: 36_000,
+            channel: None,
             order: order(BlockHeight::Low, Width::Narrow),
         }]);
         let result = simulate_from_seed(&m, seed, MatchConfig::default());

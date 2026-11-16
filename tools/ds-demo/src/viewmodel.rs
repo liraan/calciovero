@@ -203,6 +203,7 @@ const fn event_kind(kind: EventType) -> &'static str {
         EventType::GoalKick => "goal_kick",
         EventType::Woodwork => "woodwork",
         EventType::Instruction => "instruction",
+        EventType::WaterBreak => "water_break",
     }
 }
 
@@ -289,6 +290,7 @@ mod tests {
             EventType::GoalKick,
             EventType::Woodwork,
             EventType::Instruction,
+            EventType::WaterBreak,
         ];
         for kind in kinds {
             let s = event_kind(kind);

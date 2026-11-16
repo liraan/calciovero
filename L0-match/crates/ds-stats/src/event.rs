@@ -86,6 +86,8 @@ pub enum EventType {
     Woodwork,
     /// The coach gave an instruction (ADR-059): the fact, at its minute.
     Instruction,
+    /// The referee stopped play for a water break (ADR-068): a pause.
+    WaterBreak,
 }
 
 /// The half of the match an event belongs to (ADR-026).

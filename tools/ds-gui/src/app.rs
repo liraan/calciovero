@@ -264,6 +264,7 @@ impl App {
         };
         self.choices.live.push(ds_model::Instruction {
             tick: now.tick,
+            channel: None,
             order,
         });
         let (tick, carry, playing) = (self.tick, self.carry, self.playing);

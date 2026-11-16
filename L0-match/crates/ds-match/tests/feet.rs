@@ -30,6 +30,7 @@ fn swapped_wide_men_strike_with_the_feet_they_have() {
         let board = m.home.board.swapped(5, 8);
         m.home = m.home.clone().with_instructions(vec![Instruction {
             tick: SWAP,
+            channel: None,
             order: Order::Board(board),
         }]);
         let wide = [m.home.players[5].id, m.home.players[8].id];

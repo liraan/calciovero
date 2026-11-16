@@ -205,6 +205,7 @@ pub fn apply(mut m: Match, c: &Choices) -> Result<Match, String> {
             .iter()
             .map(|(minute, intention)| ds_model::Instruction {
                 tick: u64::from(*minute) * 600,
+                channel: None,
                 order: ds_model::Order::Intention(*intention),
             })
             .chain(c.live.iter().copied())

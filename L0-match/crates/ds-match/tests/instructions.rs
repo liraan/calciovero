@@ -15,6 +15,7 @@ fn instructed(seed: u64, at: u64) -> Match {
     let mut m = match_fixture(seed).expect("fixture");
     m.home = m.home.clone().with_instructions(vec![Instruction {
         tick: at,
+        channel: None,
         order: Order::Intention(Intention {
             block: BlockHeight::High,
             width: Width::Wide,
@@ -90,6 +91,7 @@ fn the_team_plays_wider_when_the_coach_asks() {
         let mut m = match_fixture(45).expect("fixture");
         m.home = m.home.clone().with_instructions(vec![Instruction {
             tick: 0,
+            channel: None,
             order: Order::Intention(Intention {
                 block: BlockHeight::Mid,
                 width,
@@ -126,6 +128,7 @@ fn ordered(seed: u64, at: u64, pairs: &[(usize, usize)]) -> Match {
         .iter()
         .map(|&(off, on)| Instruction {
             tick: at,
+            channel: None,
             order: Order::Substitute {
                 outgoing: m.home.players[off].id,
                 incoming: m.home.bench[on].id,
@@ -203,6 +206,7 @@ fn quick_instructions_take_effect_from_their_tick() {
     m.home = m.home.clone().with_instructions(vec![
         Instruction {
             tick: AT,
+            channel: None,
             order: Order::Quick {
                 quick: ds_model::Quick::MorePressing,
                 on: true,
@@ -210,6 +214,7 @@ fn quick_instructions_take_effect_from_their_tick() {
         },
         Instruction {
             tick: AT,
+            channel: None,
             order: Order::Transitions {
                 lost: ds_model::OnLoss::CounterPress,
                 won: ds_model::OnWin::Counter,
@@ -254,6 +259,7 @@ fn the_board_changes_from_its_tick() {
     let swapped = m.home.board.swapped(5, 8);
     m.home = m.home.clone().with_instructions(vec![Instruction {
         tick: AT,
+        channel: None,
         order: Order::Board(swapped),
     }]);
     let left = m.home.players[5].id;
@@ -301,6 +307,7 @@ fn a_striker_asked_to_run_stands_farther_ahead() {
         board.with_ball_tasks[9] = ds_model::Task::Run;
         m.home = m.home.clone().with_instructions(vec![Instruction {
             tick: AT,
+            channel: None,
             order: Order::Board(board),
         }]);
         let (_, before) = simulate_from_seed_recorded(&plain, seed, MatchConfig::default());

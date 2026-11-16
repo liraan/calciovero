@@ -49,6 +49,10 @@ pub struct MatchRules {
     pub extra_time: bool,
     /// Whether a penalty shootout is allowed.
     pub penalty_shootout: bool,
+    /// The minutes of the water breaks, where the competition has them
+    /// (ADR-068; FIFA's cooling breaks): `0` none.
+    #[serde(default)]
+    pub water_breaks: [u16; 2],
 }
 
 impl Default for MatchRules {
@@ -59,6 +63,7 @@ impl Default for MatchRules {
             subs_allowed: 5,
             extra_time: false,
             penalty_shootout: false,
+            water_breaks: [0, 0],
         }
     }
 }
@@ -121,6 +126,11 @@ pub struct Match {
     /// configuration of ADR-013): courage and composure move the players.
     #[serde(default = "on")]
     pub psychology: bool,
+    /// Whether the channels from the bench are on (ADR-068, a recommended
+    /// module, decision X): off, every instruction reaches every player
+    /// from the next tick.
+    #[serde(default = "on")]
+    pub channels: bool,
 }
 
 const fn on() -> bool {
@@ -153,6 +163,7 @@ impl Match {
             rules,
             tosses: Tosses::HOME,
             psychology: true,
+            channels: true,
         }
     }
 

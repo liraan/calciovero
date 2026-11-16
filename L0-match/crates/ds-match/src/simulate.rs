@@ -93,6 +93,7 @@ fn step(
     t: u64,
     rec: &mut Recorder<'_>,
 ) {
+    state.water_break_due(ctx, t);
     state.substitute_due(live, ctx.hidden, t, ctx.config.ticks_per_second);
     let mut now = MatchContext {
         match_: live,

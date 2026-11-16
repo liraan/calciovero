@@ -263,7 +263,16 @@ pub struct MatchState {
     pub(crate) ball_from: (i32, i32, i32),
     /// How many of each coach's instructions have taken effect, home and
     /// away (ADR-059).
-    pub(crate) instructed: (usize, usize),
+    /// The instructions already delivered, by side and index (ADR-068).
+    pub(crate) delivered: BTreeSet<(bool, usize)>,
+    /// The pauses so far (an injury, a water break, half-time, a
+    /// substitution): what the channel of the pause waits for (ADR-068).
+    pub(crate) pauses: u64,
+    /// For each instruction waiting, the pauses there had been when it was
+    /// given.
+    pub(crate) pause_mark: BTreeMap<(bool, usize), u64>,
+    /// The water breaks already made (ADR-068).
+    pub(crate) water_breaks_done: u8,
     /// The men a knock forced off (decision Y, ADR-066): replaced at the
     /// stoppage, or carried off if no change is left.
     pub(crate) knocked: BTreeSet<PlayerId>,
@@ -819,7 +828,10 @@ impl MatchState {
             spatial: SpatialState::from_squads(&match_.pitch, &match_.home, &match_.away),
             pending: None,
             ball_from: (0, 0, 0),
-            instructed: (0, 0),
+            delivered: BTreeSet::new(),
+            pauses: 0,
+            pause_mark: BTreeMap::new(),
+            water_breaks_done: 0,
             knocked: BTreeSet::new(),
             ordered: (Vec::new(), Vec::new()),
             scan_balance: crate::balance::ScanningBalance::load(),
@@ -1039,6 +1051,8 @@ impl MatchState {
                 // The damage stays (decision AB).
                 b.fatigue = f.after_half_time(b.fatigue).max(b.damage);
             }
+            // Half-time is a pause (ADR-068).
+            self.pauses += 1;
         }
         // Law 8: the team that wins the toss chooses; it takes the kick-off,
         // the possession being worth more than an end on a neutral pitch;

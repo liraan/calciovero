@@ -104,6 +104,26 @@ pub struct Instruction {
     pub tick: u64,
     /// What he asks.
     pub order: Order,
+    /// How it reaches the players (ADR-068): `None`, the game chooses by
+    /// how much there is to say.
+    #[serde(default)]
+    pub channel: Option<Channel>,
+}
+
+/// How an instruction reaches the players from the bench (ADR-068,
+/// decision AP).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Channel {
+    /// Shouted: a short message, to all, from the next tick (no volume, no
+    /// distance: the maintainer's choice).
+    Voice,
+    /// A gesture: to the first of his players who looks at the bench, who
+    /// passes it on to the others.
+    Gesture,
+    /// At the next pause (an injury, a water break, half-time, a
+    /// substitution: the man coming on brings the note): anything, even a
+    /// new board.
+    Pause,
 }
 
 /// What a coach asks during the match (ADR-059 §3).

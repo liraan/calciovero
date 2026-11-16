@@ -73,7 +73,8 @@ pub const fn animation(kind: EventType) -> Animation {
         | E::MatchAbandoned
         | E::GoalKick
         | E::Woodwork
-        | E::Instruction => Animation::Rest,
+        | E::Instruction
+        | E::WaterBreak => Animation::Rest,
     }
 }
 
@@ -118,6 +119,7 @@ pub const ROWS: &[EventType] = {
         E::GoalKick,
         E::Woodwork,
         E::Instruction,
+        E::WaterBreak,
     ]
 };
 

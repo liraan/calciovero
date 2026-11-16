@@ -155,6 +155,7 @@ const fn importance_for(event_type: EventType) -> Importance {
         | EventType::Card
         | EventType::Substitution
         | EventType::Instruction
+        | EventType::WaterBreak
         | EventType::Injury
         | EventType::Assist
         | EventType::KickOff
@@ -256,6 +257,7 @@ fn render_text(
         EventType::Penalty => format!("PENALTY! {player} in the {minute}'"),
         EventType::Substitution => format!("Substitution: {player} in the {minute}'"),
         EventType::Instruction => instruction_text(ev, minute),
+        EventType::WaterBreak => format!("Water break in the {minute}'"),
         EventType::Injury => format!("{player} is injured in the {minute}'"),
         EventType::Goal => {
             if ev

@@ -23,6 +23,10 @@ pub struct StoppageTime {
     pub foul: u32,
     /// Per-duel contribution, in seconds.
     pub duel: u32,
+    /// Per-water-break contribution, in seconds (ADR-068: FIFA's cooling
+    /// break, three minutes).
+    #[serde(default)]
+    pub water_break: u32,
 }
 
 impl Default for StoppageTime {
@@ -52,6 +56,7 @@ impl StoppageTime {
             EventType::Goal => self.goal,
             EventType::Foul => self.foul,
             EventType::Duel => self.duel,
+            EventType::WaterBreak => self.water_break,
             _ => 0,
         }
     }

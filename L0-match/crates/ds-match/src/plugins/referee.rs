@@ -398,6 +398,8 @@ impl MatchState {
         if crate::balance::KnockBalance::load().knocks(facts.approach_milli, proneness)
             && self.knocked.insert(fouled)
         {
+            // The man down stops play: a pause for the bench (ADR-068).
+            self.pauses += 1;
             self.emit_event(
                 ctx,
                 tick,

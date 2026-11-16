@@ -232,6 +232,37 @@ impl MatchState {
         self.bench_plugin = bench;
     }
 
+    /// The water breaks of the competition (ADR-068; FIFA's cooling
+    /// breaks): at the first stoppage after each one's minute the referee
+    /// stops play, and it is a pause for the bench.
+    pub(crate) fn water_break_due(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        if !self.stoppage {
+            return;
+        }
+        let k = usize::from(self.water_breaks_done);
+        let Some(&at) = ctx.match_.rules.water_breaks.get(k) else {
+            return;
+        };
+        if at == 0 {
+            return;
+        }
+        let tps = u64::from(ctx.config.ticks_per_second).max(1);
+        let in_half = tick.saturating_sub(self.half_start_tick) / tps / 60;
+        let minute = in_half + u64::from(self.half.offset_minutes());
+        if minute < u64::from(at) {
+            return;
+        }
+        self.water_breaks_done += 1;
+        self.pauses += 1;
+        self.emit_event(
+            ctx,
+            tick,
+            None,
+            EventType::WaterBreak,
+            serde_json::json!({ "minute": at }),
+        );
+    }
+
     /// `off` leaves, `on` comes from the bench: on the pitch and in the live
     /// squad, fresh (Law 3). Whether it was made.
     pub(crate) fn make_substitution(
@@ -256,6 +287,8 @@ impl MatchState {
             squad.bench.push(outgoing);
             self.substituted.insert(off);
             self.to_announce.push((off, on));
+            // The man coming on brings the note: a pause (ADR-068).
+            self.pauses += 1;
             return true;
         }
         false
@@ -303,24 +336,8 @@ impl MatchState {
     /// fact is told at its minute.
     pub(crate) fn instruct_due(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
         for home in [true, false] {
-            let squad = if home {
-                &ctx.match_.home
-            } else {
-                &ctx.match_.away
-            };
-            let done = if home {
-                self.instructed.0
-            } else {
-                self.instructed.1
-            };
-            let due: Vec<ds_model::Instruction> = squad
-                .instructions
-                .iter()
-                .skip(done)
-                .take_while(|i| i.tick < tick)
-                .copied()
-                .collect();
-            for i in &due {
+            let ready = self.ready_to_deliver(home, ctx, tick);
+            for i in &ready {
                 let intention = match i.order {
                     ds_model::Order::Intention(intention) => intention,
                     order @ (ds_model::Order::Quick { .. }
@@ -390,12 +407,92 @@ impl MatchState {
                     }),
                 );
             }
-            if home {
-                self.instructed.0 += due.len();
+        }
+    }
+
+    /// The instructions of a side given and not yet delivered that reach
+    /// the players now, as their channel lets them (ADR-068): by voice from
+    /// the next tick, by a gesture when one of them looks at the bench, at
+    /// the next pause after it was given. Switched off, all by voice.
+    fn ready_to_deliver(
+        &mut self,
+        home: bool,
+        ctx: &MatchContext<'_>,
+        tick: u64,
+    ) -> Vec<ds_model::Instruction> {
+        let squad = if home {
+            &ctx.match_.home
+        } else {
+            &ctx.match_.away
+        };
+        let sees_bench = self.sees_bench(home, ctx);
+        let due: Vec<(usize, ds_model::Instruction)> = squad
+            .instructions
+            .iter()
+            .copied()
+            .enumerate()
+            .filter(|(k, i)| i.tick < tick && !self.delivered.contains(&(home, *k)))
+            .collect();
+        let mut ready = Vec::new();
+        for (k, i) in due {
+            let channel = if ctx.match_.channels {
+                i.channel
+                    .unwrap_or_else(|| self.channel_for(home, &i.order))
             } else {
-                self.instructed.1 += due.len();
+                ds_model::Channel::Voice
+            };
+            let pauses_then = *self.pause_mark.entry((home, k)).or_insert(self.pauses);
+            let reached = match channel {
+                ds_model::Channel::Voice => true,
+                ds_model::Channel::Gesture => sees_bench,
+                ds_model::Channel::Pause => self.pauses > pauses_then,
+            };
+            if reached {
+                self.delivered.insert((home, k));
+                ready.push(i);
             }
         }
+        ready
+    }
+
+    /// The channel the game chooses for an order (ADR-068, decision AP):
+    /// a short message by voice; a board that moves more than two places
+    /// is too much to shout, a note at the next pause.
+    fn channel_for(&self, home: bool, order: &ds_model::Order) -> ds_model::Channel {
+        match order {
+            ds_model::Order::Board(board) => {
+                let now = self.spatial.board(home);
+                let moved = (0..11)
+                    .filter(|&k| {
+                        board.with_ball[k] != now.with_ball[k]
+                            || board.without_ball[k] != now.without_ball[k]
+                            || board.with_ball_tasks[k] != now.with_ball_tasks[k]
+                            || board.without_ball_tasks[k] != now.without_ball_tasks[k]
+                    })
+                    .count();
+                if moved > 2 || board.with_ball_thirds != now.with_ball_thirds {
+                    ds_model::Channel::Pause
+                } else {
+                    ds_model::Channel::Voice
+                }
+            }
+            ds_model::Order::Intention(_)
+            | ds_model::Order::Quick { .. }
+            | ds_model::Order::Transitions { .. }
+            | ds_model::Order::Substitute { .. } => ds_model::Channel::Voice,
+        }
+    }
+
+    /// Whether one of a side's players on the pitch is looking at his
+    /// bench (ADR-068): the bench by the halfway line, on the near
+    /// touchline, each side's on its own half.
+    fn sees_bench(&self, home: bool, ctx: &MatchContext<'_>) -> bool {
+        let length = i32::from(ctx.match_.pitch.length_m) * 100;
+        let bench = (length / 2 + if home { -1_000 } else { 1_000 }, 0);
+        self.spatial.on_pitch().any(|(id, a)| {
+            (crate::perception::team_of(*id) == 0) == home
+                && crate::perception::in_cone(a.position, a.gaze, bench)
+        })
     }
 }
 
