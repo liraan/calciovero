@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `23cd5e9` - "docs(state): the pressing contact barely exists in the engine; the next action"
+**Last commit verified:** `c1049c8` - "docs(state): the carrier is left freer than in real football; the next action"
 
 ## Dove siamo (2026-11-14)
 
@@ -102,7 +102,8 @@ Aperto OI-107 (i residui del caso). Da rivedere: la sezione qui sotto.
 - Poi: i contatti non mancano davvero (StatsBomb: 54 sfide registrate a partita fra contrasti e dribbling subiti; il motore ne ha 91 a palla al piede più 38 fra due tocchi; i duelli Wyscout sono una definizione più larga). I falli che mancano sono quelli nella pressione: 20,6 dei 28,2 di StatsBomb. Nuova proposta nell'OI-114 (un numero di grado 2).
 - Contato (SIM 133, semi 42-71): il difensore che resta sul portatore senza entrare (`Jockey`) lo fa 4 volte a partita; gli altri, in portata, entrano (91 contatti) o non sono in portata. La pressione a contatto senza contrasto, da cui nascono 20,6 falli veri a partita su 314 pressioni StatsBomb, nel motore quasi non c'è: chi pressa arriva e entra, o resta fuori portata.
 - Misurato (2026-11-16): l'avversario più vicino al portatore. Metrica, partite campione 1 e 2 (il portatore: l'uomo della squadra in possesso entro 1,5 m dalla palla): mediana 5,0-5,5 m; sotto 1 m il 5,2-6,6% del tempo, sotto 2 m il 14,5-17,6%, sotto 3 m il 25-29%. Motore 133 (semi 42-46): mediana 8,2 m; sotto 1 m il 3,3%, sotto 2 m l'11,8%, sotto 3 m il 19,2%. Il portatore del motore è lasciato più libero: la pressione è più larga.
-- **Prossima azione esatta:** OI-114 e OI-117, perché il portatore è più libero. Nella scelta del difensore (`offball.rs` `defend`) va a pressare solo il più vicino (`rank` 0), il secondo vale la metà per la lettura del gioco, gli altri nulla; e `in_time` scarta chi non arriva entro `trust_ticks`. Misurare quanti pressano lo stesso portatore nel motore e nel vero (Metrica: gli avversari entro 5 m dal portatore), poi la causa nella scelta, senza numeri nuovi se si può. Poi il fallo nella pressione (grado 2), poi perché tanti passaggi (OI-100). In attesa del maintainer: OI-116. Sveglia: 17 novembre alle 01:10.
+- Misurato: gli avversari entro 5 m dal portatore. Metrica (partite 1 e 2): nessuno il 49,5-54,2% del tempo, uno il 36,4-37,7%, due l'8,0-10,7%, tre o più l'1,4-1,9%. Motore 133: nessuno il 67,3%, uno il 24,8%, due il 6,3%, tre o più l'1,3%. Manca il primo pressatore, non il raddoppio.
+- **Prossima azione esatta:** OI-114 e OI-117, perché il difensore più vicino va meno sul portatore. In `offball.rs` `defend` il più vicino sceglie fra pressare (il pericolo del portatore per `in_time`, la fiducia di arrivare entro `trust_ticks` alla velocità creduta) e tenere il suo posto (il pericolo dello spazio che guarda, per la disciplina); pressare non toglie anche il pericolo dello spazio che lascia, tenere non conta il portatore che avanza. Misurare per il difensore più vicino entro 10 m le due valutazioni (sonda), e vedere quale delle due parti tiene lontano il primo pressatore; nessun numero nuovo se si può (ADR-052: la stessa misura per ogni scelta). Poi il fallo nella pressione (grado 2), poi perché tanti passaggi (OI-100). In attesa del maintainer: OI-116. Sveglia: 17 novembre alle 01:10.
 
 ## Decisioni prese da Claude, da rivedere
 
