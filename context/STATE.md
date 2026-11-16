@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `640d099` - "ds-gui: tokens with numbers, one zooming camera, fans that rise at the facts"
+**Last commit verified:** `21eee2d` - "README: the 2.5D animation at a higher quality"
 
 ## Mandato attivo (2026-11-16)
 
@@ -46,7 +46,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - Pallini con il numero (il portiere nel suo colore, l'arbitro nero), il segno di dove guardano, l'ombra, l'anello giallo; i gesti dalla tabella dell'ADR-065; il pallone più grande con la linea tratteggiata in volo. Zoom continuo (rotellina, pizzico), segui il pallone, trascinamento con "Back to the ball" e doppio clic. Il codice degli omini è tolto (D3).
 - Lo stadio e la città che hai chiesto, con i tifosi a pallini che saltano solo ai fatti (6 s al gol per chi ha segnato, 1 s al tiro).
 - SIM 138, decisione T passo 1: il cambio deciso dal vivo è un input con il suo tick, fatto alla prima interruzione; la Regola 3 vale per tutti i cambi insieme. Golden identici. Nella GUI il post-it della panchina.
-- README: nuova WebP (seme 43, motore 138, 6,9 MB) e nuovo screenshot. La verifica dell'animazione su GitHub si fa dopo il push.
+- README: nuova WebP (seme 43, motore 138), poi rifatta a qualità 80 e 800 px (13,4 MB) perché sgranata; nuovi nomi dei file (`assets/demo-2.5d-tokens.webp`, `tools/ds-gui/screenshot-tokens.png`) perché la cache mostrava ancora gli omini.
 - Aperto: il commento dice "Home 0" per il portiere, il pallino dice 1 (il numero è il posto in rosa da 1): il commento va allineato, dal narratore.
 - Prossimo: ADR-059 passo 3, poi l'allenatore avversario e OI-110, poi la taratura.
 
