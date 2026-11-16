@@ -4,7 +4,7 @@
 //! engine, and he watches it on the tilted board of the 2.5D view with the
 //! commentary and the reasons for every goal conceded.
 //!
-//! `ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--camera whole|close|above] [--slow]` It reads Plane B only (ADR-022 §3).
+//! `ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--camera whole|close|above] [--slow] [--record DIR --frames N]` It reads Plane B only (ADR-022 §3).
 
 mod app;
 mod interp;
@@ -32,9 +32,18 @@ fn start() -> Result<app::Start, String> {
                 });
             }
             "--slow" => s.slow = true,
+            "--record" => {
+                let dir = value()?;
+                s.record = Some((dir, s.record.as_ref().map_or(600, |r| r.1)));
+            }
+            "--frames" => {
+                let n = value()?.parse().map_err(|e| format!("--frames: {e}"))?;
+                let dir = s.record.take().map_or_else(|| ".".to_string(), |r| r.0);
+                s.record = Some((dir, n));
+            }
             "--help" | "-h" => {
                 println!(
-                    "ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--camera whole|close|above] [--slow]"
+                    "ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--camera whole|close|above] [--slow] [--record DIR --frames N]"
                 );
                 std::process::exit(0);
             }

@@ -53,6 +53,10 @@ pub struct Start {
     pub camera: Option<Camera>,
     /// The slow motion.
     pub slow: bool,
+    /// Record the window, frame by frame at 60 frames a second of
+    /// playback, into this folder, this many frames, then close
+    /// (`--record DIR --frames N`: the README's animation).
+    pub record: Option<(String, usize)>,
 }
 
 /// The camera presets (DESIGN.md, "La visuale del 2.5D").
@@ -108,6 +112,8 @@ pub struct App {
     strides: std::cell::RefCell<Strides>,
     /// The time of the last frame, seconds (for the damped camera).
     last_dt: std::cell::Cell<f32>,
+    /// The recording: the folder, the frames wanted, the frames saved.
+    record: Option<(String, usize, usize)>,
 }
 
 impl App {
@@ -137,6 +143,7 @@ impl App {
             focus: std::cell::Cell::new((5_250.0, 3_400.0)),
             strides: std::cell::RefCell::new(BTreeMap::new()),
             last_dt: std::cell::Cell::new(0.0),
+            record: None,
         };
         app.play_match();
         app
@@ -163,6 +170,7 @@ impl App {
             self.camera = c;
         }
         self.slow = start.slow;
+        self.record = start.record.clone().map(|(dir, n)| (dir, n, 0));
         if let Some(speed) = start.speed {
             self.speed = speed;
         }
@@ -557,6 +565,38 @@ impl App {
         })
     }
 
+    /// Saves the screenshots of the recording as PPM images, and closes
+    /// the window when it has them all.
+    fn save_screenshots(&mut self, ctx: &egui::Context) {
+        let shots: Vec<std::sync::Arc<egui::ColorImage>> = ctx.input(|i| {
+            i.events
+                .iter()
+                .filter_map(|e| match e {
+                    egui::Event::Screenshot { image, .. } => Some(image.clone()),
+                    _ => None,
+                })
+                .collect()
+        });
+        let Some((dir, wanted, saved)) = &mut self.record else {
+            return;
+        };
+        for image in shots {
+            let [w, h] = image.size;
+            let mut bytes = format!("P6\n{w} {h}\n255\n").into_bytes();
+            for p in &image.pixels {
+                bytes.extend_from_slice(&[p.r(), p.g(), p.b()]);
+            }
+            let path = std::path::Path::new(dir.as_str()).join(format!("frame_{saved:05}.ppm"));
+            if let Err(e) = std::fs::write(&path, bytes) {
+                eprintln!("ds-gui: {}: {e}", path.display());
+            }
+            *saved += 1;
+        }
+        if *saved >= *wanted {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+    }
+
     /// The markings of Law 1 (`laws.json`) and the goals in their height
     /// (`obstacles.json`), on the tilted board.
     #[allow(clippy::cast_precision_loss)] // cm on a pitch
@@ -739,7 +779,13 @@ const fn width_label(w: Width) -> &'static str {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let dt = f64::from(ctx.input(|i| i.stable_dt).min(0.1));
+        let mut dt = f64::from(ctx.input(|i| i.stable_dt).min(0.1));
+        if self.record.is_some() {
+            // Recording: each frame is 1/60 s of playback, however long it
+            // takes to draw.
+            dt = 1.0 / 60.0;
+            self.save_screenshots(ctx);
+        }
         #[allow(clippy::cast_possible_truncation)]
         self.last_dt.set(dt as f32);
         self.advance(dt);
@@ -756,7 +802,10 @@ impl eframe::App for App {
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE.fill(self.theme.board))
             .show(ctx, |ui| self.pitch(ui));
-        if self.playing {
+        if self.record.is_some() {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::default()));
+            ctx.request_repaint();
+        } else if self.playing {
             ctx.request_repaint();
         }
     }
