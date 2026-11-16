@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `db525c1` - "README: the 2.5D view on top, an animated WebP at 60 frames a second"
+**Last commit verified:** `9d16c6e` - "Merge origin/main: liraan/calciovero#21, the same branch already merged here"
 
 ## Mandato attivo (2026-11-16)
 
