@@ -15,7 +15,7 @@
 | Vista 2.5D | La lavagna inclinata, la vista della GUI su desktop e Android | adesso, prima della chiusura di L0 (decisione S) | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
 | L1 · La stagione | Tre serie e la coppa nel formato reale, ogni partita dal motore | dopo il 2.5D | [`L1`](L1.md) |
 | L2 · La carriera | Procuratori, osservatori, vivaio, crescita, bilancio completo, società, spogliatoio, la vita dell'allenatore (contratti e mercato sono in L1, decisione AR) | dopo la 0.1 | ADR-060; il piano in [`L2.md`](L2.md), un blocco alla volta |
-| L3 · Il gioco che si modifica | Editor, pacchetti, importatore locale, plugin esterni in WebAssembly | dopo L2 | decisioni 4, F–K |
+| L3 · Il gioco che si modifica | Editor (il giocatore nasce dai suoi dati), pacchetti, importatore locale, plugin esterni in WebAssembly, accessibilità, tutorial | dopo L2 | [`L3.md`](L3.md); decisioni 4, F–K, BE |
 | 3D | Solo desktop, con Bevy se maturo | dopo la 1.0 | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
 
 ## L'ordine di lavoro
@@ -48,6 +48,23 @@ Decisione N: quello che non è in questa lista va dopo la 0.1, salvo decisione e
 - [ ] I binari per Windows, Linux e macOS
 - [ ] Il golden verificato anche su ARM64 nella CI (decisione P)
 - [ ] **Compito del maintainer:** un legale rivede le decisioni F–K su dati reali e asset (decisione Q). Promemoria quando L1 arriva al passo 9.
+
+## Le versioni (decisione BF)
+
+Ogni versione: cosa porta, la prova che la chiude, a chi va, cosa serve prima di uscire. Il contenuto di dettaglio è nei piani dei livelli; questa tabella è la fonte delle versioni (decisione E: niente `RELEASES.md` a parte).
+
+| Versione | Cosa porta | La prova | A chi | Prima di uscire |
+|---|---|---|---|---|
+| **0.1 · Stagione** | la stagione intera, la lavagna libera, le fondamenta (attore, ruoli, database), la 2.5D; la lista congelata qui sopra | dieci stagioni con lo stesso hash; L0 chiuso (decisione L); la stagione si gioca dalla GUI | pochi tester | la revisione legale delle decisioni F–K (decisione Q); il golden su glibc, musl e ARM64 (decisione P); il file di segnalazione |
+| **0.2 · Mercato e panchina** | il mercato di [`L1-MARKET.md`](L1-MARKET.md), il direttore sportivo giocabile, i moduli consigliati dell'allenatore di [`L1-COACH.md`](L1-COACH.md) | dieci anni di mercato con lo stesso hash; ogni modulo acceso e spento lascia il golden deterministico | i tester | l'ADR che modifica l'ADR-060 (decisione AR) |
+| **0.3 · Società** | la crescita, lo staff, il mercato che cresce, i campionati stranieri come moduli, la società e il bilancio, il presidente giocabile ([`L2.md`](L2.md)) | dieci anni di crescita, mercato e bilanci con lo stesso hash; le curve dell'età tarate (decisione AS) | i tester | le regole economiche vere come dati, con le fonti in `SOURCES.md` (decisione AY) |
+| **0.4 · Carriera** | il vivaio e le accademie, le licenze, la carriera, lo spogliatoio, le strutture, i posti giocabili dello staff ([`L2.md`](L2.md)) | una carriera di dieci anni con lo stesso hash | tutti | il costo dei moduli misurato su un computer modesto (decisione AX) |
+| **La vita dell'allenatore** | moduli opzionali: la vita dell'allenatore, le vite private dei giocatori (decisione BA) | lo stesso hash con i moduli accesi e spenti | tutti | — |
+| **1.0** | L3: l'editor (il giocatore nasce dalle sue statistiche), i pacchetti, l'importatore, i plugin esterni, l'accessibilità, il tutorial, la cura ([`L3.md`](L3.md)) | un dato modificato dall'editor e un pacchetto esterno lasciano la partita deterministica; il ritorno dei dati; ogni schermata da tastiera e dal lettore di schermo | tutti, sul desktop | la revisione legale di pacchetti e importatore (decisioni G–K); la documentazione dei formati |
+| **1.1** | Android (ADR-061), poi tifosi e stampa (decisione BC) | lo stesso golden su Android; dieci anni di tifosi e stampa con lo stesso hash | tutti, anche sul telefono | i profili leggeri dei moduli misurati sul telefono |
+| **Dopo** | il 3D sul desktop, se Bevy è maturo | — | — | — |
+
+**Come esce una versione:** il tag `v*` lo mette il maintainer (un agente non può pushare tag su GitHub); il workflow costruisce i binari per Linux, Windows e macOS; su Codeberg la release si crea con la sua API; il registro delle modifiche e la tabella del README si aggiornano nello stesso giro.
 
 ## Le regole di lavoro
 
