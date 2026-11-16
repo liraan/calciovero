@@ -43,7 +43,9 @@ Ispirata all'idea della skin "Mustermann Iconic" di Football Manager (fasce al p
 
 ## La partita in 3D e in 2.5D (16 novembre 2026)
 
-- **Desktop: il 3D, con Fyrox**, quando arriverà (dopo la 0.1). Sarà una "mini rivoluzione" dichiarata: il motore non cambia, perché la vista legge la registrazione della partita e non scrive mai nella simulazione (i float del disegno non toccano il determinismo).
-- **Android: il 2.5D**, la lavagna inclinata in prospettiva con figurine con altezza e il pallone che vola con la sua ombra (prototipo del 16 novembre: un cross e un colpo di testa). Resta con egui.
-- **Da decidere quando si arriva:** se sul desktop Fyrox sostituisce tutta l'interfaccia, oppure solo la vista della partita, lasciando post-it, scheda e il resto in egui come su Android. La seconda strada tiene una sola interfaccia per due piattaforme e limita la rivoluzione alla partita; la prima dà un'interfaccia desktop tutta in Fyrox ma ne mantiene due.
-- Le figurine e i loro colori si generano dai colori della squadra, come gli stemmi; nessun asset protetto (decisioni F–K).
+- **Oggi e fino al 3D: egui**, su desktop e Android (ADR-055).
+- **Desktop, quando arriverà il 3D (dopo la 0.1): Bevy, se sarà abbastanza maturo.** Conta la comunità: è la più grande del mondo Rust per i giochi. Fyrox è escluso, con dispiacere: ha l'editor e API stabili dalla 1.0 (marzo 2026), ma una comunità piccola e una grafica ancora OpenGL, a rischio su macOS. Bevy usa wgpu (Vulkan, Metal, DirectX 12).
+- **"Abbastanza maturo" si misura così,** al momento della scelta: un anno senza cambiamenti incompatibili che costringano a riscrivere la vista, oppure la 1.0; Windows, Linux e macOS che girano senza problemi noti; bevy_egui mantenuto. Se non ci siamo, il 3D aspetta: il 2.5D in egui basta.
+- **La migrazione è piccola per costruzione:** la vista 3D è un programma o un crate separato che legge la registrazione della partita, e non scrive mai nella simulazione (i float del disegno non toccano il determinismo). Con bevy_egui i pannelli egui esistenti (post-it, scheda, lavagna) possono girare dentro Bevy, quindi non si riscrive l'interfaccia.
+- **Android: il 2.5D in egui**, la lavagna inclinata con figurine con altezza e il pallone con la sua ombra (prototipo del 16 novembre).
+- Le figurine si generano dai colori della squadra, come gli stemmi; nessun asset protetto (decisioni F–K).
