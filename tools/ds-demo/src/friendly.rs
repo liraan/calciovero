@@ -193,6 +193,9 @@ pub fn apply(mut m: Match, c: &Choices) -> Result<Match, String> {
         m.home = m.home.with_substitutions(subs).map_err(|e| e.to_string())?;
     }
     m.home = m.home.with_intention(c.home);
+    // The manager plays his side himself: its coach does not react on his
+    // own; the opponents' coach reads the match (decision Y).
+    m.home = m.home.with_coach_reacting(false);
     m.away = m.away.with_intention(c.away);
     if !c.instructions.is_empty() || !c.live.is_empty() {
         // After MIN minutes of play: ten ticks a second (the match's clock,

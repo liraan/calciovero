@@ -72,6 +72,16 @@ pub trait World {
         let _ = home;
         Vec::new()
     }
+    /// A side's goals so far.
+    fn goals(&self, home: bool) -> u8 {
+        let _ = home;
+        0
+    }
+    /// Whether a player is on the pitch (not sent off, not replaced).
+    fn on_pitch(&self, player: PlayerKey) -> bool {
+        let _ = player;
+        true
+    }
     /// Whether a side's coach changes players from what he sees.
     fn coach_reacts(&self, home: bool) -> bool {
         let _ = home;

@@ -27,10 +27,9 @@ impl MatchPlugin for Bench {
     }
 
     /// At a stoppage: the substitutions the manager planned whose minute
-    /// has come, then those the coach decides from what he sees (plan
-    /// L0-CLOSE 10h-c): an outfield player for a substitute of the same
-    /// role who, fresh, runs faster than he can now, while he was the
-    /// faster of the two fresh; within the substitutions the Laws allow.
+    /// has come, those he ordered during the match, then those the coach
+    /// who reads the match decides (decision Y); within the substitutions
+    /// the Laws allow.
     fn run(&mut self, phase: Phase, world: &mut dyn World) {
         if phase != Phase::Referee {
             return;
@@ -66,13 +65,12 @@ impl MatchPlugin for Bench {
                     .iter()
                     .flat_map(|&p| <[PlayerKey; 2]>::from(p))
                     .collect();
-                let fresh =
-                    tired_for_fresh(world, home, carrier, allowed.saturating_sub(due.len()));
-                due.extend(
-                    fresh
-                        .into_iter()
-                        .filter(|(o, i)| !taken.contains(o) && !taken.contains(i)),
-                );
+                if let Some((o, i)) = coach_reads(world, home, carrier, (allowed, due.len()))
+                    && !taken.contains(&o)
+                    && !taken.contains(&i)
+                {
+                    due.push((o, i));
+                }
             }
             for (off, on) in due {
                 world.substitute(off, on);
@@ -91,58 +89,78 @@ fn made(world: &dyn World, home: bool) -> usize {
         .count()
 }
 
-/// The changes a coach decides from what he sees (no number of its own:
-/// the speeds are the movement's, dimmed by fatigue).
-fn tired_for_fresh(
-    world: &mut dyn World,
+/// The coach who reads the match (decision Y, DD-7): the score, the
+/// clock, his men's fatigue. His next change comes at the minute the real
+/// coaches made it with that score (grade 2, `balance/coach.json`): the
+/// most tired outfield man off, for an attacker when he is losing, a
+/// defender when he is winning, a man of the same role when it is level.
+/// After the third he changes nobody of his own accord. He does not move
+/// the block yet (DD-7, OI-120): pushed up when losing it opens the match
+/// far beyond the real one, and that waits for its check on real data.
+fn coach_reads(
+    world: &dyn World,
     home: bool,
     carrier: Option<PlayerKey>,
-    allowed: usize,
-) -> Vec<(PlayerKey, PlayerKey)> {
+    (allowed, pending): (usize, usize),
+) -> Option<(PlayerKey, PlayerKey)> {
+    let made = made(world, home) + pending;
+    let difference = i32::from(world.goals(home)) - i32::from(world.goals(!home));
     let lineup = world.lineup(home);
-    let bench = world.bench(home);
-    let mut left = allowed.saturating_sub(made(world, home));
-    let mut used: BTreeSet<PlayerKey> = BTreeSet::new();
-    let mut out = Vec::new();
-    for &p in lineup.iter().skip(1) {
-        if left == 0 {
-            break;
-        }
-        if Some(p) == carrier || world.substituted(p) {
+    let at = crate::balance::CoachBalance::load().minute(made, difference)?;
+    if made >= allowed || world.minute() < u64::from(at) {
+        return None;
+    }
+    let keeper = |w: &dyn World, p: PlayerKey| w.role(p).as_deref() == Some("goalkeeper");
+    let role_is = |w: &dyn World, p: PlayerKey, roles: &[&str]| {
+        w.role(p).is_some_and(|r| roles.contains(&r.as_str()))
+    };
+    let (keep_on, bring): (&[&str], &[&str]) = match difference {
+        d if d < 0 => (
+            &["striker"],
+            &["striker", "wide_midfielder", "central_midfielder"],
+        ),
+        d if d > 0 => (
+            &["centre_back", "full_back"],
+            &["centre_back", "full_back", "central_midfielder"],
+        ),
+        _ => (&[], &[]),
+    };
+    // The most tired outfield man on the pitch, sparing those the score
+    // wants on it.
+    let mut off: Option<(f64, PlayerKey)> = None;
+    for &p in &lineup {
+        if keeper(world, p)
+            || !world.on_pitch(p)
+            || Some(p) == carrier
+            || role_is(world, p, keep_on)
+        {
             continue;
         }
-        let Some(fatigue) = world.fatigue(p) else {
-            continue;
-        };
-        let (Some(now), Some(fresh)) = (world.top_speed(p, fatigue), world.top_speed(p, 0.0))
-        else {
-            continue;
-        };
-        let role = world.role(p);
-        let mut best: Option<(f64, PlayerKey)> = None;
-        for &b in &bench {
-            if world.role(b) != role || used.contains(&b) || world.substituted(b) {
-                continue;
-            }
-            let Some(v) = world.fatigue(b).and_then(|f| world.top_speed(b, f)) else {
-                continue;
-            };
-            if v > now && v <= fresh {
-                let better = best.is_none_or(|(bv, bk)| {
-                    v.total_cmp(&bv).then(bk.cmp(&b)) == std::cmp::Ordering::Greater
-                });
-                if better {
-                    best = Some((v, b));
-                }
-            }
-        }
-        if let Some((_, incoming)) = best {
-            used.insert(incoming);
-            left -= 1;
-            out.push((p, incoming));
+        let Some(f) = world.fatigue(p) else { continue };
+        if off
+            .is_none_or(|(bf, bk)| f.total_cmp(&bf).then(bk.cmp(&p)) == std::cmp::Ordering::Greater)
+        {
+            off = Some((f, p));
         }
     }
-    out
+    let (_, off) = off?;
+    let fresh: Vec<PlayerKey> = world
+        .bench(home)
+        .into_iter()
+        .filter(|&b| !world.substituted(b) && !keeper(world, b))
+        .collect();
+    let same = world.role(off);
+    let on = bring
+        .iter()
+        .find_map(|r| {
+            fresh
+                .iter()
+                .copied()
+                .find(|&b| world.role(b).as_deref() == Some(*r))
+        })
+        .or_else(|| fresh.iter().copied().find(|&b| world.role(b) == same))
+        .or_else(|| fresh.first().copied())?;
+    Some((off, on))
 }
 
 impl MatchState {

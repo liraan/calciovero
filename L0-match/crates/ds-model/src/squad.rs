@@ -243,11 +243,16 @@ pub struct Squad {
     /// ticks (ADR-059).
     #[serde(default)]
     pub instructions: Vec<Instruction>,
-    /// Whether the coach also changes players during the match from what
-    /// he sees (plan L0-CLOSE 10h-c): a tired player for a fresher one of
-    /// the same role.
-    #[serde(default)]
+    /// Whether the coach reads the match and reacts on his own (decision
+    /// Y, on by default): the score, the clock, the men sent off, the
+    /// fatigue. Off for the side the manager plays himself.
+    #[serde(default = "on")]
     pub coach_reacts: bool,
+}
+
+/// Serde's default for a coach who reads the match: on (decision Y).
+const fn on() -> bool {
+    true
 }
 
 impl Squad {
@@ -282,16 +287,16 @@ impl Squad {
             formation,
             intention: Intention::default(),
             substitutions: Vec::new(),
-            coach_reacts: false,
+            coach_reacts: true,
             instructions: Vec::new(),
         })
     }
 
-    /// The same squad with a coach who changes tired players during the
-    /// match (plan L0-CLOSE 10h-c).
+    /// The same squad with its coach reading the match on his own, or not
+    /// (the side the manager plays himself).
     #[must_use]
-    pub const fn with_reacting_coach(mut self) -> Self {
-        self.coach_reacts = true;
+    pub const fn with_coach_reacting(mut self, on: bool) -> Self {
+        self.coach_reacts = on;
         self
     }
 

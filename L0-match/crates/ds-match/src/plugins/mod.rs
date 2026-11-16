@@ -215,6 +215,18 @@ impl World for StateWorld<'_> {
         self.squad(home).coach_reacts
     }
 
+    fn goals(&self, home: bool) -> u8 {
+        if home {
+            self.state.score.home
+        } else {
+            self.state.score.away
+        }
+    }
+
+    fn on_pitch(&self, p: PlayerKey) -> bool {
+        self.state.spatial.on_pitch().any(|(id, _)| key(*id) == p)
+    }
+
     fn top_speed(&mut self, p: PlayerKey, fatigue: f64) -> Option<f64> {
         let id = self.id(p)?;
         Some(self.hidden.top_speed_now(id, fatigue))
