@@ -131,9 +131,10 @@ The game is built in four concentric levels; each one widens the previous and de
 
 | Version | When | What you get |
 |---|---|---|
-| **0.1 · Season** | when L1 is done | a full season, the board, the calendar, the squad, the week, the 2.5D match; for a few testers |
-| **0.2 · Market** | after the first half of L2 | contracts, finances, transfers, scouts |
-| **0.3 · Career** | after L2 | growth, academy, dressing room, the board; open to everyone |
+| **0.1 · Season** | when L1 is done | a full season, the free tactics board, the calendar, the squad, the week, the 2.5D match; for a few testers |
+| **0.2 · Bench** | right after the 0.1 | the coach's modules: signals from the bench, talks and credibility, if-then plans, the tactical meeting, the leaders |
+| **0.3 · Market** | after the first half of L2 | contracts, finances, transfers, scouts; play as the sporting director or the president |
+| **0.4 · Career** | after L2 | growth, academy, dressing room, the board; open to everyone |
 | **1.0** | after L3 | the editor, the packs, the polished interface, on desktop |
 
 ### The match against real football
