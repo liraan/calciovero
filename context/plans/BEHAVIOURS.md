@@ -22,7 +22,7 @@ Le tendenze vengono da **due fonti**, e la differenza conta:
 Il catalogo si costruisce dalla base, nell'ordine in cui si impara il calcio:
 
 1. **Come si gioca a pallone:** lo scopo del gioco e la sua misura (scritto qui sotto, approvato).
-2. **Il posizionamento e le responsabilità di ogni ruolo:** chi occupa quale spazio e perché, con e senza la palla (da scrivere).
+2. **Il posizionamento e le responsabilità di ogni ruolo:** chi occupa quale spazio e perché, con e senza la palla (scritto qui sotto, approvato).
 3. **Le coppie affiatate:** i due centrali, il terzino e l'ala, le due punte, il portiere e i centrali, la coppia di centrocampo; l'intesa nasce dalle giocate riuscite insieme (decisione BB) (da scrivere).
 4. **La tattica:** la lavagna dell'allenatore (decisione AL; parte 2 qui sotto).
 
@@ -41,6 +41,38 @@ La base esiste già nella dottrina: è l'ADR-052 (ogni giocatore pensa), con la 
 7. **Il gioco ha delle fasi,** che il giocatore riconosce da quello che vede, non stati che il motore cambia: con la palla, senza la palla, le due transizioni, le palle ferme.
 
 **Cosa vuol dire per il motore, e perché oggi sembra Subbuteo.** L'ADR-052 §5 dice che anche gli atti senza palla (pressare, coprire, smarcarsi, offrirsi, marcare) si scelgono con la stessa misura. Oggi chi ha la palla pensa; gli altri venti sono messi al loro posto da una formula geometrica (`shape.rs`: la linea a 30 m dietro il pallone, non sotto i 10 m dalla porta, gli attaccanti in cima al blocco). Un giocatore su ventidue usa la misura del gioco, gli altri sono pezzi agganciati al pallone. Lo strato 2 è dove questo si ripara: ogni giocatore senza palla occupa lo spazio che vale di più per la sua squadra, partendo dal suo ruolo, invece di stare in un punto calcolato.
+
+## Strato 2 · Il posizionamento e le responsabilità di ogni ruolo (approvato dal maintainer)
+
+Calcio moderno: non la posizione, l'occupazione dello spazio (nota dell'ADR-052 del 13 novembre).
+
+**Un ruolo è un insieme di funzioni, non un punto.** Il terzino che entra dentro al campo resta un terzino, il centravanti che viene incontro resta un centravanti: cambia lo spazio che occupano. Per ogni ruolo: la zona di partenza (il corridoio e la linea), le responsabilità in ogni fase, le relazioni (con chi stare in coppia, con chi non sovrapporsi).
+
+**Il linguaggio dello spazio,** quello che ogni giocatore percepisce: cinque corridoi (due fasce, due mezzi spazi, il centro); le linee avversarie (la prima linea di pressione, quella di centrocampo, l'ultima); gli spazi fra le linee. Le regole dell'occupazione: mai due compagni nello stesso corridoio e sulla stessa linea; qualcuno dà ampiezza, qualcuno profondità; sempre una linea di passaggio per chi ha la palla; sempre qualcuno dietro la palla (la difesa preventiva).
+
+**Come funziona nel motore (LUNA).** Il giocatore senza palla non va in un punto calcolato: guarda gli spazi intorno alla sua zona di partenza e sceglie quello che vale di più per la squadra, con la misura dello strato 1. Quanto vale uno spazio: la minaccia se la palla gli arrivasse lì, la linea di passaggio pulita che dà, la struttura (non sovrapporsi ai compagni), il rischio se la palla si perdesse adesso; senza palla, quale spazio pericoloso chiude. Il ruolo dice da dove parte e quali responsabilità vengono prima; le sue caratteristiche quanto bene legge il momento; la tattica (strato 4) sposta la zona e aggiunge responsabilità. Sostituisce, con il suo ADR, la formula geometrica di `shape.rs` come modo di scegliere il posto: la forma resta come zona di partenza.
+
+### I ruoli di base
+
+Pochi ruoli di base; le varianti (il terzino invertito, il falso nove, il portiere libero, l'ala a piede invertito) sono responsabilità che l'allenatore assegna sulla lavagna (decisione AL), con la taratura fine sua (maintainer).
+
+| Ruolo | Con la palla | Senza la palla | Nelle transizioni |
+|---|---|---|---|
+| **Portiere** | partecipa alla costruzione, l'uomo in più dietro; sceglie fra corto e lungo | difende la porta e lo spazio dietro la linea (portiere libero) | appena vinta, riparte subito con la mano o il piede |
+| **Difensore centrale** | imposta: si allarga fuori dall'area, porta palla nello spazio libero, rompe la prima linea | guida la linea, copre, marca in area, sta fra l'uomo e la porta | appena persa, protegge la profondità |
+| **Terzino** | dà ampiezza, o entra nel mezzo spazio, si sovrappone | chiude la sua fascia, si stringe quando la palla è lontana | appena persa rientra, appena vinta spinge |
+| **Mediano, regista** | il vertice basso: sempre una linea di passaggio, cambia gioco | protegge il centro davanti alla difesa, scala | il primo a riaggredire o a coprire |
+| **Mezzala, interno** | occupa il mezzo spazio fra le linee, si inserisce | esce in pressione, copre il mezzo spazio | arriva in area, o rientra |
+| **Trequartista** | riceve fra le linee, si gira, rifinisce | il primo pressing sul vertice basso avversario | si smarca per la ripartenza |
+| **Esterno, ala** | ampiezza e uno contro uno, o si accentra | segue il terzino avversario, o pressa il centrale | attacca la profondità, o ripiega |
+| **Centravanti** | il riferimento: attacca la profondità, viene incontro, fa sponda, occupa i centrali | il primo pressing: sceglie dove spingere il portatore | il primo a pressare, o si fa trovare per la ripartenza |
+| **Seconda punta** | fra le linee e la profondità, lega il gioco con il centravanti | pressa il vertice basso | si stacca per ricevere |
+
+### Da dove vengono (maintainer)
+
+- **Le zone e le responsabilità di base** sono di grado 2, misurate sui tracking veri di Metrica (le posizioni medie per ruolo e per fase, chi pressa, chi resta dietro); il campione (due partite) va allargato.
+- **Anche i manuali di allenamento rappresentano una tendenza** (maintainer): sono una fonte, come i tracking, di quello che un calciatore di quel ruolo tende a fare; si citano.
+- **La difesa preventiva:** quanti restano dietro la palla quando si attacca (di solito tre più due nel calcio moderno) è una scelta dell'idea di gioco dell'allenatore (strato 4); lo strato 2 dice chi ne è responsabile nella forma di base.
 
 ## Parte 1 · Le tendenze del calciatore
 
