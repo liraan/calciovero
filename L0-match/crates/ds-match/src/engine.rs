@@ -176,7 +176,9 @@ mod tests {
         // (ADR-052 note). On footballers: the squads profiled by role
         // (`ds-fixtures`), not `make_match`'s twenty-two players drawn at
         // random with no role, the keeper included.
-        for seed in 0..10_u64 {
+        // `each_seed` only parallelises the run: same seeds, same fixture,
+        // same assertion. The slow part was the serial `for` loop.
+        ds_fixtures::each_seed(0..10_u64, |seed| {
             let m = ds_fixtures::match_fixture(seed).expect("fixture");
             let r = crate::driver::simulate_from_seed(&m, seed, MatchConfig::default());
             let goals = u32::from(r.score.home) + u32::from(r.score.away);
@@ -184,7 +186,7 @@ mod tests {
                 goals <= 20,
                 "seed {seed}: {goals} goals, the match ran away"
             );
-        }
+        });
     }
 
     #[test]
