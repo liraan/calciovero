@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `e30d1da` - "ds-fixtures: the players' names carry their shirt number, from 1"
+**Last commit verified:** `3a4cf47` - "docs(state): bookmark after the shirt numbers; OI-120's real reference"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,8 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**Mattina del 17 novembre: fermo su due tue risposte.** I passi piccoli (la proposta dell'unità più fine, qui sotto) e l'anteprima del post-it del giocatore. Ho guardato OI-102 (i duelli aerei, 6,6 contro 38) senza toccare il motore: il motore cerca chi contende il pallone alto una volta per tick, quando il pallone percorre 2-3 m in un tick; con i passi piccoli il contatto si cerca cinque volte più spesso. Un'altra ragione per fare la taratura solo dopo i passi piccoli: misurarla adesso vorrebbe dire rifarla.
 
 **Notte del 17 novembre, mentre aspetto i passi piccoli e l'anteprima.** I nomi della rosa di prova portano il numero di maglia da 1 ("Home 1" è il portiere), come il pallino, il post-it e il commento (golden identici). OI-120 ha il suo riferimento vero: dopo il 60' chi perde tira appena il 10% in più di chi vince e segna meno (0,82 contro 1,39 gol ogni 90 minuti); lo spostamento del blocco dell'allenatore si accende solo se il motore resta vicino a questo.
 
