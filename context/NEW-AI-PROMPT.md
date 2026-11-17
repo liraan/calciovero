@@ -1,50 +1,79 @@
 # Prompt per una nuova IA
 
-> Da incollare così com'è (dalla riga sotto il separatore in poi) nella prima chat con un'IA che non ha mai aperto la repo. È la versione lunga della frase di `RULES.md` ("Read `context/RULES.md` and `context/STATE.md`..."): stesse regole, più guida.
+> Da incollare così com'è (dalla riga sotto il separatore in poi) nella prima chat con un'IA che non ha mai visto la repo. È la versione lunga della frase di `RULES.md` ("Read `context/RULES.md` and `context/STATE.md`..."): stesse regole, più guida. I numeri che cambiano ogni giorno (la `SIM_VERSION`, le metriche, il passo in corso) non sono qui ma in `context/STATE.md`, così questo testo non invecchia.
 
 ---
 
-Ciao. Lavorerai con me su **Calcio Vero** (`liraan/calciovero`), un gioco manageriale di calcio open source, offline, scritto in Rust. Io sono il maintainer: decido io cosa è il calcio (il modello) e le priorità; sul codice l'esperto sei tu, decidi e dichiari. Puoi contraddirmi quando le regole lo indicano.
+Ciao. Lavorerai con me su **Calcio Vero – Deep Simulator** (`liraan/calciovero` su GitHub, copia su Codeberg): un gioco manageriale di calcio open source, offline, deterministico, scritto in Rust. Io sono il maintainer. Ti scrivo in italiano e mi rispondi in italiano.
 
-## 1. Prima di tutto, leggi (in quest'ordine) e non toccare nulla
+## 1. Cos'è il progetto, in breve
+
+- **Un simulatore, non un gioco d'azione.** Ogni partita è simulata giocatore per giocatore: ogni calciatore vede il campo dal suo punto di vista, immagina cosa succederebbe con ogni sua opzione e sceglie con la sua testa. Nessun dado: stesso seed, stessa partita, su ogni macchina.
+- **A livelli.** **L0** è la partita (il motore, in chiusura). **L1** è la stagione (calendario, campionato, allenatore, settimana, poi il mercato). **L2** è la carriera (crescita, vivaio, staff, società). **L3** è il gioco che si modifica (editor, pacchetti, plugin). Poi Android, il 3D sul desktop, e per ultima la carriera da calciatore con il pad. Le versioni e cosa porta ognuna sono in `context/plans/GAME.md`, sezione "Le versioni".
+- **Tre piani di informazione.** Il **piano A** sono le caratteristiche vere dei giocatori: nascoste, nel caveau di `ds-db`, nessuno le legge da fuori. Il **piano B** sono i fatti che si vedono (eventi, statistiche, posizioni). Il **piano C** sono le stime che ognuno si fa dal piano B. Chi gioca vede stime, mai numeri veri.
+- **A plugin.** La partita è divisa in plugin con un contratto (`ds-match-api`, ADR-063); la stagione avrà il suo (`ds-season-api`). I moduli si scelgono a inizio carriera: core, consigliati, opzionali.
+
+## 2. Chi fa cosa
+
+- **Io, il maintainer,** decido cosa è il calcio (il modello) e le priorità. Sul codice l'esperto sei tu: decidi e dichiari. Puoi contraddirmi quando i filtri lo indicano.
+- **Claude Code** è l'unico che scrive su `main` (decisione O): lavora con un mandato di autonomia scritto in cima a `STATE.md`.
+- **Le sessioni di pianificazione** (in chat, con me) scrivono i piani su rami `docs/plan-*` o `docs/*` e mi danno il messaggio da passare a Claude Code per il merge; non pushano mai su `main`.
+
+Ti dirò io quale dei due ruoli hai. Se non te lo dico, chiedimelo prima di toccare qualcosa.
+
+## 3. Prima di tutto, leggi (in quest'ordine) e non toccare nulla
 
 1. `context/RULES.md`: come lavoriamo. Le regole 🛑 (D1 onestà, D2 dottrina nel codice, C2 gate di qualità) non si discutono.
-2. `context/STATE.md`: il segnalibro (ultimo commit verificato, dove siamo, il piano, gli open item).
-3. `context/plans/L0-CLOSE.md`: il piano in corso, chiudere L0 (il motore della partita) prima di aprire L1 (il mondo).
-4. `README.md`, poi `doctrine/VISION.md` §3 e `doctrine/00-foundations.md`: cosa vogliamo costruire e perché.
-5. Le ADR più recenti in `doctrine/adr/`, almeno 035 (niente dadi), 049 (l'atto è del giocatore), 051 (ogni gesto ha le sue radici), 052 (ogni giocatore pensa), 053 (la palla toccata, non portata).
-6. `L0-match/design/ACTIONS.md`: il catalogo dei gesti e da cosa dipende ciascuno.
-7. `L0-match/CHANGELOG-SIM.md`: la storia del motore, una voce per ogni `SIM_VERSION`.
+2. `context/STATE.md`: il segnalibro. Il mandato attivo, dove siamo, il piano con il passo `[next]`, gli open item, e la sezione "Per il maintainer" con le ultime note.
+3. `context/plans/GAME.md`: il piano di tutto il gioco, i livelli, le versioni, le regole di lavoro.
+4. `context/plans/DECISIONS-2026-11-15.md`: tutte le decisioni del maintainer, una riga per lettera (da A in poi). Quando una decisione è citata ("decisione AL"), è qui.
+5. `context/plans/BEHAVIOURS.md`: **la priorità di adesso.** Il catalogo dei comportamenti in campo, in quattro strati (come si gioca a pallone; posizionamento e responsabilità dei ruoli; le coppie affiatate; la tattica). Decisione BK: prima i comportamenti, poi i numeri; la taratura è ferma finché i comportamenti non sono giusti.
+6. `doctrine/VISION.md` §3 e `doctrine/00-foundations.md`: cosa vogliamo costruire e perché.
+7. Gli ADR in `doctrine/adr/`, almeno: 035 (niente dadi), 049 (l'atto è del giocatore), 051 (ogni gesto ha le sue radici), **052 (ogni giocatore pensa: la base di tutto)**, 058 (la palla si riceve dove arriva), 059 (l'allenatore parla durante la partita), 062 (quello che un giocatore vede non è esatto), 063 (la partita divisa in plugin), 065 (la registrazione è un contratto), 069 (i passi piccoli), 070 (gli ordini nella scelta).
+8. `L0-match/design/CHARACTERISTICS-AND-ABILITIES.md` (le caratteristiche e le abilità) e `L0-match/design/ACTIONS.md` (il catalogo dei gesti).
+9. `L0-match/CHANGELOG-SIM.md`: la storia del motore, una voce per ogni `SIM_VERSION`.
 
-Poi esegui `bash context/scripts/session.sh start`, fammi un rapporto breve (cosa hai letto, lo stato, il passo `[next]`, ogni differenza tra documenti e codice) e **aspetta**: non proporre e non cambiare nulla prima della mia risposta.
+Se lavori ai piani, leggi anche `context/plans/L1.md`, `L1-COACH.md`, `L1-MARKET.md`, `L2.md`, `L3.md` e `tools/ds-gui/DESIGN.md` (la GUI, il 2.5D, il 3D).
 
-## 2. Come rispondi
+Poi esegui `bash context/scripts/session.sh start`, fammi un rapporto breve (cosa hai letto, lo stato, il passo `[next]`, ogni differenza fra documenti e codice) e **aspetta**: non proporre e non cambiare nulla prima della mia risposta.
 
-- Rispondi in italiano. **Ogni risposta comincia con una riga `LUNA:`**: la proprietà che la richiesta o l'esempio rivela, in 1-3 frasi, senza nomi di codice. Guarda la luna, non il dito: non leggere mai un esempio alla lettera.
-- **Partita vera**: ogni decisione sul motore risponde a tre domande, scritte nel commit o nell'ADR: *in una partita vera come lo riconoscono gli attori? da cosa dipende? chi lo produce?*
-- Quando ti faccio una domanda o propongo un'idea, **discuti e concludi, non applicare**: applichi dopo il mio sì. Quando una fonte decide già (VISION, un'ADR accettata, il piano), deriva, applica e dichiara, senza fermarti a chiedere.
-- Se la scelta non è in discussione, procedi senza rapporti intermedi. Se tocca il modello (cosa è il calcio), fermati e chiedimelo, con una raccomandazione, non un menu.
-- Usa i termini del calcio moderno (occupazione degli spazi, linee, mezzi spazi), non "posizione".
+## 4. I tre filtri, per ogni decisione
 
-## 3. La direzione, vincolante
+- **LUNA (guarda la luna, non il dito).** Ogni risposta comincia con una riga `LUNA:`: la proprietà che la richiesta o l'esempio rivela, in 1-3 frasi, senza nomi di codice. **I miei esempi indicano un principio, non un elenco chiuso** (decisione AN): parti dall'esempio, ricava la regola generale e allargala a tutto quello che copre. LUNA vuol dire anche: niente dadi, niente bonus inventati, nessuno legge il piano A, ogni effetto ha una causa che si può leggere.
+- **Partita vera.** Ogni decisione sul motore risponde a tre domande, scritte nel commit o nell'ADR: *in una partita vera come lo riconoscono gli attori? da cosa dipende? chi lo produce?* Usa il calcio moderno e le sue parole (`doctrine/GLOSSARY.md` §0): occupazione degli spazi, linee, mezzi spazi, non "posizione".
+- **Futuribilità.** La scelta che costa poco adesso e molto dopo si fa adesso; ogni pezzo è un modulo che si può spegnere senza rompere niente; le regole del calcio e del mondo sono dati, con la loro stagione di validità.
 
-- Ogni scelta in campo è del giocatore; **nessun dado** in un percorso di simulazione (ADR-035). Il motore è deterministico: stesso seed, stessa partita.
-- Ogni atto deriva dalle caratteristiche di chi lo compie ed è riconoscibile; ogni cambiamento ha il suo **test gemello** (due giocatori uguali tranne una caratteristica, il gesto cambia come deve).
-- Ogni giocatore ha la sua IA: immagina le opzioni e le giudica con una sola misura, senza pesi per tipo di opzione (ADR-052).
-- Nessuna caratteristica composta salvata: ogni valore deriva dalle sue radici.
-- **Le statistiche si derivano, mai si aggiustano** (RULES A5-bis). Un numero in `balance/` ha una fonte, è calcolato da altri numeri, oppure è dichiarato arbitrario e lasciato stare. Non si sceglie mai guardando la statistica che produce. Una statistica lontana dal reale è una causa da trovare in come i giocatori percepiscono, pensano o si muovono. Se misuri, confronta con la definizione reale della statistica (per esempio "tiri in porta" = gol + parate, i tiri respinti non contano).
+## 5. Come lavori con me
 
-## 4. Il lavoro tecnico
+- **Decidi con i filtri, proponimi solo le scelte dubbie.** Quello che i filtri decidono lo applichi e lo dichiari; quello che resta davvero aperto me lo proponi con la tua raccomandazione, non un menu (RULES A7).
+- **Discuti prima di applicare.** Quando ti faccio una domanda o ti propongo un'idea, rispondi con una discussione e una conclusione; applichi dopo il mio sì (RULES A1). Quando una fonte decide già (VISION, un ADR accettato, un piano), deriva, applica e dichiara.
+- **Dammi sempre un'anteprima** di ogni cambiamento visivo (un'immagine), prima di metterlo in `main`.
+- **Prima completo, poi perfetto** (decisione M).
+- Lavoro su Windows con **Git Bash**: i comandi che mi dai devono funzionare lì.
+- Quando scrivi a lungo, usa tabelle e titoli; quando la cosa è semplice, rispondi in poche righe.
 
-- Workspace Rust: `L0-match/crates/` (ds-core, ds-model, ds-stats, ds-calculator, ds-db, ds-orchestrator, ds-match) e `tools/` (ds-demo, ds-fixtures, ds-testkit, ds-test-runner). La fisica e il ritmo: 10 tick al secondo, centimetri.
-- Vedere una partita: `cargo run --release --bin ds-demo -- --seed 42` (con `--json` per gli eventi; `--help` per amichevole, formazioni, sostituzioni, salvataggio).
-- **Un cambiamento di comportamento** (RULES C3): bump di `SIM_VERSION` in `ds-match/src/save.rs`, `EXPECTED` rigenerato in `ds-match/tests/golden_l0.rs`, voce in `L0-match/CHANGELOG-SIM.md`, un test che lo protegge e, per un gesto nuovo o cambiato, un test gemello; la riga del gesto in `ACTIONS.md`. Se cambia un modello o un'invariante, prima un'ADR. Se cambia il numero dei test, aggiornalo in `README.md` (badge e testo) e in `doctrine/_index.md` (`gates.sh` A4 controlla che coincidano).
-- **Gate C2, tutto verde o non si pusha:** `cargo build --release`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo fmt --check`, `cargo run --release --bin ds-test-runner -- --check --seed 42`, `bash context/scripts/gates.sh`. Gli hook: `git config core.hooksPath .githooks` (una volta). L'hook di commit esegue i test (vari minuti); non modificare file mentre un push è in corso, il pre-push rifiuta un albero sporco.
-- **Commit** piccoli, in inglese, all'imperativo. Ogni commit che tocca `context/STATE.md` porta il trailer `Verified: C2-green` (solo se il gate completo è passato in questa sessione) e il `Last commit verified` uguale all'HEAD precedente. Push su GitHub (`origin`); il workflow `Mirror` copia `main` su Codeberg (`codeberg`), oppure lo pushi anche a mano; alla fine i due `main` sono uguali e `git status -sb` non mostra `[ahead]`. Mai force-push su `main`, mai merge o tag senza chiedere.
-- Prima di ogni push aggiorna `STATE.md` (forma fissa, RULES E2): niente diario, la storia è in `git log`.
+## 6. La direzione, vincolante
 
-## 5. Onestà
+- **Ogni scelta in campo è del giocatore;** nessun dado in un percorso di simulazione (ADR-035). Il motore è deterministico.
+- **Ogni giocatore pensa** (ADR-052): immagina le sue opzioni e le giudica con una sola misura, quanto avvicina la squadra al gol e quanto la allontana dal subirlo. Niente pesi per tipo di opzione. Le sue caratteristiche cognitive sono la qualità del suo pensiero; il corpo e la psicologia sono i due filtri.
+- **Ogni atto deriva dalle caratteristiche** di chi lo compie ed è riconoscibile; ogni cambiamento ha il suo **test gemello** (due giocatori uguali tranne una caratteristica: il gesto cambia come deve).
+- **Nessuna caratteristica composta salvata:** ogni valore deriva dalle sue radici.
+- **Le statistiche si derivano, mai si aggiustano** (RULES A5-bis). Un numero in `balance/` ha una fonte (grado 1), è fissato su un effetto vero e verificato su dati tenuti da parte (grado 2), oppure è dichiarato arbitrario (grado 3, che non entra più in L0). Non si sceglie mai guardando la statistica che produce. Una statistica lontana dal reale è una causa da trovare in come i giocatori percepiscono, pensano o si muovono.
+- **Prima i comportamenti, poi i numeri** (decisione BK): un comportamento si prova prima con un test di scena (una situazione fissa, il comportamento atteso), poi con i gemelli, poi con le misure sul vero.
 
-Se non hai letto un file, dillo. Non inventare mai numeri, hash, contenuti di file o output di strumenti: "non lo so" è meglio di un'invenzione. Dopo ogni modifica verifica che sia avvenuta (`git diff`, `grep -c`), non solo che il comando sia uscito senza errori. Un test che non può fallire è peggio di nessun test.
+## 7. Il lavoro tecnico
+
+- **Il workspace Rust.** La partita in `L0-match/crates/`: `ds-core`, `ds-model`, `ds-stats`, `ds-calculator`, `ds-db` (il caveau del piano A), `ds-orchestrator` (gli attori e il pensiero), `ds-match` (il motore e i suoi plugin), `ds-match-api` (il contratto dei plugin), `ds-narrative` (il racconto). Gli strumenti in `tools/`: `ds-gui` (la finestra egui con il 2.5D), `ds-demo` (la partita da terminale), `ds-reference` (il confronto con il calcio vero e le misure di scena), `ds-fixtures`, `ds-testkit`, `ds-test-runner`.
+- **Il tempo del motore.** Decisioni, percezione, pensiero, fatica e Regole girano 10 volte al secondo (un tick); corpi e pallone si muovono in 5 passi piccoli per tick, 50 al secondo (ADR-069). Le posizioni dentro il motore sono in centesimi di centimetro; la registrazione in centimetri.
+- **Vedere una partita:** `cargo run --release -p ds-gui -- --seed 43` (la finestra; `--help` per le opzioni) o `cargo run --release --bin ds-demo -- --seed 42` (il terminale).
+- **Misurare:** `cargo run --release -p ds-reference -- compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..101` (le metriche contro la Serie A 2017-18, Wyscout) e `cargo run --release -p ds-reference -- scene --seeds 42..51` (le misure dei comportamenti sulla registrazione: salti, pallone libero, compagni in area con la palla al portiere, metà campo, direzione dei passaggi, i due più avanzati davanti al pallone, il pallone dietro chi lo porta).
+- **Un cambiamento di comportamento** (RULES C3): bump di `SIM_VERSION` in `ds-match/src/save.rs`, `EXPECTED` rigenerato in `ds-match/tests/golden_l0.rs`, voce in `L0-match/CHANGELOG-SIM.md`, un test che lo protegge e, per un gesto nuovo o cambiato, un test gemello; la riga del gesto in `ACTIONS.md`. Se cambia un modello o un'invariante, prima un ADR. Se cambia il numero dei test, aggiornalo dove `RULES.md` C3 dice.
+- **Gate C2, tutto verde o non si pusha:** `cargo build --release`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo fmt --check`, `cargo run --release --bin ds-test-runner -- --check --seed 42`, `bash context/scripts/gates.sh`. Gli hook: `git config core.hooksPath .githooks` (una volta). Il golden deve essere identico su glibc e musl (e ARM64 nella CI).
+- **Commit** piccoli, in inglese, all'imperativo. Ogni commit che tocca `context/STATE.md` porta il trailer `Verified:` vero. Mai force-push, mai tag, mai merge su `main` se non sei Claude Code. Prima di ogni push su `main`, il segnalibro in `STATE.md` (RULES E2).
+- **I piani** (`context/plans/`) si scrivono in italiano; il codice, i commit, gli ADR e i documenti di `L0-match/design/` in inglese.
+
+## 8. Onestà
+
+Se non hai letto un file, dillo. Non inventare mai numeri, hash, contenuti di file o output di strumenti: "non lo so" è meglio di un'invenzione. Dopo ogni modifica verifica che sia avvenuta (`git diff`, `grep -c`), non solo che il comando sia uscito senza errori. Un test che non può fallire è peggio di nessun test. "Deciso" non vuol dire "fatto": di' quale dei due.
 
 Quando hai letto tutto, esegui `session.sh start` e fammi il rapporto.
