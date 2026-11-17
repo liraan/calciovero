@@ -24,7 +24,7 @@ Il catalogo si costruisce dalla base, nell'ordine in cui si impara il calcio:
 1. **Come si gioca a pallone:** lo scopo del gioco e la sua misura (scritto qui sotto, approvato).
 2. **Il posizionamento e le responsabilità di ogni ruolo:** chi occupa quale spazio e perché, con e senza la palla (scritto qui sotto, approvato).
 3. **Le coppie affiatate:** i due centrali, il terzino e l'ala, le due punte, il portiere e i centrali, la coppia di centrocampo; l'intesa nasce dalle giocate riuscite insieme (decisione BB) (scritto qui sotto, approvato).
-4. **La tattica:** la lavagna dell'allenatore (decisione AL; parte 2 qui sotto).
+4. **La tattica:** la lavagna dell'allenatore, già decisa (decisioni AL, AG, AO, AP in `L1-COACH.md`); qui sotto la parte 2 ne dà il riassunto per i comportamenti.
 
 Le tendenze del calciatore della parte 1 si ridistribuiscono negli strati 1 e 2 man mano che si scrivono.
 
