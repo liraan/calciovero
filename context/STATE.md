@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `834732f` - "tests: no_match_diverges runs in parallel, same seeds and assertion"
+**Last commit verified:** `0c2d39e` - "docs(rules): correct the nextest claim with the measured numbers"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,13 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**17 novembre, notte: i test più snelli, secondo e terzo intervento.**
+- `no_match_diverges` (commit `834732f`): da `for` seriale a `each_seed`, stessi 10 semi, stessa asserzione. Isolato con `nextest`: 142 s -> 9.4 s.
+- Tre test ridondanti in `tick_record.rs` rimossi (`a_carrier_can_take_his_man_on`, `a_pressed_defender_can_clear_the_ball`, `a_defender_can_block_a_shot`): `repertoire.rs` copre gia Block, Clearance, Dribble sugli stessi semi 42-51. Rimossa anche la funzione `in_some_match` (dead code). Nota datata in `repertoire.rs` per non perdere la protezione se il catalogo un giorno si restringe.
+- Correzione in RULES C2: la frase "40% faster" su `nextest` era una stima, non una misura; riscritta con i numeri veri (`cargo test` ~330-350 s, `nextest --jobs 8` ~300 s, `--jobs 1` ~565 s). Il gate resta `cargo test --workspace`.
+- C2 completo: `cargo test --workspace` 539 test (erano 542), tutti verdi; `cargo test` da ~330-350 s a ~290 s.
+
 
 **17 novembre, notte: i test più veloci, primo intervento.** `no_match_diverges` era un `for` seriale su 10 semi (142 s); ora gira in `each_seed`, stessi semi e stessa asserzione. Misurato con `nextest`: 142 s → 9,4 s. C2 verde (build, clippy, test, fmt, test-runner 6/6, gates). Golden, `SIM_VERSION` e `CHANGELOG-SIM` intatti: è orchestrazione di test, non calcio.
 

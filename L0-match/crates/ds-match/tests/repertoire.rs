@@ -135,6 +135,11 @@ fn acts_seen() -> BTreeSet<&'static str> {
 }
 
 #[test]
+// 2026-11-17: three tests in `tick_record.rs` checked Block, Clearance
+// and Dribble one by one with `in_some_match`. They were removed because
+// this test already covers them (lines 86-95), on the same seeds 42-51.
+// If this test ever narrows its coverage, those three acts lose their
+// only guard: bring the dedicated tests back then.
 fn every_act_of_the_catalogue_shows() {
     let expected = [
         "pass",

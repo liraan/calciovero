@@ -402,43 +402,6 @@ fn the_ball_is_mostly_at_someone_s_feet() {
         records.len()
     );
 }
-
-/// ADR-051, "block" (P1): a defender in the path of a shot, within his
-/// reach, blocks it. Before `SIM_VERSION` 58 no `Block` event was ever
-/// emitted: every shot reached the keeper or the line.
-#[test]
-fn a_defender_can_block_a_shot() {
-    assert!(
-        in_some_match(ds_stats::EventType::Block),
-        "no block in ten matches"
-    );
-}
-
-/// Whether an event kind appears in at least one of the matches of seeds
-/// 42-51: what "can happen" means for an act that does not happen in every
-/// match.
-fn in_some_match(kind: ds_stats::EventType) -> bool {
-    (42..52u64).any(|seed| {
-        let m = match_fixture(seed).expect("fixture");
-        simulate_from_seed(&m, seed, MatchConfig::default())
-            .events
-            .events()
-            .iter()
-            .any(|e| e.event_type == kind)
-    })
-}
-
-/// ADR-051, "clear" (P1): a defender pressed near his own goal may kick
-/// the ball away. Before `SIM_VERSION` 59 no `Clearance` event was ever
-/// emitted.
-#[test]
-fn a_pressed_defender_can_clear_the_ball() {
-    assert!(
-        in_some_match(ds_stats::EventType::Clearance),
-        "no clearance in ten matches"
-    );
-}
-
 /// Law 12 (P1, ADR-042 step b): a match has fouls, and the cards follow
 /// them. Before `SIM_VERSION` 64 no `Foul` and no `Card` was ever emitted.
 #[test]
@@ -492,17 +455,6 @@ fn a_ball_in_the_air_can_be_headed() {
     });
     assert!(headed, "no header in ten matches");
 }
-
-/// ADR-042 step c (P1): the carrier answers a challenge, and a man taken
-/// on can be beaten. Before `SIM_VERSION` 72 no `Dribble` was ever emitted.
-#[test]
-fn a_carrier_can_take_his_man_on() {
-    assert!(
-        in_some_match(ds_stats::EventType::Dribble),
-        "no dribble in ten matches"
-    );
-}
-
 /// Plan L0-CLOSE step 6 (P1, OI-70): the players tire as the match goes
 /// on, and the half-time rest gives some of it back. Before `SIM_VERSION`
 /// 73 fatigue never changed from zero.
