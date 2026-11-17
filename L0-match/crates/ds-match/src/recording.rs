@@ -20,7 +20,7 @@
 //! - **Packed.** Column by column (every field of every tick together),
 //!   each value as the difference from its prediction (the last value; for
 //!   positions, the last value plus the last step), zig-zag varints, then
-//!   deflate: about 1 MB a match instead of 130 MB of JSON.
+//!   deflate: about 2.3 MB a match instead of 130 MB of JSON.
 //!
 //! The engine is never changed for a view: a new field is born from a
 //! change of football with its ADR and its `SIM_VERSION`, then the record
@@ -504,7 +504,8 @@ mod tests {
         let header = RecordHeader::current(10, (m.pitch.length_m, m.pitch.width_m));
         let packed = PackedRecord::pack(header, &r);
         eprintln!("packed: {} bytes", packed.data.len());
-        assert!(packed.data.len() < 2_000_000, "{} bytes", packed.data.len());
+        // About 2.3 MB at SIM 147, with the bodies in small steps (ADR-069).
+        assert!(packed.data.len() < 3_000_000, "{} bytes", packed.data.len());
         assert_eq!(packed.unpack().expect("unpack"), r);
     }
 

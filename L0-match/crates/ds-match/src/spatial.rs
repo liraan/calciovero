@@ -141,7 +141,15 @@ pub struct AgentState {
     /// 11): it moves on with the ground he covers. A strike meets the ball
     /// at this phase of his step.
     pub gait_milli: u16,
+    /// His position between two ticks, hundredths of a centimetre (decision
+    /// BJ, ADR-069), and his velocity over the last small step, hundredths
+    /// of a centimetre per step.
+    pub fine: FineBody,
 }
+
+/// A body between two ticks (ADR-069): position and the last step's
+/// velocity, hundredths of a centimetre.
+pub type FineBody = ((i64, i64), (i64, i64));
 
 // Note (2026-11-07): superseded. `velocity` is written by the movement
 // pass and read as the previous tick's displacement; `heading` is read
@@ -201,6 +209,121 @@ impl PlayerBody {
     }
 }
 
+/// Small steps per tick (decision BJ, ADR-069): the decisions at 10 a
+/// second, the bodies and the ball at 50.
+pub(crate) const SUBSTEPS: i32 = 5;
+/// The fine unit of the bodies and the ball: hundredths of a centimetre
+/// (ADR-069), so that a small step of gravity or of acceleration is a
+/// whole number.
+pub(crate) const FINE: i64 = 100;
+
+/// The ball's constants per small step, in fine units, derived from the
+/// per-tick ones of `ball.json` (ADR-069: no new number).
+#[derive(Debug, Clone, Copy)]
+struct FineKick {
+    /// Gravity, hundredths of a cm per step²: per tick² over the steps².
+    gravity: i64,
+    /// What the air and the grass keep of the horizontal speed per step,
+    /// millionths: the fifth root of the per-tick share.
+    air_ppm: i64,
+    ground_ppm: i64,
+    /// The restitution of the bounce, thousandths (it does not depend on
+    /// the step).
+    restitution_milli: i64,
+    /// The stop threshold, hundredths of a cm per step.
+    stop: i64,
+}
+
+impl FineKick {
+    fn of(p: &crate::balance::BallBalance) -> Self {
+        let steps = i64::from(SUBSTEPS);
+        #[allow(clippy::cast_possible_truncation)]
+        let root = |milli: i32| {
+            (ds_core::dmath::powf(f64::from(milli) / 1000.0, 1.0 / f64::from(SUBSTEPS)) * 1e6)
+                .round() as i64
+        };
+        Self {
+            gravity: i64::from(p.gravity_cm_per_tick2) * FINE / (steps * steps),
+            air_ppm: root(p.air_friction_milli),
+            ground_ppm: root(p.ground_friction_milli),
+            restitution_milli: i64::from(p.restitution_milli),
+            stop: i64::from(p.stop_threshold_cm_per_tick) * FINE / steps,
+        }
+    }
+}
+
+/// The ball in fine units between two ticks (ADR-069).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct FineBall {
+    /// Position, hundredths of a cm.
+    at: (i64, i64, i64),
+    /// Velocity, hundredths of a cm per small step.
+    v: (i64, i64, i64),
+    /// The centimetre state it was last in step with.
+    synced: ((i32, i32, i32), (i16, i16, i16)),
+}
+
+impl FineBall {
+    /// From a ball in centimetres and centimetres per tick.
+    fn from_cm(p: (i32, i32, i32), v: (i16, i16, i16)) -> Self {
+        let steps = i64::from(SUBSTEPS);
+        Self {
+            at: (
+                i64::from(p.0) * FINE,
+                i64::from(p.1) * FINE,
+                i64::from(p.2) * FINE,
+            ),
+            v: (
+                i64::from(v.0) * FINE / steps,
+                i64::from(v.1) * FINE / steps,
+                i64::from(v.2) * FINE / steps,
+            ),
+            synced: (p, v),
+        }
+    }
+
+    /// In centimetres, and centimetres per tick, rounded.
+    fn to_cm(self) -> ((i32, i32, i32), (i16, i16, i16)) {
+        let steps = i64::from(SUBSTEPS);
+        let cm = |f: i64| i32::try_from((f + FINE / 2).div_euclid(FINE)).unwrap_or(0);
+        let per_tick = |f: i64| i16::try_from((f * steps + FINE / 2).div_euclid(FINE)).unwrap_or(0);
+        (
+            (cm(self.at.0), cm(self.at.1), cm(self.at.2)),
+            (per_tick(self.v.0), per_tick(self.v.1), per_tick(self.v.2)),
+        )
+    }
+
+    /// One tick: its small steps of gravity, the friction of the air or
+    /// of the grass, the bounce; whether it stopped.
+    fn tick(&mut self, k: &FineKick) -> bool {
+        for _ in 0..SUBSTEPS {
+            // On the ground the grass slows the ball more than the air.
+            let keep = if self.at.2 == 0 && self.v.2 <= 0 {
+                k.ground_ppm
+            } else {
+                k.air_ppm
+            };
+            self.v.2 -= k.gravity;
+            self.v.0 = self.v.0 * keep / 1_000_000;
+            self.v.1 = self.v.1 * keep / 1_000_000;
+            self.at.0 += self.v.0;
+            self.at.1 += self.v.1;
+            self.at.2 += self.v.2;
+            if self.at.2 < 0 {
+                self.at.2 = 0;
+                // The FIFA vertical rebound; a bounce lower than one step
+                // of gravity is a roll.
+                let up = -self.v.2 * k.restitution_milli / 1000;
+                self.v.2 = if up > k.gravity { up } else { 0 };
+            }
+            if self.at.2 == 0 && self.v.0.abs() <= k.stop && self.v.1.abs() <= k.stop {
+                return true;
+            }
+        }
+        false
+    }
+}
+
 /// The state of the ball (MD-25). `Possessed` means at the carrier's feet
 /// (velocity zero, no physics). `InFlight` means travelling with its own
 /// velocity. `Loose` means free and at rest.
@@ -245,6 +368,10 @@ pub struct SpatialState {
     touches: Touches,
     /// The ball's declared physics (ADR-048 §4).
     ball_physics: crate::balance::BallBalance,
+    /// The ball between two ticks (decision BJ, ADR-069): its position in
+    /// hundredths of a centimetre and its velocity per small step, and the
+    /// centimetre state they were last in step with.
+    ball_fine: FineBall,
     /// The team block (VISION §3): where each outfield player stands
     /// without instructions.
     block: crate::balance::BlockBalance,
@@ -346,6 +473,7 @@ impl SpatialState {
                     heading: 90,
                     gaze: 90,
                     gait_milli: 0,
+                    fine: ((0, 0), (0, 0)),
                 },
             );
         }
@@ -363,6 +491,7 @@ impl SpatialState {
                     heading: 270,
                     gaze: 270,
                     gait_milli: 0,
+                    fine: ((0, 0), (0, 0)),
                 },
             );
         }
@@ -373,6 +502,7 @@ impl SpatialState {
             ball_velocity: (0, 0, 0),
             touches: Touches::default(),
             ball_physics: crate::balance::BallBalance::load(),
+            ball_fine: FineBall::default(),
             block: crate::balance::BlockBalance::load(),
             roles: crate::shape::slots(home, away),
             boards: (home.board, away.board),
@@ -835,11 +965,18 @@ impl SpatialState {
         let BallState::InFlight = self.ball else {
             return;
         };
-        let p = self.ball_physics;
-        let (position, velocity, stopped) =
-            Self::ball_step(&p, self.ball_position, self.ball_velocity);
+        // In small steps (decision BJ, ADR-069), in hundredths of a
+        // centimetre; whoever struck, deflected or placed the ball in
+        // centimetres since the last tick sets the fine state afresh.
+        let k = FineKick::of(&self.ball_physics);
+        if self.ball_fine.synced != (self.ball_position, self.ball_velocity) {
+            self.ball_fine = FineBall::from_cm(self.ball_position, self.ball_velocity);
+        }
+        let stopped = self.ball_fine.tick(&k);
+        let (position, velocity) = self.ball_fine.to_cm();
         self.ball_position = position;
         self.ball_velocity = velocity;
+        self.ball_fine.synced = (position, velocity);
         if stopped {
             self.ball = BallState::Loose;
             self.ball_velocity = (0, 0, 0);
@@ -869,29 +1006,13 @@ impl SpatialState {
     #[must_use]
     pub fn ball_step(
         p: &crate::balance::BallBalance,
-        (mut x, mut y, mut z): (i32, i32, i32),
-        (mut vx, mut vy, mut vz): (i16, i16, i16),
+        position: (i32, i32, i32),
+        velocity: (i16, i16, i16),
     ) -> ((i32, i32, i32), (i16, i16, i16), bool) {
-        // On the ground the grass slows the ball more than the air does.
-        let friction = if z == 0 && vz <= 0 {
-            p.ground_friction_milli
-        } else {
-            p.air_friction_milli
-        };
-        vz = vz.saturating_sub(p.gravity_cm_per_tick2);
-        vx = i16::try_from(i32::from(vx) * friction / 1000).unwrap_or(vx);
-        vy = i16::try_from(i32::from(vy) * friction / 1000).unwrap_or(vy);
-        x = x.saturating_add(i32::from(vx));
-        y = y.saturating_add(i32::from(vy));
-        z = z.saturating_add(i32::from(vz));
-        if z < 0 {
-            z = 0;
-            vz = i16::try_from(Self::bounce(p, i32::from(vz))).unwrap_or(0);
-        }
-        let stopped = z == 0
-            && vx.abs() <= p.stop_threshold_cm_per_tick
-            && vy.abs() <= p.stop_threshold_cm_per_tick;
-        ((x, y, z), (vx, vy, vz), stopped)
+        let mut b = FineBall::from_cm(position, velocity);
+        let stopped = b.tick(&FineKick::of(p));
+        let (position, velocity) = b.to_cm();
+        (position, velocity, stopped)
     }
 
     /// Where a ball struck from `from` with `velocity` crosses the line
@@ -909,9 +1030,14 @@ impl SpatialState {
         if towards == 0 {
             return Some((from.1, from.2));
         }
-        let (mut pos, mut vel) = (from, velocity);
+        // The same small steps the ball moves with (ADR-069), so what is
+        // foreseen is what happens.
+        let k = FineKick::of(&p);
+        let mut fine = FineBall::from_cm(from, velocity);
+        let mut pos = from;
         for _ in 0..600 {
-            let (next, v, stopped) = Self::ball_step(&p, pos, vel);
+            let stopped = fine.tick(&k);
+            let (next, _) = fine.to_cm();
             if (line_x - next.0).signum() != towards {
                 let dx = i64::from(next.0 - pos.0).max(1);
                 let t = i64::from(line_x - pos.0);
@@ -922,7 +1048,6 @@ impl SpatialState {
                 return None;
             }
             pos = next;
-            vel = v;
         }
         None
     }
@@ -1302,6 +1427,7 @@ impl SpatialState {
             .touch
             .as_ref()
             .is_some_and(|tc| tick.saturating_sub(tc.at) as f64 >= tc.period);
+        let mut fines: Vec<(PlayerId, FineBody)> = Vec::with_capacity(work.len());
         for entry in &mut work {
             let act = self.acts.get(&entry.0).copied();
             let to_the_ball = matches!(
@@ -1387,11 +1513,6 @@ impl SpatialState {
             } else {
                 target
             };
-            let (dx, dy) = (
-                f64::from(target.0 - entry.1.0),
-                f64::from(target.1 - entry.1.1),
-            );
-            let dist = dmath::hypot(dx, dy);
             // His pace is his (2026-11-13): he runs flat out when he
             // contests something; taking up his place he goes at the speed
             // that gets him there in time.
@@ -1399,65 +1520,109 @@ impl SpatialState {
             let contests = Some(entry.0) == self.carrier
                 || to_the_ball
                 || act == Some(ds_orchestrator::OffBallAct::Run);
-            // Without the ball his side must be in its place before the ball
-            // can get there: he goes as much faster, against a player as
-            // fast as he is, as his place is nearer to him than to the ball.
-            // With the ball he takes his place in his own time. The keeper
-            // keeps his angle at every moment.
             let defending = (crate::perception::team_of(entry.0) == 0) != self.home_in_possession;
-            let in_time = if keeper {
-                top
-            } else if defending {
-                // As much of it as his work rate gives (plan L0-CLOSE 10c).
-                let to_ball =
-                    dmath::hypot(f64::from(target.0 - ball.0), f64::from(target.1 - ball.1));
-                top * (dist / to_ball.max(1.0)) * outcome.work_share
-            } else {
-                dist / outcome.reposition_ticks.max(1.0)
-            };
-            // He brakes to stop at his place; into a contest he goes at speed.
-            let wanted = if contests {
-                top
-            } else {
-                in_time.min(top).min((2.0 * decel * dist).sqrt())
+            // In small steps (decision BJ, ADR-069): the target and his
+            // choices are the tick's; his body moves five steps of a fifth
+            // of a tick, in hundredths of a centimetre, with his speeds per
+            // step a fifth and his accelerations a twenty-fifth of the
+            // tick's.
+            let steps = f64::from(SUBSTEPS);
+            let (top_s, accel_s, decel_s) = (
+                top / steps,
+                accel / (steps * steps),
+                decel / (steps * steps),
+            );
+            let start = (
+                (i64::from(entry.1.0) * FINE, i64::from(entry.1.1) * FINE),
+                (0, 0),
+            );
+            let mut fine = self.agents.get(&entry.0).map_or(start, |a| {
+                let here = (
+                    i64::from(a.position.0) * FINE,
+                    i64::from(a.position.1) * FINE,
+                );
+                // Placed since the last tick (a restart, a push): his
+                // fine state starts from where he is.
+                if (a.fine.0.0 + FINE / 2).div_euclid(FINE) == i64::from(a.position.0)
+                    && (a.fine.0.1 + FINE / 2).div_euclid(FINE) == i64::from(a.position.1)
+                {
+                    a.fine
+                } else {
+                    let v = |c: i16| i64::from(c) * FINE / i64::from(SUBSTEPS);
+                    (here, (v(a.velocity.0), v(a.velocity.1)))
+                }
+            });
+            #[allow(clippy::cast_precision_loss)] // hundredths of a cm on a pitch
+            for _ in 0..SUBSTEPS {
+                let at = (fine.0.0 as f64 / FINE as f64, fine.0.1 as f64 / FINE as f64);
+                let v_prev = (fine.1.0 as f64 / FINE as f64, fine.1.1 as f64 / FINE as f64);
+                let (dx, dy) = (f64::from(target.0) - at.0, f64::from(target.1) - at.1);
+                let dist = dmath::hypot(dx, dy);
+                // Without the ball his side must be in its place before the
+                // ball can get there: he goes as much faster, against a
+                // player as fast as he is, as his place is nearer to him than
+                // to the ball. With the ball he takes his place in his own
+                // time. The keeper keeps his angle at every moment.
+                let in_time = if keeper {
+                    top_s
+                } else if defending {
+                    // As much of it as his work rate gives (plan L0-CLOSE 10c).
+                    let to_ball =
+                        dmath::hypot(f64::from(target.0 - ball.0), f64::from(target.1 - ball.1));
+                    top_s * (dist / to_ball.max(1.0)) * outcome.work_share
+                } else {
+                    dist / (outcome.reposition_ticks * steps).max(1.0)
+                };
+                // He brakes to stop at his place; into a contest he goes at speed.
+                let wanted = if contests {
+                    top_s
+                } else {
+                    in_time.min(top_s).min((2.0 * decel_s * dist).sqrt())
+                }
+                .min(dist);
+                let (ux, uy) = if dist > 0.0 {
+                    (dx / dist, dy / dist)
+                } else {
+                    (0.0, 0.0)
+                };
+                let (wx, wy) = (ux * wanted, uy * wanted);
+                // Towards the velocity he wants: speeding up by his
+                // acceleration, slowing down or turning by his braking.
+                let (cx, cy) = (wx - v_prev.0, wy - v_prev.1);
+                let change = dmath::hypot(cx, cy);
+                let now = dmath::hypot(v_prev.0, v_prev.1);
+                // Turning by more than 60 degrees (plan L0-CLOSE 10e): he
+                // brakes and turns with the share of his braking his joint
+                // mobility gives him.
+                let turning = now > 0.0
+                    && wanted > 0.0
+                    && v_prev.0.mul_add(wx, v_prev.1 * wy) < 0.5 * now * wanted;
+                let limit = if turning {
+                    decel_s * outcome.turn_share
+                } else if wanted > now {
+                    accel_s
+                } else {
+                    decel_s
+                };
+                let k = if change > limit { limit / change } else { 1.0 };
+                let (mut vx, mut vy) = (cx.mul_add(k, v_prev.0), cy.mul_add(k, v_prev.1));
+                let speed = dmath::hypot(vx, vy);
+                if speed > top_s {
+                    vx *= top_s / speed;
+                    vy *= top_s / speed;
+                }
+                #[allow(clippy::cast_possible_truncation)]
+                let step = (
+                    (vx * FINE as f64).round() as i64,
+                    (vy * FINE as f64).round() as i64,
+                );
+                let nx = (fine.0.0 + step.0).clamp(0, i64::from(pitch_length_cm) * FINE);
+                let ny = (fine.0.1 + step.1).clamp(0, i64::from(pitch_width_cm) * FINE);
+                fine = ((nx, ny), (nx - fine.0.0, ny - fine.0.1));
             }
-            .min(dist);
-            let (ux, uy) = if dist > 0.0 {
-                (dx / dist, dy / dist)
-            } else {
-                (0.0, 0.0)
-            };
-            let (wx, wy) = (ux * wanted, uy * wanted);
-            // Towards the velocity he wants: speeding up by his
-            // acceleration, slowing down or turning by his braking.
-            let (cx, cy) = (wx - v_prev.0, wy - v_prev.1);
-            let change = dmath::hypot(cx, cy);
-            let now = dmath::hypot(v_prev.0, v_prev.1);
-            // Turning by more than 60 degrees (plan L0-CLOSE 10e): he brakes
-            // and turns with the share of his braking his joint mobility
-            // gives him.
-            let turning = now > 0.0
-                && wanted > 0.0
-                && v_prev.0.mul_add(wx, v_prev.1 * wy) < 0.5 * now * wanted;
-            let limit = if turning {
-                decel * outcome.turn_share
-            } else if wanted > now {
-                accel
-            } else {
-                decel
-            };
-            let k = if change > limit { limit / change } else { 1.0 };
-            let (mut vx, mut vy) = (cx.mul_add(k, v_prev.0), cy.mul_add(k, v_prev.1));
-            let speed = dmath::hypot(vx, vy);
-            if speed > top {
-                vx *= top / speed;
-                vy *= top / speed;
-            }
-            #[allow(clippy::cast_possible_truncation)]
-            let nx = (entry.1.0 + vx.round() as i32).clamp(0, pitch_length_cm);
-            #[allow(clippy::cast_possible_truncation)]
-            let ny = (entry.1.1 + vy.round() as i32).clamp(0, pitch_width_cm);
-            entry.1 = (nx, ny);
+            let cm = |f: i64| i32::try_from((f + FINE / 2).div_euclid(FINE)).unwrap_or(0);
+            entry.1 = (cm(fine.0.0), cm(fine.0.1));
+            fines.push((entry.0, fine));
         }
 
         // Minimal separation (MD-12): every push is computed from where the
@@ -1475,6 +1640,22 @@ impl SpatialState {
         }
 
         self.write_back(&work, ball, (tick, hidden), scan_balance);
+        // Their fine state for the next tick (ADR-069); a man the
+        // separation pushed starts from where it put him.
+        for (id, f) in fines {
+            if let Some(a) = self.agents.get_mut(&id) {
+                let here = (
+                    i64::from(a.position.0) * FINE,
+                    i64::from(a.position.1) * FINE,
+                );
+                let cm = |v: i64| (v + FINE / 2).div_euclid(FINE);
+                a.fine = if (cm(f.0.0), cm(f.0.1)) == (here.0 / FINE, here.1 / FINE) {
+                    f
+                } else {
+                    (here, f.1)
+                };
+            }
+        }
     }
     /// Writes back the moved positions, with velocity derived from the
     /// displacement, and updates heading and gaze.
@@ -2064,41 +2245,36 @@ mod tests {
         assert_eq!(s.ball_state(), BallState::Possessed);
     }
 
-    /// Twin test (SIM 128, OI-100): the same ball dropped from 2 m on the
-    /// same grass, with and without the bounce. With it, it leaves the
-    /// grass at the speed ratio of FIFA's good natural pitch (the middle of
-    /// 0.60-1.00 m from 2.00 m, 0.632) and comes back up; with no
-    /// restitution it stays on the grass. (The rebound's height is lower
-    /// than FIFA's 0.80 m because the tick of 0.1 s loses part of the fall
-    /// at the landing: the ratio is the source's, the step is the engine's.)
+    /// Twin test (SIM 128, OI-100; ADR-069): the same ball dropped from
+    /// 2 m on the same grass, with and without the bounce. With it, it comes
+    /// back up into FIFA's band for a good natural pitch, 0.60 to 1.00 m
+    /// (the ratio 0.632 is the middle's; in small steps the fall is no longer
+    /// cut at the landing as with the tick of 0.1 s); with no restitution it
+    /// stays on the grass.
     #[test]
     fn a_ball_dropped_from_two_metres_bounces_as_on_a_good_pitch() {
-        let drop = |p: &crate::balance::BallBalance| {
-            let (mut pos, mut vel) = ((0, 0, 200), (0_i16, 0_i16, 0_i16));
-            let (mut impact, mut away, mut top) = (0, 0, 0);
-            for _ in 0..60 {
-                let falling = vel.2 - p.gravity_cm_per_tick2;
-                let (next, v, _) = SpatialState::ball_step(p, pos, vel);
-                if next.2 == 0 && impact == 0 {
-                    (impact, away) = (-i32::from(falling), i32::from(v.2));
+        let top_after = |p: &crate::balance::BallBalance| {
+            let k = FineKick::of(p);
+            let mut b = FineBall::from_cm((0, 0, 200), (0, 0, 0));
+            let (mut landed, mut top) = (false, 0);
+            for _ in 0..30 {
+                b.tick(&k);
+                let (at, _) = b.to_cm();
+                landed |= at.2 == 0;
+                if landed {
+                    top = top.max(at.2);
                 }
-                if impact > 0 {
-                    top = top.max(next.2);
-                }
-                (pos, vel) = (next, v);
             }
-            (impact, away, top)
+            top
         };
         let p = crate::balance::BallBalance::load();
-        let (impact, away, top) = drop(&p);
-        assert_eq!(away, impact * p.restitution_milli / 1000);
-        assert!(top > 0, "it comes back up");
+        let top = top_after(&p);
+        assert!((60..=100).contains(&top), "rebound {top} cm");
         let dead = crate::balance::BallBalance {
             restitution_milli: 0,
             ..p
         };
-        let (_, away, top) = drop(&dead);
-        assert_eq!((away, top), (0, 0));
+        assert_eq!(top_after(&dead), 0);
     }
 
     #[test]
@@ -2106,7 +2282,8 @@ mod tests {
         let mut s = make_state();
         s.set_ball_in_flight((5000, 3400, 200), (100, 0, 0));
         s.advance_ball();
-        // gravity pulls z down by 10 (vz 0 -> -10), x advances by ~99 (friction 0.99)
+        // Gravity pulls z down, friction slows x a little: one tick of
+        // small steps (ADR-069).
         let (x, y, z) = s.ball_3d();
         assert!(z < 200, "z should fall under gravity, got {z}");
         assert!(x > 5000, "x should advance, got {x}");

@@ -579,12 +579,24 @@ mod tests {
             apply(ds_fixtures::match_fixture(seed).expect("fixture"), &choices).expect("apply");
         let (r, records) =
             ds_match::simulate_from_seed_recorded(&game, seed, ds_match::MatchConfig::default());
+        let p_slot = game
+            .home
+            .bench
+            .iter()
+            .find(|p| letter(p.id) == 'P')
+            .map(|p| u64::from(p.id.slot()))
+            .expect("P");
+        // His change: other changes (a knock, the opponents' coach) may come
+        // before it.
         let sub = r
             .events
             .events()
             .iter()
-            .find(|e| e.event_type == EventType::Substitution)
-            .expect("a substitution");
+            .find(|e| {
+                e.event_type == EventType::Substitution
+                    && e.fields.get("in").and_then(serde_json::Value::as_u64) == Some(p_slot)
+            })
+            .expect("P's substitution");
         assert_eq!(sub.half, ds_stats::Half::Second);
         assert!(sub.timestamp_minute >= 15, "from the 60th minute");
         let on = game
