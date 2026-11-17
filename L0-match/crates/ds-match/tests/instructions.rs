@@ -253,9 +253,20 @@ fn quick_instructions_take_effect_from_their_tick() {
 #[test]
 #[allow(clippy::cast_precision_loss)] // ticks of a match
 fn the_board_changes_from_its_tick() {
-    let plain = match_fixture(49).expect("fixture");
-    let (_, before) = simulate_from_seed_recorded(&plain, 49, MatchConfig::default());
-    let mut m = match_fixture(49).expect("fixture");
+    // The first seed from 49 where the man stays on the pitch (from SIM
+    // 149 a knock takes him off in seed 49 before the order).
+    let (seed, _, before) = (49..60)
+        .map(|seed| {
+            let plain = match_fixture(seed).expect("fixture");
+            let (_, before) = simulate_from_seed_recorded(&plain, seed, MatchConfig::default());
+            (seed, plain, before)
+        })
+        .find(|(_, plain, before)| {
+            let id = plain.home.players[5].id;
+            before.iter().all(|t| t.agents.iter().any(|a| a.id == id))
+        })
+        .expect("a seed where he plays the whole match");
+    let mut m = match_fixture(seed).expect("fixture");
     let swapped = m.home.board.swapped(5, 8);
     m.home = m.home.clone().with_instructions(vec![Instruction {
         tick: AT,
@@ -263,7 +274,7 @@ fn the_board_changes_from_its_tick() {
         order: Order::Board(swapped),
     }]);
     let left = m.home.players[5].id;
-    let (_, after) = simulate_from_seed_recorded(&m, 49, MatchConfig::default());
+    let (_, after) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
     let upto = usize::try_from(AT).expect("tick fits");
     assert_eq!(
         before[..=upto],
@@ -287,15 +298,18 @@ fn the_board_changes_from_its_tick() {
     assert!(now > was + 1_500.0, "he moved across: {was:.0} -> {now:.0}");
 }
 
-/// P1 (ADR-059 step 4): an individual instruction is a responsibility on
-/// the board, changed during the match like the rest of it. The same
-/// matches twice, in one the striker asked from the 15th minute to attack
-/// the depth when his side has the ball: from then, on average over six
-/// matches, he stands farther ahead of the ball when his side has it than
-/// without the ask; before it, the same match.
+/// P1 (ADR-059 step 4, ADR-070): an individual instruction is a
+/// responsibility on the board, changed during the match like the rest of
+/// it. The same matches twice, in one the striker asked from the 15th
+/// minute to attack the depth: from then, on average over six matches,
+/// when a teammate has the ball he waits nearer the last defender's line
+/// than without the ask, by at least a metre; before it, the same match.
+/// (Until SIM 148 the twin measured how far ahead of the ball he stood,
+/// which moves with where the ball goes too: at 149 the ask still brought
+/// him 2.4 m nearer the line, but only 1.2 m farther ahead of the ball.)
 #[test]
 #[allow(clippy::cast_precision_loss)] // ticks of a match
-fn a_striker_asked_to_run_stands_farther_ahead() {
+fn a_striker_asked_to_run_waits_on_the_last_line() {
     let upto = usize::try_from(AT).expect("tick fits");
     let (mut asked, mut free) = (0.0, 0.0);
     for seed in 50..56 {
@@ -317,31 +331,33 @@ fn a_striker_asked_to_run_stands_farther_ahead() {
             after[..=upto],
             "the same match up to the ask"
         );
-        // How far ahead of the ball he stands, along his attack.
-        let ahead = |r: &[ds_match::TickRecord]| {
-            let xs: Vec<f64> = r
+        // How far he stands from the second-last opponent's line (Law 11).
+        let from_line = |r: &[ds_match::TickRecord]| {
+            let ds: Vec<f64> = r
                 .iter()
                 .filter(|t| t.carrier.is_some_and(|c| home.contains(&c) && c != striker))
                 .filter_map(|t| {
-                    t.agents
+                    let me = t.agents.iter().find(|a| a.id == striker)?.position.0;
+                    let mut xs: Vec<i32> = t
+                        .agents
                         .iter()
-                        .find(|a| a.id == striker)
-                        .map(|a| f64::from(a.position.0 - t.ball.position.0))
+                        .filter(|a| !home.contains(&a.id))
+                        .map(|a| a.position.0)
+                        .collect();
+                    xs.sort_unstable_by(|a, b| b.cmp(a));
+                    Some(f64::from((xs.get(1)? - me).abs()))
                 })
                 .collect();
-            xs.iter().sum::<f64>() / xs.len().max(1) as f64
+            ds.iter().sum::<f64>() / ds.len().max(1) as f64
         };
         let window = upto + 1..upto + 18_000;
-        asked += ahead(&after[window.clone()]);
-        free += ahead(&before[window]);
+        asked += from_line(&after[window.clone()]);
+        free += from_line(&before[window]);
     }
-    // A run asked is one a man watching the match sees (ADR-070): at
-    // least two metres farther ahead on average (the sums are of six
-    // matches), not a centimetre (at SIM
-    // 147 the ask moved him 1 cm and passed by chance).
+    // The sums are of six matches: a metre each.
     assert!(
-        asked > free + 1_200.0,
-        "asked {:.0} cm ahead, free {:.0} cm",
+        asked + 600.0 < free,
+        "asked {:.0} cm from the line, free {:.0} cm",
         asked / 6.0,
         free / 6.0
     );

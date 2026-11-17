@@ -963,37 +963,27 @@ impl SpatialState {
         if matches!(self.ball, BallState::Possessed) {
             return None;
         }
-        let p = self.ball_physics;
-        let stop = i32::from(p.stop_threshold_cm_per_tick);
-        let (mut x, mut y, mut z) = self.ball_position;
-        let (mut vx, mut vy, mut vz) = (
-            i32::from(self.ball_velocity.0),
-            i32::from(self.ball_velocity.1),
-            i32::from(self.ball_velocity.2),
-        );
-        if z == 0 && vz <= 0 && vx == 0 && vy == 0 {
+        let (_, _, z0) = self.ball_position;
+        let vel = self.ball_velocity;
+        if z0 == 0 && vel.2 <= 0 && vel.0 == 0 && vel.1 == 0 {
             return None;
         }
+        // In the same small steps the ball moves in (ADR-069, SIM 149), so
+        // where he goes to meet it is where it passes.
+        let kick = FineKick::of(&self.ball_physics);
+        let mut fine = if self.ball_fine.synced == (self.ball_position, vel) {
+            self.ball_fine
+        } else {
+            FineBall::from_cm(self.ball_position, vel)
+        };
+        let mut stopped = false;
         let mut at = None;
         for t in 1..=80_u32 {
-            let moving = !(z == 0 && vz <= 0 && vx.abs() <= stop && vy.abs() <= stop);
-            if moving {
-                let friction = if z == 0 && vz <= 0 {
-                    p.ground_friction_milli
-                } else {
-                    p.air_friction_milli
-                };
-                vz -= i32::from(p.gravity_cm_per_tick2);
-                vx = vx * friction / 1000;
-                vy = vy * friction / 1000;
-                x += vx;
-                y += vy;
-                z += vz;
-                if z < 0 {
-                    z = 0;
-                    vz = Self::bounce(&p, vz);
-                }
+            if !stopped {
+                stopped = fine.tick(&kick);
             }
+            let ((x, y, z), (_, _, vz)) = fine.to_cm();
+            let vz = if stopped { 0 } else { vz };
             // Within his height: coming down to his head or lower, or on the
             // grass; a ball still climbing is not his yet.
             if z > HEAD_HEIGHT_CM || (z > 0 && vz > 0) {
@@ -1018,33 +1008,39 @@ impl SpatialState {
         let BallState::InFlight = self.ball else {
             return None;
         };
-        let (mut x, mut y, mut z) = self.ball_position;
-        let (mut vx, mut vy, mut vz) = (
-            i32::from(self.ball_velocity.0),
-            i32::from(self.ball_velocity.1),
-            i32::from(self.ball_velocity.2),
-        );
+        let z = self.ball_position.2;
         // Below that height and not rising, it is not in the air for him; a
         // ball just struck and still climbing he reads from the kick.
-        if z <= height_cm && vz <= 0 {
+        if z <= height_cm && self.ball_velocity.2 <= 0 {
             return None;
         }
-        let p = self.ball_physics;
+        // In the same small steps the ball flies in (ADR-069, SIM 149):
+        // before, it was read tick by tick, and where it came down was not
+        // quite where it was read to come down.
+        let k = FineKick::of(&self.ball_physics);
+        let mut fine = if self.ball_fine.synced == (self.ball_position, self.ball_velocity) {
+            self.ball_fine
+        } else {
+            FineBall::from_cm(self.ball_position, self.ball_velocity)
+        };
         // Only a ball that goes above that height comes down to it.
         let mut above = z > height_cm;
+        let mut last = self.ball_position;
         for _ in 0..200 {
-            vz -= i32::from(p.gravity_cm_per_tick2);
-            vx = vx * p.air_friction_milli / 1000;
-            vy = vy * p.air_friction_milli / 1000;
-            x += vx;
-            y += vy;
-            z += vz;
-            above |= z > height_cm;
-            if z <= height_cm && vz < 0 {
-                return above.then_some((x, y));
+            let mut path = [(0, 0, 0); STEPS];
+            let stopped = fine.tick_steps(&k, &mut path);
+            for b in path {
+                above |= b.2 > height_cm;
+                if b.2 <= height_cm && b.2 < last.2 {
+                    return above.then_some((b.0, b.1));
+                }
+                last = b;
+            }
+            if stopped {
+                break;
             }
         }
-        above.then_some((x, y))
+        above.then_some((last.0, last.1))
     }
 
     /// Where the ball was at the end of each small step of this tick
@@ -1100,21 +1096,6 @@ impl SpatialState {
         if stopped {
             self.ball = BallState::Loose;
             self.ball_velocity = (0, 0, 0);
-        }
-    }
-
-    /// The ball meets the grass coming down at `vz` (negative, cm/tick) and
-    /// leaves it upwards at `restitution_milli` of that speed (SIM 128,
-    /// the FIFA vertical rebound); a bounce lower than one tick of gravity
-    /// is no bounce: it rolls. The horizontal speed is kept (no source yet
-    /// for what the grass takes at the bounce, `ball.json`).
-    #[must_use]
-    pub fn bounce(p: &crate::balance::BallBalance, vz: i32) -> i32 {
-        let up = -vz * p.restitution_milli / 1000;
-        if up > i32::from(p.gravity_cm_per_tick2) {
-            up
-        } else {
-            0
         }
     }
 

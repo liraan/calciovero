@@ -125,6 +125,26 @@ impl Actor {
             let touch = f64::from(hidden.latents_for(*id).technical.first_touch);
             scene.reception.first_touch.insert(*id, touch);
         }
+        // What he believes each man is worth in the air (OI-102, SIM 149):
+        // a teammate he knows; an opponent he sees the size of, the rest
+        // as an average man.
+        for id in scene.teammates.iter().chain(scene.opponents.iter()) {
+            let Some(height) = scene.reception.heights.get(id).copied() else {
+                continue;
+            };
+            let force = if scene.teammates.contains(id) {
+                let l = hidden.latents_for(*id);
+                duel.aerial_force(
+                    l.technical.heading,
+                    l.physical.explosive_force,
+                    l.physical.maximal_force,
+                    height,
+                )
+            } else {
+                duel.aerial_force(0.5, 0.5, 0.5, height)
+            };
+            scene.reception.aerial.insert(*id, f64::from(force));
+        }
         let balance = hidden.shot_choice_balance();
         let (ctx, freedoms) =
             crate::read::build_choice(&scene, preferred_foot, risk_appetite, own_error, balance);

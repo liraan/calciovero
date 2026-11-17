@@ -45,3 +45,7 @@ Un'istruzione cambia quello che il giocatore vuole fare, non dove il motore lo m
 
 - **Ordini più forti spostando di più il blocco:** il giocatore resterebbe un punto spostato, non uno che sceglie, e i numeri dello spostamento sono già arbitrari fino a L3.
 - **L'ordine eseguito sempre:** toglierebbe la disciplina del giocatore (ADR-059 §4). Il giocatore indisciplinato che non pressa è calcio vero.
+
+## Note datate
+
+- **2026-11-17 — il gemello della corsa in profondità misura la linea (`SIM_VERSION` 149).** Il gemello misurava quanto l'attaccante sta davanti al pallone, una misura che si muove anche con dove va il pallone. Al 149 il compito lo porta ancora 2,4 m più vicino alla linea del penultimo avversario (3,9 m invece di 6,3), ma solo 1,2 m più avanti del pallone. Ora il gemello misura quello che il compito chiede, la distanza dalla linea, con almeno un metro di differenza (`a_striker_asked_to_run_waits_on_the_last_line`).

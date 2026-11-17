@@ -478,6 +478,28 @@ impl GroundTruth {
         outcome
     }
 
+    /// The error of a header at goal, radians (OI-102, SIM 149): the
+    /// kick's error (ADR-051, ADR-054) with his heading for the skill and
+    /// the foot alike, a placed power, and the pressure of a man who went
+    /// up with him (`contested`), coloured by his composure as a shot's.
+    /// Before, a header went at the middle of the goal with no error.
+    #[must_use]
+    pub fn header_error_rad(&mut self, player: PlayerId, contested: bool) -> f64 {
+        let l = self.latents_for(player);
+        let composure = if self.psychology {
+            l.psychological.composure
+        } else {
+            0.5
+        };
+        self.kick_balance.error_rad_composed(
+            l.technical.heading,
+            l.technical.heading,
+            0.5,
+            if contested { 1.0 } else { 0.0 },
+            composure,
+        )
+    }
+
     /// How high `player` reaches for a ball in the air, cm: his height and
     /// his jump (`explosive_force`), plus his arms if he is a keeper in his
     /// area (ADR-042, the aerial duel).
@@ -1468,6 +1490,22 @@ mod reception_tests {
         let v = mid * 2.0 * 340.0;
         assert!(g.resolve_reception(&ctx(better, v, 10_000), &p).controlled);
         assert!(!g.resolve_reception(&ctx(worse, v, 10_000), &p).controlled);
+    }
+
+    /// Twin (OI-102, SIM 149): two men heading at goal, the same scene; the
+    /// better header misses by less, and a man who went up with him makes
+    /// either miss by more.
+    #[test]
+    fn the_header_misses_by_his_heading() {
+        let mut g = gt();
+        let ha = g.latents_for(PlayerId::new(1, 0)).technical.heading;
+        let hb = g.latents_for(PlayerId::new(2, 0)).technical.heading;
+        assert!((ha - hb).abs() > 0.01, "the fixture players must differ");
+        let (better, worse) = if ha > hb { (1, 2) } else { (2, 1) };
+        let good = g.header_error_rad(PlayerId::new(better, 0), false);
+        let poor = g.header_error_rad(PlayerId::new(worse, 0), false);
+        assert!(good < poor, "{good} {poor}");
+        assert!(g.header_error_rad(PlayerId::new(better, 0), true) > good);
     }
 }
 

@@ -126,13 +126,45 @@ impl MatchState {
         winner: PlayerId,
         (bx, by, bz): (i32, i32, i32),
         goal: (i32, i32),
-        speed: f64,
+        (speed, contested): (f64, bool),
     ) {
         let home = ctx.match_.home.players.iter().any(|p| p.id == winner);
-        let (dx, dy) = (f64::from(goal.0 - bx), f64::from(goal.1 - by));
-        let len = dmath::hypot(dx, dy).max(1.0);
+        // Aimed at the middle of the goal, missed by his heading's error
+        // (OI-102, SIM 149): the ball keeps some of the way it was going
+        // across, so it misses that way (standing still, away from the
+        // side he heads it from); a miscued header rises, by the kick's
+        // vertical share. Before, every header went at the middle.
+        let error = ctx.hidden.header_error_rad(winner, contested);
+        let (dx0, dy0) = (f64::from(goal.0 - bx), f64::from(goal.1 - by));
+        let reach = dmath::hypot(dx0, dy0).max(1.0);
+        let incoming = self.spatial.ball_velocity().1;
+        let side = match incoming.signum() {
+            0 if by >= goal.1 => -1.0,
+            0 => 1.0,
+            s => f64::from(s),
+        };
         #[allow(clippy::cast_possible_truncation)]
-        let v = ((dx / len * speed) as i16, (dy / len * speed) as i16, 10);
+        let aim_y = goal.1 + (side * reach * error) as i32;
+        let (dx, dy) = (f64::from(goal.0 - bx), f64::from(aim_y - by));
+        let len = dmath::hypot(dx, dy).max(1.0);
+        let rise =
+            reach * error * ctx.hidden.kick_balance().vertical_share / (len / speed.max(1.0));
+        #[allow(clippy::cast_possible_truncation)]
+        let v = (
+            (dx / len * speed) as i16,
+            (dy / len * speed) as i16,
+            10 + rise.round() as i16,
+        );
+        // On target as it reaches the line, by the ball's own flight
+        // (Law 1).
+        let (half, bar) = (
+            self.laws.goal_half_width_cm,
+            self.obstacle_balance.goal_height_cm,
+        );
+        let on_target = self
+            .spatial
+            .ball_at_line((bx, by, bz), v, goal.0)
+            .is_some_and(|(y, z)| (y - goal.1).abs() < half && (0..bar).contains(&z));
         self.spatial.deflect_ball((bx, by, bz), v);
         self.spatial.played_by(winner);
         self.spatial.struck_shot();
@@ -159,9 +191,9 @@ impl MatchState {
         let fact = crate::fact::Fact::Trajectory {
             actor: winner,
             kind: crate::fact::TrajectoryKind::Shot {
-                on_target: true,
+                on_target,
                 from: (bx, by, bz),
-                to: (goal.0, goal.1, 100),
+                to: (goal.0, aim_y, 100),
                 initial_velocity: v,
                 shot_type: ds_orchestrator::ShotType::Header,
             },
@@ -220,27 +252,7 @@ impl MatchState {
                 serde_json::json!({ "winner_slot": winner.slot(), "aerial": true, "against": against }),
             );
         }
-        // A pass met in the air is complete if a teammate of the passer
-        // wins it, lost if an opponent does (the real definition: a
-        // completed pass is one his side receives, by foot or head).
-        if let Some((by, through)) = self
-            .pending
-            .as_ref()
-            .filter(|p| p.shot.is_none())
-            .and_then(|p| p.passer.map(|by| (by, p.through)))
-        {
-            let mate = m.home.players.iter().any(|p| p.id == by) == home;
-            let fact = crate::fact::Fact::Trajectory {
-                actor: by,
-                kind: crate::fact::TrajectoryKind::Pass {
-                    success: mate,
-                    through,
-                },
-            };
-            for c in crate::fact::classify(&fact) {
-                self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
-            }
-        }
+        self.tell_pass_met_in_air(ctx, tick, home);
         self.pending = None;
         self.offside_at_pass.clear();
         self.possession = if home {
@@ -268,7 +280,14 @@ impl MatchState {
                 serde_json::json!({ "x": bx, "y": by, "z": bz, "held": true, "claim": true }),
             );
         } else if in_their_area {
-            self.header_at_goal(ctx, tick, winner, (bx, by, bz), goal, speed);
+            self.header_at_goal(
+                ctx,
+                tick,
+                winner,
+                (bx, by, bz),
+                goal,
+                (speed, contenders.len() > 1),
+            );
         } else if depth(own) < length / 2 {
             // A header away from his goal: up and out.
             let forward = if own.0 == 0 { 1.0 } else { -1.0 };
@@ -286,6 +305,32 @@ impl MatchState {
         } else {
             // Down to his feet.
             self.spatial.set_carrier(Some(winner));
+        }
+    }
+
+    /// A pass met in the air is complete if a teammate of the passer wins
+    /// it, lost if an opponent does (the real definition: a completed pass
+    /// is one his side receives, by foot or head); `home` is the winner's
+    /// side.
+    fn tell_pass_met_in_air(&mut self, ctx: &mut MatchContext<'_>, tick: u64, home: bool) {
+        let m = ctx.match_;
+        if let Some((by, through)) = self
+            .pending
+            .as_ref()
+            .filter(|p| p.shot.is_none())
+            .and_then(|p| p.passer.map(|by| (by, p.through)))
+        {
+            let mate = m.home.players.iter().any(|p| p.id == by) == home;
+            let fact = crate::fact::Fact::Trajectory {
+                actor: by,
+                kind: crate::fact::TrajectoryKind::Pass {
+                    success: mate,
+                    through,
+                },
+            };
+            for c in crate::fact::classify(&fact) {
+                self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
+            }
         }
     }
 

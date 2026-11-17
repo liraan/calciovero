@@ -141,6 +141,12 @@ impl MatchState {
         // He places every man where he has seen him, not where he is: a man
         // he never saw is not in his scene (OI-106, decision A).
         scene.positions = self.as_seen_by(attacker, std::mem::take(&mut scene.positions));
+        // He sees how tall each man is (OI-102, SIM 149).
+        scene.reception.heights = scene
+            .positions
+            .keys()
+            .filter_map(|id| self.bodies.get(id).map(|b| (*id, b.height_cm)))
+            .collect();
         scene.penalty_kick = self.restart_pass == Some(crate::rules::RestartKind::Penalty);
         scene.horizon_cm = ctx.hidden.horizon_cm(attacker);
         scene.strike_error_rad = ctx.hidden.strike_error_he_expects(
@@ -673,7 +679,30 @@ impl MatchState {
                         .filter_map(|(q, _)| self.bodies.get(&q).map(|b| b.weight_kg))
                         .all(|w| goes_up(courage, my_weight, w))
                 });
-                let contests = |rank0: bool| (keeper && drop_in_box) || (!keeper && rank0 && brave);
+                // The keeper comes for a ball falling in his area if he
+                // believes he gets there before the nearest opponent he has
+                // seen (OI-102, SIM 149: his pace, against the pace and
+                // reaction he believes theirs; the race of a ball nobody
+                // has). Before, he came for every one, and an attacker who
+                // got there first headed it into an empty goal.
+                let keeper_first = keeper
+                    && drop_in_box
+                    && against.is_some_and(|d| {
+                        let pace = ctx
+                            .hidden
+                            .top_speed_now(id, self.bodies.get(&id).map_or(0.0, |b| b.fatigue));
+                        #[allow(clippy::cast_precision_loss)] // cm on a pitch
+                        let rival = other
+                            .players
+                            .iter()
+                            .filter_map(|q| self.perceived(id, q.id))
+                            .map(|at| distance_squared(at, d).isqrt() as f64)
+                            .fold(f64::INFINITY, f64::min);
+                        #[allow(clippy::cast_precision_loss)]
+                        let mine = distance_squared(me, d).isqrt() as f64;
+                        ds_calculator::thought::ThoughtBalance::load().race(mine, pace, rival) > 0.5
+                    });
+                let contests = |rank0: bool| keeper_first || (!keeper && rank0 && brave);
                 let rank_drop = against.map(|d| {
                     let mine = distance_squared(me, d);
                     squad

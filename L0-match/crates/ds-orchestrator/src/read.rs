@@ -115,6 +115,13 @@ pub struct ReceptionReckoning {
     /// The share of its speed a ball in the air keeps per tick (the air,
     /// which he knows as he knows the grass, `ball.json`).
     pub air_keep: f64,
+    /// The height of every man in his scene, cm: he sees it.
+    pub heights: BTreeMap<PlayerId, f64>,
+    /// What he believes each man is worth in the air (`duel.json`'s aerial
+    /// force, ADR-042): a teammate's, which he knows from playing with
+    /// him; an opponent's from his size only, the rest as an average man
+    /// (OI-102, SIM 149).
+    pub aerial: BTreeMap<PlayerId, f64>,
 }
 
 /// A ground pass weighed to arrive rolling (`kick.json`), struck at `v0`
@@ -1216,9 +1223,11 @@ fn pass_candidates(
             .map(|opos| distance_squared(tpos, opos).isqrt())
             .min()
             .unwrap_or(i64::MAX);
-        if freedom < PASS_FREEDOM_CM {
-            continue;
-        }
+        // A man marked closer than this is no ground pass (the prototype's
+        // gate, declared); in the air he is still a target, to win it with
+        // his head (OI-102, SIM 149): before, the long ball to the marked
+        // target man was not even an option.
+        let free = freedom >= PASS_FREEDOM_CM;
         // ADR-040: salience, not probability. freedom x line x distance.
         let lq = line_quality(pos, tpos, opponent_positions);
         // ADR-052: he imagines the pass, weighed to arrive rolling, and who
@@ -1259,12 +1268,14 @@ fn pass_candidates(
             brings(pos, tpos, goal, risk_appetite, pressure, balance),
         );
         let risk = 0.0;
-        candidates.push(ChoiceCandidate {
-            kind: ChoiceKind::Pass(*id),
-            geometric: geom,
-            risk,
-            visibility: lq,
-        });
+        if free {
+            candidates.push(ChoiceCandidate {
+                kind: ChoiceKind::Pass(*id),
+                geometric: geom,
+                risk,
+                visibility: lq,
+            });
+        }
         // The lofted pass goes over the line, so the lane does not count,
         // and it reaches farther; it is less precise and harder to control
         // (`loft_salience`). A teammate too far for a ground pass may be
@@ -1287,17 +1298,48 @@ fn pass_candidates(
                     .fold(f64::INFINITY, f64::min)
             };
             let margin = best(false) - best(true) - spread;
-            // Where it comes down he must control it at the speed the air
-            // left it, with whoever has run there meanwhile (ADR-058).
-            let clean = controls_lofted(scene, players, *id, (tpos, d, flight))
-                && !offside_to(scene, pos, here);
-            let geom = worth(
-                scene,
-                if clean {
-                    m.thought.confidence(margin)
+            // Both there when it comes down (OI-102, SIM 149): the ball is
+            // not his to control but to win in the air, against the best
+            // in the air of the opponents who get there; won, it is his
+            // side's, and the race is only whether he gets there. Before,
+            // the passer weighed only the control, and with a man on him
+            // the long ball to the target man was worth nothing.
+            let contested = best(true) <= flight && best(false) <= flight;
+            let wins = || {
+                let mine = scene.reception.aerial.get(id).copied().unwrap_or(0.0);
+                scene
+                    .opponents
+                    .iter()
+                    .filter_map(|o| scene.positions.get(o).map(|at| (o, *at)))
+                    .filter(|(_, at)| {
+                        let run = dmath::hypot(f64::from(at.0 - tpos.0), f64::from(at.1 - tpos.1));
+                        m.thought.believed_reaction_ticks
+                            + run / m.thought.believed_speed_cm_per_tick.max(1.0)
+                            <= flight
+                    })
+                    .all(|(o, _)| scene.reception.aerial.get(o).copied().unwrap_or(0.0) < mine)
+            };
+            let sure = if offside_to(scene, pos, here) {
+                0.0
+            } else if contested {
+                if wins() {
+                    // Won, it is his if it falls where he is: less the
+                    // spread of a long kick.
+                    m.thought.confidence(-spread)
                 } else {
                     0.0
-                },
+                }
+            } else if controls_lofted(scene, players, *id, (tpos, d, flight)) {
+                // Where it comes down he must control it at the speed the
+                // air left it, with whoever has run there meanwhile
+                // (ADR-058).
+                m.thought.confidence(margin)
+            } else {
+                0.0
+            };
+            let geom = worth(
+                scene,
+                sure,
                 tpos,
                 lofted_missed_at(scene, pos, tpos, flight),
                 risk_appetite,
@@ -2025,6 +2067,35 @@ mod keeper_visibility_tests {
                 .iter()
                 .find(|c| matches!(c.kind, ChoiceKind::Pass(_)))
                 .map_or(0.0, |c| c.geometric)
+        }
+
+        fn loft_salience(s: &PerceivedScene) -> f64 {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let (ctx, _) = build_choice(s, Side::Right, 0.5, 0.04, &b);
+            ctx.candidates
+                .iter()
+                .find(|c| matches!(c.kind, ChoiceKind::Loft(_)))
+                .map_or(0.0, |c| c.geometric)
+        }
+
+        /// Twin test (OI-102, SIM 149): the same long ball to the same
+        /// target man with a defender at his shoulder; only what the passer
+        /// knows of his man in the air changes. Stronger in the air than the
+        /// defender he sees, the ball is worth playing; weaker, it is not.
+        /// Before, with a man on him the long ball was worth nothing either
+        /// way.
+        #[test]
+        fn the_long_ball_to_the_man_who_wins_it_in_the_air() {
+            let mate = PlayerId::new(7, 0);
+            let opp = PlayerId::new(105, 0);
+            let mut s = scene((8000, 3400), Some((8060, 3450)));
+            s.reception.aerial.insert(opp, 0.5);
+            s.reception.aerial.insert(mate, 0.9);
+            let strong = loft_salience(&s);
+            s.reception.aerial.insert(mate, 0.2);
+            let weak = loft_salience(&s);
+            assert!(strong > 0.0, "strong {strong}");
+            assert!(weak < strong, "weak {weak}, strong {strong}");
         }
 
         /// ADR-050 (P1): a pass forward is more salient than the same pass back,
