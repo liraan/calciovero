@@ -27,7 +27,6 @@ rust-version = "1.85"
 authors = ["PC Football Manager Team"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/liraan/calciovero"
-homepage = "https://github.com/liraan/calciovero"
 documentation = "https://github.com/liraan/calciovero/tree/main/modules"
 
 [workspace.dependencies]
@@ -38,7 +37,6 @@ ds-db = { path = "L0-match/crates/ds-db", version = "0.1.0" }
 ds-orchestrator = { path = "L0-match/crates/ds-orchestrator", version = "0.1.0" }
 ds-stats = { path = "L0-match/crates/ds-stats", version = "0.1.0" }
 ds-match = { path = "L0-match/crates/ds-match", version = "0.1.0" }
-ds-test-runner = { path = "tools/ds-test-runner", version = "0.1.0" }
 ds-testkit = { path = "tools/ds-testkit", version = "0.1.0" }
 ds-fixtures = { path = "tools/ds-fixtures", version = "0.1.0" }
 ds-calculator = { path = "L0-match/crates/ds-calculator", version = "0.1.0" }
