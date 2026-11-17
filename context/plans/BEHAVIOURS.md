@@ -23,8 +23,8 @@ Il catalogo si costruisce dalla base, nell'ordine in cui si impara il calcio:
 
 1. **Come si gioca a pallone:** lo scopo del gioco e la sua misura (scritto qui sotto, approvato).
 2. **Il posizionamento e le responsabilità di ogni ruolo:** chi occupa quale spazio e perché, con e senza la palla (scritto qui sotto, approvato).
-3. **Le coppie affiatate:** i due centrali, il terzino e l'ala, le due punte, il portiere e i centrali, la coppia di centrocampo; l'intesa nasce dalle giocate riuscite insieme (decisione BB) (da scrivere).
-4. **La tattica:** la lavagna dell'allenatore (decisione AL; parte 2 qui sotto).
+3. **Le coppie affiatate:** i due centrali, il terzino e l'ala, le due punte, il portiere e i centrali, la coppia di centrocampo; l'intesa nasce dalle giocate riuscite insieme (decisione BB) (scritto qui sotto, approvato).
+4. **La tattica:** la lavagna dell'allenatore, già decisa (decisioni AL, AG, AO, AP in `L1-COACH.md`); qui sotto la parte 2 ne dà il riassunto per i comportamenti.
 
 Le tendenze del calciatore della parte 1 si ridistribuiscono negli strati 1 e 2 man mano che si scrivono.
 
@@ -73,6 +73,40 @@ Pochi ruoli di base; le varianti (il terzino invertito, il falso nove, il portie
 - **Le zone e le responsabilità di base** sono di grado 2, misurate sui tracking veri di Metrica (le posizioni medie per ruolo e per fase, chi pressa, chi resta dietro); il campione (due partite) va allargato.
 - **Anche i manuali di allenamento rappresentano una tendenza** (maintainer): sono una fonte, come i tracking, di quello che un calciatore di quel ruolo tende a fare; si citano.
 - **La difesa preventiva:** quanti restano dietro la palla quando si attacca (di solito tre più due nel calcio moderno) è una scelta dell'idea di gioco dell'allenatore (strato 4); lo strato 2 dice chi ne è responsabile nella forma di base.
+
+## Strato 3 · Le coppie affiatate (approvato dal maintainer)
+
+Molto del gioco nasce da piccole unità, coppie e triangoli che si conoscono. L'intesa c'è già (decisione BB): quanto bene uno prevede l'altro, cresciuta dalle giocate riuscite insieme. Questo strato dice cosa fa una coppia affiatata che una coppia nuova non fa:
+
+- **i movimenti complementari:** se il compagno viene corto, io vado lungo, perché so che lo farà;
+- **la divisione dei compiti senza parlarsi:** chi esce, chi copre, chi va sul pallone.
+
+Senza intesa, due compagni vanno sulla stessa palla, o la lasciano tutti e due (visto dal maintainer guardando la partita, 17 novembre).
+
+### Le unità del calcio moderno
+
+| Unità | Cosa fa quando è affiatata |
+|---|---|
+| **Portiere e centrali** | chi esce sul pallone alto e chi resta; il retropassaggio sicuro; la linea che sale e il portiere che copre lo spazio dietro |
+| **I due centrali** | uno esce, l'altro copre (la scalata); chi prende il centravanti; chi imposta e chi resta |
+| **Terzino e ala, la catena di fascia** | la sovrapposizione o la sottoposizione; chi dà ampiezza (mai tutti e due larghi); il raddoppio in difesa; uno copre l'altro |
+| **Mediano e centrali, il doppio mediano** | uno si abbassa a prendere palla, l'altro resta; le coperture davanti alla difesa |
+| **Il triangolo di fascia** (mezzala, ala, terzino) | le rotazioni: se uno si sposta, un altro occupa il suo spazio; il triangolo per uscire dalla pressione |
+| **Le due punte, o punta e trequartista** | i movimenti opposti: uno viene incontro, l'altro attacca la profondità; la sponda; l'uno-due |
+| **Battitore e saltatore sui piazzati** | il tempo del cross e del movimento |
+
+### Come funziona nel motore (LUNA)
+
+1. **Ogni coppia di compagni ha la sua intesa,** non solo quelle della tabella: la tabella dice dove pesa di più, per i ruoli vicini. **Le coppie sono automatiche** (maintainer): l'allenatore può tenerne conto nella formazione, ma non le dichiara.
+2. **Il movimento complementare nasce dalla previsione:** più un giocatore prevede bene il compagno, più lo spazio che sceglie con la misura (strato 2) tiene conto di dove andrà l'altro. Nessun copione: una coppia nuova sbaglia i tempi, una affiatata no.
+3. **L'intesa iniziale nasce dai fatti** (il vivaio fatto insieme, le stagioni nello stesso club), poi cresce e cala con le giocate.
+4. **I giocatori si parlano** (maintainer): "lascia!", "esco io!", "uomo!". Una chiamata è un atto con il suo tick, come i messaggi dalla panchina (decisione AP); a differenza della panchina, in campo **la sente chi è vicino,** come succede davvero (qui non c'è frustrazione per chi gioca: è la fisica del campo, non un suo comando). Chi la sente la segue quanto si fida, cioè quanto è forte l'intesa; e le chiamate riuscite fanno crescere l'intesa. Sono le chiamate che evitano due giocatori sullo stesso pallone.
+5. **La voce del capitano e dei leader pesa di più** (maintainer, decisione AO): il compagno gli dà più retta.
+
+### I test
+
+- **Gemelli:** due coppie di centrali uguali tranne l'intesa, lo stesso lancio lungo, e quella affiatata ha uno che va e uno che copre, quella nuova va in due o resta in due; la stessa catena di fascia con e senza intesa, e quella affiatata non si trova mai larga in due.
+- **Le chiamate:** un pallone libero fra due compagni, uno chiama, e l'altro lascia.
 
 ## Parte 1 · Le tendenze del calciatore
 
