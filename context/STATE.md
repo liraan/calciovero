@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `0c2d39e` - "docs(rules): correct the nextest claim with the measured numbers"
+**Last commit verified:** `688a908` - "docs: align the test count to 539 after the three removals"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,9 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**17 novembre, notte: la cache di `recorded()`, quarto intervento sui test.** `tick_record.rs` chiamava 22 volte `recorded()` e ogni volta rigiocava la stessa partita di seed 42 con la registrazione dei tick. Con `LazyLock` la partita si gioca una volta, le 20 chiamate di lettura usano la cache, e i due test di determinismo (`the_same_seed_gives_the_same_frames`, `recording_does_not_change_the_match`) usano `recorded_fresh()` per restare onesti. Misurato: `tick_record` da ~33 s a **10.5 s**. I 25 test restano identici, il C2 mirato e verde.
+
 
 **17 novembre, notte: i test più snelli, secondo e terzo intervento.**
 - `no_match_diverges` (commit `834732f`): da `for` seriale a `each_seed`, stessi 10 semi, stessa asserzione. Isolato con `nextest`: 142 s -> 9.4 s.

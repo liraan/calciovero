@@ -11,9 +11,17 @@ use ds_match::{MatchConfig, TickRecord, simulate_from_seed, simulate_from_seed_r
 
 const SEED: u64 = 42;
 
-fn recorded() -> (ds_match::MatchResult, Vec<TickRecord>) {
+use std::sync::LazyLock;
+
+static RECORDED: LazyLock<(ds_match::MatchResult, Vec<TickRecord>)> = LazyLock::new(recorded_fresh);
+
+fn recorded_fresh() -> (ds_match::MatchResult, Vec<TickRecord>) {
     let m = match_fixture(SEED).expect("fixture");
     simulate_from_seed_recorded(&m, SEED, MatchConfig::default())
+}
+
+fn recorded() -> (ds_match::MatchResult, Vec<TickRecord>) {
+    RECORDED.clone()
 }
 
 #[test]
@@ -47,8 +55,8 @@ fn one_record_per_tick_in_order() {
 
 #[test]
 fn the_same_seed_gives_the_same_frames() {
-    let (_, a) = recorded();
-    let (_, b) = recorded();
+    let (_, a) = recorded_fresh();
+    let (_, b) = recorded_fresh();
     assert_eq!(a, b);
 }
 
