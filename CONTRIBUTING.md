@@ -67,7 +67,8 @@ moving, you are ready. Other useful commands:
 ```bash
 cargo run --release -p ds-demo -- --seed 42 --roster          # who is who
 cargo run --release -p ds-demo -- --seed 42 --tui --frame 30  # the pitch at 30'
-cargo test --workspace                                         # all the tests
+cargo test --workspace                                         # all the tests (the gate)
+cargo nextest run --workspace --release                        # same tests, faster (no doctests)
 ```
 
 The hooks in `.githooks/` run the checks for you before a commit and a
@@ -82,7 +83,8 @@ push: they are the same checks the CI runs.
 2. **Fork, branch, change one thing.** One change per pull request: one
    balance file, one law, one fix, one document.
 3. **Check it.** For code: `cargo fmt`, `cargo clippy --workspace
-   --all-targets -- -D warnings`, `cargo test --workspace`. For balance:
+   --all-targets -- -D warnings`, `cargo test --workspace`
+   (`cargo nextest run --workspace --release` is faster for daily runs; the gate is `cargo test`). For balance:
    run a few seeds in the 2D view and write in the PR what you saw before
    and after.
 4. **Open the pull request**, filling in the template. Say *why*, not only
