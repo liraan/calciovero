@@ -17,6 +17,31 @@ Le tendenze vengono da **due fonti**, e la differenza conta:
 
 **L'ossatura** sono i principi di gioco classici, quelli insegnati nei corsi per allenatori (in attacco: penetrazione, sostegno, ampiezza, mobilità, improvvisazione; in difesa: temporeggiare, coprire, equilibrare, stringere, controllare), letti per il singolo giocatore.
 
+## Gli strati (maintainer, 17 novembre 2026)
+
+Il catalogo si costruisce dalla base, nell'ordine in cui si impara il calcio:
+
+1. **Come si gioca a pallone:** lo scopo del gioco e la sua misura (scritto qui sotto, approvato).
+2. **Il posizionamento e le responsabilità di ogni ruolo:** chi occupa quale spazio e perché, con e senza la palla (da scrivere).
+3. **Le coppie affiatate:** i due centrali, il terzino e l'ala, le due punte, il portiere e i centrali, la coppia di centrocampo; l'intesa nasce dalle giocate riuscite insieme (decisione BB) (da scrivere).
+4. **La tattica:** la lavagna dell'allenatore (decisione AL; parte 2 qui sotto).
+
+Le tendenze del calciatore della parte 1 si ridistribuiscono negli strati 1 e 2 man mano che si scrivono.
+
+## Strato 1 · Come si gioca a pallone (approvato dal maintainer)
+
+La base esiste già nella dottrina: è l'ADR-052 (ogni giocatore pensa), con la sua nota del 14 novembre (il primo obiettivo è il pallone). Qui è detta come la vive un calciatore.
+
+1. **Lo scopo:** fare più gol dell'avversario nel tempo della partita, dentro le regole. Da qui l'unica misura del gioco (ADR-052 §3): ogni cosa che un giocatore fa vale quanto avvicina la sua squadra al gol e quanto la allontana dal subirlo.
+2. **Si gioca con tre risorse:** il pallone (chi lo ha decide), lo spazio (dove si può giocare), il tempo (quanto se ne ha prima della pressione). Ogni gesto scambia l'una con l'altra: un passaggio laterale compra tempo, un dribbling rischia il pallone per lo spazio.
+3. **Il primo obiettivo è avere il pallone** (maintainer, 14 novembre): un pallone libero vale più di qualunque posto nella forma. Ma è un mezzo, non il fine: si tiene finché non si può avanzare, e se si perde, meglio lontano dalla propria porta.
+4. **Il gioco ha un verso, in avanti:** il valore di una posizione cresce verso la porta avversaria; un possesso che non avanza vale solo come sicurezza.
+5. **Si gioca in undici:** ognuno decide per sé, ma la misura è della squadra; nessuno tiene la palla per sé né corre per sé.
+6. **L'avversario gioca allo stesso gioco:** per questo si legge quello che sta per fare, e si anticipa.
+7. **Il gioco ha delle fasi,** che il giocatore riconosce da quello che vede, non stati che il motore cambia: con la palla, senza la palla, le due transizioni, le palle ferme.
+
+**Cosa vuol dire per il motore, e perché oggi sembra Subbuteo.** L'ADR-052 §5 dice che anche gli atti senza palla (pressare, coprire, smarcarsi, offrirsi, marcare) si scelgono con la stessa misura. Oggi chi ha la palla pensa; gli altri venti sono messi al loro posto da una formula geometrica (`shape.rs`: la linea a 30 m dietro il pallone, non sotto i 10 m dalla porta, gli attaccanti in cima al blocco). Un giocatore su ventidue usa la misura del gioco, gli altri sono pezzi agganciati al pallone. Lo strato 2 è dove questo si ripara: ogni giocatore senza palla occupa lo spazio che vale di più per la sua squadra, partendo dal suo ruolo, invece di stare in un punto calcolato.
+
 ## Parte 1 · Le tendenze del calciatore
 
 Ogni tendenza: cosa fa un calciatore vero; da quali caratteristiche dipende quanto bene lo fa; come si prova (un test di scena: una situazione fissa, il comportamento atteso con i suoi margini).
