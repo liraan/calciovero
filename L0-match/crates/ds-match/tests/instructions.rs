@@ -312,7 +312,7 @@ fn the_board_changes_from_its_tick() {
 fn a_striker_asked_to_run_waits_on_the_last_line() {
     let upto = usize::try_from(AT).expect("tick fits");
     let (mut asked, mut free) = (0.0, 0.0);
-    for seed in 50..56 {
+    for (a, f) in ds_fixtures::each_seed(50..56, |seed| {
         let plain = match_fixture(seed).expect("fixture");
         let striker = plain.home.players[9].id;
         let home: Vec<_> = plain.home.players.iter().map(|p| p.id).collect();
@@ -351,8 +351,13 @@ fn a_striker_asked_to_run_waits_on_the_last_line() {
             ds.iter().sum::<f64>() / ds.len().max(1) as f64
         };
         let window = upto + 1..upto + 18_000;
-        asked += from_line(&after[window.clone()]);
-        free += from_line(&before[window]);
+        (
+            from_line(&after[window.clone()]),
+            from_line(&before[window]),
+        )
+    }) {
+        asked += a;
+        free += f;
     }
     // The sums are of six matches: a metre each.
     assert!(
@@ -402,7 +407,7 @@ fn more_pressing_closes_the_carrier_down() {
         ds.iter().sum::<f64>() / ds.len().max(1) as f64
     };
     let (mut asked, mut free) = (0.0, 0.0);
-    for seed in 50..70 {
+    for (a, f) in ds_fixtures::each_seed(50..70, |seed| {
         let plain = match_fixture(seed).expect("fixture");
         let home: Vec<_> = plain.home.players.iter().map(|p| p.id).collect();
         let mut m = match_fixture(seed).expect("fixture");
@@ -421,8 +426,13 @@ fn more_pressing_closes_the_carrier_down() {
             after[..=upto],
             "the same match up to the order"
         );
-        asked += gap(&after[upto + 1..], &home);
-        free += gap(&before[upto + 1..], &home);
+        (
+            gap(&after[upto + 1..], &home),
+            gap(&before[upto + 1..], &home),
+        )
+    }) {
+        asked += a;
+        free += f;
     }
     // The sums are of twenty matches: half a metre each.
     assert!(

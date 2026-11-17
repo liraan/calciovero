@@ -25,7 +25,7 @@ const SWAP: u64 = 18_000;
 )]
 fn swapped_wide_men_strike_with_the_feet_they_have() {
     let (mut on_its_side, mut moved) = (0, 0);
-    for seed in 42..50 {
+    for (seed, wide, strong, width, r) in ds_fixtures::each_seed(42..50, |seed| {
         let mut m = match_fixture(seed).expect("fixture");
         let board = m.home.board.swapped(5, 8);
         m.home = m.home.clone().with_instructions(vec![Instruction {
@@ -45,6 +45,8 @@ fn swapped_wide_men_strike_with_the_feet_they_have() {
             .collect();
         let width = i32::from(m.pitch.width_m) * 100;
         let r = simulate_from_seed(&m, seed, MatchConfig::default());
+        (seed, wide, strong, width, r)
+    }) {
         for e in r.events.events() {
             if !matches!(e.event_type, EventType::Shot | EventType::Cross) {
                 continue;

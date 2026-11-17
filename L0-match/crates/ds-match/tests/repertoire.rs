@@ -67,9 +67,10 @@ const NOT_YET: &[(&str, &str)] = &[
 /// Every act that shows, with what shows it.
 fn acts_seen() -> BTreeSet<&'static str> {
     let mut seen = BTreeSet::new();
-    for seed in SEEDS {
+    for (result, records) in ds_fixtures::each_seed(SEEDS, |seed| {
         let m = match_fixture(seed).expect("fixture");
-        let (result, records) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
+        simulate_from_seed_recorded(&m, seed, MatchConfig::default())
+    }) {
         for e in result.events.events() {
             let f = &e.fields;
             let is = |k: &str, v: &str| f.get(k).and_then(|x| x.as_str()) == Some(v);

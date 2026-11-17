@@ -77,3 +77,12 @@ nursery = "warn"
 # and release (2026-11-15).
 [profile.dev]
 opt-level = 1
+
+# The tests play whole matches (the golden, the twins, the scene tests):
+# optimised like a release, they run several times faster, with the debug
+# checks kept (overflow and debug assertions stay on). The football does
+# not change: Rust reorders no floating-point arithmetic it is not asked
+# to, and the goldens are the same in every profile (2026-11-17, the
+# maintainer: "dobbiamo velocizzare i test").
+[profile.test]
+opt-level = 3

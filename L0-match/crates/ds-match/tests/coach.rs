@@ -57,15 +57,13 @@ fn changes(seed: u64, react: bool) -> (Vec<u32>, usize) {
 #[test]
 fn the_coach_reads_the_match() {
     let mut any = false;
-    for seed in 42..48 {
-        let (on, allowed) = changes(seed, true);
+    for (seed, (on, allowed), off) in ds_fixtures::each_seed(42..48, |seed| {
+        (seed, changes(seed, true), changes(seed, false).0)
+    }) {
         assert!(on.len() <= 3.min(allowed), "seed {seed}: {on:?}");
         assert!(on.iter().all(|&m| m >= 58), "seed {seed}: {on:?}");
         any |= !on.is_empty();
-        assert!(
-            changes(seed, false).0.is_empty(),
-            "seed {seed}: switched off"
-        );
+        assert!(off.is_empty(), "seed {seed}: switched off");
     }
     assert!(any, "a coach changes someone in six matches");
 }

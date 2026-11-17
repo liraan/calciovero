@@ -122,9 +122,10 @@ fn functional_l0_agents_move_and_do_not_cluster() {
 /// scorer: the ball crossed the line with nobody recorded on it.
 #[test]
 fn every_goal_has_a_scorer() {
-    for seed in 42..52 {
+    for (seed, result) in ds_fixtures::each_seed(42..52, |seed| {
         let m = match_fixture(seed).expect("fixture");
-        let result = simulate_from_seed(&m, seed, MatchConfig::default());
+        (seed, simulate_from_seed(&m, seed, MatchConfig::default()))
+    }) {
         for e in result
             .events
             .events()

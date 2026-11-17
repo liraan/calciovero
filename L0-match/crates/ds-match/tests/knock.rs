@@ -12,9 +12,11 @@ use ds_stats::EventType;
 #[test]
 fn a_knocked_man_leaves_the_pitch() {
     let mut seen = 0;
-    for seed in 42..54 {
+    for (seed, m, (r, records)) in ds_fixtures::each_seed(42..54, |seed| {
         let m = match_fixture(seed).expect("fixture");
-        let (r, records) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
+        let played = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
+        (seed, m, played)
+    }) {
         for e in r
             .events
             .events()

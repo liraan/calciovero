@@ -170,6 +170,31 @@ fn make_squad(id: u32, label: &str, slot_base: u32, seed: u64) -> Result<Squad, 
     .map_err(|e| e.to_string())
 }
 
+/// `f` for every seed, the seeds played side by side.
+///
+/// As many at once as the machine has cores; the results in the seeds'
+/// order. For the tests that play many matches (the maintainer, 17
+/// November: "dobbiamo velocizzare i test"): each match is the same match,
+/// only played on its own thread.
+///
+/// # Panics
+///
+/// If `f` panics for a seed.
+pub fn each_seed<T: Send>(seeds: std::ops::Range<u64>, f: impl Fn(u64) -> T + Sync) -> Vec<T> {
+    let cores = std::thread::available_parallelism().map_or(1, std::num::NonZero::get);
+    let seeds: Vec<u64> = seeds.collect();
+    let mut out = Vec::with_capacity(seeds.len());
+    for chunk in seeds.chunks(cores) {
+        std::thread::scope(|s| {
+            let f = &f;
+            #[allow(clippy::needless_collect, reason = "start them all, then join")]
+            let runs: Vec<_> = chunk.iter().map(|&seed| s.spawn(move || f(seed))).collect();
+            out.extend(runs.into_iter().map(|r| r.join().expect("a match")));
+        });
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
