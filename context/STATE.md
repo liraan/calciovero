@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `80c60fc` - "SIM 152: the place with the ball, chosen within the zone of the role (ADR-071)"
+**Last commit verified:** `7569fc6` - "docs(state): bookmark after the faster tests and SIM 152"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,12 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**17 novembre, notte: perché i giocatori passano indietro (strato 1, tendenza 4 "il gioco ha un verso, in avanti").**
+- **Ipotesi smentita:** togliendo il filtro del prototipo che scarta i compagni marcati entro 3 m (`PASS_FREEDOM_CM`), i passaggi non cambiano (23% in avanti, 23% indietro). L'ho rimesso com'era.
+- **La causa trovata:** il valore di avere la palla in uno spazio (`space_value`) è "possesso × (1 + quanto è vicino alla porta)", più la probabilità di gol del tiro da lì. Il numero di partenza, `possession_value` 0,02, è dichiarato arbitrario. Da una porta all'altra il valore cresce di 2 volte, quindi il passaggio sicuro all'indietro vince quasi sempre contro quello in avanti, più rischioso.
+- **Il dato vero (Wyscout, Serie A 2017-18):** la probabilità che un possesso finisca in gol, per zona del campo dove il pallone è giocato. Al centro, dal primo al sesto sesto del campo: 0,39%, 0,78%, 0,98%, 1,25%, 2,69%, 14,69%; sulle fasce da 0,36% a 2,41%. Dalla propria trequarti all'ingresso dell'area il valore cresce di circa 7 volte, non di 2.
+- **Il prossimo passo (ADR delegato):** il valore di una zona del campo ricavato da questi dati, di grado 1-2, al posto della forma arbitraria di oggi. La probabilità di gol del tiro resta dove la calcola il pensiero. Poi la misura della direzione dei passaggi contro il 31/53/16 della Serie A.
 
 **17 novembre, sera: i test più veloci, e lo strato 2 con la palla.**
 - **I test:** la suite intera passa da 597 a 420 secondi su quattro processori. Nessun test saltato e nessuno cambiato in quello che controlla.
