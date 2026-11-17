@@ -48,6 +48,10 @@ pub struct Moment {
     pub ball_state: BallState,
     /// Who has the ball at the tick before.
     pub carrier: Option<PlayerId>,
+    /// The referee, a ghost of the Laws for the view (ADR-021 note): about
+    /// ten metres from the ball on his diagonal, running as a referee runs
+    /// (`ds_demo::pitchview::referee_step`), cm.
+    pub referee: (f32, f32),
 }
 
 #[allow(clippy::cast_precision_loss)] // cm and degrees: far inside f32's exact range
@@ -159,11 +163,33 @@ impl Moment {
         } else {
             lerp(z0, z1)
         };
+        // The referee from the kick-off to these two ticks, a tick at a
+        // time, no faster than he runs (the maintainer's report on seed 43:
+        // before, he jumped with the ball, and stood on it when it lay on
+        // his diagonal).
+        let pitch = (
+            i32::from(physics.pitch_m.0) * 100,
+            i32::from(physics.pitch_m.1) * 100,
+        );
+        let ball2 = |r: &TickRecord| (r.ball.position.0, r.ball.position.1);
+        let mut ref0 = ds_demo::pitchview::referee_at(ball2(&records[0]), pitch);
+        for r in &records[..=i] {
+            ref0 = ds_demo::pitchview::referee_step(ref0, ball2(r), pitch);
+        }
+        let ref1 = if j > i {
+            ds_demo::pitchview::referee_step(ref0, ball2(r1), pitch)
+        } else {
+            ref0
+        };
         Self {
             players,
             ball: (lerp(x0, x1), lerp(y0, y1), z),
             ball_state: r0.ball.state,
             carrier: r0.carrier,
+            referee: (
+                lerp(ref0.0 as f32, ref1.0 as f32),
+                lerp(ref0.1 as f32, ref1.1 as f32),
+            ),
         }
     }
 }

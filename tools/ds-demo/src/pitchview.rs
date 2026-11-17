@@ -160,20 +160,88 @@ pub fn roster(m: &ds_model::Match) -> String {
     out
 }
 
-/// Where the referee stands, for the view (plan L0-CLOSE 10g): on the
-/// diagonal from near one corner of the pitch to the other, at the point
-/// nearest the ball, as the diagonal system of control puts him.
+/// How far from the ball the referee keeps, cm: about ten metres (the
+/// maintainer, 17 November), so that he sees play without standing in it.
+pub const REFEREE_DISTANCE_CM: f64 = 1_000.0;
+
+/// How fast the referee runs at most, cm a tick: 6.7 m/s.
+///
+/// 40 m in 6 s, the sprint of FIFA's fitness test for elite referees
+/// (FIFA, *Fitness tests for match officials*, the 6 x 40 m sprint, time
+/// limit 6.0 s).
+pub const REFEREE_SPEED_CM_PER_TICK: f64 = 4_000.0 / 60.0;
+
+/// Where the referee wants to stand, for the view: about ten metres from
+/// the ball, on his diagonal.
+///
+/// Plan L0-CLOSE 10g; the maintainer's report on seed 43. The diagonal runs
+/// from near one corner of the pitch to the other, as the diagonal system
+/// of control puts him. When the ball is on the diagonal, or
+/// near it, he stands along it, towards the middle of the pitch, so that
+/// he is never on the ball. The Laws are present in the view as a ghost:
+/// he is no actor of the match (ADR-021 note).
 #[must_use]
 pub fn referee_at(ball: (i32, i32), (length, width): (i32, i32)) -> (i32, i32) {
     let (ax, ay) = (f64::from(length) * 0.15, f64::from(width) * 0.85);
     let (bx, by) = (f64::from(length) * 0.85, f64::from(width) * 0.15);
     let (dx, dy) = (bx - ax, by - ay);
-    let len2 = dx.mul_add(dx, dy * dy).max(1.0);
-    let t = ((f64::from(ball.0) - ax).mul_add(dx, (f64::from(ball.1) - ay) * dy) / len2)
-        .clamp(0.0, 1.0);
+    let len = ds_core::dmath::hypot(dx, dy).max(1.0);
+    let (ux, uy) = (dx / len, dy / len);
+    let (px, py) = (f64::from(ball.0) - ax, f64::from(ball.1) - ay);
+    // Along the diagonal, from its first end, and how far off it.
+    let along = px.mul_add(ux, py * uy);
+    let off = px.mul_add(-uy, py * ux).abs();
+    let slide = REFEREE_DISTANCE_CM
+        .mul_add(REFEREE_DISTANCE_CM, -off * off)
+        .max(0.0)
+        .sqrt();
+    // Towards the middle of the pitch, unless the end is too near.
+    let towards: f64 = if along <= len / 2.0 { 1.0 } else { -1.0 };
+    let mut t = towards.mul_add(slide, along);
+    if t < 0.0 || t > len {
+        t = (-towards).mul_add(slide, along);
+    }
+    let t = t.clamp(0.0, len);
     #[allow(clippy::cast_possible_truncation)]
-    let p = (t.mul_add(dx, ax) as i32, t.mul_add(dy, ay) as i32);
+    let p = (
+        ux.mul_add(t, ax).round() as i32,
+        uy.mul_add(t, ay).round() as i32,
+    );
     p
+}
+
+/// The referee one tick on (for the view): from where he was towards where
+/// he wants to stand, no faster than a referee runs.
+#[must_use]
+pub fn referee_step(from: (i32, i32), ball: (i32, i32), pitch: (i32, i32)) -> (i32, i32) {
+    let to = referee_at(ball, pitch);
+    let (dx, dy) = (f64::from(to.0 - from.0), f64::from(to.1 - from.1));
+    let d = ds_core::dmath::hypot(dx, dy);
+    if d <= REFEREE_SPEED_CM_PER_TICK {
+        return to;
+    }
+    let k = REFEREE_SPEED_CM_PER_TICK / d;
+    #[allow(clippy::cast_possible_truncation)]
+    let p = (
+        from.0 + (dx * k).round() as i32,
+        from.1 + (dy * k).round() as i32,
+    );
+    p
+}
+
+/// The referee at every tick of a match, from where he wants to stand at
+/// the kick-off (for the view).
+#[must_use]
+pub fn referee_path(balls: &[(i32, i32)], pitch: (i32, i32)) -> Vec<(i32, i32)> {
+    let mut out = Vec::with_capacity(balls.len());
+    let mut at = balls
+        .first()
+        .map_or((pitch.0 / 2, pitch.1 / 2), |b| referee_at(*b, pitch));
+    for b in balls {
+        at = referee_step(at, *b, pitch);
+        out.push(at);
+    }
+    out
 }
 
 /// The marker of a player: `A`-`K` home, `a`-`k` away, by squad slot.
@@ -269,6 +337,24 @@ mod tests {
         let near = referee_at((1000, 6000), pitch);
         let far = referee_at((9500, 800), pitch);
         assert!(near.0 < 3000 && far.0 > 7500, "{near:?} {far:?}");
+    }
+
+    /// The referee is never on the ball (the maintainer's report on seed
+    /// 43): with the ball on his diagonal he stands about ten metres from
+    /// it, and he never runs faster than a referee.
+    #[test]
+    fn the_referee_keeps_off_the_ball_and_runs_as_a_referee() {
+        let pitch = (10_500, 6_800);
+        let on = (5250, 3400);
+        let at = referee_at(on, pitch);
+        let d = ds_core::dmath::hypot(f64::from(at.0 - on.0), f64::from(at.1 - on.1));
+        assert!((d - REFEREE_DISTANCE_CM).abs() < 2.0, "{d}");
+        let path = referee_path(&[(1000, 6000), (9500, 800), (9500, 800)], pitch);
+        for w in path.windows(2) {
+            let step =
+                ds_core::dmath::hypot(f64::from(w[1].0 - w[0].0), f64::from(w[1].1 - w[0].1));
+            assert!(step <= REFEREE_SPEED_CM_PER_TICK + 1.0, "{step}");
+        }
     }
 
     use super::*;

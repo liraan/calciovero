@@ -369,11 +369,7 @@ pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
             token(geom, p.id, p.at, p.heading, m.carrier == Some(p.id)).map(Item::Token)
         })
         .collect();
-    #[allow(clippy::cast_possible_truncation)] // a point on the pitch, cm
-    let (rx, ry) =
-        ds_demo::pitchview::referee_at((m.ball.0 as i32, m.ball.1 as i32), geom.pitch_cm);
-    #[allow(clippy::cast_precision_loss)] // cm on a pitch
-    if let Some(r) = token(geom, referee, (rx as f32, ry as f32), 0.0, false) {
+    if let Some(r) = token(geom, referee, m.referee, 0.0, false) {
         items.push(Item::Referee(r));
     }
     let (bx, by, bz) = m.ball;
