@@ -1413,17 +1413,37 @@ impl SpatialState {
                 (len >= 1.0).then(|| (dx / len, dy / len))
             });
             let pace = dir.map_or(0.0, |d| vx.mul_add(d.0, vy * d.1));
+            // Turning by more than 60 degrees (the turn of the movement,
+            // plan L0-CLOSE 10e), he keeps it under his sole while he turns,
+            // and plays it ahead once he runs that way (SIM 151): before, he
+            // played it the new way while his body still went the old one,
+            // and left it behind him.
             self.touch = match dir {
-                Some(dir) if pace >= 1.0 => {
+                Some(dir) if pace >= 1.0 && pace >= 0.5 * dmath::hypot(vx, vy) => {
                     let period = period_of(carrier, pace).max(1.0);
+                    // He meets it where it is, which may be a step behind
+                    // him (it lay where he was a tick ago): the touch takes
+                    // that gap too, so the ball runs ahead of him and comes
+                    // back to his foot at the end of his steps (SIM 151,
+                    // pure error 2b, `BEHAVIOURS.md` 8). Before, it was
+                    // weighed as if it started at his feet, and it stayed a
+                    // tick behind him: 31% of his ticks more than half a
+                    // metre behind where he looked.
+                    // He touched it as he reached it, within this tick: it
+                    // has rolled this tick already, and he meets it again
+                    // `period` ticks from then.
+                    let behind = f64::from(pos.0 - self.ball_position.0)
+                        .mul_add(dir.0, f64::from(pos.1 - self.ball_position.1) * dir.1);
+                    let run = pace * period;
+                    let stretch = pace.mul_add(period - 1.0, behind.max(0.0)) / run;
                     Some(Touch {
                         from: (
                             f64::from(self.ball_position.0),
                             f64::from(self.ball_position.1),
                         ),
                         dir,
-                        speed: touch_speed(pace, period, keep),
-                        at: tick,
+                        speed: touch_speed(pace, period, keep) * stretch,
+                        at: tick.saturating_sub(1),
                         period,
                         held_cm: 0.0,
                     })
@@ -1623,6 +1643,25 @@ impl SpatialState {
             .touch
             .as_ref()
             .is_some_and(|tc| tick.saturating_sub(tc.at) as f64 >= tc.period);
+        // The ball he played ahead (SIM 151, pure error 2b): where it will be
+        // when he meets it again, and in how many ticks. He runs there to
+        // arrive with it, not past it.
+        let keep = f64::from(self.ball_physics.ground_friction_milli) / 1000.0;
+        #[allow(clippy::cast_precision_loss)]
+        let meet = self
+            .touch
+            .as_ref()
+            .filter(|tc| tc.held_cm <= 0.0 && tc.speed > 0.0 && tc.period > 0.0)
+            .map(|tc| {
+                let d = rolled(tc.speed, tc.period, keep);
+                let at = (
+                    tc.dir.0.mul_add(d, tc.from.0),
+                    tc.dir.1.mul_add(d, tc.from.1),
+                );
+                let left = (tc.at as f64 + tc.period - tick as f64).max(1.0);
+                #[allow(clippy::cast_possible_truncation)]
+                ((at.0.round() as i32, at.1.round() as i32), left)
+            });
         let mut fines: Vec<(PlayerId, FineBody)> = Vec::with_capacity(work.len());
         // His top speed this tick, cm a tick: a push of the separation does
         // not move him faster than his legs (SIM 150).
@@ -1649,6 +1688,8 @@ impl SpatialState {
                 // (he turned, he was held up): he goes to it.
                 if overdue {
                     ball
+                } else if let Some((at, _)) = meet {
+                    at
                 } else {
                     self.carry_target.unwrap_or(entry.1)
                 }
@@ -1796,12 +1837,23 @@ impl SpatialState {
                     dist / (outcome.reposition_ticks * steps).max(1.0)
                 };
                 // He brakes to stop at his place; into a contest he goes at speed.
-                let wanted = if contests {
-                    top_s
-                } else {
-                    in_time.min(top_s).min((2.0 * decel_s * dist).sqrt())
-                }
-                .min(dist);
+                // With the ball rolling ahead of him, at the pace that brings
+                // him to it when it is due.
+                let carrying = meet
+                    .filter(|_| Some(entry.0) == self.carrier && !overdue)
+                    .map(|(_, left)| dist / (left * steps));
+                let wanted = carrying
+                    .map_or_else(
+                        || {
+                            if contests {
+                                top_s
+                            } else {
+                                in_time.min(top_s).min((2.0 * decel_s * dist).sqrt())
+                            }
+                        },
+                        |pace| pace.min(top_s),
+                    )
+                    .min(dist);
                 let (ux, uy) = if leg > 0.0 {
                     (dx / leg, dy / leg)
                 } else {
