@@ -6,6 +6,7 @@
 
 use ds_match_api::{MatchPlugin, PluginCard};
 
+use crate::spatial::STEPS;
 use crate::state::prelude::*;
 
 /// The technique.
@@ -51,18 +52,27 @@ impl MatchState {
         }
     }
 
-    /// Who meets a ball in the air at `(bx, by, bz)`: within his reach for
-    /// a passing ball, and high enough (height, jump, a keeper's arms).
+    /// Who meets a ball in the air at `(bx, by, bz)`, at small step `step`
+    /// of the tick (ADR-069, SIM 148: each man where he was at that step):
+    /// within his reach for a passing ball, and high enough (height, jump,
+    /// a keeper's arms).
     pub(crate) fn aerial_contenders(
         &self,
         ctx: &mut MatchContext<'_>,
         tick: u64,
         (bx, by, bz): (i32, i32, i32),
+        step: usize,
     ) -> Vec<(PlayerId, f64, bool)> {
         let (length, width) = pitch_cm(ctx);
         let radius = self.reception_balance.loose_control_radius_cm;
         let off = ctx.hidden.offball_balance();
         let passer = self.pending.as_ref().and_then(|p| p.passer);
+        // Nobody meets in the air the ball he has just played, as nobody
+        // receives his own pass (SIM 148): met at every small step, a ball
+        // he had just headed up and out was still at his head the step
+        // after, and he headed it again, and again.
+        let touches = self.spatial.touches();
+        let own = touches.played.filter(|_| touches.deflected.is_none());
         let m = ctx.match_;
         let mut contenders: Vec<(PlayerId, f64, bool)> = Vec::new();
         // Those who reach it (`near`), and those a body's width farther who
@@ -71,10 +81,13 @@ impl MatchState {
         for (squad, home) in [(&m.home, true), (&m.away, false)] {
             let keeper = squad.players.first().map(|p| p.id);
             for p in &squad.players {
-                if Some(p.id) == passer || self.challenges.get(&p.id).is_some_and(|t| tick < *t) {
+                if Some(p.id) == passer
+                    || Some(p.id) == own
+                    || self.challenges.get(&p.id).is_some_and(|t| tick < *t)
+                {
                     continue;
                 }
-                let Some(a) = self.spatial.agent(p.id).map(|a| a.position) else {
+                let Some(a) = self.spatial.body_at_step(p.id, step) else {
                     continue;
                 };
                 // In the air he contests it shoulder to shoulder: a body's
@@ -172,12 +185,23 @@ impl MatchState {
         if self.pending.as_ref().is_some_and(|p| p.shot.is_some()) {
             return;
         }
-        let (bx, by, bz) = self.spatial.ball_3d();
-        if bz < FEET_BAND_CM {
-            return; // at the feet: the ground control takes it
-        }
+        // At the first small step of the tick where it passes within
+        // someone's reach (ADR-069, SIM 148): the ball and the men where
+        // each was at that step. Before, only where the tick ended, and a
+        // ball crossing a man's head between two ticks went past him.
+        // Below the band of the header it is the feet's.
         let (length, width) = pitch_cm(ctx);
-        let contenders = self.aerial_contenders(ctx, tick, (bx, by, bz));
+        let Some(((bx, by, bz), contenders)) = self
+            .spatial
+            .ball_path()
+            .into_iter()
+            .enumerate()
+            .filter(|(_, b)| b.2 >= FEET_BAND_CM)
+            .map(|(s, b)| (b, self.aerial_contenders(ctx, tick, b, s)))
+            .find(|(_, c)| !c.is_empty())
+        else {
+            return;
+        };
         let m = ctx.match_;
         let Some(winner) = ctx.hidden.resolve_aerial(&contenders) else {
             return;
@@ -390,6 +414,15 @@ impl MatchState {
         path: ((i32, i32, i32), (i32, i32, i32)),
     ) -> Option<PlayerId> {
         let radius = self.reception_balance.loose_control_radius_cm;
+        // The tick's small steps, when the path given is this tick's.
+        let steps = {
+            let p = self.spatial.ball_path();
+            if p[STEPS - 1] == path.1 {
+                p
+            } else {
+                [path.1; STEPS]
+            }
+        };
         let players: Vec<PlayerId> = ctx
             .match_
             .home
@@ -411,17 +444,23 @@ impl MatchState {
                 continue;
             }
             let unready = self.unready(ctx, tick, passer, who);
-            let Some(pos) = self.spatial.agent(who).map(|a| a.position) else {
-                continue;
-            };
             // Where the ball passes nearest him this tick, and how high it
             // is there: below the band of the header it is his foot's (a
             // ball coming down fast crosses his reach between two ticks).
-            let (near, z) = nearest_on_path(path, pos);
-            if z >= FEET_BAND_CM {
+            // Small step by small step (ADR-069, SIM 148): each stretch of
+            // the ball's path against where he was at its end.
+            let Some((d, _)) = (0..STEPS)
+                .filter_map(|s| {
+                    let pos = self.spatial.body_at_step(who, s)?;
+                    let from = if s == 0 { path.0 } else { steps[s - 1] };
+                    let (near, z) = nearest_on_path((from, steps[s]), pos);
+                    Some((distance_squared(pos, near), z))
+                })
+                .filter(|(_, z)| *z < FEET_BAND_CM)
+                .min_by_key(|(d, _)| *d)
+            else {
                 continue;
-            }
-            let d = distance_squared(pos, near);
+            };
             let reach = if unready {
                 i64::from(crate::spatial::BODY_RADIUS_CM)
             } else {
@@ -747,7 +786,13 @@ impl MatchState {
         let low = match self.spatial.ball_state() {
             crate::spatial::BallState::Loose => true,
             crate::spatial::BallState::InFlight => {
-                self.ball_from.2.min(self.spatial.ball_3d().2) < FEET_BAND_CM
+                // Its lowest at any small step (ADR-069, SIM 148).
+                self.spatial
+                    .ball_path()
+                    .iter()
+                    .map(|b| b.2)
+                    .fold(self.ball_from.2, i32::min)
+                    < FEET_BAND_CM
             }
             crate::spatial::BallState::Possessed => false,
         };

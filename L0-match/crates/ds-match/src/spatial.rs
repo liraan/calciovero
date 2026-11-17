@@ -216,6 +216,9 @@ pub(crate) const SUBSTEPS: i32 = 5;
 /// (ADR-069), so that a small step of gravity or of acceleration is a
 /// whole number.
 pub(crate) const FINE: i64 = 100;
+/// The small steps of a tick, as a length.
+#[allow(clippy::cast_sign_loss)]
+pub(crate) const STEPS: usize = SUBSTEPS as usize;
 
 /// The ball's constants per small step, in fine units, derived from the
 /// per-tick ones of `ball.json` (ADR-069: no new number).
@@ -296,7 +299,14 @@ impl FineBall {
     /// One tick: its small steps of gravity, the friction of the air or
     /// of the grass, the bounce; whether it stopped.
     fn tick(&mut self, k: &FineKick) -> bool {
-        for _ in 0..SUBSTEPS {
+        self.tick_steps(k, &mut [(0, 0, 0); STEPS])
+    }
+
+    /// One tick, with where the ball is, in centimetres, at the end of
+    /// each small step (a ball that stops stays where it stopped).
+    fn tick_steps(&mut self, k: &FineKick, path: &mut [(i32, i32, i32); STEPS]) -> bool {
+        let cm = |f: i64| i32::try_from((f + FINE / 2).div_euclid(FINE)).unwrap_or(0);
+        for s in 0..STEPS {
             // On the ground the grass slows the ball more than the air.
             let keep = if self.at.2 == 0 && self.v.2 <= 0 {
                 k.ground_ppm
@@ -316,7 +326,12 @@ impl FineBall {
                 let up = -self.v.2 * k.restitution_milli / 1000;
                 self.v.2 = if up > k.gravity { up } else { 0 };
             }
+            path[s] = (cm(self.at.0), cm(self.at.1), cm(self.at.2));
             if self.at.2 == 0 && self.v.0.abs() <= k.stop && self.v.1.abs() <= k.stop {
+                let here = path[s];
+                for rest in path.iter_mut().skip(s + 1) {
+                    *rest = here;
+                }
                 return true;
             }
         }
@@ -372,6 +387,16 @@ pub struct SpatialState {
     /// hundredths of a centimetre and its velocity per small step, and the
     /// centimetre state they were last in step with.
     ball_fine: FineBall,
+    /// Where the ball was at the end of each small step of the last tick,
+    /// centimetres (ADR-069, SIM 148): the contacts are judged there.
+    ball_steps: [(i32, i32, i32); STEPS],
+    /// Where each body was at the end of each small step of the last
+    /// tick, centimetres (ADR-069, SIM 148).
+    body_steps: BTreeMap<PlayerId, [(i32, i32); STEPS]>,
+    /// How far short of the last defender's line a run waits (Law 11, the
+    /// margin of `offball.json`): where a man asked to attack the depth
+    /// holds (SIM 148).
+    onside_margin_cm: i32,
     /// The team block (VISION §3): where each outfield player stands
     /// without instructions.
     block: crate::balance::BlockBalance,
@@ -503,6 +528,9 @@ impl SpatialState {
             touches: Touches::default(),
             ball_physics: crate::balance::BallBalance::load(),
             ball_fine: FineBall::default(),
+            ball_steps: [(length / 2, width / 2, 0); STEPS],
+            body_steps: BTreeMap::new(),
+            onside_margin_cm: ds_calculator::offball::OffBallBalance::load().onside_margin_cm,
             block: crate::balance::BlockBalance::load(),
             roles: crate::shape::slots(home, away),
             boards: (home.board, away.board),
@@ -741,7 +769,73 @@ impl SpatialState {
             orders: self.orders(home),
             transition: self.transition.1 < self.transition.0,
         };
-        Some(crate::shape::place(role, situation, &self.block))
+        let mut at = crate::shape::place(role, situation, &self.block);
+        // Asked to attack the depth (ADR-070), with the ball he holds on
+        // the last defender's shoulder, onside, in his own lane: from there
+        // he goes. Before, the ask counted only when the run was already
+        // one of his options, and a striker behind the ball never had it.
+        if in_possession && board.with_ball_tasks[slot.min(10)] == ds_model::Task::Run {
+            let forward = if home { 1 } else { -1 };
+            if let Some(line) = self.second_last(home) {
+                let x = line - forward * self.onside_margin_cm;
+                if (x - at.0) * forward > 0 {
+                    at.0 = x.clamp(0, length);
+                }
+            }
+        }
+        Some(at)
+    }
+
+    /// The line of the second-last opponent of side `home` (Law 11), along
+    /// the pitch, as they stand.
+    fn second_last(&self, home: bool) -> Option<i32> {
+        let mut xs: Vec<i32> = self
+            .agents
+            .iter()
+            .filter(|(id, _)| (crate::perception::team_of(**id) == 0) != home)
+            .map(|(_, a)| a.position.0)
+            .collect();
+        if home {
+            xs.sort_unstable_by(|a, b| b.cmp(a));
+        } else {
+            xs.sort_unstable();
+        }
+        xs.get(1).copied()
+    }
+
+    /// What the coach's team orders ask of `id` now (ADR-070): the quick
+    /// instructions and the transitions as asks in his choice, not only as
+    /// a place in the block. `with_ball` is whether his side has the ball;
+    /// `rank` how many teammates are nearer the opposing carrier than him.
+    /// Without the ball: more pressing, or the counter-press in the
+    /// seconds after losing it, ask the two nearest to press; the drop
+    /// back asks everyone to hold. With it, in the seconds after winning
+    /// it: the counter asks to run, keeping it asks to offer.
+    #[must_use]
+    pub fn team_asked(
+        &self,
+        id: PlayerId,
+        with_ball: bool,
+        rank: Option<u32>,
+    ) -> Option<ds_orchestrator::OffBallAct> {
+        use ds_orchestrator::OffBallAct as A;
+        let home = crate::perception::team_of(id) == 0;
+        let o = self.orders(home);
+        let transition = self.transition.1 < self.transition.0;
+        let near = rank.is_some_and(|r| r <= 1);
+        if with_ball {
+            return match (transition, o.won) {
+                (true, ds_model::OnWin::Counter) => Some(A::Run),
+                (true, ds_model::OnWin::Keep) => Some(A::Offer),
+                _ => None,
+            };
+        }
+        rank?;
+        match (transition, o.lost) {
+            (true, ds_model::OnLoss::CounterPress) if near => Some(A::Press),
+            (true, ds_model::OnLoss::DropBack) => Some(A::Hold),
+            _ => (o.press_cm > 0 && near).then_some(A::Press),
+        }
     }
 
     /// The state of one agent, or `None` if the id is not on the pitch.
@@ -953,6 +1047,31 @@ impl SpatialState {
         above.then_some((x, y))
     }
 
+    /// Where the ball was at the end of each small step of this tick
+    /// (ADR-069, SIM 148); a ball struck, placed or met since it moved is
+    /// only where it is now.
+    #[must_use]
+    pub fn ball_path(&self) -> [(i32, i32, i32); STEPS] {
+        if self.ball_steps[STEPS - 1] == self.ball_position {
+            self.ball_steps
+        } else {
+            [self.ball_position; STEPS]
+        }
+    }
+
+    /// Where `id` was at the end of small step `s` of this tick (ADR-069,
+    /// SIM 148); a man placed since he moved is only where he is now.
+    #[must_use]
+    pub fn body_at_step(&self, id: PlayerId, s: usize) -> Option<(i32, i32)> {
+        let now = self.agents.get(&id)?.position;
+        Some(
+            self.body_steps
+                .get(&id)
+                .filter(|p| p[STEPS - 1] == now)
+                .map_or(now, |p| p[s.min(STEPS - 1)]),
+        )
+    }
+
     /// Advances the ball one tick if it is in flight (MD-17/18).
     ///
     /// Applies gravity to `vz`, gravity to `z`, friction to the horizontal
@@ -962,6 +1081,7 @@ impl SpatialState {
     /// tick rate), friction `f = 990/1000` per tick (arbitrary, declared),
     /// stop threshold 1 cm/tick (arbitrary, declared).
     pub fn advance_ball(&mut self) {
+        self.ball_steps = [self.ball_position; STEPS];
         let BallState::InFlight = self.ball else {
             return;
         };
@@ -972,7 +1092,7 @@ impl SpatialState {
         if self.ball_fine.synced != (self.ball_position, self.ball_velocity) {
             self.ball_fine = FineBall::from_cm(self.ball_position, self.ball_velocity);
         }
-        let stopped = self.ball_fine.tick(&k);
+        let stopped = self.ball_fine.tick_steps(&k, &mut self.ball_steps);
         let (position, velocity) = self.ball_fine.to_cm();
         self.ball_position = position;
         self.ball_velocity = velocity;
@@ -1428,6 +1548,7 @@ impl SpatialState {
             .as_ref()
             .is_some_and(|tc| tick.saturating_sub(tc.at) as f64 >= tc.period);
         let mut fines: Vec<(PlayerId, FineBody)> = Vec::with_capacity(work.len());
+        let mut steps_of: Vec<(PlayerId, [(i32, i32); STEPS])> = Vec::with_capacity(work.len());
         for entry in &mut work {
             let act = self.acts.get(&entry.0).copied();
             let to_the_ball = matches!(
@@ -1552,8 +1673,9 @@ impl SpatialState {
                     (here, (v(a.velocity.0), v(a.velocity.1)))
                 }
             });
+            let mut path = [entry.1; STEPS];
             #[allow(clippy::cast_precision_loss)] // hundredths of a cm on a pitch
-            for _ in 0..SUBSTEPS {
+            for at_step in &mut path {
                 let at = (fine.0.0 as f64 / FINE as f64, fine.0.1 as f64 / FINE as f64);
                 let v_prev = (fine.1.0 as f64 / FINE as f64, fine.1.1 as f64 / FINE as f64);
                 let (dx, dy) = (f64::from(target.0) - at.0, f64::from(target.1) - at.1);
@@ -1619,10 +1741,12 @@ impl SpatialState {
                 let nx = (fine.0.0 + step.0).clamp(0, i64::from(pitch_length_cm) * FINE);
                 let ny = (fine.0.1 + step.1).clamp(0, i64::from(pitch_width_cm) * FINE);
                 fine = ((nx, ny), (nx - fine.0.0, ny - fine.0.1));
+                let cm = |f: i64| i32::try_from((f + FINE / 2).div_euclid(FINE)).unwrap_or(0);
+                *at_step = (cm(fine.0.0), cm(fine.0.1));
             }
-            let cm = |f: i64| i32::try_from((f + FINE / 2).div_euclid(FINE)).unwrap_or(0);
-            entry.1 = (cm(fine.0.0), cm(fine.0.1));
+            entry.1 = path[STEPS - 1];
             fines.push((entry.0, fine));
+            steps_of.push((entry.0, path));
         }
 
         // Minimal separation (MD-12): every push is computed from where the
@@ -1640,6 +1764,15 @@ impl SpatialState {
         }
 
         self.write_back(&work, ball, (tick, hidden), scan_balance);
+        // Where each was at each small step; the separation's push is put
+        // on his last.
+        self.body_steps.clear();
+        for (id, mut path) in steps_of {
+            if let Some(a) = self.agents.get(&id) {
+                path[STEPS - 1] = a.position;
+                self.body_steps.insert(id, path);
+            }
+        }
         // Their fine state for the next tick (ADR-069); a man the
         // separation pushed starts from where it put him.
         for (id, f) in fines {

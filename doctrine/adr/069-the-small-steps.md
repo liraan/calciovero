@@ -42,4 +42,8 @@ Il calcio è continuo: un corpo accelera e un pallone cade in ogni istante, non 
 - **Il rimbalzo da 2 m** ora risale dentro la banda FIFA del buon campo naturale (0,60-1,00 m). Con il tick di 0,1 s il passo tagliava parte della caduta.
 - **Il costo:** circa 3 secondi a partita in release, con la percezione e il pensiero ancora a 10 al secondo.
 - **La misura** (60 partite) è in `L0-CALIBRATION.md`: le rimesse salgono da 16,8 a 25,9 (vere 42,7) e gli angoli e i rossi si avvicinano al vero.
-- **Non ancora:** il contatto con il pallone in aria (`meet_ball_in_air`) e la ricezione si controllano ancora una volta per tick, sul punto di fine tick o sul tratto del tick. Portarli ai passi piccoli è il passo dopo, prima della taratura del gioco aereo (OI-102).
+- **Non ancora (al 147):** il contatto con il pallone in aria (`meet_ball_in_air`) e la ricezione si controllavano ancora una volta per tick. Fatto al 148: vedi la nota datata.
+
+## Note datate
+
+- **2026-11-17 — i contatti a ogni passo piccolo (`SIM_VERSION` 148).** Il volo del pallone e la corsa di ogni corpo tengono dove sono alla fine di ognuno dei cinque passi del tick. Il contatto in aria si giudica al primo passo in cui il pallone passa alla portata di qualcuno, con ognuno dove era in quel passo. La ricezione si giudica tratto per tratto del cammino del pallone, contro dove era l'uomo alla fine del tratto. Con questo, una regola dello stesso tipo di "nessuno riceve il proprio passaggio": nessuno incontra in aria il pallone che ha appena giocato, finché un altro non lo tocca. Senza, il pallone colpito di testa era ancora alla testa di chi l'aveva colpito al passo dopo, e lui lo colpiva ancora. Nessun numero nuovo. I duelli aerei non cambiano (6,1 contro 38): OI-102 non viene dal tempo del contatto, resta il secondo uomo sul pallone alto, per la taratura.

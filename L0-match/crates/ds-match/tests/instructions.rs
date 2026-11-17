@@ -335,9 +335,73 @@ fn a_striker_asked_to_run_stands_farther_ahead() {
         asked += ahead(&after[window.clone()]);
         free += ahead(&before[window]);
     }
+    // A run asked is one a man watching the match sees (ADR-070): at
+    // least two metres farther ahead on average (the sums are of six
+    // matches), not a centimetre (at SIM
+    // 147 the ask moved him 1 cm and passed by chance).
     assert!(
-        asked > free,
+        asked > free + 1_200.0,
         "asked {:.0} cm ahead, free {:.0} cm",
+        asked / 6.0,
+        free / 6.0
+    );
+}
+
+/// P1 (ADR-070): more pressing is an ask in each player's choice, not only
+/// a higher block. From the order, on average over six matches, the
+/// nearest man of the side that presses stands nearer the opposing carrier
+/// than without it, by at least half a metre; before it, the same match.
+#[test]
+#[allow(clippy::cast_precision_loss)] // cm on a pitch
+fn more_pressing_closes_the_carrier_down() {
+    let upto = usize::try_from(AT).expect("tick fits");
+    let gap = |r: &[ds_match::TickRecord], home: &[ds_core::ids::PlayerId]| {
+        let ds: Vec<f64> = r
+            .iter()
+            .filter_map(|t| {
+                let c = t.carrier.filter(|c| !home.contains(c))?;
+                let at = t.agents.iter().find(|a| a.id == c)?.position;
+                t.agents
+                    .iter()
+                    .filter(|a| home.contains(&a.id))
+                    .map(|a| {
+                        let (dx, dy) = (
+                            f64::from(a.position.0 - at.0),
+                            f64::from(a.position.1 - at.1),
+                        );
+                        ds_core::dmath::hypot(dx, dy)
+                    })
+                    .reduce(f64::min)
+            })
+            .collect();
+        ds.iter().sum::<f64>() / ds.len().max(1) as f64
+    };
+    let (mut asked, mut free) = (0.0, 0.0);
+    for seed in 50..56 {
+        let plain = match_fixture(seed).expect("fixture");
+        let home: Vec<_> = plain.home.players.iter().map(|p| p.id).collect();
+        let mut m = match_fixture(seed).expect("fixture");
+        m.home = m.home.clone().with_instructions(vec![Instruction {
+            tick: AT,
+            channel: None,
+            order: Order::Quick {
+                quick: ds_model::Quick::MorePressing,
+                on: true,
+            },
+        }]);
+        let (_, before) = simulate_from_seed_recorded(&plain, seed, MatchConfig::default());
+        let (_, after) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
+        assert_eq!(
+            before[..=upto],
+            after[..=upto],
+            "the same match up to the order"
+        );
+        asked += gap(&after[upto + 1..], &home);
+        free += gap(&before[upto + 1..], &home);
+    }
+    assert!(
+        asked + 300.0 < free,
+        "pressing: {:.0} cm from the carrier, without: {:.0} cm",
         asked / 6.0,
         free / 6.0
     );
