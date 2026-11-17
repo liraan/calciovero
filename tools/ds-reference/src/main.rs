@@ -4,6 +4,7 @@
 //! ds-reference wyscout --events events_Italy.json --matches matches_Italy.json \
 //!     --label "Serie A 2017-18" --out L0-match/reference/serie-a-2017-18.json
 //! ds-reference compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..71
+//! ds-reference scene --seeds 43..43
 //! ```
 
 use std::process::ExitCode;
@@ -19,6 +20,11 @@ USAGE:
         Without --out, print the JSON.
     ds-reference compare --reference <PATH> [--seeds A..B]
         Play the engine on the seeds (default 42..71) and print both sides.
+    ds-reference scene [--seeds A..B]
+        Play the engine on the seeds (default 42..51) and print what the
+        matches look like: teleports, the free ball, the keeper's mates in
+        his area, the half the ball is in, the passes' direction, the
+        forwards ahead of the ball, the ball behind its carrier.
     ds-reference --help
 ";
 
@@ -44,11 +50,41 @@ fn run() -> Result<(), String> {
     match args.first().map(String::as_str) {
         Some("wyscout") => run_wyscout(&args),
         Some("compare") => run_compare(&args),
+        Some("scene") => run_scene(&args),
         _ => {
             print!("{HELP}");
             Ok(())
         }
     }
+}
+
+fn run_scene(args: &[String]) -> Result<(), String> {
+    let (first, last) = parse_seeds(value(args, "--seeds").unwrap_or("42..51"))?;
+    let mut all = Vec::new();
+    for seed in first..=last {
+        let m = ds_fixtures::match_fixture(seed)?;
+        let pitch = (
+            i32::from(m.pitch.length_m) * 100,
+            i32::from(m.pitch.width_m) * 100,
+        );
+        let (result, record) =
+            ds_match::simulate_from_seed_recorded(&m, seed, ds_match::MatchConfig::default());
+        all.push(ds_reference::scene::measure(
+            &record,
+            result.events.events(),
+            pitch,
+        ));
+    }
+    println!(
+        "engine {} (seeds {first}..{last}, {} matches)",
+        ds_match::SIM_VERSION,
+        all.len()
+    );
+    print!(
+        "{}",
+        ds_reference::scene::report(&ds_reference::scene::sum(&all), all.len())
+    );
+    Ok(())
 }
 
 fn read<T: serde::de::DeserializeOwned>(path: &str) -> Result<T, String> {

@@ -904,6 +904,7 @@ dependencies = [
 name = "ds-reference"
 version = "0.1.0"
 dependencies = [
+ "ds-core",
  "ds-fixtures",
  "ds-match",
  "ds-stats",

@@ -13,6 +13,7 @@
 //! their source, in `L0-match/reference/`.
 
 pub mod engine;
+pub mod scene;
 pub mod wyscout;
 
 use serde::Serialize;

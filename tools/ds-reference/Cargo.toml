@@ -17,6 +17,7 @@ path = "src/main.rs"
 
 [dependencies]
 ds-stats.workspace = true
+ds-core.workspace = true
 ds-match.workspace = true
 ds-fixtures.workspace = true
 serde.workspace = true
