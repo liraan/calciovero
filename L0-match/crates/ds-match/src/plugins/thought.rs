@@ -620,6 +620,7 @@ impl MatchState {
                 .filter(|c| squad.players.iter().any(|p| p.id == *c))
                 .and_then(|c| self.spatial.agent(c))
                 .map(|a| a.position);
+            let mut held: Vec<(PlayerId, (i32, i32))> = Vec::new();
             let mut view = TeamView::new(&self.spatial, other, home, length, carrier);
             view.mate_carrier = carrier_mate;
             view.ours = squad
@@ -820,10 +821,23 @@ impl MatchState {
                         }),
                     carrier_in_reach: to_carrier.is_some_and(|d| d <= slide_reach),
                     with_mate: carrier_mate.map(|c| {
-                        let place = self
+                        let zone = self
                             .spatial
                             .block_target(id, ball, true, false)
                             .unwrap_or(me);
+                        // The place he holds, chosen from his zone (ADR-071).
+                        let place = if keeper {
+                            zone
+                        } else {
+                            view.choose_place(
+                                (me, zone),
+                                (c, ball),
+                                self.spatial.back_line(id, ball),
+                                off.onside_margin_cm,
+                                (length, width),
+                            )
+                        };
+                        held.push((id, place));
                         view.mate_ball((me, place), c, &off, (length, width))
                     }),
                     to_mark: carrier_pos.and_then(|_| view.man_to_mark(me)).map(|m| {
@@ -840,6 +854,9 @@ impl MatchState {
                         view.threats(c, me, held, home, (length, width))
                     }),
                 };
+                for (who, place) in std::mem::take(&mut held) {
+                    self.spatial.set_hold_at(who, Some(place));
+                }
                 let act = ctx.hidden.choose_off_ball(&scene);
                 self.spatial.set_act(id, act);
                 if let Some(t) = view.act_target(act, me, &off, (length, width)) {

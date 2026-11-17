@@ -434,6 +434,9 @@ pub struct SpatialState {
     /// opponents out of the distance, the wall, everyone back to his half
     /// after a goal. Nobody is put there.
     sent: BTreeMap<PlayerId, ((i32, i32), bool)>,
+    /// The place each man of the side with the ball chose to hold (ADR-071,
+    /// SIM 152): the space worth most to his side, from his role's zone.
+    hold_at: BTreeMap<PlayerId, (i32, i32)>,
     /// Players sent off (Law 12): off the pitch, on the bench. Not agents:
     /// nobody sees them, nothing reaches them; the record still shows them.
     off_pitch: BTreeMap<PlayerId, AgentState>,
@@ -556,6 +559,7 @@ impl SpatialState {
             acts: BTreeMap::new(),
             act_targets: BTreeMap::new(),
             sent: BTreeMap::new(),
+            hold_at: BTreeMap::new(),
             off_pitch: BTreeMap::new(),
             carrier: None,
             goalkeepers: (home.players[0].id, away.players[0].id),
@@ -580,6 +584,36 @@ impl SpatialState {
     pub fn set_act(&mut self, id: PlayerId, act: ds_orchestrator::OffBallAct) {
         self.acts.insert(id, act);
         self.act_targets.remove(&id);
+    }
+
+    /// The place `id` chose to hold, with his side on the ball (ADR-071);
+    /// `None` clears it (his side lost the ball: the shape again).
+    pub fn set_hold_at(&mut self, id: PlayerId, place: Option<(i32, i32)>) {
+        match place {
+            Some(p) => {
+                self.hold_at.insert(id, p);
+            }
+            None => {
+                self.hold_at.remove(&id);
+            }
+        }
+    }
+
+    /// Whether `id`'s place in the shape is on its back line, with the
+    /// ball (ADR-071: the preventive defence), and the depth of the block
+    /// with the ball, cm (three lines in it).
+    #[must_use]
+    pub fn back_line(&self, id: PlayerId, ball: (i32, i32)) -> (bool, i32) {
+        let depth = self.block.depth_in_possession_cm;
+        let Some(slot) = self.roles.get(&id).copied() else {
+            return (false, depth);
+        };
+        let home = crate::perception::team_of(id) == 0;
+        let board = if home { &self.boards.0 } else { &self.boards.1 };
+        let length = self.pitch_cm.0.max(1);
+        let along = if home { ball.0 } else { length - ball.0 };
+        let role: crate::shape::Role = board.spot(slot, true, along * 1000 / length).into();
+        (role.depth == 0, depth)
     }
 
     /// Sends `id` to `place` for a restart, running or not (SIM 150): he
@@ -718,9 +752,12 @@ impl SpatialState {
     /// The side in possession, for the block (set by the match each tick
     /// `tick`): when it changes, both sides are in their transition for
     /// `window` ticks (ADR-059 §6).
-    pub const fn set_home_in_possession(&mut self, home: bool, tick: u64, window: u64) {
+    pub fn set_home_in_possession(&mut self, home: bool, tick: u64, window: u64) {
         if home != self.home_in_possession {
             self.transition.0 = tick + window;
+            // The places chosen with the ball are of that possession
+            // (ADR-071).
+            self.hold_at.clear();
         }
         self.home_in_possession = home;
         self.transition.1 = tick;
@@ -1717,7 +1754,13 @@ impl SpatialState {
                 *kt
             } else {
                 let mine = (crate::perception::team_of(entry.0) == 0) == self.home_in_possession;
-                self.block_target(entry.0, ball, mine, false)
+                // With the ball, the place he chose (ADR-071); else his
+                // side's shape.
+                self.hold_at
+                    .get(&entry.0)
+                    .copied()
+                    .filter(|_| mine && self.carrier.is_some())
+                    .or_else(|| self.block_target(entry.0, ball, mine, false))
                     .unwrap_or(entry.2)
             };
             let Some(body) = bodies.get(&entry.0) else {

@@ -17,17 +17,17 @@ const N: u64 = 10;
 const SEED_START: u64 = 42;
 
 /// The expected hash of the concatenated state hashes, at `SIM_VERSION` 113.
-/// SIM 151: in a dribble the ball is ahead (BEHAVIOURS.md 8).
+/// SIM 152: the place with the ball chosen within the zone of the role (ADR-071).
 /// Regenerate when `SIM_VERSION` changes.
-const EXPECTED: &str = "2806479ca5c4e2473f7bb6c17472cf38b1f9749f747348589ee7a50c233267da4ed939505dcd301bb8529e2a7482bc262595385003ae9447dc1111a19d3fb9f5bad8eb48b7c2548327684c385aff7b6f8227bbf3a5c695d918bcc9f3c3d66bf1b6626082c8bda781140a0299b408e5e297471d85007bcaf67543759764ab723f50e0534b462a821f38f919f30dee15164b98d38b98d2428892f1c7336318c4aebc8c33213b0343ad027e4e77b79b535ac29916498c5a52c94d7b7a36e991bc666853852930b9d1ce4054c73055c3e76670ccb9030c451ca991cd4f08f397064ae3f172e30cbc5e0679b99667f334b299374c662cac520650257b6db86c467f36218d756f3d76e745e3d6d9a7d0600860f403516a3a3b63a048b78fd2faba933fc42fe9b7644495787bfedb0f34bdc52bc5d07c1c461fd2359d4222bb3c5f6e21";
+const EXPECTED: &str = "d18211d0344969bb77eeea2437a0dfebb82782a8965ac53e7310a44cdea52f66a03631badcae9e0cebd0d25226f56ca84794a3e76b8025d44f6b064064b3bd41321d71f0cdb6e70912f37a1619d744f6a8a9c96f196fdcef20bd18e4b7f22078b3f84a28a9e7c40ce506c16e95a6923ffc0fc6f5a86c473fd68975d079372b6dfde85d710d418f0588379851cae08722abddebd27b0519f2032b94b6a5d6acccdcd266c80d37e02e9d275ae7a29fd3dc254ef642dfee68572ff475950645bd5ebfadbf5a40445b40b117abcc62e4b38faf38420bdf0d3984e412d313d278d036ab3d78a663d21621479ca817350e19254ed3097fa066cf9706af964ca7a824b1319d3c33b27e6620efd304e2367b8f3fd5741de191b532df98587756a12a2c7958c9463cf002c45d455477db33903bd4b0da89ecdb1aa637af83d06b8c486f23";
 
 #[test]
 fn golden_l0_is_deterministic() {
     let mut combined = String::new();
-    for i in 0..N {
-        let seed = SEED_START + i;
+    for result in ds_fixtures::each_seed(SEED_START..SEED_START + N, |seed| {
         let m = match_fixture(seed).expect("fixture");
-        let result = simulate_from_seed(&m, seed, MatchConfig::default());
+        simulate_from_seed(&m, seed, MatchConfig::default())
+    }) {
         for b in result.state_hash.as_bytes() {
             use std::fmt::Write as _;
             let _ = write!(combined, "{b:02x}");
@@ -47,15 +47,14 @@ fn golden_l0_is_deterministic() {
 /// The expected hash with a fixed instruction stream (ADR-059 §1): the home
 /// coach asks for a high, wide block at the 30th minute, the away coach for
 /// a low, narrow one at the 60th. Regenerate when `SIM_VERSION` changes.
-const EXPECTED_INSTRUCTED: &str = "06f33a454fbe445e4eff217d0a84cf10a9e53f7eeaaaad181042ab8cd6a815019b0d8264db38a2ff4c69082bc1d37f96c8622f0a9eadab9fdf81576092f1ee18e7e9ce093c91b620a73e1a433009662ed1b9519629643e4e1db9106d0affdfd33be0c375de5a466bc8ac63988fb7fed99fa5a76f6db8bd0f687b945d98443f801a64f62082f9782335b206c906ee6d878df780a9a87f5d13944a26398cc6306618728cb5912a9b7661cb235339181718c3f725a88e464df8aebce7127f74439526472f2ce73e7f999ebafca63601cc8cf2dbc539a857bf8fe4777eacfb65081c23cd849075221399b49a9bfaedbcecf46a2012ffc344238d7a93f8f22182308d8d08eccf51fade74bfe3b3f2b0cc070c3d82bf0b63e5018a0993ad55f85ab05face30b92d1e1a2b58f8b5b0e8fdb0ac0a693d2125aabb539c824f15c5769ca08";
+const EXPECTED_INSTRUCTED: &str = "625d39652494130b6c075c8bb76d9862b7d57a1802a2a39b9ca320eda4828ba846790a5144dba0c7a067501ed8ecfdd5b1f0272b2eefd7520aabcaf223ef8067e939f1767ed473358817a3dc3fec8f6733ddd7fe4319ad7203ca6c5b6df2c3016681beead484e802f09f6f15d2dc728e9203915aa617a15c3d9d8fe481123117e66a58230423788b161cae6681476865e558323c6babc8bac13f33b1db221c20eadd557c75692bd1698858b5ae5f6bae7cb0765646ced8325bb39575b580a202227e9fd67d1275043d35540cd81440d95508b70830f14235777faf39631bf31b03fc110460b2c58a9c58f3d4e236bcb282f88e170a6d6349451635678084595c5f3bc04ac578afab714214515728170d216b2b7c7a9f484465bb8900428607942c708c9f6c0c56488ac40522adedadebf961ddac832bfe8547fd071cfdbe28be";
 
 #[test]
 fn golden_l0_with_instructions_is_deterministic() {
     use ds_model::{BlockHeight, Instruction, Intention, Order, Width};
     let order = |block, width| Order::Intention(Intention { block, width });
     let mut combined = String::new();
-    for i in 0..N {
-        let seed = SEED_START + i;
+    for result in ds_fixtures::each_seed(SEED_START..SEED_START + N, |seed| {
         let mut m = match_fixture(seed).expect("fixture");
         m.home = m.home.clone().with_instructions(vec![Instruction {
             tick: 18_000,
@@ -67,7 +66,8 @@ fn golden_l0_with_instructions_is_deterministic() {
             channel: None,
             order: order(BlockHeight::Low, Width::Narrow),
         }]);
-        let result = simulate_from_seed(&m, seed, MatchConfig::default());
+        simulate_from_seed(&m, seed, MatchConfig::default())
+    }) {
         for b in result.state_hash.as_bytes() {
             use std::fmt::Write as _;
             let _ = write!(combined, "{b:02x}");
@@ -83,7 +83,7 @@ fn golden_l0_with_instructions_is_deterministic() {
 /// penalties (Laws 7 and 10, plan L0-CLOSE 10h): the first seed from 42
 /// whose cup match is level after 120 minutes, decided by the shoot-out;
 /// the seed is part of what is hashed. SIM 120.
-const EXPECTED_CUP: &str = "46:75d0f71554825d53acb8f5cad2df1d744d6eaffec0e6aad66af869fc3b05da02";
+const EXPECTED_CUP: &str = "42:d9f4ec3785160f7c18fd27f934e2b591886fbb783356f6ea957ff7d332f3a229";
 
 #[test]
 fn golden_l0_cup_is_deterministic() {

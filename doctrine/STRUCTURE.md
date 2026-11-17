@@ -350,6 +350,7 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 068 | The channels from the bench | ✅ accepted (delegated) | Voice, gesture and pause as the ways an instruction reaches the players; water breaks as a rule of the competition; a recommended module. Supersedes ADR-059 §2. Decision AP; DD-10, to be reviewed by the maintainer. |
 | 069 | The small steps | ✅ accepted (delegated) | Bodies and ball at 50 steps a second in hundredths of a centimetre, decisions at 10; no new number. Decision BJ; DD-11, to be reviewed by the maintainer. |
 | 070 | The orders in the choice | ✅ accepted (delegated) | Team orders and tasks enter the player's choice through his discipline; the run waits on the last defender's shoulder. DD-12, to be reviewed by the maintainer. |
+| 071 | The place without the ball | ✅ accepted (delegated) | The shape is the role's zone; within it a man chooses the space worth most to his side, by the measure of ADR-052. DD-13, to be reviewed by the maintainer. |
 
 **Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048 (42). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
 

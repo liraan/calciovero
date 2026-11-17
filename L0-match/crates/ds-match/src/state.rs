@@ -657,6 +657,90 @@ impl TeamView {
         }
     }
 
+    /// The place a man of the side with the ball holds (ADR-071, SIM 152):
+    /// from his role's zone `anchor` (the shape), the space worth most to
+    /// his side among his corridor and the two beside it (the pitch in five
+    /// corridors), on his line and one line ahead or behind (a line, a
+    /// third of the block's depth with the ball), never beyond the offside
+    /// line. A space is worth what the game measures (ADR-052): its value
+    /// to the side, as free as he would be there, by how clean the line
+    /// from the carrier is and how plausible a pass that far is (ADR-040). Never two in the same corridor on the same
+    /// line; a man of the back line stays behind the ball. Staying in his
+    /// zone is his discipline: within it he chooses (ADR-071 §4). `me` is
+    /// himself, `carrier` the man on the ball, `ball` where it is.
+    #[allow(clippy::too_many_arguments, clippy::cast_precision_loss)]
+    pub(crate) fn choose_place(
+        &self,
+        (me, anchor): ((i32, i32), (i32, i32)),
+        (carrier, ball): ((i32, i32), (i32, i32)),
+        (back_line, block_depth): (bool, i32),
+        onside_margin_cm: i32,
+        (length, width): (i32, i32),
+    ) -> (i32, i32) {
+        let corridor = (width / 5).max(1);
+        let line = (block_depth / 3).max(1);
+        let goal = (self.their_goal_x, width / 2);
+        let other = (length - self.their_goal_x, width / 2);
+        let value = |p: (i32, i32)| {
+            let free = 1.0
+                - self
+                    .marker(p)
+                    .map_or(0.0, |o| ds_orchestrator::read::soon(o, p));
+            // Within the reach of a pass from the carrier (the plausible
+            // distance of ADR-040): a space he cannot be played into gives
+            // his side nothing now.
+            let reach =
+                ds_orchestrator::read::distance_plausible(distance_squared(carrier, p).isqrt());
+            ds_orchestrator::read::space_value(p, goal, other)
+                * free
+                * ds_orchestrator::read::line_quality(carrier, p, &self.opponents)
+                * reach
+        };
+        // Never two in the same corridor on the same line.
+        let crowded = |p: (i32, i32)| {
+            self.ours.iter().any(|m| {
+                *m != me && (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2
+            })
+        };
+        let onside = |x: i32| {
+            self.last_line.map_or(x, |l| {
+                let edge = l - self.forward * onside_margin_cm;
+                if (x - edge) * self.forward > 0 {
+                    edge
+                } else {
+                    x
+                }
+            })
+        };
+        let k0 = (anchor.1 / corridor).clamp(0, 4);
+        let mut options: Vec<(f64, (i32, i32))> = Vec::new();
+        for k in (k0 - 1).max(0)..=(k0 + 1).min(4) {
+            for step in [0, 1, -1] {
+                let y = if k == k0 {
+                    anchor.1
+                } else {
+                    k * corridor + corridor / 2
+                };
+                let x = onside(anchor.0 + step * line * self.forward).clamp(0, length);
+                let p = (x, y.clamp(0, width));
+                let behind_ball = (p.0 - ball.0) * self.forward <= 0;
+                let v = if (back_line && !behind_ball) || crowded(p) {
+                    0.0
+                } else {
+                    value(p)
+                };
+                options.push((v, p));
+            }
+        }
+        // The zone of his role, first: the coach's ask (ADR-059 §4).
+        let zone = (value(anchor), anchor);
+        let best = options
+            .iter()
+            .copied()
+            .fold(zone, |b, o| if o.0 > b.0 { o } else { b });
+        best.1
+    }
+
     /// Where a player who chose to offer or to run goes: away from his
     /// marker to offer; to the last defender's line, just short of it, to
     /// run.
