@@ -231,6 +231,9 @@ pub struct MatchState {
     /// The men of a wall, holding their places until the free kick is
     /// taken (Law 13).
     pub(crate) wall: Vec<PlayerId>,
+    /// A restart called and not yet taken (SIM 150): while it waits the
+    /// ball is out of play, the men go to their places, the clock runs.
+    pub(crate) waiting: Option<crate::plugins::set_pieces::Waiting>,
     pub(crate) scan_balance: crate::balance::ScanningBalance,
     pub(crate) keeper_balance: crate::balance::KeeperBalance,
     /// The Laws' thresholds (Law 12, `balance/laws.json`).
@@ -839,6 +842,7 @@ impl MatchState {
             fatigue_plugin: crate::plugins::fatigue::Fatigue::default(),
             bench_plugin: crate::plugins::bench::Bench,
             wall: Vec::new(),
+            waiting: None,
             keeper_balance: crate::balance::KeeperBalance::load(),
             laws: crate::balance::LawsBalance::load(),
             cautioned: BTreeSet::new(),
@@ -939,6 +943,30 @@ impl MatchState {
                     );
                 }
             }
+        }
+        // A restart called and not yet taken (SIM 150): the ball is out of
+        // play; the men go to their places, the clock runs, nobody plays.
+        if self.waiting.is_some() {
+            let window = u64::from(ds_model::TeamOrders::TRANSITION_S)
+                * u64::from(ctx.config.ticks_per_second.max(1));
+            self.spatial
+                .set_home_in_possession(self.possession == Possession::Home, tick, window);
+            self.spatial.move_agents(
+                i32::from(ctx.match_.pitch.length_m) * 100,
+                i32::from(ctx.match_.pitch.width_m) * 100,
+                &self.bodies,
+                ctx.hidden,
+                tick,
+                &self.scan_balance,
+                &self.keeper_balance,
+            );
+            self.tire_players(ctx);
+            self.resume_restart(tick);
+            match self.possession {
+                Possession::Home => self.home_possession_ticks += 1,
+                Possession::Away => self.away_possession_ticks += 1,
+            }
+            return;
         }
         let prev_ball = self.spatial.ball_3d();
         self.ball_from = prev_ball;
@@ -1069,6 +1097,10 @@ impl MatchState {
         } else {
             crate::rules::Side::Away
         };
+        // A new half starts from its lines: a restart left waiting at the
+        // whistle is gone (SIM 150).
+        self.waiting = None;
+        self.spatial.clear_sent();
         let _ = self.apply_restart(ctx, crate::rules::kick_off(side, pitch_cm(ctx)));
     }
 

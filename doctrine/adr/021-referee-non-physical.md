@@ -173,3 +173,7 @@ In particular:
 - `doctrine/00-foundations.md` §3 — Three Planes (observation vs truth)
 - conversation 2026-10-29 (this ADR is its first written record); related sketches in
   `context/IDEAS.md` (IDEA-TACT-001, IDEA-INFRA-007, IDEA-STAFF-001)
+
+## Dated notes
+
+- **2026-11-17 — the referee waits, nobody is put anywhere** (`SIM_VERSION` 150; the maintainer's report on seed 43 and his answers of 17 November; `context/plans/BEHAVIOURS.md` 25-27). A restart called during play is taken when its taker, the nearest man, has run to the ball, and the men sent have reached their places: the opponents out of 9.15 m, the wall, everyone out of the penalty area at a penalty. The referee waits for them no longer than `goal_to_kick_off_s` (`balance/stoppage_time.json`, measured). After a goal everyone walks back to his half, and the kick-off waits that measured time (the median from a goal to the next kick-off in Serie A 2017-18, 60.6 s), and then only with everyone but the kicker in his own half (Law 8): a real referee never starts it otherwise. Meanwhile the ball is out of play and the clock runs. A substitute comes on at the halfway line on the benches' side (Law 3) and runs to his place; the restart does not wait for him. Before, the taker was put on the ball, the opponents pushed away and the substitute put where his man went off: 74 jumps of 10 to 27 m in the match of seed 43. The referee is still the Laws applied (this ADR); the one drawn by the view is a ghost of the Laws, not an actor (the maintainer, 17 November).

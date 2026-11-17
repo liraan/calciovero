@@ -27,6 +27,11 @@ pub struct StoppageTime {
     /// break, three minutes).
     #[serde(default)]
     pub water_break: u32,
+    /// The median time from a goal to the next kick-off, seconds
+    /// (measured, Serie A 2017-18, SIM 150): the kick-off waits for it,
+    /// and no restart waits longer.
+    #[serde(default)]
+    pub goal_to_kick_off_s: f64,
 }
 
 impl Default for StoppageTime {

@@ -553,8 +553,11 @@ impl MatchState {
             .as_ref()
             .filter(|p| p.shot.is_none())
             .and_then(|p| p.passer);
-        let ball_loose =
-            carrier.is_none() && self.pending.as_ref().is_none_or(|p| p.shot.is_none());
+        // A ball out of play waiting for its restart is nobody's to go for
+        // (SIM 150): its taker is sent to it.
+        let ball_loose = carrier.is_none()
+            && self.waiting.is_none()
+            && self.pending.as_ref().is_none_or(|p| p.shot.is_none());
         // A pass in the air is contested (ADR-042, in the air): the
         // opponent nearest where it comes down goes to meet it, as the
         // receiver does.

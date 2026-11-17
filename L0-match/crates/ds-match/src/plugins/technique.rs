@@ -211,6 +211,10 @@ impl MatchState {
     /// feet elsewhere; a keeper in his area catches it. A shot on its way
     /// is not met here (it is the keeper's, or a block).
     pub(crate) fn meet_ball_in_air(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        // A restart waiting: the ball is out of play (SIM 150).
+        if self.waiting.is_some() {
+            return;
+        }
         if self.spatial.ball_state() != crate::spatial::BallState::InFlight {
             return;
         }
@@ -828,19 +832,21 @@ impl MatchState {
         // rolling, or coming down (a footballer controls a ball that is
         // still moving, and a lofted pass where it comes down: ADR-058).
         // A ball high in the air is not his foot's yet.
-        let low = match self.spatial.ball_state() {
-            crate::spatial::BallState::Loose => true,
-            crate::spatial::BallState::InFlight => {
-                // Its lowest at any small step (ADR-069, SIM 148).
-                self.spatial
-                    .ball_path()
-                    .iter()
-                    .map(|b| b.2)
-                    .fold(self.ball_from.2, i32::min)
-                    < FEET_BAND_CM
-            }
-            crate::spatial::BallState::Possessed => false,
-        };
+        // A restart waiting: the ball is out of play (SIM 150).
+        let low = self.waiting.is_none()
+            && match self.spatial.ball_state() {
+                crate::spatial::BallState::Loose => true,
+                crate::spatial::BallState::InFlight => {
+                    // Its lowest at any small step (ADR-069, SIM 148).
+                    self.spatial
+                        .ball_path()
+                        .iter()
+                        .map(|b| b.2)
+                        .fold(self.ball_from.2, i32::min)
+                        < FEET_BAND_CM
+                }
+                crate::spatial::BallState::Possessed => false,
+            };
         // A pass on its way can be received where it reaches a player
         // (ADR-051, "receive"): before `SIM_VERSION` 52 nobody could touch
         // it until a fixed 1.5 s had passed, and a weighed pass rolled past
@@ -990,6 +996,10 @@ impl MatchState {
     /// touches, his first touch, and the lines the ball may cross as he
     /// takes it.
     pub(crate) fn carry_the_ball(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        // A restart waiting: the ball is out of play (SIM 150).
+        if self.waiting.is_some() {
+            return;
+        }
         let before_carry = self.spatial.ball_3d();
         let hold = self.in_hands.is_some() || self.restart_pass.is_some();
         let keep_max = f64::from(self.reception_balance.first_touch_keep_max_milli) / 1000.0;

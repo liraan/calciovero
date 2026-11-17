@@ -26,6 +26,10 @@ impl MatchState {
     /// if the challenger wins, the ball is his. The one who lost the ball
     /// does not win it back at once.
     pub(crate) fn challenge_carrier(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        // A restart waiting: the ball is out of play (SIM 150).
+        if self.waiting.is_some() {
+            return;
+        }
         let Some(carrier) = self.spatial.carrier() else {
             return;
         };

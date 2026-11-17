@@ -272,7 +272,7 @@ impl MatchState {
         } else {
             crate::rules::Side::Home
         };
-        if let Some(taker) = self.apply_restart(ctx, crate::rules::free_kick(side, spot)) {
+        if let Some(taker) = self.call_restart(ctx, tick, crate::rules::free_kick(side, spot)) {
             self.emit_event(
                 ctx,
                 tick,
@@ -450,7 +450,7 @@ impl MatchState {
         } else {
             EventType::FreeKick
         };
-        if let Some(taker) = self.apply_restart(ctx, restart) {
+        if let Some(taker) = self.call_restart(ctx, tick, restart) {
             self.emit_event(
                 ctx,
                 tick,
@@ -466,6 +466,10 @@ impl MatchState {
     /// applies it. Before, a ball that left the pitch elsewhere than into
     /// the goal stayed out for the rest of the match (OI-97).
     pub(crate) fn restart_if_out(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        // A restart waiting: the ball is out of play (SIM 150).
+        if self.waiting.is_some() {
+            return;
+        }
         // Out is where the ball is (Laws 9, 15-17), whoever has it: rolling
         // ahead of him between two touches, or under his foot as he takes it
         // (plan L0-CLOSE 11). At his feet it is where he is, on the pitch.
@@ -485,7 +489,7 @@ impl MatchState {
         let Some(restart) = crate::rules::out_of_play((x, y), last, pitch_cm(ctx)) else {
             return;
         };
-        if let Some(taker) = self.apply_restart(ctx, restart) {
+        if let Some(taker) = self.call_restart(ctx, tick, restart) {
             // Every time the ball leaves the pitch the restart is told
             // (Laws 15-17): throw-in, goal kick, corner.
             let kind = match restart.kind {

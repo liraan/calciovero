@@ -98,6 +98,10 @@ impl MatchState {
         prev: (i32, i32, i32),
         curr: (i32, i32, i32),
     ) {
+        // A restart waiting: the ball is out of play (SIM 150).
+        if self.waiting.is_some() {
+            return;
+        }
         let (attacker, struck, from) = match self.pending.as_ref().and_then(|p| p.shot.as_ref()) {
             Some(s) => (s.attacker, s.struck, s.from),
             None => return,
@@ -193,8 +197,9 @@ impl MatchState {
         self.possession = defending;
         // Law 8: after a goal, the side that conceded kicks off. Before, the
         // ball stayed in the net for the rest of the match (OI-97).
-        let _ = self.apply_restart(
+        let _ = self.call_restart(
             ctx,
+            tick,
             crate::rules::kick_off(side_of(defending), pitch_cm(ctx)),
         );
     }
@@ -211,6 +216,10 @@ impl MatchState {
         prev: (i32, i32, i32),
         curr: (i32, i32, i32),
     ) {
+        // A restart waiting: the ball is out of play (SIM 150).
+        if self.waiting.is_some() {
+            return;
+        }
         if self.pending.as_ref().is_some_and(|p| p.shot.is_some()) {
             return;
         }
@@ -287,8 +296,9 @@ impl MatchState {
             Possession::Away => self.score.home += 1,
         }
         self.possession = defending;
-        let _ = self.apply_restart(
+        let _ = self.call_restart(
             ctx,
+            tick,
             crate::rules::kick_off(side_of(defending), pitch_cm(ctx)),
         );
     }

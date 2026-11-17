@@ -48,13 +48,146 @@ impl MatchState {
             crate::rules::Side::Home => Possession::Home,
             crate::rules::Side::Away => Possession::Away,
         };
-        self.clear_the_spot(ctx, &restart, taker);
+        self.clear_the_spot(ctx, &restart, (taker, false));
         if restart.kind == crate::rules::RestartKind::Penalty {
             // He kicks before anyone can come back into the area (Law 14:
             // they stay out until the ball is kicked).
             self.latencies.remove(&taker);
         }
         Some(taker)
+    }
+
+    /// Puts `id` at `place` for a restart, or, with `walk`, sends him there
+    /// running (SIM 150, `BEHAVIOURS.md` 25-26).
+    fn place_for_restart(&mut self, id: PlayerId, place: (i32, i32), walk: bool) {
+        if walk {
+            self.spatial.send(id, place, true);
+        } else {
+            self.spatial.set_position(id, place);
+        }
+    }
+
+    /// A restart during play (SIM 150, `BEHAVIOURS.md` 25-27): the ball is
+    /// placed, the taker runs to it, the opponents go out of the distance
+    /// and the wall to its place, each at his own pace, and the restart is
+    /// taken when they are there (`resume_restart`). After a goal everyone
+    /// walks back to his half, and the kick-off waits the time a real one
+    /// takes. Before, the taker was put on the ball and the others pushed
+    /// away in one tick: 74 jumps of 10 to 27 m in a match.
+    pub(crate) fn call_restart(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        restart: crate::rules::Restart,
+    ) -> Option<PlayerId> {
+        let taker = self.restart_taker(ctx, &restart)?;
+        self.stoppage = true;
+        self.pending = None;
+        self.offside_at_pass.clear();
+        self.restart_pass = Some(restart.kind);
+        self.spatial.set_carrier(None);
+        self.spatial
+            .set_ball_in_flight((restart.spot.0, restart.spot.1, 0), (0, 0, 0));
+        self.spatial.advance_ball();
+        self.possession = match restart.side {
+            crate::rules::Side::Home => Possession::Home,
+            crate::rules::Side::Away => Possession::Away,
+        };
+        self.spatial.clear_sent();
+        self.spatial.send(taker, restart.spot, true);
+        self.clear_the_spot(ctx, &restart, (taker, true));
+        let kick_off = restart.kind == crate::rules::RestartKind::KickOff;
+        if kick_off {
+            // Back to his half, walking (Law 8): his place in his side's
+            // block at the kick-off.
+            let ids: Vec<(PlayerId, bool)> = ctx
+                .match_
+                .home
+                .players
+                .iter()
+                .map(|p| (p.id, true))
+                .chain(ctx.match_.away.players.iter().map(|p| (p.id, false)))
+                .collect();
+            let restarting_home = restart.side == crate::rules::Side::Home;
+            for (id, home) in ids {
+                if id == taker {
+                    continue;
+                }
+                if let Some(place) =
+                    self.spatial
+                        .block_target(id, restart.spot, home == restarting_home, true)
+                {
+                    self.spatial.send(id, place, false);
+                }
+            }
+        }
+        let tps = f64::from(ctx.config.ticks_per_second.max(1));
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let most = (crate::balance::StoppageTime::load().goal_to_kick_off_s * tps).round() as u64;
+        self.waiting = Some(Waiting {
+            taker,
+            kind: restart.kind,
+            spot: restart.spot,
+            ready_at: if kick_off { tick + most } else { tick },
+            // The referee waits for the men sent no longer than that time
+            // (not at the kick-off: Law 8 waits for everyone).
+            until: tick + most,
+        });
+        Some(taker)
+    }
+
+    /// The restart called is taken once its taker is at the ball, the men
+    /// sent are where they were sent, and (after a goal) the time a real
+    /// kick-off takes has passed (SIM 150). The referee waits no longer
+    /// than that time for anyone: a man pinned by another body never stops
+    /// the match.
+    pub(crate) fn resume_restart(&mut self, tick: u64) {
+        let Some(mut w) = self.waiting else { return };
+        // The taker went off (the fouled man, replaced at this stoppage):
+        // the nearest of his side takes it, and runs to the ball.
+        if self.spatial.agent(w.taker).is_none() {
+            let side = crate::perception::team_of(w.taker);
+            let Some(next) = self
+                .spatial
+                .iter()
+                .filter(|(id, _)| crate::perception::team_of(**id) == side)
+                .min_by_key(|(id, a)| (distance_squared(a.position, w.spot), id.slot()))
+                .map(|(id, _)| *id)
+            else {
+                return;
+            };
+            w.taker = next;
+            self.waiting = Some(w);
+            self.spatial.send(next, w.spot, true);
+        }
+        if w.kind == crate::rules::RestartKind::KickOff {
+            // Whoever came on since (a substitute takes his man's place,
+            // maybe in the other half) is sent to his place too.
+            self.spatial.send_back_to_own_half(w.taker, w.spot);
+        }
+        let reach = i64::from(2 * crate::spatial::BODY_RADIUS_CM);
+        let at_ball = self
+            .spatial
+            .agent(w.taker)
+            .is_some_and(|a| distance_squared(a.position, w.spot) <= reach * reach);
+        // The kick-off only with everyone but the kicker in his own half
+        // (Law 8): a real referee never starts it otherwise. The other
+        // restarts wait for the men sent no longer than the measured time.
+        let ready = if w.kind == crate::rules::RestartKind::KickOff {
+            tick >= w.ready_at && at_ball && self.spatial.all_in_own_half(w.taker)
+        } else {
+            tick >= w.ready_at && at_ball && (self.spatial.all_arrived() || tick >= w.until)
+        };
+        if !ready {
+            return;
+        }
+        self.waiting = None;
+        self.spatial.clear_sent();
+        self.spatial.set_carrier(Some(w.taker));
+        if w.kind == crate::rules::RestartKind::Penalty {
+            // He kicks before anyone can come back into the area (Law 14).
+            self.latencies.remove(&w.taker);
+        }
     }
 
     /// Who takes a restart (plan L0-CLOSE step 7): the keeper takes his goal
@@ -83,9 +216,17 @@ impl MatchState {
             .first()
             .map(|p| p.id)
             .filter(|id| self.spatial.agent(*id).is_some());
+        // For now the nearest takes every restart and runs to the ball (the
+        // maintainer, 17 November: BEHAVIOURS.md 25; the taker by his role
+        // comes with layer 2); a penalty is still the best kicker's.
+        let _ = keeper;
         match restart.kind {
-            RestartKind::GoalKick => keeper.or(nearest),
-            RestartKind::Corner | RestartKind::FreeKick | RestartKind::Penalty => {
+            RestartKind::GoalKick
+            | RestartKind::Corner
+            | RestartKind::FreeKick
+            | RestartKind::KickOff
+            | RestartKind::ThrowIn => nearest,
+            RestartKind::Penalty => {
                 let mut near: Vec<(i64, PlayerId)> = squad
                     .players
                     .iter()
@@ -103,7 +244,6 @@ impl MatchState {
                     .set_piece_taker(&ids, restart.kind == RestartKind::Penalty)
                     .or(nearest)
             }
-            RestartKind::KickOff | RestartKind::ThrowIn => nearest,
         }
     }
 
@@ -116,7 +256,7 @@ impl MatchState {
         &mut self,
         ctx: &mut MatchContext<'_>,
         restart: &crate::rules::Restart,
-        taker: PlayerId,
+        (taker, walk): (PlayerId, bool),
     ) {
         const DISTANCE_CM: i64 = 915;
         use crate::rules::RestartKind;
@@ -164,10 +304,10 @@ impl MatchState {
                             .unwrap_or(restart.spot.1)
                             .clamp(0, width),
                     );
-                    self.spatial.set_position(id, to);
+                    self.place_for_restart(id, to, walk);
                 }
                 if restart.kind == RestartKind::FreeKick {
-                    self.form_wall(ctx, restart, restarting_home);
+                    self.form_wall(ctx, restart, (restarting_home, walk));
                 }
             }
             RestartKind::Penalty => {
@@ -190,7 +330,7 @@ impl MatchState {
                         continue;
                     }
                     if Some(id) == defending_keeper {
-                        self.spatial.set_position(id, (goal_x, width / 2));
+                        self.place_for_restart(id, (goal_x, width / 2), walk);
                         continue;
                     }
                     let Some(p) = self.spatial.agent(id).map(|a| a.position) else {
@@ -198,7 +338,7 @@ impl MatchState {
                     };
                     let inside = (p.0 - goal_x).abs() < (edge - goal_x).abs();
                     if inside {
-                        self.spatial.set_position(id, (edge, p.1));
+                        self.place_for_restart(id, (edge, p.1), walk);
                     }
                 }
             }
@@ -267,6 +407,8 @@ impl MatchState {
         };
         let restart = crate::rules::foul_restart(side, goal, true, goal, self.laws.penalty_spot_cm);
         self.shootout_taker = Some(taker);
+        self.waiting = None;
+        self.spatial.clear_sent();
         let _ = self.apply_restart(ctx, restart);
         self.shootout_taker = None;
     }
@@ -295,7 +437,7 @@ impl MatchState {
         &mut self,
         ctx: &mut MatchContext<'_>,
         restart: &crate::rules::Restart,
-        restarting_home: bool,
+        (restarting_home, walk): (bool, bool),
     ) {
         const DISTANCE_CM: f64 = 915.0;
         let (length, width) = pitch_cm(ctx);
@@ -382,7 +524,7 @@ impl MatchState {
                 break;
             };
             free.remove(i);
-            self.spatial.set_position(id, place);
+            self.place_for_restart(id, place, walk);
             self.spatial.set_act(id, ds_orchestrator::OffBallAct::Cover);
             self.spatial.set_act_target(id, place);
             self.offball_due.insert(id, u64::MAX);
@@ -398,6 +540,21 @@ impl MatchState {
             }
         }
     }
+}
+
+/// A restart called and not yet taken (SIM 150).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Waiting {
+    /// Who takes it.
+    pub(crate) taker: PlayerId,
+    /// What it is.
+    pub(crate) kind: crate::rules::RestartKind,
+    /// Where the ball is.
+    pub(crate) spot: (i32, i32),
+    /// The tick before which it is not taken (after a goal).
+    pub(crate) ready_at: u64,
+    /// The tick after which the referee waits for nobody but the taker.
+    pub(crate) until: u64,
 }
 
 #[cfg(test)]

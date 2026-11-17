@@ -429,6 +429,11 @@ pub struct SpatialState {
     acts: BTreeMap<PlayerId, ds_orchestrator::OffBallAct>,
     /// Where a player who chose to offer or to run is going (ADR-051).
     act_targets: BTreeMap<PlayerId, (i32, i32)>,
+    /// Who is going to a place for a restart, and whether he runs
+    /// (`BEHAVIOURS.md` 25-27, SIM 150): the taker to the ball, the
+    /// opponents out of the distance, the wall, everyone back to his half
+    /// after a goal. Nobody is put there.
+    sent: BTreeMap<PlayerId, ((i32, i32), bool)>,
     /// Players sent off (Law 12): off the pitch, on the bench. Not agents:
     /// nobody sees them, nothing reaches them; the record still shows them.
     off_pitch: BTreeMap<PlayerId, AgentState>,
@@ -550,6 +555,7 @@ impl SpatialState {
             carrier_reach: (i64::from(BODY_RADIUS_CM), 0),
             acts: BTreeMap::new(),
             act_targets: BTreeMap::new(),
+            sent: BTreeMap::new(),
             off_pitch: BTreeMap::new(),
             carrier: None,
             goalkeepers: (home.players[0].id, away.players[0].id),
@@ -576,6 +582,85 @@ impl SpatialState {
         self.act_targets.remove(&id);
     }
 
+    /// Sends `id` to `place` for a restart, running or not (SIM 150): he
+    /// gets there at his own pace, the restart waits.
+    pub fn send(&mut self, id: PlayerId, place: (i32, i32), run: bool) {
+        self.sent.insert(id, (place, run));
+    }
+
+    /// Where `id` was sent for the restart, if he was.
+    #[must_use]
+    pub fn sent_to(&self, id: PlayerId) -> Option<(i32, i32)> {
+        self.sent.get(&id).map(|s| s.0)
+    }
+
+    /// Whether everyone sent is where he was sent, within two bodies'
+    /// width (the separation keeps two men that far apart).
+    #[must_use]
+    pub fn all_arrived(&self) -> bool {
+        let reach = i64::from(2 * BODY_RADIUS_CM);
+        self.sent.iter().all(|(id, (place, _))| {
+            self.agents
+                .get(id)
+                .is_none_or(|a| distance_squared(a.position, *place) <= reach * reach)
+        })
+    }
+
+    /// Whether every player but the kicker is in his own half (Law 8, the
+    /// kick-off): the home side attacks from the left.
+    #[must_use]
+    pub fn all_in_own_half(&self, kicker: PlayerId) -> bool {
+        let half = self.pitch_cm.0 / 2;
+        self.agents
+            .iter()
+            .filter(|(id, _)| **id != kicker)
+            .all(|(id, a)| {
+                if crate::perception::team_of(*id) == 0 {
+                    a.position.0 <= half
+                } else {
+                    a.position.0 >= half
+                }
+            })
+    }
+
+    /// For the kick-off (Law 8): everyone but `kicker` out of his half and
+    /// not yet sent is sent, walking, to his place in his side's block.
+    pub fn send_back_to_own_half(&mut self, kicker: PlayerId, spot: (i32, i32)) {
+        let half = self.pitch_cm.0 / 2;
+        let out: Vec<PlayerId> = self
+            .agents
+            .iter()
+            .filter(|(id, a)| {
+                **id != kicker
+                    && !self.sent.contains_key(*id)
+                    && if crate::perception::team_of(**id) == 0 {
+                        a.position.0 > half
+                    } else {
+                        a.position.0 < half
+                    }
+            })
+            .map(|(id, _)| *id)
+            .collect();
+        for id in out {
+            let mine = (crate::perception::team_of(id) == 0) == self.home_in_possession;
+            let place = self.block_target(id, spot, mine, true).unwrap_or_else(|| {
+                // A keeper: his goal.
+                let x = if crate::perception::team_of(id) == 0 {
+                    0
+                } else {
+                    self.pitch_cm.0
+                };
+                (x, self.pitch_cm.1 / 2)
+            });
+            self.sent.insert(id, (place, false));
+        }
+    }
+
+    /// The restart is taken: nobody is sent any more.
+    pub fn clear_sent(&mut self) {
+        self.sent.clear();
+    }
+
     /// Where a player who chose to offer or to run is going.
     pub fn set_act_target(&mut self, id: PlayerId, target: (i32, i32)) {
         self.act_targets.insert(id, target);
@@ -588,6 +673,16 @@ impl SpatialState {
         let Some(mut agent) = self.agents.remove(&outgoing) else {
             return false;
         };
+        // He comes on at the halfway line, on the side of the benches (Law
+        // 3; the benches by the touchline at y = 0, declared), and runs to
+        // his place from there (SIM 150). Before, he appeared where his man
+        // went off.
+        let entry = (self.pitch_cm.0 / 2, 0);
+        agent.position = entry;
+        agent.fine = (
+            (i64::from(entry.0) * FINE, i64::from(entry.1) * FINE),
+            (0, 0),
+        );
         agent.velocity = (0, 0);
         self.agents.insert(incoming, agent);
         if let Some(role) = self.roles.remove(&outgoing) {
@@ -1529,18 +1624,25 @@ impl SpatialState {
             .as_ref()
             .is_some_and(|tc| tick.saturating_sub(tc.at) as f64 >= tc.period);
         let mut fines: Vec<(PlayerId, FineBody)> = Vec::with_capacity(work.len());
+        // His top speed this tick, cm a tick: a push of the separation does
+        // not move him faster than his legs (SIM 150).
+        let mut legs: BTreeMap<PlayerId, f64> = BTreeMap::new();
         let mut steps_of: Vec<(PlayerId, [(i32, i32); STEPS])> = Vec::with_capacity(work.len());
         for entry in &mut work {
             let act = self.acts.get(&entry.0).copied();
-            let to_the_ball = matches!(
-                act,
-                Some(
-                    ds_orchestrator::OffBallAct::Press
-                        | ds_orchestrator::OffBallAct::Challenge
-                        | ds_orchestrator::OffBallAct::GoToBall
-                )
-            );
-            let target = if Some(entry.0) == self.carrier {
+            let sent = self.sent.get(&entry.0).copied();
+            let to_the_ball = sent.is_none()
+                && matches!(
+                    act,
+                    Some(
+                        ds_orchestrator::OffBallAct::Press
+                            | ds_orchestrator::OffBallAct::Challenge
+                            | ds_orchestrator::OffBallAct::GoToBall
+                    )
+                );
+            let target = if let Some((place, _)) = sent {
+                place
+            } else if Some(entry.0) == self.carrier {
                 // The carrier holds the ball where he is, or carries it
                 // where he chose (IDEA-DESIGN-010); the keeper too.
                 // A ball rolling past the moment he meant to meet it
@@ -1593,6 +1695,7 @@ impl SpatialState {
             // Displacement space: stride is a positive per-player constant,
             // so the leg speeds and accelerations scale by it.
             let stride = outcome.stride;
+            legs.insert(entry.0, outcome.v_max * stride);
             let accel = outcome.acceleration * stride;
             let decel = outcome.deceleration * stride;
             // With the ball he runs at the share his dribbling keeps.
@@ -1615,11 +1718,15 @@ impl SpatialState {
             } else {
                 target
             };
+            // A body standing on his way he goes round (SIM 150, OI-122):
+            // by the side that lengthens his way less.
+            let round = self.way_round(entry.0, entry.1, target);
             // His pace is his (2026-11-13): he runs flat out when he
             // contests something; taking up his place he goes at the speed
             // that gets him there in time.
             let keeper = keeper_targets.iter().any(|(g, _)| *g == entry.0);
-            let contests = Some(entry.0) == self.carrier
+            let contests = sent.is_some_and(|(_, run)| run)
+                || Some(entry.0) == self.carrier
                 || to_the_ball
                 || act == Some(ds_orchestrator::OffBallAct::Run);
             let defending = (crate::perception::team_of(entry.0) == 0) != self.home_in_possession;
@@ -1659,8 +1766,20 @@ impl SpatialState {
             for at_step in &mut path {
                 let at = (fine.0.0 as f64 / FINE as f64, fine.0.1 as f64 / FINE as f64);
                 let v_prev = (fine.1.0 as f64 / FINE as f64, fine.1.1 as f64 / FINE as f64);
-                let (dx, dy) = (f64::from(target.0) - at.0, f64::from(target.1) - at.1);
-                let dist = dmath::hypot(dx, dy);
+                // Towards the point beside the body in his way while he has
+                // not reached it, then towards where he is going; the ground
+                // left is the whole way, round the body.
+                let beside = round.filter(|w| {
+                    dmath::hypot(f64::from(w.0) - at.0, f64::from(w.1) - at.1)
+                        > f64::from(BODY_RADIUS_CM)
+                });
+                let aim = beside.unwrap_or(target);
+                let (dx, dy) = (f64::from(aim.0) - at.0, f64::from(aim.1) - at.1);
+                let leg = dmath::hypot(dx, dy);
+                let dist = leg
+                    + beside.map_or(0.0, |w| {
+                        dmath::hypot(f64::from(target.0 - w.0), f64::from(target.1 - w.1))
+                    });
                 // Without the ball his side must be in its place before the
                 // ball can get there: he goes as much faster, against a
                 // player as fast as he is, as his place is nearer to him than
@@ -1683,8 +1802,8 @@ impl SpatialState {
                     in_time.min(top_s).min((2.0 * decel_s * dist).sqrt())
                 }
                 .min(dist);
-                let (ux, uy) = if dist > 0.0 {
-                    (dx / dist, dy / dist)
+                let (ux, uy) = if leg > 0.0 {
+                    (dx / leg, dy / leg)
                 } else {
                     (0.0, 0.0)
                 };
@@ -1741,7 +1860,22 @@ impl SpatialState {
             .iter_mut()
             .zip(separate(&stepped, (pitch_length_cm, pitch_width_cm)))
         {
-            entry.1 = at;
+            // No faster than his legs (SIM 150): pushed beyond his top
+            // speed, he is moved only as far as it lets him.
+            let from = self.agents.get(&entry.0).map_or(at, |a| a.position);
+            let top = legs.get(&entry.0).copied().unwrap_or(f64::INFINITY);
+            let (dx, dy) = (f64::from(at.0 - from.0), f64::from(at.1 - from.1));
+            let d = dmath::hypot(dx, dy);
+            entry.1 = if d > top && d > 0.0 {
+                #[allow(clippy::cast_possible_truncation)]
+                let p = (
+                    from.0 + (dx * top / d).trunc() as i32,
+                    from.1 + (dy * top / d).trunc() as i32,
+                );
+                p
+            } else {
+                at
+            };
         }
 
         self.write_back(&work, ball, (tick, hidden), scan_balance);
@@ -1771,6 +1905,61 @@ impl SpatialState {
             }
         }
     }
+    /// Where `id`, at `from` and going to `to`, passes a body standing on
+    /// his way (SIM 150, OI-122; the maintainer, 17 November: how a man
+    /// goes, as walking is): the nearest other man whose body the straight
+    /// line crosses before `to`, unless he is at `to` (the man he goes to).
+    /// He passes him two bodies' width to the side, by the side that makes
+    /// his way shorter; on equal ways, by his right (a fixed rule,
+    /// declared). How well he does it is his acceleration and his turn
+    /// (`movement.json`: braking, joint mobility), not a number of its own.
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    fn way_round(&self, id: PlayerId, from: (i32, i32), to: (i32, i32)) -> Option<(i32, i32)> {
+        let wide = f64::from(2 * BODY_RADIUS_CM);
+        let (dx, dy) = (f64::from(to.0 - from.0), f64::from(to.1 - from.1));
+        let len = dmath::hypot(dx, dy);
+        if len <= wide {
+            return None;
+        }
+        let (ux, uy) = (dx / len, dy / len);
+        let (body, along) = self
+            .agents
+            .iter()
+            .filter(|(o, _)| **o != id)
+            .filter_map(|(_, a)| {
+                let (ox, oy) = (
+                    f64::from(a.position.0 - from.0),
+                    f64::from(a.position.1 - from.1),
+                );
+                let along = ox.mul_add(ux, oy * uy);
+                let across = ox.mul_add(-uy, oy * ux);
+                let at_target = dmath::hypot(
+                    f64::from(a.position.0 - to.0),
+                    f64::from(a.position.1 - to.1),
+                ) <= wide;
+                (along > 0.0 && along < len && across.abs() < wide && !at_target)
+                    .then_some((a.position, along))
+            })
+            .min_by(|a, b| a.1.total_cmp(&b.1))?;
+        let _ = along;
+        let side = |s: f64| {
+            (
+                (s * uy).mul_add(-wide, f64::from(body.0)).round() as i32,
+                (s * ux).mul_add(wide, f64::from(body.1)).round() as i32,
+            )
+        };
+        let way = |w: (i32, i32)| {
+            dmath::hypot(f64::from(w.0 - from.0), f64::from(w.1 - from.1))
+                + dmath::hypot(f64::from(to.0 - w.0), f64::from(to.1 - w.1))
+        };
+        // Right of his direction is -1 (the left normal is (-uy, ux)).
+        let (right, left) = (side(-1.0), side(1.0));
+        let (wr, wl) = (way(right), way(left));
+        let pick = if wl < wr { left } else { right };
+        let (length, width) = self.pitch_cm;
+        Some((pick.0.clamp(0, length), pick.1.clamp(0, width)))
+    }
+
     /// Writes back the moved positions, with velocity derived from the
     /// displacement, and updates heading and gaze.
     fn write_back(
@@ -2108,6 +2297,51 @@ mod tests {
         assert!(
             after.0 > before.0,
             "the keeper must advance, not retreat: {before:?} -> {after:?}"
+        );
+    }
+
+    /// Scene test (SIM 150, OI-122; seed 47 at a kick-off): a man walking
+    /// to his place finds a man standing on his way, and goes round him;
+    /// the standing man does not move for him. Before, the bodies pushed
+    /// each other back on the line between them, and he stood there.
+    #[test]
+    fn a_man_goes_round_a_man_standing_on_his_way() {
+        let mut s = make_state();
+        let walker = PlayerId::new(10, 0);
+        let standing = PlayerId::new(110, 0);
+        let ids: Vec<PlayerId> = s.iter().map(|(id, _)| *id).collect();
+        for id in ids {
+            let at = s.agent(id).unwrap().position;
+            s.send(id, at, false);
+        }
+        s.set_position(walker, (5347, 4011));
+        s.set_position(standing, (5293, 4089));
+        s.send(walker, (5150, 4208), false);
+        s.send(standing, (5293, 4089), false);
+        s.set_ball_in_flight((5250, 3400, 0), (0, 0, 0));
+        let bodies = make_bodies();
+        let mut hidden = ds_orchestrator::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
+        for tick in 0..150 {
+            s.move_agents(
+                10500,
+                6800,
+                &bodies,
+                &mut hidden,
+                tick,
+                &crate::balance::ScanningBalance::load(),
+                &crate::balance::KeeperBalance::load(),
+            );
+        }
+        let at = s.agent(walker).unwrap().position;
+        let d = distance_squared(at, (5150, 4208)).isqrt();
+        assert!(
+            d <= i64::from(2 * BODY_RADIUS_CM),
+            "he stands {d} cm from his place, at {at:?}"
+        );
+        let still = s.agent(standing).unwrap().position;
+        assert!(
+            distance_squared(still, (5293, 4089)) <= i64::from(2 * BODY_RADIUS_CM).pow(2),
+            "the standing man stays: {still:?}"
         );
     }
 

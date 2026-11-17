@@ -364,36 +364,45 @@ fn a_striker_asked_to_run_waits_on_the_last_line() {
 }
 
 /// P1 (ADR-070): more pressing is an ask in each player's choice, not only
-/// a higher block. From the order, on average over six matches, the
-/// nearest man of the side that presses stands nearer the opposing carrier
-/// than without it, by at least half a metre; before it, the same match.
+/// a higher block, to the two nearest the carrier. From the order, on
+/// average over twenty matches, the two nearest men of the side that
+/// presses stand nearer the opposing carrier than without it, by at least
+/// half a metre each; before it, the same match. (Until SIM 149 the twin
+/// read the nearest man alone over six matches: he presses by his own
+/// reading anyway, and over six matches the spread of the match was
+/// larger than the order's effect.)
 #[test]
 #[allow(clippy::cast_precision_loss)] // cm on a pitch
 fn more_pressing_closes_the_carrier_down() {
     let upto = usize::try_from(AT).expect("tick fits");
+    // The mean distance of the two nearest men of `home` (substitutes too)
+    // to the opposing carrier.
     let gap = |r: &[ds_match::TickRecord], home: &[ds_core::ids::PlayerId]| {
+        let mine = |id: &ds_core::ids::PlayerId| home.contains(id) || id.slot() < 100;
         let ds: Vec<f64> = r
             .iter()
             .filter_map(|t| {
-                let c = t.carrier.filter(|c| !home.contains(c))?;
+                let c = t.carrier.filter(|c| !mine(c))?;
                 let at = t.agents.iter().find(|a| a.id == c)?.position;
-                t.agents
+                let mut near: Vec<f64> = t
+                    .agents
                     .iter()
-                    .filter(|a| home.contains(&a.id))
+                    .filter(|a| mine(&a.id))
                     .map(|a| {
-                        let (dx, dy) = (
+                        ds_core::dmath::hypot(
                             f64::from(a.position.0 - at.0),
                             f64::from(a.position.1 - at.1),
-                        );
-                        ds_core::dmath::hypot(dx, dy)
+                        )
                     })
-                    .reduce(f64::min)
+                    .collect();
+                near.sort_by(f64::total_cmp);
+                (near.len() >= 2).then(|| f64::midpoint(near[0], near[1]))
             })
             .collect();
         ds.iter().sum::<f64>() / ds.len().max(1) as f64
     };
     let (mut asked, mut free) = (0.0, 0.0);
-    for seed in 50..56 {
+    for seed in 50..70 {
         let plain = match_fixture(seed).expect("fixture");
         let home: Vec<_> = plain.home.players.iter().map(|p| p.id).collect();
         let mut m = match_fixture(seed).expect("fixture");
@@ -415,10 +424,11 @@ fn more_pressing_closes_the_carrier_down() {
         asked += gap(&after[upto + 1..], &home);
         free += gap(&before[upto + 1..], &home);
     }
+    // The sums are of twenty matches: half a metre each.
     assert!(
-        asked + 300.0 < free,
+        asked + 1_000.0 < free,
         "pressing: {:.0} cm from the carrier, without: {:.0} cm",
-        asked / 6.0,
-        free / 6.0
+        asked / 20.0,
+        free / 20.0
     );
 }
