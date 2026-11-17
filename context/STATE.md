@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `5dccf9a` - "Merge docs/new-ai-prompt: NEW-AI-PROMPT.md for an AI new to the repository"
+**Last commit verified:** `0a6d49b` - "docs(state): bookmark after the merge of docs/new-ai-prompt"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,8 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**17 novembre, sera: la priorità del maintainer.** "La cosa più urgente è dare ai giocatori una formazione calcistica": i comportamenti dei giocatori in campo (strati 1 e 2 del catalogo) vengono prima di tutto il resto. Il lavoro in corso è lo strato 2 con ADR-071: il posto senza palla scelto con la misura del gioco, partendo dalla zona del ruolo.
 
 **17 novembre, sera: merge di `docs/new-ai-prompt`.** Ho verificato `context/NEW-AI-PROMPT.md` contro main: i crate, gli strumenti, i comandi di `ds-gui`, `ds-demo`, `ds-reference compare` e `scene` e di `ds-test-runner`, gli ADR fino al 070, le regole citate (A1, A7, A5-bis, C2, C3, E2) e i file da leggere tornano tutti. Una sola correzione, nello stesso merge: per `scene` mancavano due delle sette misure (i due più avanzati davanti al pallone, il pallone dietro chi lo porta). Il ramo va cancellato a mano, se il proxy rifiuta la mia cancellazione. Lo strato 2 (ADR-071) è in corso, non ancora in main.
 
