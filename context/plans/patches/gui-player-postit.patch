@@ -1,0 +1,144 @@
+diff --git a/tools/ds-gui/src/app.rs b/tools/ds-gui/src/app.rs
+index 1099193..c167d59 100644
+--- a/tools/ds-gui/src/app.rs
++++ b/tools/ds-gui/src/app.rs
+@@ -108,6 +108,9 @@ pub struct App {
+     record: Option<(String, usize, usize)>,
+     /// The bench post-it: who comes off and who comes on, as chosen.
+     pick: (Option<PlayerId>, Option<PlayerId>),
++    /// The token clicked on the board: his post-it with his
++    /// responsibilities (ADR-059 step 5).
++    chosen: Option<PlayerId>,
+     /// The recording's clock: the tick it starts from, the frames asked
+     /// for so far, and whether a screenshot is on its way.
+     rec_clock: (usize, usize, bool),
+@@ -144,6 +147,7 @@ impl App {
+             last_dt: 0.0,
+             record: None,
+             pick: (None, None),
++            chosen: None,
+             rec_clock: (0, 0, false),
+             placed: false,
+         };
+@@ -743,11 +747,113 @@ impl App {
+                 }
+             }
+         }
++        let clicked = response.clicked();
+         if let Some(id) = hovered {
+             if let Some(name) = game.names.get(&id) {
+                 response.on_hover_text(format!("{} {name}", ds_demo::pitchview::marker(id)));
+             }
+         }
++        if clicked {
++            // One of his own: his post-it (ADR-059 step 5); elsewhere, it
++            // closes.
++            self.chosen = hovered.filter(|id| id.slot() < 100);
++        }
++    }
++
++    /// The post-it of the token clicked (ADR-059 step 5): what the coach
++    /// asks of him with the ball and without it, as an order of the board
++    /// at the tick on the screen.
++    fn player_postit(&mut self, ctx: &egui::Context) {
++        use ds_model::Task as T;
++        let (Some(id), Some(game)) = (self.chosen, &self.game) else {
++            return;
++        };
++        let Some(slot) = game.home.0.iter().position(|p| *p == id).or_else(|| {
++            // A man who came on takes the slot of the man he replaced.
++            game.records.get(self.tick).and_then(|r| {
++                let on: Vec<PlayerId> = r.agents.iter().map(|a| a.id).filter(|p| p.slot() < 100).collect();
++                game.home.0.iter().position(|p| !on.contains(p)).filter(|_| on.contains(&id))
++            })
++        }) else {
++            return;
++        };
++        let mut board = self.board_now();
++        let name = game.names.get(&id).cloned().unwrap_or_default();
++        let t = &self.theme;
++        let (paper, ink, shade) = (t.postit, t.postit_ink, t.postit_shadow);
++        let label = |task: T| match task {
++            T::Free => "his own reading",
++            T::Run => "attack the depth",
++            T::Offer => "come short",
++            T::Stay => "stay back",
++            T::Press => "go out and press",
++            T::Cover => "cover",
++            T::Mark => "mark his man",
++        };
++        let before = board;
++        let mut close = false;
++        egui::Area::new(egui::Id::new("player-postit"))
++            .anchor(egui::Align2::LEFT_TOP, egui::vec2(12.0, 360.0))
++            .show(ctx, |ui| {
++                egui::Frame::NONE
++                    .fill(paper)
++                    .inner_margin(10.0)
++                    .shadow(egui::epaint::Shadow {
++                        offset: [2, 3],
++                        blur: 6,
++                        spread: 0,
++                        color: shade,
++                    })
++                    .show(ui, |ui| {
++                        ui.style_mut().visuals = egui::Visuals::light();
++                        ui.visuals_mut().override_text_color = Some(ink);
++                        ui.set_max_width(220.0);
++                        ui.horizontal(|ui| {
++                            ui.strong(format!("{} {name}", slot + 1));
++                            if ui.small_button("×").clicked() {
++                                close = true;
++                            }
++                        });
++                        ui.label("With the ball");
++                        let with = &mut board.with_ball_tasks[slot];
++                        egui::ComboBox::from_id_salt("task-with")
++                            .selected_text(label(*with))
++                            .show_ui(ui, |ui| {
++                                for k in [T::Free, T::Run, T::Offer, T::Stay] {
++                                    ui.selectable_value(with, k, label(k));
++                                }
++                            });
++                        ui.label("Without the ball");
++                        let without = &mut board.without_ball_tasks[slot];
++                        egui::ComboBox::from_id_salt("task-without")
++                            .selected_text(label(*without))
++                            .show_ui(ui, |ui| {
++                                for k in [T::Free, T::Press, T::Cover, T::Mark, T::Stay] {
++                                    ui.selectable_value(without, k, label(k));
++                                }
++                            });
++                    });
++            });
++        if close {
++            self.chosen = None;
++        }
++        if board != before {
++            self.order(ds_model::Order::Board(board));
++        }
++    }
++
++    /// The board as the coach has it now: the squad's, with every board
++    /// he ordered since.
++    fn board_now(&self) -> ds_model::Board {
++        let mut board = ds_fixtures::match_fixture(self.seed)
++            .map(|m| m.home.board)
++            .unwrap_or_default();
++        for i in &self.choices.live {
++            if let ds_model::Order::Board(b) = i.order {
++                board = b;
++            }
++        }
++        board
+     }
+ 
+     /// The camera's span across the screen at the current zoom, cm: from
+@@ -1371,6 +1477,7 @@ impl eframe::App for App {
+         if self.record.is_none() {
+             self.bench_postit(ctx);
+             self.quick_postit(ctx);
++            self.player_postit(ctx);
+         }
+         if self.record.is_some() {
+             // One screenshot at a time: the next frame is drawn only after

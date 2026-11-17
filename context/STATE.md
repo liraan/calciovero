@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `2df8dad` - "Merge docs/plan-3d: the player's career (BI), decision BJ, the small steps"
+**Last commit verified:** `3026dd5` - "docs(state): bookmark after SIM 146 and the merge of plan-3d; the small steps wait"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,8 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**Anteprima: la lavagna nella GUI (ADR-059 passo 5), da approvare.** `context/previews/2026-11-17-player-postit.png`: si clicca un pallino della propria squadra e si apre il suo post-it, con le responsabilità con la palla (la sua lettura, attaccare la profondità, venire incontro, restare) e senza (la sua lettura, uscire in pressione, coprire, marcare, restare); ogni scelta è un ordine della lavagna al tick sullo schermo, e arriva per il suo canale. Il codice è in `context/plans/patches/gui-player-postit.patch`, fuori da main finché non dici sì. Da sapere: il nome nel post-it è quello della rosa di prova ("Home 9"), il numero è il posto da 1 (10), lo stesso scarto del commento (OI aperto).
 
 **I passi piccoli (decisione BJ): mi fermo, come chiedi, perché la rappresentazione intera li rende un problema.** Il motore muove corpi e pallone in centimetri interi e velocità intere per tick (cm/tick, `i16`), con costanti per tick:
 - il pallone: la gravità è 10 cm/tick²; a 50 passi al secondo un passo vale 0,4 cm/passo², che in centimetri interi diventa 0 o 1 (sbagliata del 100% o del 150%);
