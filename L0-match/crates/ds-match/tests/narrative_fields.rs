@@ -43,7 +43,7 @@ fn tackle_text_uses_from_field_and_event_keeps_it() {
     assert_eq!(entries.len(), 1);
     // The rendered text uses the field.
     assert!(
-        entries[0].text.contains("Home 5"),
+        entries[0].text.contains("Home 6"),
         "text: {}",
         entries[0].text
     );

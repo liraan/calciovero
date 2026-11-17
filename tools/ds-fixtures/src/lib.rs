@@ -128,7 +128,9 @@ fn make_player(
     let (height, weight) = body(seed, pid, role)?;
     Player::try_new(
         pid,
-        format!("{label} {i}"),
+        // His shirt number: his place in the squad from 1, the number his
+        // token carries in the 2.5D (before, the name counted from 0).
+        format!("{label} {}", i + 1),
         RoleId::new(role).map_err(|e| e.to_string())?,
         height,
         weight,
