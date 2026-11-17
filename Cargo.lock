@@ -917,7 +917,6 @@ version = "0.1.0"
 dependencies = [
  "blake3",
  "ds-core",
- "ds-model",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
