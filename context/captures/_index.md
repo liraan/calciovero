@@ -34,3 +34,4 @@ Earlier captures (until 2026-11-13) are in `git log -- process/captures/`.
 2026-11-17 09:10 | pause - | written | 3bec835 | 0 | - | context/captures/2026-11.md
 2026-11-17 11:23 | pause - | written | 8fe47b4 | 0 | - | context/captures/2026-11.md
 2026-11-17 11:35 | pause - | written | a4ab404 | 0 | - | context/captures/2026-11.md
+2026-11-17 14:11 | pause - | written | 386870d | 0 | - | context/captures/2026-11.md
