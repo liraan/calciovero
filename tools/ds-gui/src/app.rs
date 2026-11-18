@@ -116,6 +116,8 @@ pub struct App {
     rec_clock: (usize, usize, bool),
     /// The camera has been put on the ball once (it starts there).
     placed: bool,
+    /// The aid of the orders: the line and the block drawn (off).
+    show_shape: bool,
 }
 
 impl App {
@@ -150,6 +152,7 @@ impl App {
             chosen: None,
             rec_clock: (0, 0, false),
             placed: false,
+            show_shape: false,
         };
         app.play_match();
         app
@@ -375,15 +378,21 @@ impl App {
         }
     }
 
-    /// The quick instructions as a post-it under the bench (ADR-059 step 3,
-    /// DESIGN.md): more pressing, everyone forward, and the two
-    /// transitions; each change is an order at the tick on the screen.
-    fn quick_postit(&mut self, ctx: &egui::Context) {
+    /// The orders during the match (the maintainer's pure error 2d): a
+    /// button over the pitch, in the colour of the side they go to, with
+    /// the same menus as the choices before the match. Each change is an
+    /// order at the tick on the screen (ADR-059, ADR-070): the block's
+    /// height and width, more pressing, everyone forward, the two
+    /// transitions. Before, the block and the width of the top bar were
+    /// choices for the next match only, and changing them while watching
+    /// changed nothing.
+    fn orders_bar(&mut self, ctx: &egui::Context) {
         if self.game.is_none() {
             return;
         }
         // What he has said so far, the last word on each.
         let mut now = ds_model::TeamOrders::default();
+        let mut intention = self.choices.home;
         for i in &self.choices.live {
             match i.order {
                 ds_model::Order::Quick { quick, on } => now = now.with(quick, on),
@@ -391,87 +400,94 @@ impl App {
                     now.lost = lost;
                     now.won = won;
                 }
-                ds_model::Order::Intention(_)
-                | ds_model::Order::Substitute { .. }
-                | ds_model::Order::Board(_) => {}
+                ds_model::Order::Intention(it) => intention = it,
+                ds_model::Order::Substitute { .. } | ds_model::Order::Board(_) => {}
             }
         }
-        let t = &self.theme;
-        let (paper, ink, shade) = (t.postit, t.postit_ink, t.postit_shadow);
+        let side = self.theme.home;
         let mut give: Vec<ds_model::Order> = Vec::new();
-        egui::Area::new(egui::Id::new("quick-postit"))
-            .anchor(egui::Align2::LEFT_TOP, egui::vec2(12.0, 210.0))
+        let mut shape = self.show_shape;
+        egui::Area::new(egui::Id::new("orders-bar"))
+            .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 44.0))
             .show(ctx, |ui| {
                 egui::Frame::NONE
-                    .fill(paper)
-                    .inner_margin(10.0)
-                    .shadow(egui::epaint::Shadow {
-                        offset: [2, 3],
-                        blur: 6,
-                        spread: 0,
-                        color: shade,
-                    })
+                    .fill(self.theme.postit)
+                    .stroke(Stroke::new(2.0_f32, side))
+                    .inner_margin(6.0)
                     .show(ui, |ui| {
                         ui.style_mut().visuals = egui::Visuals::light();
-                        ui.visuals_mut().override_text_color = Some(ink);
-                        ui.set_max_width(220.0);
-                        ui.strong("Quick instructions");
-                        for (quick, label, on) in [
-                            (
-                                ds_model::Quick::MorePressing,
-                                "More pressing",
-                                now.press_cm > 0,
-                            ),
-                            (
-                                ds_model::Quick::EveryoneForward,
-                                "Everyone forward",
-                                now.forward_cm > 0,
-                            ),
-                        ] {
-                            let mut v = on;
-                            if ui.checkbox(&mut v, label).changed() {
-                                give.push(ds_model::Order::Quick { quick, on: v });
-                            }
-                        }
-                        let (mut lost, mut won) = (now.lost, now.won);
-                        egui::ComboBox::from_id_salt("on-loss")
-                            .selected_text(match lost {
-                                ds_model::OnLoss::Shape => "Ball lost: shape",
-                                ds_model::OnLoss::CounterPress => "Ball lost: counter-press",
-                                ds_model::OnLoss::DropBack => "Ball lost: drop back",
-                            })
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut lost, ds_model::OnLoss::Shape, "shape");
-                                ui.selectable_value(
-                                    &mut lost,
-                                    ds_model::OnLoss::CounterPress,
-                                    "counter-press",
-                                );
-                                ui.selectable_value(
-                                    &mut lost,
-                                    ds_model::OnLoss::DropBack,
-                                    "drop back",
-                                );
-                            });
-                        egui::ComboBox::from_id_salt("on-win")
-                            .selected_text(match won {
-                                ds_model::OnWin::Shape => "Ball won: shape",
-                                ds_model::OnWin::Counter => "Ball won: counter",
-                                ds_model::OnWin::Keep => "Ball won: keep it",
-                            })
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut won, ds_model::OnWin::Shape, "shape");
-                                ui.selectable_value(&mut won, ds_model::OnWin::Counter, "counter");
-                                ui.selectable_value(&mut won, ds_model::OnWin::Keep, "keep it");
-                            });
-                        if (lost, won) != (now.lost, now.won) {
-                            give.push(ds_model::Order::Transitions { lost, won });
-                        }
+                        ui.visuals_mut().override_text_color = Some(self.theme.postit_ink);
+                        ui.horizontal(|ui| {
+                            // To whom: the side's colour and its name.
+                            let (dot, _) =
+                                ui.allocate_exact_size(egui::vec2(14.0, 14.0), Sense::hover());
+                            ui.painter().circle_filled(dot.center(), 6.0, side);
+                            ui.strong("Orders to Home");
+                            ui.separator();
+                            give = order_menus(ui, intention, now);
+                            ui.separator();
+                            // An aid, off by default (the match has no lines
+                            // drawn on it): where the side's line and block
+                            // stand.
+                            ui.checkbox(&mut shape, "Show the line and the block");
+                        });
                     });
             });
+        self.show_shape = shape;
         for order in give {
             self.order(order);
         }
+    }
+
+    /// The markings, and over them the aid of the orders if it is on.
+    fn draw_ground(&self, painter: &egui::Painter, geom: &Geometry, moment: &Moment) {
+        self.draw_markings(painter, geom);
+        if self.show_shape {
+            self.draw_shape(painter, geom, moment);
+        }
+    }
+
+    /// The aid of the orders, off by default: the home side's back line (its
+    /// deepest outfield man) and its block (from its deepest to its most
+    /// advanced outfield man, from its widest on one side to the other), as
+    /// they stand now. Drawn under the tokens.
+    fn draw_shape(&self, painter: &egui::Painter, geom: &Geometry, moment: &Moment) {
+        let Some(game) = &self.game else { return };
+        let home: Vec<(f32, f32)> = moment
+            .players
+            .iter()
+            .filter(|p| p.id.slot() < 100 && Some(p.id) != game.home.0.first().copied())
+            .map(|p| p.at)
+            .collect();
+        if home.len() < 2 {
+            return;
+        }
+        let fold = |f: fn(f32, f32) -> f32, pick: fn(&(f32, f32)) -> f32, init: f32| {
+            home.iter().map(pick).fold(init, f)
+        };
+        let (x0, x1) = (
+            fold(f32::min, |p| p.0, f32::MAX),
+            fold(f32::max, |p| p.0, f32::MIN),
+        );
+        let (y0, y1) = (
+            fold(f32::min, |p| p.1, f32::MAX),
+            fold(f32::max, |p| p.1, f32::MIN),
+        );
+        #[allow(clippy::cast_possible_truncation)]
+        let on = |x: f32, y: f32| {
+            let (sx, sy) = geom.at((x as i32, y as i32));
+            Pos2::new(sx, sy)
+        };
+        let side = self.theme.home;
+        let fill = egui::Color32::from_rgba_unmultiplied(side.r(), side.g(), side.b(), 40);
+        painter.add(Shape::convex_polygon(
+            vec![on(x0, y0), on(x1, y0), on(x1, y1), on(x0, y1)],
+            fill,
+            Stroke::new(1.0_f32, side),
+        ));
+        #[allow(clippy::cast_precision_loss)]
+        let (_, width) = (game.pitch_cm.0 as f32, game.pitch_cm.1 as f32);
+        painter.line_segment([on(x0, 0.0), on(x0, width)], Stroke::new(2.5_f32, side));
     }
 
     /// Moves the playback on by the time since the last frame.
@@ -503,6 +519,10 @@ impl App {
             ui.separator();
             ui.label("Seed");
             ui.add(egui::DragValue::new(&mut self.seed));
+            // Choices for the next match: the orders while watching are the
+            // button over the pitch.
+            ui.separator();
+            ui.label(RichText::new("Before the match:").italics());
             let block = &mut self.choices.home.block;
             ui.label("Block");
             egui::ComboBox::from_id_salt("block")
@@ -695,7 +715,7 @@ impl App {
             &game.backdrop,
             (now, crowd_mood(&game.cheers, now)),
         );
-        self.draw_markings(&painter, &geom);
+        self.draw_ground(&painter, &geom, &moment);
         let frame = scene::frame(&moment, &geom);
         let t = &self.theme;
         let pos = |s: &scene::Screen| Pos2::new(s.x, s.y);
@@ -1485,7 +1505,7 @@ impl eframe::App for App {
             .show(ctx, |ui| self.pitch(ui));
         if self.record.is_none() {
             self.bench_postit(ctx);
-            self.quick_postit(ctx);
+            self.orders_bar(ctx);
             self.player_postit(ctx);
         }
         if self.record.is_some() {
@@ -1500,6 +1520,84 @@ impl eframe::App for App {
             ctx.request_repaint();
         }
     }
+}
+
+/// The menus of the orders during the match: the block's height and width,
+/// more pressing, everyone forward, the two transitions; the orders the
+/// changes give (the maintainer's pure error 2d).
+fn order_menus(
+    ui: &mut egui::Ui,
+    intention: ds_model::Intention,
+    now: ds_model::TeamOrders,
+) -> Vec<ds_model::Order> {
+    let mut give = Vec::new();
+    let (mut block, mut width) = (intention.block, intention.width);
+    egui::ComboBox::from_id_salt("live-block")
+        .selected_text(format!("Block: {}", block_label(block)))
+        .show_ui(ui, |ui| {
+            for b in [BlockHeight::High, BlockHeight::Mid, BlockHeight::Low] {
+                ui.selectable_value(&mut block, b, block_label(b));
+            }
+        });
+    egui::ComboBox::from_id_salt("live-width")
+        .selected_text(format!("Width: {}", width_label(width)))
+        .show_ui(ui, |ui| {
+            for w in [Width::Narrow, Width::Normal, Width::Wide] {
+                ui.selectable_value(&mut width, w, width_label(w));
+            }
+        });
+    if (block, width) != (intention.block, intention.width) {
+        give.push(ds_model::Order::Intention(ds_model::Intention {
+            block,
+            width,
+        }));
+    }
+    for (quick, label, on) in [
+        (ds_model::Quick::MorePressing, "Pressing", now.press_cm > 0),
+        (
+            ds_model::Quick::EveryoneForward,
+            "Everyone forward",
+            now.forward_cm > 0,
+        ),
+    ] {
+        let mut v = on;
+        egui::ComboBox::from_id_salt(label)
+            .selected_text(format!("{label}: {}", if v { "more" } else { "normal" }))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut v, false, "normal");
+                ui.selectable_value(&mut v, true, "more");
+            });
+        if v != on {
+            give.push(ds_model::Order::Quick { quick, on: v });
+        }
+    }
+    let (mut lost, mut won) = (now.lost, now.won);
+    egui::ComboBox::from_id_salt("on-loss")
+        .selected_text(match lost {
+            ds_model::OnLoss::Shape => "Ball lost: shape",
+            ds_model::OnLoss::CounterPress => "Ball lost: counter-press",
+            ds_model::OnLoss::DropBack => "Ball lost: drop back",
+        })
+        .show_ui(ui, |ui| {
+            ui.selectable_value(&mut lost, ds_model::OnLoss::Shape, "shape");
+            ui.selectable_value(&mut lost, ds_model::OnLoss::CounterPress, "counter-press");
+            ui.selectable_value(&mut lost, ds_model::OnLoss::DropBack, "drop back");
+        });
+    egui::ComboBox::from_id_salt("on-win")
+        .selected_text(match won {
+            ds_model::OnWin::Shape => "Ball won: shape",
+            ds_model::OnWin::Counter => "Ball won: counter",
+            ds_model::OnWin::Keep => "Ball won: keep it",
+        })
+        .show_ui(ui, |ui| {
+            ui.selectable_value(&mut won, ds_model::OnWin::Shape, "shape");
+            ui.selectable_value(&mut won, ds_model::OnWin::Counter, "counter");
+            ui.selectable_value(&mut won, ds_model::OnWin::Keep, "keep it");
+        });
+    if (lost, won) != (now.lost, now.won) {
+        give.push(ds_model::Order::Transitions { lost, won });
+    }
+    give
 }
 
 /// What moves the crowd (DESIGN.md: only from a fact of the match): a goal
@@ -1678,6 +1776,29 @@ mod tests {
         let game = a.game.as_ref().expect("game");
         assert_eq!(game.records[..=9_000], before[..]);
         assert_eq!(a.choices.live.len(), 1);
+    }
+
+    /// The orders during the match reach the engine (the maintainer's pure
+    /// error 2d): a block and a width given from the button at the 15th
+    /// minute leave the match the same up to then, and change it after.
+    #[test]
+    fn an_order_from_the_button_reaches_the_engine() {
+        let mut a = app();
+        a.tick = 9_000;
+        let before: Vec<_> = a.game.as_ref().expect("game").records.clone();
+        a.order(ds_model::Order::Intention(ds_model::Intention {
+            block: BlockHeight::High,
+            width: Width::Wide,
+        }));
+        let game = a.game.as_ref().expect("game");
+        assert_eq!(game.records[..=9_000], before[..=9_000]);
+        assert!(
+            game.records[9_001..]
+                .iter()
+                .zip(&before[9_001..])
+                .any(|(x, y)| x.agents != y.agents),
+            "the side plays differently after the order"
+        );
     }
 
     /// The crowd moves only from facts: every goal lifts the fans of the
