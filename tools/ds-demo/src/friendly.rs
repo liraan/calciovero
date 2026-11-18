@@ -430,6 +430,7 @@ fn how_it_began(m: &Match, goal: &MatchEvent, before: &[MatchEvent], l: usize) -
         .find(|x| player(x).is_some_and(|id| !is_home(m, id)));
     let them = next
         .and_then(player)
+        .or_else(|| player(goal).filter(|id| !is_home(m, *id)))
         .map(|id| who(m, id))
         .unwrap_or_default();
     let reason = match (e.event_type, next.map(|x| x.event_type)) {
@@ -441,6 +442,9 @@ fn how_it_began(m: &Match, goal: &MatchEvent, before: &[MatchEvent], l: usize) -
         (EventType::Shot, _) => format!("after {mine}'s shot, they had the ball"),
         (_, Some(EventType::Duel)) | (EventType::Duel, _) => {
             format!("{mine} lost a duel to {them}")
+        }
+        _ if them.is_empty() => {
+            format!("{mine} lost it and they broke straight down the other end")
         }
         _ => format!("{mine} lost the ball to {them}"),
     };
@@ -643,6 +647,7 @@ mod tests {
             assert_eq!(text.matches(" scored").count(), conceded, "{text}");
             if conceded > 0 {
                 assert!(text.contains("The move began"), "{text}");
+                assert!(!text.contains("to ."), "{text}");
             }
         }
     }
