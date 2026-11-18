@@ -55,6 +55,10 @@ pub enum TrajectoryKind {
         success: bool,
         /// A through ball (plan L0-CLOSE 10a).
         through: bool,
+        /// A cross (ADR-072): the ball from wide into the area.
+        cross: bool,
+        /// The foot it was struck with (ADR-031).
+        foot: Option<ds_orchestrator::Side>,
     },
     /// A shot. The payload is what F.3-b3 requires (see
     /// the 2026-11-04 match statistics report, §3, in git history).
@@ -102,15 +106,31 @@ pub fn classify(fact: &Fact) -> Vec<Classified> {
             out
         }
         Fact::Trajectory { actor, kind } => match kind {
-            TrajectoryKind::Pass { success, through } => vec![Classified {
-                actor: Some(ActorId::Player(*actor)),
-                event_type: EventType::Pass,
-                fields: if *through {
-                    serde_json::json!({ "complete": *success, "through": true })
+            TrajectoryKind::Pass {
+                success,
+                through,
+                cross,
+                foot,
+            } => {
+                let foot = match foot {
+                    Some(ds_orchestrator::Side::Left) => "left",
+                    Some(ds_orchestrator::Side::Right) => "right",
+                    None => "either",
+                };
+                let mut fields = if *through {
+                    serde_json::json!({ "complete": *success, "through": true, "cross": *cross })
                 } else {
-                    serde_json::json!({ "complete": *success })
-                },
-            }],
+                    serde_json::json!({ "complete": *success, "cross": *cross })
+                };
+                if *cross {
+                    fields["foot"] = serde_json::json!(foot);
+                }
+                vec![Classified {
+                    actor: Some(ActorId::Player(*actor)),
+                    event_type: EventType::Pass,
+                    fields,
+                }]
+            }
             TrajectoryKind::Shot {
                 on_target,
                 from,
@@ -202,11 +222,47 @@ mod tests {
             kind: TrajectoryKind::Pass {
                 success: true,
                 through: false,
+                cross: false,
+                foot: None,
             },
         });
         assert_eq!(c.len(), 1);
         assert_eq!(c[0].event_type, EventType::Pass);
         assert_eq!(c[0].fields["complete"], true);
+        assert_eq!(c[0].fields["cross"], false);
+        assert!(c[0].fields.get("foot").is_none());
+    }
+
+    #[test]
+    fn pass_trajectory_cross_emits_cross_field() {
+        let c = classify(&Fact::Trajectory {
+            actor: p(1),
+            kind: TrajectoryKind::Pass {
+                success: true,
+                through: false,
+                cross: true,
+                foot: Some(ds_orchestrator::Side::Right),
+            },
+        });
+        assert_eq!(c.len(), 1);
+        assert_eq!(c[0].event_type, EventType::Pass);
+        assert_eq!(c[0].fields["cross"], true);
+        assert_eq!(c[0].fields["foot"], "right");
+    }
+
+    #[test]
+    fn pass_trajectory_not_cross_has_no_foot() {
+        let c = classify(&Fact::Trajectory {
+            actor: p(1),
+            kind: TrajectoryKind::Pass {
+                success: true,
+                through: false,
+                cross: false,
+                foot: Some(ds_orchestrator::Side::Left),
+            },
+        });
+        assert_eq!(c[0].fields["cross"], false);
+        assert!(c[0].fields.get("foot").is_none());
     }
 
     #[test]

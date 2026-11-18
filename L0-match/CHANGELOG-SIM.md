@@ -8,10 +8,21 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 153 — A3, ADR-072: one act, one event (the cross is a pass)
+
+The same struck ball no longer emits two events (`Pass` + `Cross`):
+`tell_cross` is gone, replaced by `compute_cross` (which only returns
+the qualifier, it does not emit). `TrajectoryKind::Pass` carries
+`cross: bool` and `foot: Option<ds_orchestrator::Side>`; `classify`
+emits `"cross": true|false` on every `Pass`, and `"foot"` only when
+cross is true. `ds-narrative` says "crosses" when `"cross": true`.
+`EventType::Cross` stays in the enum, deprecated, not emitted from 153
+on. Golden regenerated; no other behaviour changes.
+
 ## Current SIM_VERSION
 
 ```
-SIM_VERSION = 152
+SIM_VERSION = 153
 ```
 
 `SIM_VERSION = 1` was the initial baseline (no code). 2 removed `CauseTrace` and `xg` (ADR-024). 3 removed `template_key`/`params` from `NarrativeEntry`. 4 removed four gusci fields from `MatchEvent`/`MatchSave`. 5 replaced `player_id` with `actor: Option<ActorId>` and added `KickOff`/`SecondHalf` (ADR-026). 6: two halves with separate clocks, `Half` field, four-phase loop, fixed-point stoppage time, boundary events emitted (ADR-026 phase 2). 7: stoppage contributions calibrated (goal 60s, foul 20s, duel 10s). 8: slice B2 — the acting agent comes from space (`pick_from_space`), `Tackle` emitted when a duel is won by the defender, `SpatialState.carrier` tracked, stream names with `match_id` (OI-22). OI-22 closed: RNG stream names now carry `match_id` (`match:{id}:actions`, `match:{id}:action_kind`), so two matches with the same world seed no longer share the engine streams. The current value is the reference against which all future bumps are measured.

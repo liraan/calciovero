@@ -82,7 +82,7 @@ pub const SCHEMA_VERSION: u32 = 3;
 /// event emission). A bump requires a `L0-match/CHANGELOG-SIM.md` entry and a
 /// golden-test regeneration. See `doctrine/adr/003-plane-a-enforcement.md` and
 /// `L0-match/CHANGELOG-SIM.md`.
-pub const SIM_VERSION: u32 = 152;
+pub const SIM_VERSION: u32 = 153;
 
 /// The save of a single match.
 #[derive(Debug, Clone, Serialize, Deserialize)]

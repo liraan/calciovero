@@ -142,3 +142,30 @@ fn every_goal_has_a_scorer() {
         }
     }
 }
+
+#[test]
+fn one_clearance_per_act() {
+    let fixture = match_fixture(42).expect("fixture");
+    let result = simulate_from_seed(&fixture, 42, MatchConfig::default());
+    let events = result.events.events();
+    let clearances: Vec<_> = events
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| e.event_type == EventType::Clearance)
+        .collect();
+    assert!(
+        !clearances.is_empty(),
+        "no Clearance in seed 42: the test is not exercising the act"
+    );
+    for w in clearances.windows(2) {
+        let (first_index, first_event) = w[0];
+        let (second_index, second_event) = w[1];
+        assert!(
+            !(first_event.actor == second_event.actor && second_index == first_index + 1),
+            "consecutive Clearance for {:?} at chain indices {} and {}: one act emitted twice",
+            first_event.actor,
+            first_index,
+            second_index
+        );
+    }
+}

@@ -78,7 +78,15 @@ pub fn narrate(match_: &Match, chain: &EventChain) -> Vec<NarrativeEntry> {
         names.insert(p.id, p.name.as_str());
         slot_map.insert(p.id.slot(), p.name.as_str());
     }
+    for p in &match_.home.bench {
+        names.insert(p.id, p.name.as_str());
+        slot_map.insert(p.id.slot(), p.name.as_str());
+    }
     for p in &match_.away.players {
+        names.insert(p.id, p.name.as_str());
+        slot_map.insert(p.id.slot(), p.name.as_str());
+    }
+    for p in &match_.away.bench {
         names.insert(p.id, p.name.as_str());
         slot_map.insert(p.id.slot(), p.name.as_str());
     }
@@ -128,6 +136,17 @@ fn slot_name(slot_map: &BTreeMap<u32, &str>, slot: Option<u32>) -> Option<String
     slot.and_then(|s| slot_map.get(&s))
         .map(|n| (*n).to_string())
 }
+
+/// The verb a pass is told with: a cross is a pass (ADR-072), so the field and
+/// not the event type decides the word.
+fn pass_verb(fields: &serde_json::Value) -> &'static str {
+    if fields.get("cross").and_then(serde_json::Value::as_bool) == Some(true) {
+        "crosses"
+    } else {
+        "passes"
+    }
+}
+
 /// Returns the importance for an event type.
 const fn importance_for(event_type: EventType) -> Importance {
     match event_type {
@@ -201,7 +220,7 @@ fn render_text(
                 format!("{player} shoots in the {minute}'")
             }
         }
-        EventType::Pass => format!("{player} passes in the {minute}'"),
+        EventType::Pass => format!("{player} {} in the {minute}'", pass_verb(&ev.fields)),
         EventType::Cross => format!("{player} crosses in the {minute}'"),
         EventType::Dribble => format!("{player} dribbles in the {minute}'"),
         EventType::KeyPass => format!("{player} plays a key pass in the {minute}'"),
@@ -213,7 +232,13 @@ fn render_text(
             )
         }
         EventType::Interception => format!("{player} intercepts in the {minute}'"),
-        EventType::Clearance => format!("{player} clears in the {minute}'"),
+        EventType::Clearance => {
+            if ev.fields.get("header").and_then(serde_json::Value::as_bool) == Some(true) {
+                format!("{player} heads clear in the {minute}'")
+            } else {
+                format!("{player} clears in the {minute}'")
+            }
+        }
         EventType::Block => format!("{player} blocks in the {minute}'"),
         EventType::Save => {
             if ev.fields.get("held").and_then(serde_json::Value::as_bool) == Some(false) {

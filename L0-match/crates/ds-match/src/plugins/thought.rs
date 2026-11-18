@@ -430,16 +430,12 @@ impl MatchState {
             };
             let outcome = ctx.hidden.resolve_pass(&ctx_pass, &params);
             // A cross is the ball from wide into the area, lofted or low
-            // (the low cross, the cut-back): not a keeper's throw.
-            if !throw {
-                self.tell_cross(
-                    ctx,
-                    tick,
-                    attacker,
-                    ((from.0, from.1), (to.0, to.1)),
-                    ctx_pass.foot,
-                );
-            }
+            // (the low cross, the cut-back): not a keeper's throw (ADR-072).
+            let cross = if throw {
+                false
+            } else {
+                self.compute_cross(ctx, attacker, ((from.0, from.1), (to.0, to.1)))
+            };
             // MD-25/F.4-c: carrier released at launch, ball flies, pending
             // resolves the possession (MD-37).
             self.spatial.set_carrier(None);
@@ -475,6 +471,8 @@ impl MatchState {
                 closest_cm: None,
                 shot: None,
                 through: at.is_some(),
+                cross,
+                foot: ctx_pass.foot,
             });
             // REC: the Pass event is emitted at landing, in `tick`
             // (resolve_reception), not at launch: `complete` is the
@@ -1043,6 +1041,8 @@ impl MatchState {
             receiver: None,
             closest_cm: None,
             through: false,
+            cross: false,
+            foot: None,
             shot: Some(ShotPending {
                 attacker,
                 struck: tick,

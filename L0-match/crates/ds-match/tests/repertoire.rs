@@ -77,8 +77,14 @@ fn acts_seen() -> BTreeSet<&'static str> {
             let yes = |k: &str| f.get(k).and_then(serde_json::Value::as_bool) == Some(true);
             let no = |k: &str| f.get(k).and_then(serde_json::Value::as_bool) == Some(false);
             let act = match e.event_type {
+                // A cross is a pass with a target (ADR-072): the qualifier
+                // is a field, not a second event. Before every other Pass
+                // reading, so a cross is never told as a plain pass.
+                EventType::Pass if yes("cross") => "cross",
                 EventType::Pass if yes("through") => "through ball",
                 EventType::Pass if yes("complete") => "pass",
+                // Kept for logs written before SIM 153 (ADR-072 §5): the
+                // engine no longer emits it, the old saves still narrate it.
                 EventType::Cross => "cross",
                 EventType::Shot if is("shot_type", "lob") => "lob",
                 EventType::Shot if is("shot_type", "header") => "header at goal",

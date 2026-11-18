@@ -30,26 +30,16 @@ impl MatchState {
     /// cross (ADR-051), lofted or low (since `SIM_VERSION` 92: the real
     /// definition counts the low cross and the cut-back): it is told as one,
     /// with the foot it was struck with (ADR-031).
-    pub(crate) fn tell_cross(
-        &mut self,
-        ctx: &mut MatchContext<'_>,
-        tick: u64,
+    pub(crate) fn compute_cross(
+        &self,
+        ctx: &MatchContext<'_>,
         crosser: PlayerId,
         (from, to): ((i32, i32), (i32, i32)),
-        foot: Option<ds_orchestrator::Side>,
-    ) {
+    ) -> bool {
         let (length, width) = pitch_cm(ctx);
         let home = ctx.match_.home.players.iter().any(|p| p.id == crosser);
         let goal_x = if home { length } else { 0 };
-        if is_cross(from, to, (goal_x, width), &self.laws) {
-            self.emit_event(
-                ctx,
-                tick,
-                Some(ActorId::Player(crosser)),
-                EventType::Cross,
-                serde_json::json!({ "x": from.0, "y": from.1, "foot": foot_name(foot) }),
-            );
-        }
+        is_cross(from, to, (goal_x, width), &self.laws)
     }
 
     /// Who meets a ball in the air at `(bx, by, bz)`, at small step `step`
@@ -72,7 +62,9 @@ impl MatchState {
         // he had just headed up and out was still at his head the step
         // after, and he headed it again, and again.
         let touches = self.spatial.touches();
-        let own = touches.played.filter(|_| touches.deflected.is_none());
+        let own = touches
+            .played
+            .filter(|p| touches.deflected.is_none() || touches.deflected == Some(*p));
         let m = ctx.match_;
         let mut contenders: Vec<(PlayerId, f64, bool)> = Vec::new();
         // Those who reach it (`near`), and those a body's width farther who
@@ -177,6 +169,8 @@ impl MatchState {
             receiver: None,
             closest_cm: None,
             through: false,
+            cross: false,
+            foot: None,
             shot: Some(ShotPending {
                 attacker: winner,
                 struck: tick,
@@ -330,6 +324,8 @@ impl MatchState {
                 kind: crate::fact::TrajectoryKind::Pass {
                     success: mate,
                     through,
+                    cross: self.pending.as_ref().is_some_and(|p| p.cross),
+                    foot: self.pending.as_ref().and_then(|p| p.foot),
                 },
             };
             for c in crate::fact::classify(&fact) {
@@ -387,6 +383,11 @@ impl MatchState {
         self.spatial.set_carrier(None);
         self.spatial.set_ball_in_flight((from.0, from.1, 0), v);
         self.pending = None;
+        // A clearance is not a pass: nobody receives his own (ADR-051,
+        // ADR-072). The kicker needs a moment before he plays it again,
+        // as after a failed touch (SIM 135, OI-119).
+        let retry = ctx.hidden.duel_balance().retry_ticks;
+        self.challenges.insert(kicker, tick + retry);
         self.emit_event(
             ctx,
             tick,
@@ -813,6 +814,10 @@ impl MatchState {
         if !(stopped || past) {
             return;
         }
+        let (cross, foot) = self
+            .pending
+            .as_ref()
+            .map_or((false, None), |p| (p.cross, p.foot));
         self.pending = None;
         self.offside_at_pass.clear();
         let fact = crate::fact::Fact::Trajectory {
@@ -820,6 +825,8 @@ impl MatchState {
             kind: crate::fact::TrajectoryKind::Pass {
                 success: false,
                 through,
+                cross,
+                foot,
             },
         };
         for c in crate::fact::classify(&fact) {
@@ -827,6 +834,7 @@ impl MatchState {
         }
     }
 
+    #[allow(clippy::too_many_lines)] // pre-existing 105/100, extract at next pass
     pub(crate) fn control_loose_ball(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
         // Low enough for his foot somewhere on its path this tick: at rest,
         // rolling, or coming down (a footballer controls a ball that is
@@ -888,6 +896,10 @@ impl MatchState {
         if let Some((Some(by), through)) = pass {
             // Before the pass is over: whether he had reacted to it (OI-119).
             let struck = self.unready(ctx, tick, Some(by), id);
+            let (cross, foot) = self
+                .pending
+                .as_ref()
+                .map_or((false, None), |p| (p.cross, p.foot));
             self.pending = None;
             if home(by) == home(id) && self.offside_at_pass.contains(&id) {
                 self.call_offside(ctx, tick, id, home(id), ball);
@@ -905,6 +917,8 @@ impl MatchState {
                     kind: crate::fact::TrajectoryKind::Pass {
                         success: rec.controlled,
                         through,
+                        cross,
+                        foot,
                     },
                 };
                 for c in crate::fact::classify(&fact) {

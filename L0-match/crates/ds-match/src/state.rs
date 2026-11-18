@@ -187,6 +187,10 @@ pub(crate) struct Pending {
     /// The tick the ball was struck (SIM 133): an opponent reacts to it
     /// before he can play it.
     pub launched: u64,
+    /// A cross (ADR-072): the ball from wide into the area.
+    pub cross: bool,
+    /// The foot the ball was struck with (ADR-031), for the cross's narrative.
+    pub foot: Option<ds_orchestrator::Side>,
 }
 /// A substitution ordered during the match: off, on (decision T).
 pub(crate) type Ordered = (PlayerId, PlayerId);
@@ -1802,6 +1806,8 @@ mod reaction_tests {
                 receiver: Some(mate),
                 closest_cm: None,
                 through: false,
+                cross: false,
+                foot: None,
             });
             s.spatial.set_ball_in_flight((at.0, at.1, 0), (20, 0, 0));
             s.ball_from = s.spatial.ball_3d();
@@ -1859,6 +1865,8 @@ mod body_block_tests {
                 receiver: Some(mate),
                 closest_cm: None,
                 through: false,
+                cross: false,
+                foot: None,
             });
             s.spatial
                 .set_ball_in_flight((at.0 - 60, at.1, 0), (120, 0, 0));
