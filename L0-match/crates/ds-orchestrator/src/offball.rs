@@ -10,8 +10,9 @@ use ds_core::ids::PlayerId;
 /// What a player without the ball chooses to do.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OffBallAct {
-    /// Go to and keep his place (the block's place for an outfield player,
-    /// the positioning rule for the goalkeeper).
+    /// Go to and keep his place: with the ball, the place he chose in his
+    /// coach's zone (ADR-071); without it, the space he closes in that zone
+    /// (ADR-071 §5). The goalkeeper keeps the positioning rule.
     Hold,
     /// Run at the opposing carrier.
     Press,

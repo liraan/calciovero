@@ -1753,14 +1753,20 @@ impl SpatialState {
             } else if let Some((_, kt)) = keeper_targets.iter().find(|(g, _)| *g == entry.0) {
                 *kt
             } else {
-                let mine = (crate::perception::team_of(entry.0) == 0) == self.home_in_possession;
-                // With the ball, the place he chose (ADR-071); else his
-                // side's shape.
+                // The place he chose (ADR-071): in his zone with the ball,
+                // the space he closes without it; else his side's shape.
                 self.hold_at
                     .get(&entry.0)
                     .copied()
-                    .filter(|_| mine && self.carrier.is_some())
-                    .or_else(|| self.block_target(entry.0, ball, mine, false))
+                    .filter(|_| self.carrier.is_some())
+                    .or_else(|| {
+                        self.block_target(
+                            entry.0,
+                            ball,
+                            (crate::perception::team_of(entry.0) == 0) == self.home_in_possession,
+                            false,
+                        )
+                    })
                     .unwrap_or(entry.2)
             };
             let Some(body) = bodies.get(&entry.0) else {

@@ -38,6 +38,13 @@ pub struct SceneCounts {
     /// Ticks with a carrier who runs (2 m/s), and of them those with the
     /// ball more than half a metre behind where he looks.
     pub ball_behind: (u32, u32),
+    /// With an opponent on the ball: the lateral distance between the two
+    /// widest outfield men of the side without it, cm summed, and the ticks
+    /// (ADR-071 §5: the block without the ball).
+    pub block_width: (f64, u32),
+    /// With an opponent on the ball: the two deepest men of the side without
+    /// it behind the ball, cm summed, and the ticks.
+    pub block_depth: (f64, u32),
 }
 
 /// Real football beside it: the direction of the accurate passes.
@@ -52,6 +59,10 @@ pub const REAL_PASSES: (f64, f64, f64) = (31.1, 52.7, 16.2);
 /// (the same source, 337 317 passes): near, not the same, as the time the
 /// ball spends in the half of the side that has it.
 pub const REAL_PASSES_FROM_OWN_HALF: f64 = 52.9;
+/// The width of a side's block without the ball, m: Metrica Sports sample
+/// tracking data, Sample Games 1 and 2, the two widest outfield men
+/// (the same measure as `block.json`, mean 37.0).
+pub const REAL_BLOCK_WIDTH: f64 = 37.0;
 
 /// The penalty area, Law 1, cm: depth and half width.
 const BOX: (i32, i32) = (1650, 2016);
@@ -170,6 +181,28 @@ pub fn measure(
         if (at.0 - length / 2) * forward < 0 {
             c.own_half.0 += 1;
         }
+        // The block without the ball (ADR-071 §5): the widest two of the
+        // side that defends, and its two deepest behind the ball.
+        let (d_home, d_forward) = (!mine, -forward);
+        let block: Vec<(i32, i32)> = now
+            .agents
+            .iter()
+            .filter(|a| home(a.id) == d_home && !keeper(a.id))
+            .map(|a| a.position)
+            .collect();
+        if let (Some(lo), Some(hi)) = (
+            block.iter().map(|p| p.1).min(),
+            block.iter().map(|p| p.1).max(),
+        ) {
+            c.block_width.0 += f64::from(hi - lo);
+            c.block_width.1 += 1;
+        }
+        let mut deep: Vec<i32> = block.iter().map(|p| (at.0 - p.0) * d_forward).collect();
+        deep.sort_unstable_by(|a, b| b.cmp(a));
+        if deep.len() >= 2 {
+            c.block_depth.0 += f64::from(deep[0] + deep[1]) / 2.0;
+            c.block_depth.1 += 1;
+        }
         // The two most advanced of his side, ahead of the ball.
         let mut ahead: Vec<i32> = now
             .agents
@@ -251,6 +284,14 @@ pub fn sum(all: &[SceneCounts]) -> SceneCounts {
             t.ball_behind.0 + c.ball_behind.0,
             t.ball_behind.1 + c.ball_behind.1,
         );
+        t.block_width = (
+            t.block_width.0 + c.block_width.0,
+            t.block_width.1 + c.block_width.1,
+        );
+        t.block_depth = (
+            t.block_depth.0 + c.block_depth.0,
+            t.block_depth.1 + c.block_depth.1,
+        );
         t
     })
 }
@@ -268,6 +309,8 @@ pub fn report(c: &SceneCounts, matches: usize) -> String {
          with the ball, ball in own half      {:>7.1}%   (real: passes from own half {:.1}%)\n\
          passes forward / lateral / back      {:>5.0}% {:>3.0}% {:>3.0}%   (real {:.0}% {:.0}% {:.0}%)\n\
          two most advanced ahead of the ball  {:>7.1} m\n\
+         block without the ball, widest two   {:>7.1} m   (real {:.1} m)\n\
+         block without the ball, two deepest  {:>7.1} m behind the ball\n\
          ball behind a man running with it    {:>7.1}%\n",
         per(c.jumps),
         pct(c.loose_taken.0, c.loose_taken.1),
@@ -283,6 +326,9 @@ pub fn report(c: &SceneCounts, matches: usize) -> String {
         REAL_PASSES.1,
         REAL_PASSES.2,
         c.forwards_ahead.0 / f64::from(c.forwards_ahead.1.max(1)) / 100.0,
+        c.block_width.0 / f64::from(c.block_width.1.max(1)) / 100.0,
+        REAL_BLOCK_WIDTH,
+        c.block_depth.0 / f64::from(c.block_depth.1.max(1)) / 100.0,
         pct(c.ball_behind.0, c.ball_behind.1),
     )
 }
@@ -303,5 +349,9 @@ mod tests {
         assert!(c.passes.0 + c.passes.1 + c.passes.2 > 300, "{c:?}");
         assert!(c.loose_taken.0 <= c.loose_taken.1);
         assert!(c.ball_behind.0 <= c.ball_behind.1);
+        assert!(
+            c.block_width.1 > 10_000 && c.block_depth.1 > 10_000,
+            "{c:?}"
+        );
     }
 }

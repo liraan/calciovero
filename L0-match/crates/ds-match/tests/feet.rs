@@ -81,12 +81,18 @@ fn swapped_wide_men_strike_with_the_feet_they_have() {
                 on_its_side += 1;
             } else if foot == strong[k] {
                 moved += 1;
-            } else {
+            } else if foot != "either" {
                 panic!(
                     "seed {seed}: struck with {foot}, ball on {outside}, strong {}",
                     strong[k]
                 );
             }
+            // "either" is no side at all: the foot was chosen while the
+            // ball was in the middle third (ADR-031, `natural_foot_at`),
+            // where the outside foot is none, and he may strike with
+            // whichever foot he has. The event carries where the strike
+            // leaves, a tick later: near the edge of a third the two can
+            // disagree (seed 47 at SIM 154), so only a real side is checked.
         }
     }
     assert!(

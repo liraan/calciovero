@@ -8,6 +8,30 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 154 — A3, ADR-071 §5: the place without the ball (the space he closes)
+
+With an opponent on the ball, the man who holds his place no longer goes to
+the point the geometric block computes: the block stays as his role's zone
+(ADR-071 §4), and inside it he chooses the space that takes away the most
+danger, by the same reasoning as with the ball (§2-3). Candidates: his
+corridor and the two beside it, his line and one line ahead or behind (a
+line, a third of the block's depth without the ball). A space is dangerous
+as much as it is worth to the opponents (`read::space_value` towards our
+goal) and as soon as one of them can be there (`read::soon`, the carrier
+excepted: his own space is pressing, another act); a space a teammate is
+nearer is his to close, not mine. Far from the ball no opponent is in the
+zone soon and he keeps the coach's place: the others close in, they do not
+chase it (`BEHAVIOURS.md` 19); the danger is weighed goal-side (20), and
+the coverage behind the presser stays its own act (`Cover`, 18).
+Regenerated goldens. Measured on the ten seeds 42-51 (`ds-reference
+scene`): the block without the ball, the two widest men 39.2 → 40.0 m
+(real 37.0, Metrica sample games 1 and 2), the two deepest 33.3 → 32.7 m
+behind the ball; the passes forward / lateral / back 23/53/24 → 25/52/23
+(real 31/53/16); the two most advanced ahead of the ball 26.8 → 27.2 m;
+nothing else moves (jumps 0, the ball in the own half 74.4 → 74.7%). The
+width moves 0.8 m away from the real 37.0: the block's drawing is the
+coach's, and this choice does not touch it.
+
 ## 153 — A3, ADR-072: one act, one event (the cross is a pass)
 
 The same struck ball no longer emits two events (`Pass` + `Cross`):
@@ -22,7 +46,7 @@ on. Golden regenerated; no other behaviour changes.
 ## Current SIM_VERSION
 
 ```
-SIM_VERSION = 153
+SIM_VERSION = 154
 ```
 
 `SIM_VERSION = 1` was the initial baseline (no code). 2 removed `CauseTrace` and `xg` (ADR-024). 3 removed `template_key`/`params` from `NarrativeEntry`. 4 removed four gusci fields from `MatchEvent`/`MatchSave`. 5 replaced `player_id` with `actor: Option<ActorId>` and added `KickOff`/`SecondHalf` (ADR-026). 6: two halves with separate clocks, `Half` field, four-phase loop, fixed-point stoppage time, boundary events emitted (ADR-026 phase 2). 7: stoppage contributions calibrated (goal 60s, foul 20s, duel 10s). 8: slice B2 — the acting agent comes from space (`pick_from_space`), `Tackle` emitted when a duel is won by the defender, `SpatialState.carrier` tracked, stream names with `match_id` (OI-22). OI-22 closed: RNG stream names now carry `match_id` (`match:{id}:actions`, `match:{id}:action_kind`), so two matches with the same world seed no longer share the engine streams. The current value is the reference against which all future bumps are measured.

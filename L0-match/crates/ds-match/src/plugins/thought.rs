@@ -746,6 +746,15 @@ impl MatchState {
                 let ball_in_own_box = in_keeper_box(ball, home, (length, width), &off);
                 let sees_ball =
                     crate::perception::perceived_ball(&self.spatial, id, ball).is_some();
+                // Out of possession, the space he closes in his zone
+                // (ADR-071 §5, SIM 154): the shape stays as the zone he
+                // starts from, the keeper keeps his own place.
+                let anchor = self
+                    .spatial
+                    .block_target(id, ball, false, false)
+                    .unwrap_or(me);
+                let closed = (carrier_pos.is_some() && !keeper)
+                    .then(|| view.choose_closed_place((me, anchor), (length, width)));
                 let scene = ds_orchestrator::OffBallScene {
                     actor: id,
                     // His own task first; else what the team's orders ask
@@ -845,13 +854,12 @@ impl MatchState {
                         }
                     }),
                     threats: carrier_pos.map(|c| {
-                        let held = self
-                            .spatial
-                            .block_target(id, ball, false, false)
-                            .unwrap_or(me);
-                        view.threats(c, me, held, home, (length, width))
+                        view.threats(c, me, closed.unwrap_or(anchor), home, (length, width))
                     }),
                 };
+                if let Some(place) = closed {
+                    held.push((id, place));
+                }
                 for (who, place) in std::mem::take(&mut held) {
                     self.spatial.set_hold_at(who, Some(place));
                 }

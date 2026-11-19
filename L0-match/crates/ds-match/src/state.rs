@@ -745,6 +745,82 @@ impl TeamView {
         best.1
     }
 
+    /// The place a man of the side without the ball closes (ADR-071 §5,
+    /// SIM 154): from his role's zone `anchor` (the block without the ball),
+    /// among his corridor and the two beside it and his line and one line
+    /// ahead or behind (a line, a third of the block's depth without the
+    /// ball), the space that takes away the most danger.
+    ///
+    /// A space is dangerous as much as it is worth to the opponents
+    /// (`read::space_value` towards our goal) and as soon as one of them can
+    /// be there (`read::soon`); it is his to close only if he is the nearest
+    /// of his side to it, as a zone is. The carrier's own space is not one of
+    /// them: that is pressing, another act. Far from the ball no opponent
+    /// can be in his zone soon and every space weighs nothing, so he keeps
+    /// his coach's place: the others close in, they do not chase it
+    /// (`BEHAVIOURS.md` 19). He never leaves his zone: that is his
+    /// discipline (ADR-071 §4).
+    #[allow(clippy::cast_precision_loss)] // cm on a pitch
+    pub(crate) fn choose_closed_place(
+        &self,
+        (me, anchor): ((i32, i32), (i32, i32)),
+        (length, width): (i32, i32),
+    ) -> (i32, i32) {
+        let block = crate::balance::BlockBalance::load();
+        let corridor = (width / 5).max(1);
+        let line = (block.depth_out_of_possession_cm / 3).max(1);
+        let our_goal = (length - self.their_goal_x, width / 2);
+        let their_goal = (self.their_goal_x, width / 2);
+        // The space is his only if no teammate is nearer to it: zones do not
+        // overlap, as the men of a real block do not.
+        let his = |p: (i32, i32)| {
+            let mine = distance_squared(me, p);
+            self.ours
+                .iter()
+                .all(|m| *m == me || distance_squared(*m, p) >= mine)
+        };
+        let value = |p: (i32, i32)| {
+            if !his(p) {
+                return 0.0;
+            }
+            let danger = ds_orchestrator::read::space_value(p, our_goal, their_goal);
+            let soon = self
+                .opponents
+                .iter()
+                .filter(|o| Some(**o) != self.carrier_at)
+                .map(|o| ds_orchestrator::read::soon(*o, p))
+                .fold(0.0, f64::max);
+            danger * soon
+        };
+        // Never two in the same corridor on the same line.
+        let crowded = |p: (i32, i32)| {
+            self.ours.iter().any(|m| {
+                *m != me && (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2
+            })
+        };
+        let k0 = (anchor.1 / corridor).clamp(0, 4);
+        let mut options: Vec<(f64, (i32, i32))> = Vec::new();
+        for k in (k0 - 1).max(0)..=(k0 + 1).min(4) {
+            for step in [0, 1, -1] {
+                let y = if k == k0 {
+                    anchor.1
+                } else {
+                    k * corridor + corridor / 2
+                };
+                let x = (anchor.0 + step * line * self.forward).clamp(0, length);
+                let p = (x, y.clamp(0, width));
+                options.push((if crowded(p) { 0.0 } else { value(p) }, p));
+            }
+        }
+        // The zone of his role, first: the coach's ask (ADR-059 §4).
+        let zone = (value(anchor), anchor);
+        options
+            .iter()
+            .copied()
+            .fold(zone, |b, o| if o.0 > b.0 { o } else { b })
+            .1
+    }
+
     /// Where a player who chose to offer or to run goes: away from his
     /// marker to offer; to the last defender's line, just short of it, to
     /// run.
@@ -1760,6 +1836,85 @@ mod marking_tests {
         let shut = view(vec![(5750, 3400)]).reaches((5000, 3400), (6500, 3400));
         assert!(open > 0.5, "open {open}");
         assert!(shut < open / 2.0, "shut {shut} open {open}");
+    }
+
+    /// The view of a home side defending `x = 0` and attacking `x = 10500`
+    /// (the pitch 105 x 68 m): its own men at `ours`, the opponents at
+    /// `theirs`, their carrier on the ball.
+    fn block_view(ours: Vec<(i32, i32)>, theirs: Vec<(i32, i32)>, carrier: (i32, i32)) -> TeamView {
+        let men = theirs.iter().copied().filter(|p| *p != carrier).collect();
+        TeamView {
+            forward: 1,
+            their_goal_x: PITCH_LENGTH,
+            last_line: None,
+            opponents: theirs,
+            men,
+            carrier_at: Some(carrier),
+            mate_pressing: false,
+            mate_carrier: None,
+            ours,
+            ground_keep: 0.957,
+        }
+    }
+
+    const PITCH_LENGTH: i32 = 10_500;
+    const PITCH_WIDTH: i32 = 6_800;
+
+    /// Twin test (ADR-071 §5, SIM 154, `BEHAVIOURS.md` 19 and 20): the same
+    /// defender, the same zone of the block, the same ball; only a man of
+    /// theirs in a space of the zone changes. With nobody there he keeps
+    /// the place his coach gave him; with a man who can be played in behind
+    /// him he steps back to close that space, goal-side.
+    #[test]
+    fn he_closes_the_space_an_opponent_can_be_played_into() {
+        let (me, anchor) = ((4000, 3400), (4000, 3400));
+        let carrier = (5000, 3400);
+        let alone = block_view(vec![me], vec![carrier], carrier);
+        assert_eq!(
+            alone.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH)),
+            anchor,
+            "nobody to close: the coach's place"
+        );
+        let man = (3300, 3400);
+        let marked = block_view(vec![me], vec![carrier, man], carrier);
+        let place = marked.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH));
+        assert!(place.0 < anchor.0, "he steps back to close it: {place:?}");
+        assert!(
+            (place.0 - man.0).abs() <= 1100,
+            "on the space of the man: {place:?}"
+        );
+    }
+
+    /// Twin test (ADR-071 §5, `BEHAVIOURS.md` 19): two men of the same side,
+    /// the same danger behind them; only which of them is nearer to it
+    /// changes. A space a teammate is nearer is his to close: the other
+    /// keeps his place, as a zone is his and not another's.
+    #[test]
+    fn a_space_a_teammate_is_nearer_is_his_to_close() {
+        let (me, anchor) = ((4000, 3400), (4000, 3400));
+        let carrier = (5000, 3400);
+        let man = (3300, 3400);
+        let beside = (3350, 3400);
+        let v = block_view(vec![me, beside], vec![carrier, man], carrier);
+        assert_eq!(
+            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH)),
+            anchor,
+            "the man beside him is nearer: not his"
+        );
+    }
+
+    /// The carrier's own space is not a space to close (`BEHAVIOURS.md` 17:
+    /// going at the carrier is pressing, another act): with only the carrier
+    /// on the ball he keeps his place.
+    #[test]
+    fn the_carriers_space_is_pressing_not_closing() {
+        let (me, anchor) = ((4500, 3400), (4500, 3400));
+        let carrier = (4800, 3400);
+        let v = block_view(vec![me], vec![carrier], carrier);
+        assert_eq!(
+            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH)),
+            anchor
+        );
     }
 }
 
