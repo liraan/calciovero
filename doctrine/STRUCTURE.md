@@ -353,6 +353,7 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 071 | The place without the ball | ✅ accepted (delegated) | The shape is the role's zone; within it a man chooses the space worth most to his side, by the measure of ADR-052. DD-13, to be reviewed by the maintainer. |
 | 072 | One act, one event: the cross is a pass | ✅ accepted | A cross is a pass with a target and a foot, not a second event: `tell_cross` becomes `compute_cross` (a qualifier, no emission), `TrajectoryKind::Pass` carries `cross` and `foot`, `classify` writes `"cross"` on every `Pass` and `"foot"` only when it is one, `ds-narrative` says "crosses"; `EventType::Cross` stays in the enum, deprecated, not emitted. `SIM_VERSION` 153, golden regenerated. Amends ADR-051 and ADR-065. |
 | 073 | The call on a loose ball (strato 3, first piece) | ? accepted (delegated) | Strato 3: l'intesa per coppia; sul pallone libero chi conosce il compagno che va glielo lascia e tiene il posto. SIM 155. |
+| 074 | Complementary movements (strato 3, second piece) | ? accepted (delegated) | Strato 3: con un compagno sulla palla, chi conosce i compagni pesa anche dove stanno andando. SIM 156. |
 
 **Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048 (42). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
 

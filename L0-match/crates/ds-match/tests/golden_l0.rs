@@ -1,4 +1,4 @@
-//! Golden determinism test, L0 (doctrine/00-foundations.md Ãƒâ€šÃ‚Â§4, OI-14).
+//! Golden determinism test, L0 (doctrine/00-foundations.md ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§4, OI-14).
 //!
 //! Simulates N matches from a known seed range, concatenates the state
 //! hashes, and compares with the expected value. The expected value is
@@ -18,9 +18,9 @@ const SEED_START: u64 = 42;
 
 /// The expected hash of the concatenated state hashes, at `SIM_VERSION` 113.
 /// SIM 152: the place with the ball chosen within the zone of the role (ADR-071).
-/// SIM 154: the place without the ball, the space he closes (ADR-071 Ãƒâ€šÃ‚Â§5).
+/// SIM 154: the place without the ball, the space he closes (ADR-071 ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§5).
 /// Regenerate when `SIM_VERSION` changes.
-const EXPECTED: &str = "74f2054ed4344cf268149ba448d016fc2a23fcbb693314ccc4e79c7bd6fd7ba8e8df1e486758eb04452c3caf1a5e4340ae3c71cabfd52b8c81a493d562575e8ede4b7dfb4fa9c8664c9cc1d252bf60f363157857333f6e6eef9b8e37683922d979bd1c1e5c375ec63dde8bf8f8604545bef4db68ac075cd6f6a0d9cf50041b4967d5dab05dd3acae22ef1491549a051521ae417dc04a56f5e5443e06dcd2af37de17a5a0414af5abec7f62b40307de4a5127539c82d5d6ca2a8ee0d4c64785a5a6c448c8c9fc151ca4f91b6974698d5f4d3c469fc16cc3e441276de2dee3cceeecfa51ced04481704720f83c38ecc59a3fedbd9102023cd04baaf66b3cb5722d3ce02a667759590f2dc5b98bbf7df545b6d60b35d1c777f9b0926708ff95a3b7701773a7d91249aee3a1edb5bd3221d71e4f9e74e60d3b04cd1badd4c3058aa0";
+const EXPECTED: &str = "3726f7d2c0afa87eefd8631a687b2f0b87835837f4040e5692d9779463998f3fabb58e4dd27a80b22aa00dd756d080a5dcc22e9080bd6a97583431490231b344e66955a154d0517c547a53fd3ec30c4c7a9ca3bdcf39c2615b23d75c2b05b8e2b37522e9016d04700cd3782ac0bc5c8b15ec912bad21054dac6cbdf20b7fd2a695baeddc23f631e902d85605e01f926dd64a7cda29fedf02990935cf4152efe25ab529d210f9135fc9fe5f2f6fc727b264f1420622182207de2929d9ffc2f31b1599763e99477de469896edaa504fed83b62bcf96a2f19a89d3b414c025318ae18e4d7880b6eada7112819d9ac719b2a2d10f031e76dfda47a644f8bab05381573678dd46757dbbe0c4221da213e73051f21df6747eb1debdd02959eadc558fd8eeb3cef9bf21c9a06155eac4d701fd21f1dd5ff18b28b05a4cd6e80d383cb3f";
 
 #[test]
 fn golden_l0_is_deterministic() {
@@ -45,10 +45,10 @@ fn golden_l0_is_deterministic() {
     );
 }
 
-/// The expected hash with a fixed instruction stream (ADR-059 Ãƒâ€šÃ‚Â§1): the home
+/// The expected hash with a fixed instruction stream (ADR-059 ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§1): the home
 /// coach asks for a high, wide block at the 30th minute, the away coach for
 /// a low, narrow one at the 60th. Regenerate when `SIM_VERSION` changes.
-const EXPECTED_INSTRUCTED: &str = "94ed6ebe380a8fcd08bc8e8788189931a321dee060a30903570c970da6e91d4eab252098d5538cc4011a2a42b190e0947ebc259007efee7331562b48c891288b8ef1842d48908e145d32be8e18d74b5502262a5ab3e9347d0b0d74ba49282899069c33d23eb0839b2aa6220a5510cedf4892cd03c785a2d683a62e0e9d5dd8361528621013904b4588d93aa8f9bf7e667865c535b01bcabf59756a1214d66b978955fffbbf4c8315216e66eea2136fc4ef38315231b38ed7798c2e3158e219cf384b2e23ecdb03ad67f3b8d4e894f83e9200d996f74f4389bdceea9cfc5ece5614b7274840e3376eded67e7efba2b96b857bd9ca4f6986d799607c0b5d95006e47c67cc134c35e1d28c420a500878680305dfcc701f37b2fe2755f97361b2c2b10b3bb8b78d301bc806caccaf809ee9979fe5b0da706f8aed0422c0bde278c9f";
+const EXPECTED_INSTRUCTED: &str = "7c08bf65a22f1f236c42d5264ed2786142f2c1727d7afe48fd4c6c163b6ea6c2aa2028796637919c17771b228023832d62aaac7e6a0cf37d6553bf98bc55b38d5c84b02ab65f559893248e9b244b26b77202aa4bc9fdc5665dcb909a92820c0beb1b4a0ed28f03ac5b9c0461a76373eef0c42838c214f06c8d66e2c8b2f49710563767400d7c34844b16eacccfedf56811b997c664f7550bb9f3e82aa876783edb3202def2ddf4d45f6a4388f78f176ea2e326d378510f85f27359bdd640799063f8363258c0c6c88880dd393cb6b636b1db01ec8b8a35c56754bd8be3491669b22ae8a640221c1dd8306d835c415a8d0f2ce580caf31be07eb8a6056f2abb718b8b5df6e5a6fe45315c0789e717a335f62b854f8b16c2dc387ded8336b9c96d725cb9ab0ba73526b97825f7a7befd7a40576483b48f492e4e7fdc9d342b5537";
 
 #[test]
 fn golden_l0_with_instructions_is_deterministic() {
@@ -84,7 +84,7 @@ fn golden_l0_with_instructions_is_deterministic() {
 /// penalties (Laws 7 and 10, plan L0-CLOSE 10h): the first seed from 42
 /// whose cup match is level after 120 minutes, decided by the shoot-out;
 /// the seed is part of what is hashed. SIM 120.
-const EXPECTED_CUP: &str = "71:3dae01b5e4e0415f7f25c628e05d5e0fa40bbcde6ede78fd631911c67ba0edb3";
+const EXPECTED_CUP: &str = "67:45f9f2bf52bb6ddb099eff77adb3e075bb7b2db1ac68dbe2716f8c6c0c85ec7f";
 
 #[test]
 fn golden_l0_cup_is_deterministic() {

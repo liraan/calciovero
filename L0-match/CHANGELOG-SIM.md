@@ -8,6 +8,18 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 156 — A3, strato 3 (second piece): complementary movements (the place with the ball)
+
+With a teammate on the ball, the man who holds his place no longer weighs
+only where his teammates stand now: if he knows them (intesa high enough),
+he also weighs where they are going (their velocity, a few ticks ahead),
+so a space a partner is about to occupy counts as crowded for him. A pair
+that knows each other does not end up in the same corridor: one comes
+short, the other stays long. A pair that has just met keeps the old
+behaviour (current positions only).
+
+SIM_VERSION 155 -> 156.
+
 ## 155 — A3, strato 3 (first piece): the call on a loose ball
 
 With a loose ball between two teammates, the one who knows his partner
