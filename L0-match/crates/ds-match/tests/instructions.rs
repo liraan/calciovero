@@ -389,7 +389,13 @@ fn more_pressing_closes_the_carrier_down() {
             .iter()
             .filter_map(|t| {
                 let c = t.carrier.filter(|c| !mine(c))?;
-                let at = t.agents.iter().find(|a| a.id == c)?.position;
+                // Pre-compute the position of every agent once for this tick
+                // (OI-125): avoid a second scan for the carrier's position.
+                let mut pos = std::collections::BTreeMap::new();
+                for a in &t.agents {
+                    pos.insert(a.id, a.position);
+                }
+                let at = pos.get(&c)?;
                 let mut near: Vec<f64> = t
                     .agents
                     .iter()
