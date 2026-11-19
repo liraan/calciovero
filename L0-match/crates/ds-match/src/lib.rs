@@ -45,6 +45,9 @@ pub mod simulate;
 pub mod spatial;
 pub mod state;
 
+#[cfg(test)]
+pub(crate) mod test_support;
+
 pub use context::{MatchConfig, MatchContext};
 pub use driver::{simulate_from_seed, simulate_from_seed_recorded};
 pub use engine::{MatchEngine, TextMatchEngine};

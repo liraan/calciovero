@@ -49,49 +49,13 @@ impl MatchEngine for TextMatchEngine {
 mod tests {
     use super::*;
     use crate::context::MatchConfig;
-    use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
     use ds_core::rng::RngRegistry;
-    use ds_model::{
-        FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
-        PsychologicalStateMinimal, Referee, RoleId, Squad,
-    };
+    use ds_model::Match;
     use ds_orchestrator::GroundTruth;
     use ds_stats::EventChain;
 
-    fn make_squad(id: u32, slot_base: u32) -> Squad {
-        let players: Vec<Player> = (0..11)
-            .map(|i| {
-                Player::try_new(
-                    PlayerId::new(slot_base + i, 0),
-                    format!("P{}", slot_base + i),
-                    RoleId::new("midfielder").unwrap(),
-                    180,
-                    78,
-                    PhysicalStateMinimal::default(),
-                    PsychologicalStateMinimal::default(),
-                )
-                .unwrap()
-            })
-            .collect();
-        Squad::try_new(
-            SquadId::new(id, 0),
-            players,
-            vec![],
-            FormationId::new("4-4-2").unwrap(),
-        )
-        .unwrap()
-    }
-
     fn make_match() -> Match {
-        Match::new(
-            MatchId::new(1, 0),
-            make_squad(1, 0),
-            make_squad(2, 100),
-            Pitch::default(),
-            Referee::new(RefereeId::new(1, 0)),
-            MatchSeed::from_raw(42),
-            MatchRules::default(),
-        )
+        crate::test_support::plain_match()
     }
 
     fn simulate_once(seed: u64) -> MatchResult {
@@ -113,7 +77,7 @@ mod tests {
 
     #[test]
     fn simulation_completes_without_panic() {
-        let _ = simulate_once(42);
+        let _ = &*crate::test_support::SIM42_NEW;
     }
 
     #[test]
@@ -149,13 +113,13 @@ mod tests {
 
     #[test]
     fn match_produces_some_events() {
-        let r = simulate_once(42);
+        let r = &*crate::test_support::SIM42_NEW;
         assert!(!r.events.is_empty());
     }
 
     #[test]
     fn all_events_are_within_120_minutes() {
-        let r = simulate_once(42);
+        let r = &*crate::test_support::SIM42_NEW;
         for ev in r.events.events() {
             assert!(ev.timestamp_minute <= 120);
         }
@@ -163,7 +127,7 @@ mod tests {
 
     #[test]
     fn possession_sums_to_one() {
-        let r = simulate_once(42);
+        let r = &*crate::test_support::SIM42_NEW;
         let (h, a) = r.stats.possession;
         assert!((h + a - 1.0).abs() < f32::EPSILON);
     }
@@ -191,7 +155,7 @@ mod tests {
 
     #[test]
     fn text_engine_fills_narrative() {
-        let r = simulate_once(42);
+        let r = &*crate::test_support::SIM42_NEW;
         assert_eq!(r.narrative.len(), r.events.len());
     }
 

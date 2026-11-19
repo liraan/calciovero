@@ -11,8 +11,13 @@ fn the_match_is_played_with_psychology_switched_off() {
     let on = match_fixture(42).expect("fixture");
     let mut off = on.clone();
     off.psychology = false;
-    let a = simulate_from_seed(&on, 42, MatchConfig::default());
-    let b = simulate_from_seed(&off, 42, MatchConfig::default());
+    // Two independent matches: play them at the same time, as the golden
+    // scenes do. Neither result feeds the other; the assertions are below.
+    let (a, b) = std::thread::scope(|s| {
+        let a = s.spawn(|| simulate_from_seed(&on, 42, MatchConfig::default()));
+        let b = s.spawn(|| simulate_from_seed(&off, 42, MatchConfig::default()));
+        (a.join().expect("on"), b.join().expect("off"))
+    });
     assert!(
         b.events
             .events()

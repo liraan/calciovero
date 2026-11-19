@@ -6,14 +6,23 @@
 //!
 //! These tests run a real match (seed 42) and inspect the event stream.
 
+use std::sync::LazyLock;
+
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, simulate_from_seed};
+use ds_match::{MatchConfig, MatchResult, simulate_from_seed};
 use ds_stats::EventType;
+
+/// Three of these tests only *look* at seed 42: play it once (MD-30).
+/// `every_goal_has_a_scorer` still plays its own ten seeds, and no
+/// determinism assertion in this file reuses a result.
+static SEED42: LazyLock<MatchResult> = LazyLock::new(|| {
+    let m = match_fixture(42).expect("fixture");
+    simulate_from_seed(&m, 42, MatchConfig::default())
+});
 
 #[test]
 fn functional_l0_the_engine_emits_the_claimed_shape() {
-    let m = match_fixture(42).expect("fixture");
-    let result = simulate_from_seed(&m, 42, MatchConfig::default());
+    let result = &*SEED42;
     let events = result.events.events();
 
     // 1. Pass is emitted (was: 0 before F.3-b2).
@@ -90,11 +99,7 @@ fn functional_l0_the_engine_emits_the_claimed_shape() {
 
 #[test]
 fn functional_l0_agents_move_and_do_not_cluster() {
-    use ds_fixtures::match_fixture;
-    use ds_match::{MatchConfig, simulate_from_seed};
-
-    let m = match_fixture(42).expect("fixture");
-    let result = simulate_from_seed(&m, 42, MatchConfig::default());
+    let result = &*SEED42;
     // Positions are not in MatchResult (MD-41: the save saves the input,
     // the state is rebuilt). This test therefore checks the events the
     // movement produces: a match with movement produces more `Pressure`
@@ -145,8 +150,7 @@ fn every_goal_has_a_scorer() {
 
 #[test]
 fn one_clearance_per_act() {
-    let fixture = match_fixture(42).expect("fixture");
-    let result = simulate_from_seed(&fixture, 42, MatchConfig::default());
+    let result = &*SEED42;
     let events = result.events.events();
     let clearances: Vec<_> = events
         .iter()

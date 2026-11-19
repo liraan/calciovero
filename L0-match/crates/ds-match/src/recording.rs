@@ -490,29 +490,23 @@ impl PackedRecord {
 mod tests {
     use super::*;
 
-    fn played(seed: u64) -> (ds_model::Match, Vec<TickRecord>) {
-        let m = ds_fixtures::match_fixture(seed).expect("fixture");
-        let r = crate::simulate_from_seed_recorded(&m, seed, crate::MatchConfig::default()).1;
-        (m, r)
-    }
-
     /// A whole match packs and unpacks to the same record, to the last
     /// tick, and it is small.
     #[test]
     fn a_match_comes_back_exactly() {
-        let (m, r) = played(42);
+        let (m, _result, r) = &*crate::test_support::RECORDED42;
         let header = RecordHeader::current(10, (m.pitch.length_m, m.pitch.width_m));
-        let packed = PackedRecord::pack(header, &r);
+        let packed = PackedRecord::pack(header, r);
         eprintln!("packed: {} bytes", packed.data.len());
         // About 2.3 MB at SIM 147, with the bodies in small steps (ADR-069).
         assert!(packed.data.len() < 3_000_000, "{} bytes", packed.data.len());
-        assert_eq!(packed.unpack().expect("unpack"), r);
+        assert_eq!(packed.unpack().expect("unpack").as_slice(), r.as_slice());
     }
 
     /// A record from a newer format is refused, not misread.
     #[test]
     fn a_newer_format_is_refused() {
-        let (m, r) = played(42);
+        let (m, _result, r) = &*crate::test_support::RECORDED42;
         let mut header = RecordHeader::current(10, (m.pitch.length_m, m.pitch.width_m));
         header.format_version = RECORD_FORMAT_VERSION + 1;
         let packed = PackedRecord::pack(header, &r[..20]);
@@ -525,7 +519,7 @@ mod tests {
     /// Damaged data is an error, never a panic or a wrong match.
     #[test]
     fn damaged_data_is_an_error() {
-        let (m, r) = played(42);
+        let (m, _result, r) = &*crate::test_support::RECORDED42;
         let header = RecordHeader::current(10, (m.pitch.length_m, m.pitch.width_m));
         let mut packed = PackedRecord::pack(header, &r[..50]);
         packed.ticks += 1;

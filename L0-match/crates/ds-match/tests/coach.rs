@@ -3,14 +3,19 @@
 //! coaches made them with that score (grade 2, `balance/coach.json`).
 
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, simulate_from_seed_recorded};
+use ds_match::{MatchConfig, simulate_from_seed};
 use ds_stats::EventType;
 
 /// The minutes of a side's changes in a match, and the final score.
+///
+/// An event already carries its half-relative minute; adding the half's
+/// offset gives the broadcast minute the tick record used to supply. Both
+/// readings were checked equal on all six seeds (twelve runs), so this test
+/// no longer builds the ~34 MB tick record: it reads the event chain only.
 fn changes(seed: u64, react: bool) -> (Vec<u32>, usize) {
     let mut m = match_fixture(seed).expect("fixture");
     m.home = m.home.clone().with_coach_reacting(react);
-    let (r, records) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
+    let r = simulate_from_seed(&m, seed, MatchConfig::default());
     let home: Vec<_> = m
         .home
         .players
@@ -30,23 +35,22 @@ fn changes(seed: u64, react: bool) -> (Vec<u32>, usize) {
             _ => None,
         })
         .collect();
-    let mut minutes = Vec::new();
-    for rec in &records {
-        for e in r.events.events().get(rec.events.clone()).unwrap_or(&[]) {
+    let minutes: Vec<u32> = r
+        .events
+        .events()
+        .iter()
+        .filter(|e| {
             let forced = e
                 .fields
                 .get("out")
                 .and_then(serde_json::Value::as_u64)
                 .is_some_and(|o| hurt.contains(&o));
-            if e.event_type == EventType::Substitution
+            e.event_type == EventType::Substitution
                 && !forced
-                && let Some(ds_core::ids::ActorId::Player(p)) = e.actor
-                && home.contains(&p)
-            {
-                minutes.push(rec.clock().0);
-            }
-        }
-    }
+                && matches!(e.actor, Some(ds_core::ids::ActorId::Player(p)) if home.contains(&p))
+        })
+        .map(|e| u32::from(e.timestamp_minute) + u32::from(e.half.offset_minutes()))
+        .collect();
     (minutes, usize::from(m.rules.subs_allowed))
 }
 

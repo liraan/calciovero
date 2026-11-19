@@ -563,8 +563,9 @@ mod tests {
         let back = ds_match::MatchSave::from_bytes(&save.to_bytes().expect("bytes")).expect("load");
         assert_eq!(back.match_.home.intention, c.home);
         assert_eq!(ds_match::replay(&back).state_hash, r.state_hash);
-        let plain = ds_fixtures::match_fixture(seed).expect("fixture");
-        let r0 = ds_match::simulate_from_seed(&plain, seed, ds_match::MatchConfig::default());
+        // The plain seed-42 match is already played for the board and
+        // commentary tests; borrow it rather than play it again.
+        let r0 = &crate::test_support::SEED_42.1;
         assert_ne!(r0.state_hash, r.state_hash, "the choices changed nothing");
     }
 
@@ -640,6 +641,19 @@ mod tests {
     #[test]
     fn every_goal_conceded_has_its_reasons() {
         for seed in 42..46 {
+            // Seed 42's plain match is the one the whole board/commentary
+            // suite looks at; read it instead of playing it a second time.
+            if seed == 42 {
+                let (m, r, _) = &*crate::test_support::SEED_42;
+                let text = why_conceded(m, r.events.events());
+                let conceded = usize::from(r.score.away);
+                assert_eq!(text.matches(" scored").count(), conceded, "{text}");
+                if conceded > 0 {
+                    assert!(text.contains("The move began"), "{text}");
+                    assert!(!text.contains("to ."), "{text}");
+                }
+                continue;
+            }
             let m = ds_fixtures::match_fixture(seed).expect("fixture");
             let r = ds_match::simulate_from_seed(&m, seed, ds_match::MatchConfig::default());
             let text = why_conceded(&m, r.events.events());

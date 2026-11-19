@@ -20,8 +20,12 @@ fn recorded_fresh() -> (ds_match::MatchResult, Vec<TickRecord>) {
     simulate_from_seed_recorded(&m, SEED, MatchConfig::default())
 }
 
-fn recorded() -> (ds_match::MatchResult, Vec<TickRecord>) {
-    RECORDED.clone()
+/// Borrow the one cached match. The old helper cloned all ~34 MB of tick
+/// records on every call; borrowing lets the twenty-odd read-only tests share
+/// the same run without a single deep copy. Tests that need a *fresh* run
+/// (`the_same_seed_gives_the_same_frames`) still call `recorded_fresh` twice.
+fn recorded() -> &'static (ds_match::MatchResult, Vec<TickRecord>) {
+    &RECORDED
 }
 
 #[test]
@@ -64,7 +68,7 @@ fn the_same_seed_gives_the_same_frames() {
 fn the_events_of_the_records_are_the_events_of_the_chain() {
     let (result, records) = recorded();
     let mut expected_start = 0;
-    for r in &records {
+    for r in records {
         assert_eq!(r.events.start, expected_start, "ranges are contiguous");
         assert!(r.events.end >= r.events.start);
         expected_start = r.events.end;
@@ -79,7 +83,7 @@ fn the_events_of_the_records_are_the_events_of_the_chain() {
 #[test]
 fn every_record_has_the_twenty_two() {
     let (_, records) = recorded();
-    for r in &records {
+    for r in records {
         assert_eq!(r.agents.len(), 22, "tick {}", r.tick);
         assert!(
             r.agents.windows(2).all(|w| w[0].id < w[1].id),
@@ -181,7 +185,7 @@ fn the_ball_never_stays_out_of_the_pitch() {
         i32::from(m.pitch.width_m) * 100,
     );
     let (_, records) = recorded();
-    for r in &records {
+    for r in records {
         let (x, y, _) = r.ball.position;
         assert!(
             (0..=length).contains(&x) && (0..=width).contains(&y),
@@ -328,7 +332,7 @@ fn a_carrier_with_nothing_on_does_not_stand_still() {
     let (_, records) = recorded();
     // A spell: the same carrier, within a metre of where it started.
     let (mut start, mut run, mut longest) = (None, 0, 0);
-    for r in &records {
+    for r in records {
         let here = r.carrier.map(|c| (c, r.ball.position));
         let same = match (start, here) {
             (Some((c0, p0)), Some((c, p))) => {
@@ -359,7 +363,7 @@ fn the_keeper_stays_between_the_ball_and_his_goal() {
     let length = i32::from(m.pitch.length_m) * 100;
     let (_, records) = recorded();
     let (mut checked, mut beyond) = (0, 0);
-    for r in &records {
+    for r in records {
         let Some(c) = r.carrier else { continue };
         let (keeper_slot, goal_x) = if c.slot() >= 100 {
             (0, 0)

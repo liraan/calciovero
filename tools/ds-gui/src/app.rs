@@ -25,6 +25,7 @@ const TICKS_PER_SECOND: f64 = 10.0;
 const SPEEDS: [f64; 5] = [1.0, 4.0, 16.0, 64.0, 256.0];
 
 /// A match played and narrated, ready to watch.
+#[derive(Clone)]
 struct Game {
     ticks: Vec<NarratedTick>,
     records: Vec<ds_match::TickRecord>,
@@ -78,6 +79,7 @@ const FOLLOW_RATE: f32 = 3.0;
 /// The slow motion, a share of the chosen speed (DESIGN.md: about a third).
 const SLOW: f64 = 1.0 / 3.0;
 /// The application state.
+#[derive(Clone)]
 #[allow(clippy::struct_excessive_bools, reason = "the window's switches")]
 pub struct App {
     theme: Theme,
@@ -1680,8 +1682,15 @@ fn luminance(c: egui::Color32) -> f32 {
 mod tests {
     use super::*;
 
+    /// A fresh window on seed 42. The eight tests that only look at the
+    /// pristine match share one played game and clone it (a memcpy, not a
+    /// simulation); only the five tests that change the match by an order
+    /// pay for a second run. Before, each of the eight calls replayed it.
     fn app() -> App {
-        App::new(Theme::all().expect("themes"))
+        static PRISTINE: std::sync::OnceLock<App> = std::sync::OnceLock::new();
+        PRISTINE
+            .get_or_init(|| App::new(Theme::all().expect("themes")))
+            .clone()
     }
 
     #[test]

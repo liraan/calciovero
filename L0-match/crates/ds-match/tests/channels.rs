@@ -84,15 +84,22 @@ fn the_water_breaks_stop_play_and_add_time() {
         .collect();
     assert_eq!(breaks.len(), 2, "two breaks");
     assert!(breaks[0].timestamp_minute >= 30);
-    let half = |m: &Match| {
-        simulate_from_seed(m, seed, MatchConfig::default())
-            .events
+    // The run above already knows when half-time came: read it again rather
+    // than replay the same water-break match (three sims -> two, same seeds).
+    let half = |r: &ds_match::MatchResult| {
+        r.events
             .events()
             .iter()
             .find(|e| e.event_type == EventType::HalfTime)
             .map(|e| u32::from(e.timestamp_minute) * 60 + u32::from(e.timestamp_second))
     };
-    let (with, without) = (half(&m), half(&match_fixture(seed).expect("fixture")));
+    let with = half(&r);
+    let plain = simulate_from_seed(
+        &match_fixture(seed).expect("fixture"),
+        seed,
+        MatchConfig::default(),
+    );
+    let without = half(&plain);
     assert!(
         with > without,
         "the half lasts longer: {with:?} {without:?}"

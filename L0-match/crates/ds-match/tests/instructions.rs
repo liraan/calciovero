@@ -384,18 +384,15 @@ fn more_pressing_closes_the_carrier_down() {
     // The mean distance of the two nearest men of `home` (substitutes too)
     // to the opposing carrier.
     let gap = |r: &[ds_match::TickRecord], home: &[ds_core::ids::PlayerId]| {
+        let home: std::collections::HashSet<_> = home.iter().copied().collect();
         let mine = |id: &ds_core::ids::PlayerId| home.contains(id) || id.slot() < 100;
         let ds: Vec<f64> = r
             .iter()
             .filter_map(|t| {
                 let c = t.carrier.filter(|c| !mine(c))?;
-                // Pre-compute the position of every agent once for this tick
-                // (OI-125): avoid a second scan for the carrier's position.
-                let mut pos = std::collections::BTreeMap::new();
-                for a in &t.agents {
-                    pos.insert(a.id, a.position);
-                }
-                let at = pos.get(&c)?;
+                // Only the carrier's position is needed: one find, not a
+                // BTreeMap of all twenty-two agents built every tick (OI-125).
+                let at = t.agents.iter().find(|a| a.id == c)?.position;
                 let mut near: Vec<f64> = t
                     .agents
                     .iter()

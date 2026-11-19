@@ -119,6 +119,18 @@ pub fn count(events: &[MatchEvent]) -> MatchCounts {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::LazyLock;
+
+    /// The seed-42 event chain, played once. The determinism test below still
+    /// calls `play(42)` twice — the second run *is* its assertion — while the
+    /// two reading tests borrow these events instead of replaying the match.
+    static SEED42: LazyLock<Vec<MatchEvent>> = LazyLock::new(|| {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        ds_match::simulate_from_seed(&m, 42, MatchConfig::default())
+            .events
+            .events()
+            .to_vec()
+    });
 
     #[test]
     fn the_same_seed_gives_the_same_counts() {
@@ -134,9 +146,7 @@ mod tests {
     /// passes, not among the accurate ones (2026-11-16).
     #[test]
     fn an_intercepted_pass_is_a_pass() {
-        let m = ds_fixtures::match_fixture(42).unwrap();
-        let r = ds_match::simulate_from_seed(&m, 42, MatchConfig::default());
-        let ev = r.events.events();
+        let ev = &*SEED42;
         let of = |t: EventType| ev.iter().filter(|e| e.event_type == t).count();
         let c = count(ev);
         #[allow(clippy::cast_precision_loss)]
@@ -149,9 +159,7 @@ mod tests {
     /// count it (2026-11-16).
     #[test]
     fn a_blocked_shot_is_off_target() {
-        let m = ds_fixtures::match_fixture(42).unwrap();
-        let r = ds_match::simulate_from_seed(&m, 42, MatchConfig::default());
-        let ev = r.events.events();
+        let ev = &*SEED42;
         let on = ev
             .iter()
             .filter(|e| e.event_type == EventType::Shot && flag(e, "on_target"))

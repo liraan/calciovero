@@ -65,12 +65,17 @@ const NOT_YET: &[(&str, &str)] = &[
 ];
 
 /// Every act that shows, with what shows it.
+///
+/// The reading happens inside each seed's worker: a full tick record is
+/// about 34 MB, and the old shape kept all fourteen of them alive until
+/// the end. The worker now returns only its small set of acts, and the
+/// ordered seed results are unioned here. The seeds and the readings are
+/// unchanged.
 fn acts_seen() -> BTreeSet<&'static str> {
-    let mut seen = BTreeSet::new();
-    for (result, records) in ds_fixtures::each_seed(SEEDS, |seed| {
+    ds_fixtures::each_seed(SEEDS, |seed| {
         let m = match_fixture(seed).expect("fixture");
-        simulate_from_seed_recorded(&m, seed, MatchConfig::default())
-    }) {
+        let (result, records) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
+        let mut seen = BTreeSet::new();
         for e in result.events.events() {
             let f = &e.fields;
             let is = |k: &str, v: &str| f.get(k).and_then(|x| x.as_str()) == Some(v);
@@ -136,8 +141,11 @@ fn acts_seen() -> BTreeSet<&'static str> {
                 }
             }
         }
-    }
-    seen
+        seen
+    })
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 #[test]

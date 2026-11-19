@@ -261,70 +261,11 @@ pub enum SaveError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
-    use ds_model::{
-        FormationId, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
-        PsychologicalStateMinimal, Referee, RoleId, Squad,
-    };
-
-    fn make_squad(id: u32, slot_base: u32) -> Squad {
-        let players: Vec<Player> = (0..11)
-            .map(|i| {
-                Player::try_new(
-                    PlayerId::new(slot_base + i, 0),
-                    format!("P{}", slot_base + i),
-                    RoleId::new("midfielder").unwrap(),
-                    180,
-                    78,
-                    PhysicalStateMinimal::default(),
-                    PsychologicalStateMinimal::default(),
-                )
-                .unwrap()
-            })
-            .collect();
-        Squad::try_new(
-            SquadId::new(id, 0),
-            players,
-            vec![],
-            FormationId::new("4-4-2").unwrap(),
-        )
-        .unwrap()
-    }
-
-    fn make_match() -> Match {
-        Match::new(
-            MatchId::new(1, 0),
-            make_squad(1, 0),
-            make_squad(2, 100),
-            Pitch::default(),
-            Referee::new(RefereeId::new(1, 0)),
-            MatchSeed::from_raw(42),
-            MatchRules::default(),
-        )
-    }
-
-    fn simulate(seed: u64) -> (Match, MatchResult) {
-        let match_ = make_match();
-        let mut hidden = GroundTruth::for_match(seed, &match_);
-        let mut rng = RngRegistry::new(seed);
-        let mut chain = EventChain::new();
-        let config = MatchConfig::default();
-        let ctx = MatchContext {
-            match_: &match_,
-            hidden: &mut hidden,
-            rng: &mut rng,
-            chain: &mut chain,
-            config,
-        };
-        let mut engine = TextMatchEngine::new();
-        let result = engine.simulate(ctx);
-        (match_, result)
-    }
 
     #[test]
     fn save_roundtrips() {
-        let (match_, result) = simulate(42);
-        let save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
+        let (match_, result) = &*crate::test_support::SIM42_FOR_MATCH;
+        let save = MatchSave::from_result(result, match_, 42, GameInstant::from_raw(0));
         let bytes = save.to_bytes().unwrap();
         let loaded = MatchSave::from_bytes(&bytes).unwrap();
         assert_eq!(loaded.schema_version, save.schema_version);
@@ -343,21 +284,20 @@ mod tests {
     /// A finished match saves its record and gets it back, tick for tick.
     #[test]
     fn the_record_is_saved_and_comes_back() {
-        let m = ds_fixtures::match_fixture(42).expect("fixture");
-        let (result, ticks) = crate::simulate_from_seed_recorded(&m, 42, MatchConfig::default());
-        let save = MatchSave::from_result(&result, &m, 42, GameInstant::from_raw(0))
-            .with_record(&ticks, MatchConfig::default().ticks_per_second);
+        let (m, result, ticks) = &*crate::test_support::RECORDED42;
+        let save = MatchSave::from_result(result, m, 42, GameInstant::from_raw(0))
+            .with_record(ticks, MatchConfig::default().ticks_per_second);
         let loaded = MatchSave::from_bytes(&save.to_bytes().unwrap()).unwrap();
         let back = loaded.record.expect("record").unpack().expect("unpack");
-        assert_eq!(back, ticks);
+        assert_eq!(back.as_slice(), ticks.as_slice());
     }
 
     /// Compatibility (ADR-065): a schema v2 save, without the record,
     /// still loads under v3 and replays to the same match.
     #[test]
     fn a_v2_save_still_loads() {
-        let (match_, result) = simulate(42);
-        let save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
+        let (match_, result) = &*crate::test_support::SIM42_FOR_MATCH;
+        let save = MatchSave::from_result(result, match_, 42, GameInstant::from_raw(0));
         let mut v2: serde_json::Value = serde_json::from_slice(&save.to_bytes().unwrap()).unwrap();
         v2["schema_version"] = 2.into();
         assert!(v2.get("record").is_none(), "v2 had no record");
@@ -370,9 +310,8 @@ mod tests {
     /// A record from another engine than the save's is refused.
     #[test]
     fn a_record_from_another_engine_is_refused() {
-        let m = ds_fixtures::match_fixture(42).expect("fixture");
-        let (result, ticks) = crate::simulate_from_seed_recorded(&m, 42, MatchConfig::default());
-        let mut save = MatchSave::from_result(&result, &m, 42, GameInstant::from_raw(0))
+        let (m, result, ticks) = &*crate::test_support::RECORDED42;
+        let mut save = MatchSave::from_result(result, m, 42, GameInstant::from_raw(0))
             .with_record(&ticks[..10], 10);
         save.sim_version += 1;
         let err = MatchSave::from_bytes(&save.to_bytes().unwrap()).unwrap_err();
@@ -381,8 +320,8 @@ mod tests {
 
     #[test]
     fn chain_hash_is_verified_on_load() {
-        let (match_, result) = simulate(42);
-        let mut save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
+        let (match_, result) = &*crate::test_support::SIM42_FOR_MATCH;
+        let mut save = MatchSave::from_result(result, match_, 42, GameInstant::from_raw(0));
         // Corrupt the state hash so the chain no longer verifies.
         save.result.state_hash = ds_core::hash::Hash::ZERO;
         let bytes = serde_json::to_vec(&save).unwrap();
@@ -392,8 +331,8 @@ mod tests {
 
     #[test]
     fn schema_version_too_new_is_rejected() {
-        let (match_, result) = simulate(42);
-        let mut save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
+        let (match_, result) = &*crate::test_support::SIM42_FOR_MATCH;
+        let mut save = MatchSave::from_result(result, match_, 42, GameInstant::from_raw(0));
         save.schema_version = SCHEMA_VERSION + 1;
         let bytes = serde_json::to_vec(&save).unwrap();
         let err = MatchSave::from_bytes(&bytes).unwrap_err();
@@ -402,23 +341,23 @@ mod tests {
 
     #[test]
     fn can_replay_returns_true_for_current_sim_version() {
-        let (match_, result) = simulate(42);
-        let save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
+        let (match_, result) = &*crate::test_support::SIM42_FOR_MATCH;
+        let save = MatchSave::from_result(result, match_, 42, GameInstant::from_raw(0));
         assert!(save.can_replay());
     }
 
     #[test]
     fn can_replay_returns_false_for_old_sim_version() {
-        let (match_, result) = simulate(42);
-        let mut save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
+        let (match_, result) = &*crate::test_support::SIM42_FOR_MATCH;
+        let mut save = MatchSave::from_result(result, match_, 42, GameInstant::from_raw(0));
         save.sim_version = SIM_VERSION + 1;
         assert!(!save.can_replay());
     }
 
     #[test]
     fn replay_is_deterministic() {
-        let (match_, result) = simulate(42);
-        let save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
+        let (match_, result) = &*crate::test_support::SIM42_FOR_MATCH;
+        let save = MatchSave::from_result(result, match_, 42, GameInstant::from_raw(0));
         let r1 = replay(&save);
         let r2 = replay(&save);
         assert_eq!(r1.state_hash, r2.state_hash);
@@ -428,9 +367,8 @@ mod tests {
 
     #[test]
     fn replay_matches_original_result() {
-        let (match_, result) = simulate(42);
-        let save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
-        let replayed = replay(&save);
+        let (_, result) = &*crate::test_support::SIM42_FOR_MATCH;
+        let replayed = &*crate::test_support::REPLAY42;
         assert_eq!(replayed.state_hash, result.state_hash);
         assert_eq!(replayed.score, result.score);
         assert_eq!(replayed.stats, result.stats);
@@ -441,9 +379,7 @@ mod tests {
         // `simulate_match` alone returns an empty narrative (it is a
         // renderer concern). `replay` uses `TextMatchEngine`, which fills
         // the narrative. So the replayed result has a narrative.
-        let (match_, result) = simulate(42);
-        let save = MatchSave::from_result(&result, &match_, 42, GameInstant::from_raw(0));
-        let replayed = replay(&save);
+        let replayed = &*crate::test_support::REPLAY42;
         assert_eq!(replayed.narrative.len(), replayed.events.len());
     }
 }
