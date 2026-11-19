@@ -255,6 +255,11 @@ pub struct MatchState {
     pub(crate) challenges: BTreeMap<PlayerId, u64>,
     /// When each player without the ball chooses again (ADR-049).
     pub(crate) offball_due: BTreeMap<PlayerId, u64>,
+    /// The intesa of each pair of teammates (strato 3): how well one
+    /// predicts the other, grown from the plays they complete together.
+    /// Keyed by (actor, partner); default baseline for pairs that have
+    /// not yet played together.
+    pub(crate) intesa: BTreeMap<(PlayerId, PlayerId), f64>,
     /// Law 11: the passer's teammates in an offside position when the
     /// ball was played; one who then plays it commits the offence.
     pub(crate) offside_at_pass: BTreeSet<PlayerId>,
@@ -1017,6 +1022,20 @@ impl MatchState {
             last_decision: None,
             challenges: BTreeMap::new(),
             offball_due: BTreeMap::new(),
+            intesa: {
+                let mut m = BTreeMap::new();
+                let baseline = 0.5;
+                for squad in [&match_.home, &match_.away] {
+                    for a in &squad.players {
+                        for b in &squad.players {
+                            if a.id != b.id {
+                                m.insert((a.id, b.id), baseline);
+                            }
+                        }
+                    }
+                }
+                m
+            },
             offside_at_pass: BTreeSet::new(),
             restart_pass: None,
             shootout_taker: None,

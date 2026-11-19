@@ -755,6 +755,20 @@ impl MatchState {
                     .unwrap_or(me);
                 let closed = (carrier_pos.is_some() && !keeper)
                     .then(|| view.choose_closed_place((me, anchor), (length, width)));
+                let partner_intesa = if ball_loose {
+                    let nearest_mate = squad
+                        .players
+                        .iter()
+                        .filter(|q| q.id != id && Some(q.id) != keeper_id)
+                        .filter_map(|q| self.spatial.agent(q.id).map(|a| (q.id, a.position)))
+                        .min_by_key(|(_, p)| distance_squared(*p, ball))
+                        .map(|(pid, _)| pid);
+                    nearest_mate
+                        .and_then(|pid| self.intesa.get(&(id, pid)).copied())
+                        .unwrap_or(0.0)
+                } else {
+                    0.0
+                };
                 let scene = ds_orchestrator::OffBallScene {
                     actor: id,
                     // His own task first; else what the team's orders ask
@@ -856,6 +870,7 @@ impl MatchState {
                     threats: carrier_pos.map(|c| {
                         view.threats(c, me, closed.unwrap_or(anchor), home, (length, width))
                     }),
+                    partner_intesa,
                 };
                 if let Some(place) = closed {
                     held.push((id, place));

@@ -119,6 +119,9 @@ pub struct OffBallScene {
     /// units of keeping the ball (ADR-052): the carrier's space, the space
     /// of the man to mark, the space he guards in the team's structure.
     pub threats: Option<Threats>,
+    /// How well the actor knows the teammate nearest to a loose ball (strato 3):
+    /// the intesa that makes him yield it (or not). `[0, 1]`.
+    pub partner_intesa: f64,
 }
 
 /// The dangers a defender reads (ADR-052 §5), each the value of a space to
@@ -255,6 +258,19 @@ impl crate::GroundTruth {
         // The first aim is the ball (ADR-052 note, 2026-11-14): a ball
         // nobody has is worth more than any place, at any distance.
         if let (Some(t), true) = (s.loose_ball, may_leave) {
+            // Strato 3 (the call): a loose ball between two teammates of the
+            // same side. The nearest (rank 0) always goes. A teammate who
+            // knows him (intesa high enough) trusts that he will get there
+            // and yields: he covers instead of going for the same ball. A
+            // teammate who does not know him may go too (the second reader),
+            // as before: two on the same ball, or both staying, is what a
+            // pair that has just met does.
+            if t.rank >= 1 {
+                let yield_threshold = f64::from(self.offball_balance().intesa_yield_milli) / 1000.0;
+                if s.partner_intesa >= yield_threshold {
+                    return OffBallAct::Hold;
+                }
+            }
             // The second one's race: his own pace (movement.json, his
             // max speed), against the nearest opponent at the pace he believes.
             let mv = &self.movement_balance;
@@ -406,6 +422,7 @@ mod tests {
             to_mark: None,
             asked: None,
             threats: None,
+            partner_intesa: 0.0,
         }
     }
 
@@ -496,6 +513,29 @@ mod tests {
             ..near
         };
         assert_eq!(choose(&third), OffBallAct::Hold);
+    }
+
+    /// Twin test (strato 3, the call): the same second-nearest player, the
+    /// same loose ball he could get to first; only the intesa with the
+    /// teammate who goes changes. Knowing him, he yields and holds (he
+    /// covers); not knowing him, he goes for the same ball.
+    #[test]
+    fn a_teammate_he_knows_yields_the_loose_ball() {
+        let knows = OffBallScene {
+            loose_ball: at(500, 1),
+            partner_intesa: 0.8,
+            ..scene()
+        };
+        assert_eq!(choose(&knows), OffBallAct::Hold);
+        let strangers = OffBallScene {
+            loose_ball: at(500, 1),
+            partner_intesa: 0.1,
+            ..scene()
+        };
+        // With low intesa the second reader may still go (reading above 0.5).
+        assert!(
+            choose(&strangers) == OffBallAct::GoToBall || choose(&strangers) == OffBallAct::Hold
+        );
     }
 
     /// In reach of the carrier, an average tackler challenges; far from him,

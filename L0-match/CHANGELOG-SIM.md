@@ -8,6 +8,18 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 155 — A3, strato 3 (first piece): the call on a loose ball
+
+With a loose ball between two teammates, the one who knows his partner
+yields it: the nearest always goes, and a teammate whose intesa with him is
+high enough trusts that he will get there and holds his place (he covers)
+instead of going for the same ball. A pair that has just met may still have
+two men on the same ball, or both holding back, as before: that is what a
+pair without intesa does. The intesa is keyed by (actor, partner), starts
+at a baseline for every pair on the same side, and is the measure of how
+well one predicts the other (decision BB). This is the first piece of
+strato 3 (BEHAVIOURS.md): the call that avoids two men on the same ball.
+
 ## 154 — A3, ADR-071 §5: the place without the ball (the space he closes)
 
 With an opponent on the ball, the man who holds his place no longer goes to

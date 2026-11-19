@@ -51,6 +51,14 @@ pub struct OffBallBalance {
     pub block_height_cm: i32,
     /// A blocked shot comes back at this share of its speed, thousandths.
     pub block_rebound_milli: i32,
+    /// The intesa above which a player yields a loose ball to a teammate
+    /// he knows (strato 3): thousandths.
+    #[serde(default = "intesa_yield_default")]
+    pub intesa_yield_milli: i32,
+}
+
+const fn intesa_yield_default() -> i32 {
+    500
 }
 
 impl OffBallBalance {
