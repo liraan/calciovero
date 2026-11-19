@@ -8,6 +8,15 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 157 — A3, strato 3 (third piece): intesa grows from completed plays
+
+A completed pass between two teammates raises their mutual intesa (0.1, capped
+at 1.0): a pair that plays together learns to predict each other, so the
+complementary movements and the calls on a loose ball become more likely as
+the match goes on. A pair that has just met keeps its baseline.
+
+SIM_VERSION 156 -> 157.
+
 ## 156 — A3, strato 3 (second piece): complementary movements (the place with the ball)
 
 With a teammate on the ball, the man who holds his place no longer weighs
