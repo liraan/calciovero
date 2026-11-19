@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `2dfc379` - "feat(sim): OI-102 second man on aerial balls (SIM 160)"
+**Last commit verified:** `7673cfe` - "feat(sim): the opponents' lines and the pocket between them (SIM 162)"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,8 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**19 novembre: SIM 162, le linee avversarie e la tasca (DD-20, ADR-079).** Ogni giocatore legge le tre linee avversarie dalle profondità degli uomini che vede: un passaggio vale di più per ogni linea che rompe in avanti, e gli spazi fra le linee diventano punti dove ricevere dentro la zona del suo ruolo. Nessuno schema di squadra e nessun dado: è la lettura del singolo, con i suoi limiti di vista. Sulle 60 partite vere 42-101, passaggi avanti/laterali/indietro 24/53/23 → 27/50/23%, palla nella propria metà 73,8 → 71,0%, pallone libero 73,8 → 69,3% (2084 → 3006 occasioni). C2 verde: suite completa, golden, build release, test-runner 6/6, gate. Prossimo concetto: la palla morta come contesto percepito e il battitore scelto per ruolo.
 
 **19 novembre: i test, e la ridondanza vera era un'altra.** Misurata la suite binario per binario (passo 0): 1393,9 s di somma. Il costo non era "gli stessi seed in cinque binari", come avevo scritto: era **giocare partite e buttarle via**. `extra_time` cercava il suo seme con un `for seed in 42..90` seriale e due partite per seme; `golden_l0_cup` scandiva 42..142 su un core (172 s sui 228 del binario); `knock` giocava dodici partite registrate per usarne una; `narrated()` in `ds-demo` rigiocava e rinarrava sette volte la stessa partita di seed 42; `ds-gui` la giocava tre volte.
 - **Due politiche, due helper** in `ds-fixtures`: `first_seed` (ondate di core, per una partita attesa lontano) e `first_seed_one_by_one` (per una attesa all'inizio, dove un'ondata piena spreca una partita per core). La prima versione, ondata piena da subito, era peggiore della seriale sul test della board (17 s -> 32 s): per questo sono due, non una con una soglia.
