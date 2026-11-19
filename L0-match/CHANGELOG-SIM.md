@@ -8,6 +8,16 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 158 — OI-98: the offside line is read with an error (perception)
+
+The offside line is no longer read perfectly: a player with poor game
+reading sees it further forward (up to ~2 m of error at game_reading 0,
+none at 1.0), so he may offer beyond the real line and be caught offside.
+A good reader reads it as it is. The engine's actual offside check
+(Law 11) still uses the real positions.
+
+SIM_VERSION 157 -> 158.
+
 ## 157 — A3, strato 3 (third piece): intesa grows from completed plays
 
 A completed pass between two teammates raises their mutual intesa (0.1, capped

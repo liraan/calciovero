@@ -878,6 +878,7 @@ impl MatchState {
                                     }
                                     if n > 0 { sum / f64::from(n) } else { 0.5 }
                                 },
+                                ctx.hidden.characteristic(id, "game_reading").unwrap_or(0.5),
                             )
                         };
                         held.push((id, place));

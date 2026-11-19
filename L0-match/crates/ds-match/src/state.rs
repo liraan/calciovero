@@ -690,8 +690,20 @@ impl TeamView {
         onside_margin_cm: i32,
         (length, width): (i32, i32),
         intesa: f64,
+        game_reading: f64,
     ) -> (i32, i32) {
         const PREDICT_TICKS: i32 = 5;
+        // OI-98: the offside line is not read perfectly. A poor reader
+        // sees it further forward (more room) than it is, so he may offer
+        // beyond the real line and be caught offside. ~2 m of error at
+        // game_reading 0, none at 1.0.
+        const OFFSIDE_PERCEPTION_ERROR_CM: i32 = 2000;
+        let perceived_last = self.last_line.map(|l| {
+            #[allow(clippy::cast_possible_truncation)]
+            let err = ((1.0 - game_reading.clamp(0.0, 1.0))
+                * f64::from(OFFSIDE_PERCEPTION_ERROR_CM)) as i32;
+            l + self.forward * err
+        });
         let corridor = (width / 5).max(1);
         let line = (block_depth / 3).max(1);
         let goal = (self.their_goal_x, width / 2);
@@ -732,7 +744,7 @@ impl TeamView {
                 .any(|m| (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2)
         };
         let onside = |x: i32| {
-            self.last_line.map_or(x, |l| {
+            perceived_last.map_or(x, |l| {
                 let edge = l - self.forward * onside_margin_cm;
                 if (x - edge) * self.forward > 0 {
                     edge
@@ -1976,6 +1988,7 @@ mod marking_tests {
             50,
             (PITCH_LENGTH, PITCH_WIDTH),
             0.8,
+            0.5,
         );
         let mut v2 = block_view(vec![me, mate], vec![carrier], carrier);
         v2.ours_vel = vec![(0, 0), (0, 400)];
@@ -1986,6 +1999,7 @@ mod marking_tests {
             50,
             (PITCH_LENGTH, PITCH_WIDTH),
             0.1,
+            0.5,
         );
         // With intesa the prediction is active: the two results need not
         // coincide (complementarity may move him); without, the prediction
