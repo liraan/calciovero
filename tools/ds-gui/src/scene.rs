@@ -456,12 +456,10 @@ mod tests {
     /// their numbers from 1, the keeper first.
     #[test]
     fn the_nearer_is_drawn_last() {
-        let m = ds_fixtures::match_fixture(42).expect("fixture");
-        let (_, records) =
-            ds_match::simulate_from_seed_recorded(&m, 42, ds_match::MatchConfig::default());
+        let records = crate::interp::tests::records();
         let g = whole(45.0);
         let f = frame(
-            &crate::interp::Moment::at(&records, 500.0, &crate::interp::tests::physics()),
+            &crate::interp::Moment::at(records, 500.0, &crate::interp::tests::physics()),
             &g,
         );
         let depths: Vec<f32> = f.items.iter().map(Item::depth).collect();
@@ -479,9 +477,7 @@ mod tests {
     /// drawn rectangle.
     #[test]
     fn every_tick_of_a_match_projects_inside_the_board() {
-        let m = ds_fixtures::match_fixture(42).expect("fixture");
-        let (_, records) =
-            ds_match::simulate_from_seed_recorded(&m, 42, ds_match::MatchConfig::default());
+        let records = crate::interp::tests::records();
         for tilt in [0.0, 30.0, 45.0, 60.0] {
             let g = whole(tilt);
             let inside =
@@ -489,11 +485,7 @@ mod tests {
             for t in (0..records.len()).step_by(197) {
                 #[allow(clippy::cast_precision_loss)]
                 let f = frame(
-                    &crate::interp::Moment::at(
-                        &records,
-                        t as f64,
-                        &crate::interp::tests::physics(),
-                    ),
+                    &crate::interp::Moment::at(records, t as f64, &crate::interp::tests::physics()),
                     &g,
                 );
                 for i in &f.items {

@@ -4,3 +4,6 @@
 
 pub mod friendly;
 pub mod pitchview;
+
+#[cfg(test)]
+mod test_support;

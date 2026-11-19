@@ -1,8 +1,13 @@
 //! The knock that forces a substitution (decision Y, ADR-066, Law 3): a
 //! foul's contact strong enough for the body of the man it hits, and he
 //! cannot go on.
+//!
+//! The knock is rare: the test needs the *first* match of the range that has
+//! one. It used to play all twelve, with the tick record, and then look at
+//! the first (the record is the heavy part). `first_seed` joins a wave at a
+//! time and stops at that match, so the matches after it are never played.
 
-use ds_fixtures::match_fixture;
+use ds_fixtures::{first_seed, match_fixture};
 use ds_match::{MatchConfig, simulate_from_seed_recorded};
 use ds_stats::EventType;
 
@@ -11,35 +16,40 @@ use ds_stats::EventType;
 /// man of the bench, or carried off. The same seed, the same knocks.
 #[test]
 fn a_knocked_man_leaves_the_pitch() {
-    let mut seen = 0;
-    for (seed, m, (r, records)) in ds_fixtures::each_seed(42..54, |seed| {
-        let m = match_fixture(seed).expect("fixture");
-        let played = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
-        (seed, m, played)
-    }) {
-        for e in r
-            .events
-            .events()
-            .iter()
-            .filter(|e| e.event_type == EventType::Injury)
-        {
-            let Some(ds_core::ids::ActorId::Player(hurt)) = e.actor else {
-                panic!("an injury has its man");
-            };
-            seen += 1;
-            let last = records.last().expect("records");
-            assert!(
-                last.agents.iter().all(|a| a.id != hurt),
-                "seed {seed}: the knocked man is still on the pitch at the end"
-            );
-        }
-        if seen > 0 {
-            let again = simulate_from_seed_recorded(&m, seed, MatchConfig::default()).0;
-            assert_eq!(again.state_hash, r.state_hash, "seed {seed}: no die");
-            return;
-        }
+    let (seed, (m, (r, records))) = first_seed(
+        42..54,
+        |seed| {
+            let m = match_fixture(seed).expect("fixture");
+            let played = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
+            (m, played)
+        },
+        |(_, (r, _))| {
+            r.events
+                .events()
+                .iter()
+                .any(|e| e.event_type == EventType::Injury)
+        },
+    )
+    .expect("a knock in twelve matches");
+
+    let last = records.last().expect("records");
+    for e in r
+        .events
+        .events()
+        .iter()
+        .filter(|e| e.event_type == EventType::Injury)
+    {
+        let Some(ds_core::ids::ActorId::Player(hurt)) = e.actor else {
+            panic!("an injury has its man");
+        };
+        assert!(
+            last.agents.iter().all(|a| a.id != hurt),
+            "seed {seed}: the knocked man is still on the pitch at the end"
+        );
     }
-    assert!(seen > 0, "a knock in twelve matches");
+    // The same seed, the same matches: the record has no die in it.
+    let again = simulate_from_seed_recorded(&m, seed, MatchConfig::default()).0;
+    assert_eq!(again.state_hash, r.state_hash, "seed {seed}: no die");
 }
 
 /// Twin test (ADR-066): the same contact knocks out the frailer body and

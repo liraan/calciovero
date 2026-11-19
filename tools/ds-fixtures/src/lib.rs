@@ -195,6 +195,67 @@ pub fn each_seed<T: Send>(seeds: std::ops::Range<u64>, f: impl Fn(u64) -> T + Sy
     out
 }
 
+/// The first seed whose result satisfies `done`, played a wave at a time.
+///
+/// [`each_seed`] plays every seed before the test looks at any of them: a
+/// test that only needs *one* match (the first draw, the first knock) pays
+/// for the whole range. This walks the range in waves of one core, joins a
+/// wave, and stops as soon as `done` is satisfied, in the seeds' order; the
+/// matches after the one found are never played. The result is therefore
+/// the same as scanning the range from the start and taking the first
+/// match that matches, which is what the tests did by hand, serially.
+///
+/// Use this when the match is expected far into the range (the cup that
+/// goes to penalties, around seed 50): a wave of cores is what pays there.
+/// When the match is expected at the very start, [`first_seed_one_by_one`]
+/// is cheaper: a full wave would play a match per core to use the first.
+///
+/// Returns `None` when no seed in the range satisfies `done`.
+///
+/// # Panics
+///
+/// If `f` panics for a seed.
+pub fn first_seed<T: Send>(
+    seeds: std::ops::Range<u64>,
+    f: impl Fn(u64) -> T + Sync,
+    done: impl Fn(&T) -> bool,
+) -> Option<(u64, T)> {
+    let cores = std::thread::available_parallelism().map_or(1, std::num::NonZero::get);
+    let seeds: Vec<u64> = seeds.collect();
+    for chunk in seeds.chunks(cores) {
+        let mut wave: Vec<(u64, T)> = std::thread::scope(|s| {
+            let f = &f;
+            #[allow(clippy::needless_collect, reason = "start them all, then join")]
+            let runs: Vec<_> = chunk
+                .iter()
+                .map(|&seed| s.spawn(move || (seed, f(seed))))
+                .collect();
+            runs.into_iter()
+                .map(|r| r.join().expect("a match"))
+                .collect()
+        });
+        if let Some(i) = wave.iter().position(|(_, t)| done(t)) {
+            return Some(wave.swap_remove(i));
+        }
+    }
+    None
+}
+
+/// The first seed whose result satisfies `done`, one seed at a time.
+///
+/// The same answer as [`first_seed`], without the flight: each match is
+/// played only if the ones before it missed. This is what a test wants
+/// when its match is the first or the second of the range (seed 42, 43):
+/// a wave of cores would pay a match per core to use the first, and here
+/// the match after the one found is never played.
+pub fn first_seed_one_by_one<T>(
+    seeds: std::ops::Range<u64>,
+    f: impl Fn(u64) -> T,
+    done: impl Fn(&T) -> bool,
+) -> Option<(u64, T)> {
+    seeds.map(|seed| (seed, f(seed))).find(|(_, t)| done(t))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

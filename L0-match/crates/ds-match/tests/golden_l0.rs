@@ -87,15 +87,22 @@ const EXPECTED_CUP: &str = "55:e51c2926e99e98cdf9582d599c55fc8eb0a97d443afe8c39f
 
 #[test]
 fn golden_l0_cup_is_deterministic() {
-    let (seed, result) = (42..142)
-        .map(|seed| {
+    // The cup tie that goes to penalties is found by walking the range a
+    // wave of cores at a time; the scan is serial in the seed, but the
+    // matches of a wave are played together (19 November 2026, the
+    // maintainer: "dobbiamo velocizzare i test"). Before, this one test
+    // played up to a hundred cup matches on a single core: 172 s of 228.
+    let (seed, result) = ds_fixtures::first_seed(
+        42..142,
+        |seed| {
             let mut m = match_fixture(seed).expect("fixture");
             m.rules.extra_time = true;
             m.rules.penalty_shootout = true;
-            (seed, simulate_from_seed(&m, seed, MatchConfig::default()))
-        })
-        .find(|(_, r)| r.shootout.is_some())
-        .expect("a cup match goes to penalties");
+            simulate_from_seed(&m, seed, MatchConfig::default())
+        },
+        |r| r.shootout.is_some(),
+    )
+    .expect("a cup match goes to penalties");
     let mut hash = format!("{seed}:");
     for b in result.state_hash.as_bytes() {
         use std::fmt::Write as _;

@@ -202,9 +202,14 @@ pub mod tests {
         ds_match::RecordHeader::current(10, (105, 68)).physics
     }
 
-    fn records() -> Vec<TickRecord> {
-        let m = ds_fixtures::match_fixture(42).expect("fixture");
-        ds_match::simulate_from_seed_recorded(&m, 42, ds_match::MatchConfig::default()).1
+    pub fn records() -> &'static [TickRecord] {
+        // One match, played once: the interpolation and scene tests all look
+        // at seed 42, and each one used to play it again (19 November 2026).
+        static RECORDED: std::sync::LazyLock<Vec<TickRecord>> = std::sync::LazyLock::new(|| {
+            let m = ds_fixtures::match_fixture(42).expect("fixture");
+            ds_match::simulate_from_seed_recorded(&m, 42, ds_match::MatchConfig::default()).1
+        });
+        &RECORDED
     }
 
     /// On a tick the drawing is the tick: the tick wins.
@@ -213,7 +218,7 @@ pub mod tests {
         let r = records();
         for t in [0_usize, 300, 1_234, r.len() - 1] {
             #[allow(clippy::cast_precision_loss)]
-            let m = Moment::at(&r, t as f64, &physics());
+            let m = Moment::at(r, t as f64, &physics());
             #[allow(clippy::cast_precision_loss)]
             for (p, a) in m.players.iter().zip(&r[t].agents) {
                 assert!((p.at.0 - a.position.0 as f32).abs() < 1e-3);
@@ -232,7 +237,7 @@ pub mod tests {
         let r = records();
         for t in (100..r.len() - 2).step_by(211) {
             #[allow(clippy::cast_precision_loss)]
-            let m = Moment::at(&r, t as f64 + 0.5, &physics());
+            let m = Moment::at(r, t as f64 + 0.5, &physics());
             for p in &m.players {
                 let (Some(a), Some(b)) = (pos(&r[t], p.id), pos(&r[t + 1], p.id)) else {
                     continue;

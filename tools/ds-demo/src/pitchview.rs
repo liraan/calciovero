@@ -358,16 +358,19 @@ mod tests {
     }
 
     use super::*;
-    use ds_match::MatchConfig;
 
     fn narrated() -> (usize, Vec<NarratedTick>) {
-        let m = ds_fixtures::match_fixture(42).expect("fixture");
-        let (result, records) =
-            ds_match::simulate_from_seed_recorded(&m, 42, MatchConfig::default());
-        (
-            result.events.len(),
-            ds_match::narrate_ticks(&m, &result.events, records),
-        )
+        // The seven tests of the board and the commentary all look at seed
+        // 42: the match and its narration are made once (19 November 2026).
+        static NARRATED: std::sync::LazyLock<(usize, Vec<NarratedTick>)> =
+            std::sync::LazyLock::new(|| {
+                let (m, result, records) = &*crate::test_support::SEED_42;
+                (
+                    result.events.len(),
+                    ds_match::narrate_ticks(m, &result.events, records.clone()),
+                )
+            });
+        NARRATED.clone()
     }
 
     /// ADR-022 §3, ADR-025: the view does not read the engine.

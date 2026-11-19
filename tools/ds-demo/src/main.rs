@@ -14,6 +14,9 @@ mod board;
 mod render;
 mod viewmodel;
 
+#[cfg(test)]
+mod test_support;
+
 use ds_demo::{friendly, pitchview};
 
 use std::process::ExitCode;
@@ -448,10 +451,9 @@ mod tests {
 
     #[test]
     fn rendering_a_result_does_not_panic() {
-        let match_ = ds_fixtures::match_fixture(42).unwrap();
-        let result = ds_match::simulate_from_seed(&match_, 42, MatchConfig::default());
-        let _ = render::print_text(&result);
-        let _ = render::print_json(&result);
+        let (_, result, _) = &*crate::test_support::SEED_42;
+        let _ = render::print_text(result);
+        let _ = render::print_json(result);
     }
 
     fn parse(argv: &[&str]) -> Result<Option<Args>, String> {

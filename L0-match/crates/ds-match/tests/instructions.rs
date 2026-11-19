@@ -254,18 +254,19 @@ fn quick_instructions_take_effect_from_their_tick() {
 #[allow(clippy::cast_precision_loss)] // ticks of a match
 fn the_board_changes_from_its_tick() {
     // The first seed from 49 where the man stays on the pitch (from SIM
-    // 149 a knock takes him off in seed 49 before the order).
-    let (seed, _, before) = (49..60)
-        .map(|seed| {
+    // 149 a knock takes him off in seed 49 before the order). One seed at
+    // a time: the match wanted is the second of the range, and a flight
+    // of cores would play eight matches to use it.
+    let (seed, (_id, before)) = ds_fixtures::first_seed_one_by_one(
+        49..60,
+        |seed| {
             let plain = match_fixture(seed).expect("fixture");
             let (_, before) = simulate_from_seed_recorded(&plain, seed, MatchConfig::default());
-            (seed, plain, before)
-        })
-        .find(|(_, plain, before)| {
-            let id = plain.home.players[5].id;
-            before.iter().all(|t| t.agents.iter().any(|a| a.id == id))
-        })
-        .expect("a seed where he plays the whole match");
+            (plain.home.players[5].id, before)
+        },
+        |(id, before)| before.iter().all(|t| t.agents.iter().any(|a| a.id == *id)),
+    )
+    .expect("a seed where he plays the whole match");
     let mut m = match_fixture(seed).expect("fixture");
     let swapped = m.home.board.swapped(5, 8);
     m.home = m.home.clone().with_instructions(vec![Instruction {
