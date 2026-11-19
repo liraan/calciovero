@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `e5c74a6` - "feat(sim): the call on a loose ball (strato 3, first piece) (ADR-073, SIM 155)"
+**Last commit verified:** `facb467` - "docs(state): bookmark the call on a loose ball, LCV = e5c74a6"
 
 ## Mandato attivo (2026-11-16)
 
