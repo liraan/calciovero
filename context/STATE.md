@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `edbd55b` - "context: the capture of the 2026-11-18 session"
+**Last commit verified:** `1a8cc28` - "feat(ds-match): one act, one event, the cross is a pass (ADR-072)"
 
 ## Mandato attivo (2026-11-16)
 
@@ -40,6 +40,13 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 - **Dottrina recente:** ogni attore ha i suoi tre piani (`doctrine/00-foundations.md` 4.1); i due cicli annidati del manager (README, `VISION.md` §6); l'arbitro sono le Leggi applicate, presenti ma senza occlusione (ADR-021, nota).
 
 ## Per il maintainer
+
+**19 novembre: ADR-072 su `main`, e due mancanze chiuse per strada.** A3 del mandato ("un atto, un evento; la qualifica è un campo"): il cross è un passaggio. `tell_cross` diventa `compute_cross` (risponde, non emette), `TrajectoryKind::Pass` porta `cross` e `foot`, `classify` scrive `"cross"` su ogni passaggio e `"foot"` solo sul cross, `EventType::Cross` resta deprecato e non emesso. `SIM_VERSION` 153, golden rigenerato.
+- Il gate ha trovato due cose che il CHANGELOG dava per fatte e non lo erano: il ramo "crosses" in `ds-narrative` (ADR-072 §3, assente dal codice; estratto in `pass_verb`, perché aggiungerlo in linea portava `render_text` a 104 righe contro il limite di 100) e la riga 072 in `doctrine/STRUCTURE.md` (Gate A1 contava 69 file ADR contro 68 righe, e il push sarebbe stato bloccato). Chiuse nello stesso commit.
+- `clippy::many_single_char_names` su `one_clearance_per_act`: variabili rinominate, comportamento identico.
+- **La C1 nella forma, non nella sostanza:** il ramo è stato preparato da una sessione OpenCode (`feat/adr-072-cross-is-a-pass`, PR #23) e mergiato su `main` con fast-forward su istruzione del maintainer ("comportati come claude code"), con C2 verde nella sessione stessa.
+- **I tempi, misurati mentre si aspettava:** `pre-commit` 20,7 minuti; dentro, `instructions` oltre 660 s di CPU e `golden_l0` 411 s. Il gate è pagato due volte (il `pre-commit` fa fmt, clippy e test; il `gates.sh` del `pre-push` li rifà) e la build `--release` ricompila da zero su un profilo diverso. Gli stessi seed 42-56 sono rigiocati da cinque binari di test: la cache `(seed, config)` su disco è il taglio da fare, prima di toccare i numeri dei test.
+
 
 **17 novembre, notte: la cache di `recorded()`, quarto intervento sui test.** `tick_record.rs` chiamava 22 volte `recorded()` e ogni volta rigiocava la stessa partita di seed 42 con la registrazione dei tick. Con `LazyLock` la partita si gioca una volta, le 20 chiamate di lettura usano la cache, e i due test di determinismo (`the_same_seed_gives_the_same_frames`, `recording_does_not_change_the_match`) usano `recorded_fresh()` per restare onesti. Misurato: `tick_record` da ~33 s a **10.5 s**. I 25 test restano identici, il C2 mirato e verde.
 
