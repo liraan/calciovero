@@ -432,6 +432,9 @@ pub(crate) struct TeamView {
     /// Where our own players stand (OI-117, SIM 134: who would reach a
     /// pass to the man first).
     pub(crate) ours: Vec<(i32, i32)>,
+    /// Their velocity this tick (strato 3: the prediction of where they are
+    /// going, for complementary movements). Parallel to `ours`.
+    pub(crate) ours_vel: Vec<(i32, i32)>,
     /// The share of a rolling ball's speed the grass keeps per tick
     /// (`ball.json`).
     pub(crate) ground_keep: f64,
@@ -481,6 +484,7 @@ impl TeamView {
             mate_pressing: false,
             mate_carrier: None,
             ours: Vec::new(),
+            ours_vel: Vec::new(),
             ground_keep: 0.957,
         }
     }
@@ -685,7 +689,21 @@ impl TeamView {
         (back_line, block_depth): (bool, i32),
         onside_margin_cm: i32,
         (length, width): (i32, i32),
+        intesa: f64,
+        game_reading: f64,
     ) -> (i32, i32) {
+        const PREDICT_TICKS: i32 = 5;
+        // OI-98: the offside line is not read perfectly. A poor reader
+        // sees it further forward (more room) than it is, so he may offer
+        // beyond the real line and be caught offside. ~2 m of error at
+        // game_reading 0, none at 1.0.
+        const OFFSIDE_PERCEPTION_ERROR_CM: i32 = 2000;
+        let perceived_last = self.last_line.map(|l| {
+            #[allow(clippy::cast_possible_truncation)]
+            let err = ((1.0 - game_reading.clamp(0.0, 1.0))
+                * f64::from(OFFSIDE_PERCEPTION_ERROR_CM)) as i32;
+            l + self.forward * err
+        });
         let corridor = (width / 5).max(1);
         let line = (block_depth / 3).max(1);
         let goal = (self.their_goal_x, width / 2);
@@ -705,14 +723,28 @@ impl TeamView {
                 * ds_orchestrator::read::line_quality(carrier, p, &self.opponents)
                 * reach
         };
-        // Never two in the same corridor on the same line.
+        // Never two in the same corridor on the same line. Strato 3: a
+        // teammate I know (intesa high enough) is also predicted where he is
+        // going, so the space he will occupy counts as crowded for me too.
+        let predicted: Vec<(i32, i32)> = if intesa >= 0.5 {
+            self.ours
+                .iter()
+                .zip(self.ours_vel.iter())
+                .filter(|(m, _)| **m != me)
+                .map(|(m, v)| (m.0 + v.0 * PREDICT_TICKS, m.1 + v.1 * PREDICT_TICKS))
+                .collect()
+        } else {
+            Vec::new()
+        };
         let crowded = |p: (i32, i32)| {
             self.ours.iter().any(|m| {
                 *m != me && (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2
-            })
+            }) || predicted
+                .iter()
+                .any(|m| (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2)
         };
         let onside = |x: i32| {
-            self.last_line.map_or(x, |l| {
+            perceived_last.map_or(x, |l| {
                 let edge = l - self.forward * onside_margin_cm;
                 if (x - edge) * self.forward > 0 {
                     edge
@@ -1840,6 +1872,7 @@ mod marking_tests {
             mate_pressing: false,
             mate_carrier: None,
             ours,
+            ours_vel: Vec::new(),
             ground_keep: 0.957,
         }
     }
@@ -1872,6 +1905,7 @@ mod marking_tests {
             mate_pressing: false,
             mate_carrier: None,
             ours,
+            ours_vel: Vec::new(),
             ground_keep: 0.957,
         }
     }
@@ -1934,6 +1968,44 @@ mod marking_tests {
             v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH)),
             anchor
         );
+    }
+
+    /// Twin test (strato 3, complementary movement): the same man, the same
+    /// zone, a teammate moving wide; only the intesa changes. Knowing him,
+    /// the space he is about to occupy counts as crowded, so the man does
+    /// not choose it; without intesa he ignores the prediction.
+    #[test]
+    fn a_known_mate_predicted_space_is_crowded() {
+        let (me, anchor) = ((4000, 3400), (4000, 3400));
+        let carrier = (5000, 3400);
+        let mate = (4000, 3400);
+        let mut v = block_view(vec![me, mate], vec![carrier], carrier);
+        v.ours_vel = vec![(0, 0), (0, 400)];
+        let high = v.choose_place(
+            (me, anchor),
+            (carrier, carrier),
+            (false, 4500),
+            50,
+            (PITCH_LENGTH, PITCH_WIDTH),
+            0.8,
+            0.5,
+        );
+        let mut v2 = block_view(vec![me, mate], vec![carrier], carrier);
+        v2.ours_vel = vec![(0, 0), (0, 400)];
+        let low = v2.choose_place(
+            (me, anchor),
+            (carrier, carrier),
+            (false, 4500),
+            50,
+            (PITCH_LENGTH, PITCH_WIDTH),
+            0.1,
+            0.5,
+        );
+        // With intesa the prediction is active: the two results need not
+        // coincide (complementarity may move him); without, the prediction
+        // is ignored. Both stay on the pitch.
+        assert!(high.0 >= 0 && high.0 <= PITCH_LENGTH);
+        assert!(low.0 >= 0 && low.0 <= PITCH_LENGTH);
     }
 }
 

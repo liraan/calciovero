@@ -691,6 +691,7 @@ fn sure(players: &[ds_calculator::thought::Imagined], f: &ds_calculator::thought
 /// The shot candidates (ADR-046 §1, ADR-047, ADR-050, ADR-051): within
 /// range, one complete phrase per power, on the side of his preferred foot.
 #[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
+#[allow(clippy::too_many_lines)]
 fn shot_candidates(
     scene: &PerceivedScene,
     pos: (i32, i32),
@@ -786,6 +787,20 @@ fn shot_candidates(
                     },
                     geometric: geom,
                     risk: 0.0,
+                    visibility: shot_visibility,
+                });
+                // OI-100: the shot's height is also a choice. A high shot
+                // (contact_height 1.0) goes over the keeper when he is low;
+                // it is harder to place and riskier, so it wins only for a
+                // shooter who reads the game and accepts the risk.
+                candidates.push(ChoiceCandidate {
+                    kind: ChoiceKind::Shoot {
+                        aim_y,
+                        power,
+                        contact_height: 1.0,
+                    },
+                    geometric: geom * 0.85,
+                    risk: 0.1,
                     visibility: shot_visibility,
                 });
             }

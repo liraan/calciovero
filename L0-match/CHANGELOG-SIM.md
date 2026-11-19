@@ -8,6 +8,47 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 159 — OI-100: shot height is now a choice (radice rimasta)
+
+The shooter no longer only strikes low: a high shot (contact_height 1.0) is
+now a candidate alongside the low one, for each post and power. The high
+shot is harder to place (geom 0.85) and riskier (risk 0.1), so it wins only
+for a shooter who reads the game and accepts the risk. The lob remains a
+separate candidate.
+
+SIM_VERSION 158 -> 159.
+
+## 158 — OI-98: the offside line is read with an error (perception)
+
+The offside line is no longer read perfectly: a player with poor game
+reading sees it further forward (up to ~2 m of error at game_reading 0,
+none at 1.0), so he may offer beyond the real line and be caught offside.
+A good reader reads it as it is. The engine's actual offside check
+(Law 11) still uses the real positions.
+
+SIM_VERSION 157 -> 158.
+
+## 157 — A3, strato 3 (third piece): intesa grows from completed plays
+
+A completed pass between two teammates raises their mutual intesa (0.1, capped
+at 1.0): a pair that plays together learns to predict each other, so the
+complementary movements and the calls on a loose ball become more likely as
+the match goes on. A pair that has just met keeps its baseline.
+
+SIM_VERSION 156 -> 157.
+
+## 156 — A3, strato 3 (second piece): complementary movements (the place with the ball)
+
+With a teammate on the ball, the man who holds his place no longer weighs
+only where his teammates stand now: if he knows them (intesa high enough),
+he also weighs where they are going (their velocity, a few ticks ahead),
+so a space a partner is about to occupy counts as crowded for him. A pair
+that knows each other does not end up in the same corridor: one comes
+short, the other stays long. A pair that has just met keeps the old
+behaviour (current positions only).
+
+SIM_VERSION 155 -> 156.
+
 ## 155 — A3, strato 3 (first piece): the call on a loose ball
 
 With a loose ball between two teammates, the one who knows his partner

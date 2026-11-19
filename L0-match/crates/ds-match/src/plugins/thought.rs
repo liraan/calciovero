@@ -627,6 +627,12 @@ impl MatchState {
                 .filter_map(|p| self.spatial.agent(p.id))
                 .map(|a| a.position)
                 .collect();
+            view.ours_vel = squad
+                .players
+                .iter()
+                .filter_map(|p| self.spatial.agent(p.id))
+                .map(|a| (i32::from(a.velocity.0), i32::from(a.velocity.1)))
+                .collect();
             view.ground_keep = f64::from(self.spatial.ground_friction_milli()) / 1000.0;
             view.mate_pressing = squad.players.iter().any(|p| {
                 matches!(
@@ -856,6 +862,23 @@ impl MatchState {
                                 self.spatial.back_line(id, ball),
                                 off.onside_margin_cm,
                                 (length, width),
+                                // Strato 3: how well this man knows his
+                                // teammates; drives the complementary
+                                // movement (predicted positions).
+                                {
+                                    let mut sum = 0.0;
+                                    let mut n = 0u32;
+                                    for q in &squad.players {
+                                        if q.id != id {
+                                            if let Some(v) = self.intesa.get(&(id, q.id)) {
+                                                sum += v;
+                                                n += 1;
+                                            }
+                                        }
+                                    }
+                                    if n > 0 { sum / f64::from(n) } else { 0.5 }
+                                },
+                                ctx.hidden.characteristic(id, "game_reading").unwrap_or(0.5),
                             )
                         };
                         held.push((id, place));

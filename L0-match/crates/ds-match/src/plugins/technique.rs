@@ -934,6 +934,19 @@ impl MatchState {
                     self.challenges.insert(id, tick + retry);
                     return;
                 }
+                // Strato 3: a completed pass between two teammates grows
+                // their mutual intesa (decision BB).
+                let bump = |v: &mut f64| *v = (*v + 0.1).min(1.0);
+                if let Some(v) = self.intesa.get_mut(&(by, id)) {
+                    bump(v);
+                } else {
+                    self.intesa.insert((by, id), 0.6);
+                }
+                if let Some(v) = self.intesa.get_mut(&(id, by)) {
+                    bump(v);
+                } else {
+                    self.intesa.insert((id, by), 0.6);
+                }
             } else {
                 // Struck into him before he reacted: it hits him and runs on.
                 if struck {
