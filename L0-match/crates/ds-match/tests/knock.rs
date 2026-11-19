@@ -6,8 +6,8 @@
 //! one. It used to play all the matches of the range, with the tick record,
 //! and then look at the first (the record is the heavy part). `first_seed`
 //! joins a wave at a time and stops at that match, so the matches after it
-//! are never played. At SIM 154 the first knock of the range moved from
-//! seed 49 to seed 55: the range follows it.
+//! are never played. At SIM 154 the first knock moved from seed 49 to 55;
+//! at SIM 162 it moved again, to seed 57: the range follows it.
 
 use ds_fixtures::{first_seed, match_fixture};
 use ds_match::{MatchConfig, simulate_from_seed_recorded};
@@ -19,7 +19,7 @@ use ds_stats::EventType;
 #[test]
 fn a_knocked_man_leaves_the_pitch() {
     let (seed, (m, (r, records))) = first_seed(
-        42..56,
+        42..58,
         |seed| {
             let m = match_fixture(seed).expect("fixture");
             let played = simulate_from_seed_recorded(&m, seed, MatchConfig::default());

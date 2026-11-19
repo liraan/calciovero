@@ -8,6 +8,41 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 162 - The opponents' lines and the space between them
+
+Players now read the opponents' three lines — the first line of pressure,
+the midfield and the last — from the depths of the men they see
+(`read::lines`, `thought.json`'s `same_line_cm`). Four repartitions read as
+three lines: the two nearest merge. A pass is worth more for every
+opposing line it goes past towards their goal (`line_break`,
+`line_break_milli`): a line broken is a line the opponents must recover.
+A backward pass breaks nothing. Off the ball, the place a man holds is
+valued the same way (`TeamView::mate_ball`, `choose_place`), and the spaces
+between their lines are now among the depths he considers, inside his
+zone: the pocket in front of their last line is a place to receive and
+turn, not a point in a grid. The half-space is where the men whose role
+starts there (the mezzala, the second striker) take that pocket; no flat
+bonus is given to a corridor, so a centre back is not pulled out of the
+spine. Twin tests in `ds-orchestrator::read` and `ds-match::state`.
+
+`line_break_milli` is declared at 60, not larger: at 70 the single presser
+in ADR-050's scene became a line worth breaking and progression under
+pressure weighed more, not less, breaking that older twin. The smaller
+value keeps both causes — pressure still costs, a broken line still pays.
+The lines are read once per scene, not once per pass candidate.
+
+Measured on 60 real-match-filtered seeds (42..101), engine 161 -> this
+change, scene counts: passes forward/lateral/back 24/53/23 % -> 27/50/23 %
+(real 31/53/16 %); ball in the attacking side's own half 73.8 % -> 71.0 %
+(real passes from own half 52.9 %); free slow ball taken at once 73.8 % ->
+69.3 %; block without the ball, widest two 40.4 -> 40.3 m (real 37.0),
+two deepest 32.7 -> 31.2 m behind the ball; ball behind the carrier 25.1 %
+-> 25.5 %. Jumps longer than the fastest legs went from 0.1 to 0.0 a match.
+The four residual single-step jumps seen during the tuning were
+substitutions entering at the halfway line, present before this change.
+
+SIM_VERSION 161 -> 162. **Golden changed.**
+
 ## 161 - 10d: the keeper's depth is read, not fixed
 
 The keeper's advance off his line is now his own game reading times the

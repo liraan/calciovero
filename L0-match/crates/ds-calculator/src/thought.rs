@@ -35,6 +35,13 @@ pub struct ThoughtBalance {
     pub horizon_min_cm: f64,
     /// The horizon of the most anticipating player, cm.
     pub horizon_max_cm: f64,
+    /// Two opponents this close in depth, cm, look to him like one line
+    /// (ADR-052: the first line of pressure, the midfield, the last).
+    pub same_line_cm: i32,
+    /// How much more a pass is worth, in thousandths, for each opposing
+    /// line it plays past (ADR-052 §3: a line passed is a line the
+    /// opponents must recover).
+    pub line_break_milli: i32,
     /// How high he believes a keeper reaches with his hands and a jump, cm:
     /// computed, not declared (a reference keeper's height, his arms and an
     /// average jump, `save.json` and `duel.json`), set by the caller.

@@ -646,16 +646,152 @@ pub fn space_value(p: (i32, i32), goal: (i32, i32), other: (i32, i32)) -> f64 {
     m.thought.space_value(d, length, chance)
 }
 
+/// The opponents' lines, as a player reads them (ADR-052).
+///
+/// Their first line of pressure, their midfield line and their last line,
+/// by depth along his own direction of attack (`forward`). Men within
+/// `same_line_cm` of each other in depth are one line; when they form more
+/// than three, the two nearest become one until three remain. The caller
+/// leaves their keeper out: he is not a line.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Lines {
+    /// The first line of pressure, nearest his own goal, cm.
+    pub first: Option<i32>,
+    /// The midfield line, cm.
+    pub middle: Option<i32>,
+    /// The last line, nearest their goal, cm.
+    pub last: Option<i32>,
+}
+
+/// Reads the lines of `opponents` (`x` coordinates, cm) towards `goal`.
+#[must_use]
+pub fn lines(opponents: &[(i32, i32)], forward: i32) -> Lines {
+    let mut xs: Vec<i32> = opponents.iter().map(|p| p.0 * forward).collect();
+    xs.sort_unstable();
+    let same = mind().thought.same_line_cm;
+    let mut groups: Vec<(i64, i64)> = Vec::new();
+    let mut prev = 0;
+    for (i, x) in xs.into_iter().enumerate() {
+        if i == 0 || x - prev > same {
+            groups.push((i64::from(x), 1));
+        } else if let Some(g) = groups.last_mut() {
+            g.0 += i64::from(x);
+            g.1 += 1;
+        }
+        prev = x;
+    }
+    // A side spread over four lines still reads as three: the two nearest
+    // lines are one, the gaps between the repartitions stay.
+    while groups.len() > 3 {
+        let mut nearest = 0;
+        let mut gap = i64::MAX;
+        for i in 0..groups.len() - 1 {
+            let g = groups[i + 1].0 / groups[i + 1].1 - groups[i].0 / groups[i].1;
+            if g < gap {
+                gap = g;
+                nearest = i;
+            }
+        }
+        let (sum, n) = groups.remove(nearest + 1);
+        groups[nearest].0 += sum;
+        groups[nearest].1 += n;
+    }
+    let at = |g: &(i64, i64)| {
+        i32::try_from(g.0 / g.1)
+            .unwrap_or(0)
+            .saturating_mul(forward)
+    };
+    match groups.len() {
+        0 => Lines::default(),
+        1 => Lines {
+            first: Some(at(&groups[0])),
+            middle: None,
+            last: Some(at(&groups[0])),
+        },
+        2 => Lines {
+            first: Some(at(&groups[0])),
+            middle: None,
+            last: Some(at(&groups[1])),
+        },
+        _ => Lines {
+            first: Some(at(&groups[0])),
+            middle: Some(at(&groups[1])),
+            last: Some(at(&groups[2])),
+        },
+    }
+}
+
+/// How many of their lines a ball leaves behind (ADR-052 §3), from 0 to 3.
+///
+/// A line passed is a line the opponents must recover. Only depth towards
+/// their goal counts: a pass along a line, or back past one, breaks nothing
+/// for the side with the ball.
+#[must_use]
+pub fn lines_broken(from: (i32, i32), to: (i32, i32), lines: &Lines, forward: i32) -> u32 {
+    let (a, b) = (from.0 * forward, to.0 * forward);
+    if b <= a {
+        return 0;
+    }
+    let (lo, hi) = (a, b);
+    let mut broken = 0;
+    let mut prev = None;
+    for at in [lines.first, lines.middle, lines.last]
+        .into_iter()
+        .flatten()
+    {
+        let depth = at * forward;
+        // One line read as both first and last counts once.
+        if depth > lo && depth < hi && Some(depth) != prev {
+            broken += 1;
+            prev = Some(depth);
+        }
+    }
+    broken
+}
+
+/// The worth of a pass as a factor of the space it reaches: every opposing
+/// line it plays past is worth `line_break_milli` more (`thought.json`).
+#[must_use]
+#[allow(clippy::cast_precision_loss)]
+pub fn line_break(from: (i32, i32), to: (i32, i32), lines: &Lines, forward: i32) -> f64 {
+    1.0 + f64::from(lines_broken(from, to, lines, forward))
+        * f64::from(mind().thought.line_break_milli)
+        / 1000.0
+}
+
+/// The lines of the opponents in `scene`, and his direction of attack.
+fn scene_lines(scene: &PerceivedScene) -> (Lines, i32) {
+    let forward = if scene.goal.0 >= scene.own_goal.0 {
+        1
+    } else {
+        -1
+    };
+    let them: Vec<_> = scene
+        .opponents
+        .iter()
+        .filter(|id| Some(**id) != scene.keeper)
+        .filter_map(|id| scene.positions.get(id).copied())
+        .collect();
+    (lines(&them, forward), forward)
+}
+
 /// The worth of an option (ADR-052 §3): by the forecast's confidence it
 /// reaches `gain_at` for his side; otherwise the opponents have `loss_at`.
 fn worth(
     scene: &PerceivedScene,
+    from: (i32, i32),
     confidence: f64,
     gain_at: (i32, i32),
     loss_at: (i32, i32),
     appetite: f64,
+    lines: &(Lines, i32),
 ) -> f64 {
-    let gain = space_value(gain_at, scene.goal, scene.own_goal);
+    // ADR-052 §3: besides the chance quality of the space it reaches, a
+    // pass is worth what it breaks on the way — every opposing line left
+    // behind is one the opponents must recover. The lines belong to the
+    // scene, so they are read once by the caller, not once per candidate.
+    let gain = space_value(gain_at, scene.goal, scene.own_goal)
+        * line_break(from, gain_at, &lines.0, lines.1);
     let loss = space_value(loss_at, scene.own_goal, scene.goal);
     let confidence = foresee(scene, confidence, gain_at);
     ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, appetite)
@@ -1218,6 +1354,8 @@ fn pass_candidates(
     let goal = scene.goal;
     let teammates: &[PlayerId] = &scene.teammates;
     let opponents: &[PlayerId] = &scene.opponents;
+    // One reading of their lines for every candidate of this scene.
+    let opponent_lines = scene_lines(scene);
     let mut candidates = Vec::new();
     let mut freedoms = BTreeMap::new();
     let imagined_players = imagined(scene);
@@ -1271,10 +1409,12 @@ fn pass_candidates(
             controls_ground(scene, players, *id, (tpos, d, v0)) && !offside_to(scene, pos, here);
         let geom = worth(
             scene,
+            pos,
             if clean { sure(players, &forecast) } else { 0.0 },
             gain_at,
             loss_at,
             risk_appetite,
+            &opponent_lines,
         );
         let _ = (
             goal,
@@ -1354,10 +1494,12 @@ fn pass_candidates(
             };
             let geom = worth(
                 scene,
+                pos,
                 sure,
                 tpos,
                 lofted_missed_at(scene, pos, tpos, flight),
                 risk_appetite,
+                &opponent_lines,
             );
             candidates.push(ChoiceCandidate {
                 kind: ChoiceKind::Loft(*id),
@@ -1368,7 +1510,13 @@ fn pass_candidates(
         }
         freedoms.insert(*id, freedom);
     }
-    candidates.extend(through_candidates(scene, pos, players, risk_appetite));
+    candidates.extend(through_candidates(
+        scene,
+        pos,
+        players,
+        risk_appetite,
+        &opponent_lines,
+    ));
     (candidates, freedoms)
 }
 
@@ -1382,10 +1530,11 @@ fn through_candidates(
     pos: (i32, i32),
     players: &[ds_calculator::thought::Imagined],
     risk_appetite: f64,
+    opponent_lines: &(Lines, i32),
 ) -> Vec<ChoiceCandidate> {
     let m = mind();
     let mut out = Vec::new();
-    let forward: f64 = if scene.goal.0 >= pos.0 { 1.0 } else { -1.0 };
+    let dir: f64 = if scene.goal.0 >= pos.0 { 1.0 } else { -1.0 };
     for (id, run_to) in &scene.runs {
         let Some(at_now) = scene.positions.get(id).copied() else {
             continue;
@@ -1402,7 +1551,7 @@ fn through_candidates(
             f64::from(run_to.1 - at_now.1),
         );
         let lead = (pace.mul_add(ball_ticks, -his)).clamp(0.0, 2000.0);
-        let at = (forward.mul_add(lead, f64::from(run_to.0)) as i32, run_to.1);
+        let at = (dir.mul_add(lead, f64::from(run_to.0)) as i32, run_to.1);
         let d_at = dmath::hypot(f64::from(at.0 - pos.0), f64::from(at.1 - pos.1));
         let v_at = d_at
             .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
@@ -1418,6 +1567,7 @@ fn through_candidates(
         let onside = !offside_to(scene, pos, at_now);
         let geom = worth(
             scene,
+            pos,
             if onside {
                 sure(players, &forecast)
             } else {
@@ -1426,6 +1576,7 @@ fn through_candidates(
             at,
             forecast.at,
             risk_appetite,
+            opponent_lines,
         );
         out.push(ChoiceCandidate {
             kind: ChoiceKind::Through { to: *id, at },
@@ -1596,6 +1747,92 @@ mod geometry_tests {
     fn point_to_segment_distance_uses_the_endpoint_beyond_the_segment() {
         let d = point_to_segment_distance_cm((0, 0), (10, 0), (13, 4));
         assert!((d - 5.0).abs() < 1.0, "endpoint: {d}");
+    }
+}
+
+#[cfg(test)]
+mod lines_tests {
+    use super::*;
+
+    /// Three lines of a 4-4-2, read from where they stand: the two forwards
+    /// are the first pressure line, the four in the middle the midfield,
+    /// the four at the back the last.
+    #[test]
+    fn the_opponents_lines_are_read_from_their_depths() {
+        let mut them = Vec::new();
+        for (x, ys) in [
+            (4000, vec![2000, 4800]),
+            (6200, vec![1000, 2400, 4400, 5800]),
+            (8500, vec![1000, 2400, 4400, 5800]),
+        ] {
+            for y in ys {
+                them.push((x, y));
+            }
+        }
+        assert_eq!(
+            lines(&them, 1),
+            Lines {
+                first: Some(4000),
+                middle: Some(6200),
+                last: Some(8500)
+            }
+        );
+    }
+
+    /// Four repartitions still read as three lines: the nearest two merge,
+    /// the gaps between the repartitions stay.
+    #[test]
+    fn four_repartitions_are_three_lines() {
+        let them = [(4000, 3400), (5200, 3400), (6000, 3400), (8500, 3400)];
+        assert_eq!(
+            lines(&them, 1),
+            Lines {
+                first: Some(4000),
+                middle: Some(5600),
+                last: Some(8500)
+            }
+        );
+    }
+
+    /// The same lines read from the other end: the first pressure line is
+    /// then the one with the greatest `x`.
+    #[test]
+    fn the_lines_follow_the_direction_of_attack() {
+        let them = [(4000, 3400), (6200, 3400), (8500, 3400)];
+        let read = lines(&them, -1);
+        assert_eq!(read.first, Some(8500));
+        assert_eq!(read.middle, Some(6200));
+        assert_eq!(read.last, Some(4000));
+    }
+
+    /// A line broken is a line the opponents must recover (ADR-052 §3):
+    /// depth only, and never the same line twice.
+    #[test]
+    fn a_pass_breaks_only_the_lines_it_goes_past() {
+        let read = lines(&[(4000, 3400), (6200, 3400), (8500, 3400)], 1);
+        assert_eq!(lines_broken((3000, 3400), (7000, 3400), &read, 1), 2);
+        assert_eq!(lines_broken((3000, 3400), (5000, 3400), &read, 1), 1);
+        assert_eq!(lines_broken((7000, 3400), (5000, 3400), &read, 1), 0);
+        assert_eq!(lines_broken((3000, 1000), (3000, 6000), &read, 1), 0);
+        let one = lines(&[(6200, 3400)], 1);
+        assert_eq!(lines_broken((3000, 3400), (8500, 3400), &one, 1), 1);
+    }
+
+    /// Twin of the pass: the same ball, the same receiver, only a line of
+    /// theirs moves out of the way. What the pass reaches is worth more
+    /// when it breaks the line (ADR-052 §3).
+    #[test]
+    fn the_same_pass_is_worth_more_when_it_breaks_a_line() {
+        let read = |line: Option<i32>| {
+            let mut v = vec![(8500, 1000), (8500, 5800)];
+            if let Some(x) = line {
+                v.push((x, 3400));
+            }
+            lines(&v, 1)
+        };
+        let gain = |l: Lines| line_break((3000, 3400), (7000, 3400), &l, 1);
+        let (with, without) = (gain(read(Some(6200))), gain(read(None)));
+        assert!(with > without, "break {with} plain {without}");
     }
 }
 

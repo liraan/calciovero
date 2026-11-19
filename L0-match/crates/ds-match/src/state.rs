@@ -419,6 +419,9 @@ pub(crate) struct TeamView {
     pub(crate) forward: i32,
     pub(crate) their_goal_x: i32,
     pub(crate) last_line: Option<i32>,
+    /// The opponents' first line of pressure, midfield line and last line
+    /// (ADR-052, the language of space): where the spaces between them are.
+    pub(crate) lines: ds_orchestrator::read::Lines,
     pub(crate) opponents: Vec<(i32, i32)>,
     /// Their outfield players other than the carrier: the men to mark.
     pub(crate) men: Vec<(i32, i32)>,
@@ -450,14 +453,21 @@ impl TeamView {
     ) -> Self {
         let forward = if home { 1 } else { -1 };
         let their_keeper = other.players.first().map(|p| p.id);
-        let last_line = other
+        let outfield: Vec<(i32, i32)> = other
             .players
             .iter()
             .filter(|q| Some(q.id) != their_keeper)
             .filter_map(|q| spatial.agent(q.id))
-            .map(|a| a.position.0 * forward)
+            .map(|a| a.position)
+            .collect();
+        let last_line = outfield
+            .iter()
+            .map(|p| p.0 * forward)
             .max()
             .map(|u| u * forward);
+        // Their lines as the men on this side read them: the first pressure
+        // line, the midfield and the last (ADR-052).
+        let lines = ds_orchestrator::read::lines(&outfield, forward);
         let opponents = other
             .players
             .iter()
@@ -475,6 +485,7 @@ impl TeamView {
             forward,
             their_goal_x: if home { length } else { 0 },
             last_line,
+            lines,
             opponents,
             men,
             carrier_at: carrier
@@ -631,7 +642,12 @@ impl TeamView {
         // as free as he would be there.
         let goal = (self.their_goal_x, width / 2);
         let other = (length - self.their_goal_x, width / 2);
-        let worth = |p: (i32, i32)| ds_orchestrator::read::space_value(p, goal, other);
+        // ADR-052 §3: a space is worth its chance quality and what a pass
+        // from the carrier to it breaks on the way (the opponents' lines).
+        let worth = |p: (i32, i32)| {
+            ds_orchestrator::read::space_value(p, goal, other)
+                * ds_orchestrator::read::line_break(c, p, &self.lines, self.forward)
+        };
         let free = |p: (i32, i32)| {
             1.0 - self
                 .marker(p)
@@ -719,6 +735,9 @@ impl TeamView {
             let reach =
                 ds_orchestrator::read::distance_plausible(distance_squared(carrier, p).isqrt());
             ds_orchestrator::read::space_value(p, goal, other)
+                // ADR-052: a place a pass can reach past their lines is
+                // worth what those lines must recover from (the pocket).
+                * ds_orchestrator::read::line_break(carrier, p, &self.lines, self.forward)
                 * free
                 * ds_orchestrator::read::line_quality(carrier, p, &self.opponents)
                 * reach
@@ -754,15 +773,34 @@ impl TeamView {
             })
         };
         let k0 = (anchor.1 / corridor).clamp(0, 4);
+        // Besides the depths of his own block, the spaces between their
+        // lines are places to look at (ADR-052 §5): the pocket between the
+        // midfield and the last line is where a man receives and turns.
+        // Only where his zone reaches, never a charge up the pitch.
+        let mut depths = vec![
+            anchor.0,
+            anchor.0 + line * self.forward,
+            anchor.0 - line * self.forward,
+        ];
+        let their_lines: Vec<i32> = [self.lines.first, self.lines.middle, self.lines.last]
+            .into_iter()
+            .flatten()
+            .collect();
+        for pair in their_lines.windows(2) {
+            let between = (pair[0] + pair[1]) / 2;
+            if pair[0] != pair[1] && (between - anchor.0).abs() <= line {
+                depths.push(between);
+            }
+        }
         let mut options: Vec<(f64, (i32, i32))> = Vec::new();
         for k in (k0 - 1).max(0)..=(k0 + 1).min(4) {
-            for step in [0, 1, -1] {
-                let y = if k == k0 {
-                    anchor.1
-                } else {
-                    k * corridor + corridor / 2
-                };
-                let x = onside(anchor.0 + step * line * self.forward).clamp(0, length);
+            let y = if k == k0 {
+                anchor.1
+            } else {
+                k * corridor + corridor / 2
+            };
+            for d in &depths {
+                let x = onside(*d).clamp(0, length);
                 let p = (x, y.clamp(0, width));
                 let behind_ball = (p.0 - ball.0) * self.forward <= 0;
                 let v = if (back_line && !behind_ball) || crowded(p) {
@@ -1866,6 +1904,7 @@ mod marking_tests {
             forward: 1,
             their_goal_x: 0,
             last_line: None,
+            lines: ds_orchestrator::read::Lines::default(),
             opponents: vec![(5000, 3400), (6500, 3400)],
             men: vec![(6500, 3400)],
             carrier_at: Some((5000, 3400)),
@@ -1899,6 +1938,7 @@ mod marking_tests {
             forward: 1,
             their_goal_x: PITCH_LENGTH,
             last_line: None,
+            lines: ds_orchestrator::read::lines(&theirs, 1),
             opponents: theirs,
             men,
             carrier_at: Some(carrier),
@@ -2006,6 +2046,79 @@ mod marking_tests {
         // is ignored. Both stay on the pitch.
         assert!(high.0 >= 0 && high.0 <= PITCH_LENGTH);
         assert!(low.0 >= 0 && low.0 <= PITCH_LENGTH);
+    }
+
+    /// Twin test (ADR-052 §3, SIM 162): the same man, the same space, the
+    /// same opponents where they stand; only a line of theirs is read one
+    /// step nearer. A place a pass now goes past a line to reach is worth
+    /// more to hold — the pocket between the lines is where he receives.
+    #[test]
+    fn a_place_past_a_line_is_worth_more_to_hold() {
+        let me = (4000, 3400);
+        let carrier = (3000, 3400);
+        let place = (5500, 3400);
+        let theirs = vec![(8500, 1000), (8500, 5800)];
+        let off = ds_calculator::offball::OffBallBalance::load();
+        let mut v = block_view(vec![me], theirs, carrier);
+        let plain = v
+            .mate_ball((me, place), carrier, &off, (PITCH_LENGTH, PITCH_WIDTH))
+            .values
+            .hold;
+        v.lines.middle = Some(5000);
+        let broken = v
+            .mate_ball((me, place), carrier, &off, (PITCH_LENGTH, PITCH_WIDTH))
+            .values
+            .hold;
+        assert!(broken > plain, "past the line {broken}, plain {plain}");
+    }
+
+    /// Twin test (ADR-052 §5, SIM 162): the same man, the same zone, the
+    /// same mate beside him; only the opponents' line read changes. With a
+    /// line there is a space between theirs to take; without it there is
+    /// not, and his mate's place keeps him where his zone began.
+    #[test]
+    fn the_space_between_their_lines_becomes_his_place() {
+        let (me, anchor) = ((4000, 3400), (4000, 3400));
+        let carrier = (3000, 3400);
+        // Three mates in the forward depth of his zone, one per corridor:
+        // that depth is full, but the pocket short of it is free.
+        let mates = [(6200, 2040), (6200, 3400), (6200, 4760)];
+        let ours = std::iter::once(me).chain(mates.iter().copied()).collect();
+        let theirs = vec![(8500, 1000), (8500, 5800)];
+        let mut plain = block_view(ours, theirs.clone(), carrier);
+        plain.lines = ds_orchestrator::read::Lines {
+            first: None,
+            middle: None,
+            last: Some(8500),
+        };
+        let mut reading = block_view(
+            std::iter::once(me).chain(mates.iter().copied()).collect(),
+            theirs,
+            carrier,
+        );
+        reading.lines = ds_orchestrator::read::Lines {
+            first: Some(4000),
+            middle: Some(6000),
+            last: Some(8500),
+        };
+        let place = |v: &TeamView| {
+            v.choose_place(
+                (me, anchor),
+                (carrier, carrier),
+                (false, 4500),
+                50,
+                (PITCH_LENGTH, PITCH_WIDTH),
+                0.5,
+                0.5,
+            )
+        };
+        let (plain, between) = (place(&plain), place(&reading));
+        assert_eq!(plain, anchor, "no pocket: his zone's place {plain:?}");
+        assert!(
+            between.0 > plain.0,
+            "the pocket {between:?}, plain {plain:?}"
+        );
+        assert_eq!(between.0, 5000, "between their lines: {between:?}");
     }
 }
 
