@@ -190,10 +190,14 @@ impl MatchState {
         }
     }
 
-    /// Who takes a restart (plan L0-CLOSE step 7): the keeper takes his goal
-    /// kick; a corner, a free kick or a penalty goes to the best kicker of
-    /// that ball among the outfield players within `TAKER_RADIUS_CM`; the
-    /// others to the nearest.
+    /// Who takes a restart (plan L0-CLOSE step 7, ADR-080): a goal kick
+    /// belongs to the keeper; a throw-in to the wide man or full back on
+    /// that side; a corner or a free kick to the best deliverer among the
+    /// outfield players within `TAKER_RADIUS_CM`; a penalty to the best
+    /// finisher. A kick-off is taken by the nearest man. These are the
+    /// players' own tendencies by role and by the technique a team knows
+    /// from training, not an order from the engine: the chosen man still
+    /// walks to the ball (`BEHAVIOURS.md` 25).
     pub(crate) fn restart_taker(
         &self,
         ctx: &mut MatchContext<'_>,
@@ -216,27 +220,38 @@ impl MatchState {
             .first()
             .map(|p| p.id)
             .filter(|id| self.spatial.agent(*id).is_some());
-        // For now the nearest takes every restart and runs to the ball (the
-        // maintainer, 17 November: BEHAVIOURS.md 25; the taker by his role
-        // comes with layer 2); a penalty is still the best kicker's.
-        let _ = keeper;
+        let within = |id: PlayerId| {
+            self.spatial.agent(id).is_some_and(|a| {
+                distance_squared(a.position, restart.spot) <= TAKER_RADIUS_CM * TAKER_RADIUS_CM
+            })
+        };
         match restart.kind {
-            RestartKind::GoalKick
-            | RestartKind::Corner
-            | RestartKind::FreeKick
-            | RestartKind::KickOff
-            | RestartKind::ThrowIn => nearest,
-            RestartKind::Penalty => {
+            RestartKind::GoalKick => keeper.or(nearest),
+            RestartKind::KickOff => nearest,
+            RestartKind::ThrowIn => {
+                let (_, width) = pitch_cm(ctx);
+                let low = restart.spot.1 <= width / 2;
+                let wide_on_side = squad
+                    .players
+                    .iter()
+                    .skip(1)
+                    .filter(|p| matches!(p.role.as_str(), "wide_midfielder" | "full_back"))
+                    .filter_map(|p| self.spatial.agent(p.id).map(|a| (p.id, a.position)))
+                    .filter(|(_, at)| (at.1 <= width / 2) == low)
+                    .min_by_key(|(id, at)| (distance_squared(*at, restart.spot), id.slot()));
+                wide_on_side.map_or(nearest, |(id, _)| Some(id))
+            }
+            RestartKind::Corner | RestartKind::FreeKick | RestartKind::Penalty => {
                 let mut near: Vec<(i64, PlayerId)> = squad
                     .players
                     .iter()
                     .skip(1)
+                    .filter(|p| within(p.id))
                     .filter_map(|p| {
                         self.spatial
                             .agent(p.id)
                             .map(|a| (distance_squared(a.position, restart.spot), p.id))
                     })
-                    .filter(|(d, _)| *d <= TAKER_RADIUS_CM * TAKER_RADIUS_CM)
                     .collect();
                 near.sort_by(|x, y| x.0.cmp(&y.0).then(x.1.slot().cmp(&y.1.slot())));
                 let ids: Vec<PlayerId> = near.into_iter().map(|(_, id)| id).collect();
@@ -560,11 +575,31 @@ pub(crate) struct Waiting {
 #[cfg(test)]
 mod tests {
     use crate::context::MatchContext;
-    use crate::state::MatchState;
+    use crate::rules::{RestartKind, Side};
+    use crate::state::{MatchState, nearest_in_squad};
     use ds_core::rng::RngRegistry;
     use ds_match_api::MatchPlugin;
     use ds_orchestrator::GroundTruth;
     use ds_stats::EventChain;
+
+    /// Who would take `restart`, from the positions at the start of the
+    /// match (the tests below choose spots on the touchlines and in the
+    /// corners, where those positions are the ones that matter).
+    fn taker(kind: RestartKind, spot: (i32, i32), side: Side) -> Option<ds_core::ids::PlayerId> {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = GroundTruth::for_match(42, &m);
+        let mut rng = RngRegistry::new(42);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            rng: &mut rng,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let s = MatchState::new(&m);
+        s.restart_taker(&mut ctx, &crate::rules::Restart { side, spot, kind })
+    }
 
     /// The wall of a free kick at `spot` for the home side: its men and
     /// where they stand.
@@ -603,6 +638,70 @@ mod tests {
             assert!((860..=980).contains(&d), "{d} cm from the ball");
         }
         assert!(wall_at((5250, 3400)).is_empty(), "no wall from the middle");
+    }
+
+    /// ADR-080: the taker follows his role and the quality of his foot, not
+    /// simply who happens to stand nearest. The keeper takes his goal kick,
+    /// the man of the wide side takes the throw-in, and the best deliverer
+    /// among the near men takes the corner or the free kick.
+    #[test]
+    fn restarts_go_to_the_man_whose_role_and_foot_fit() {
+        assert_eq!(
+            taker(RestartKind::GoalKick, (100, 3400), Side::Home).map(ds_core::ids::EntityId::slot),
+            Some(0),
+            "the keeper's goal kick"
+        );
+        assert!(
+            matches!(
+                taker(RestartKind::ThrowIn, (3000, 0), Side::Home)
+                    .map(ds_core::ids::EntityId::slot),
+                Some(1 | 5)
+            ),
+            "the wide man or full back on the near side"
+        );
+        assert!(
+            matches!(
+                taker(RestartKind::ThrowIn, (3000, 6800), Side::Home)
+                    .map(ds_core::ids::EntityId::slot),
+                Some(4 | 8)
+            ),
+            "the wide man or full back on the far side"
+        );
+
+        for kind in [RestartKind::Corner, RestartKind::FreeKick] {
+            let spot = (6_000, 1_200);
+            let got = taker(kind, spot, Side::Home).expect("taker");
+            let m = ds_fixtures::match_fixture(42).expect("fixture");
+            let mut hidden = GroundTruth::for_match(42, &m);
+            let s = MatchState::new(&m);
+            let ids: Vec<ds_core::ids::PlayerId> = m
+                .home
+                .players
+                .iter()
+                .skip(1)
+                .filter_map(|p| {
+                    s.spatial
+                        .agent(p.id)
+                        .map(|a| (p.id, crate::perception::distance_squared(a.position, spot)))
+                })
+                .filter(|(_, d)| *d <= 3000 * 3000)
+                .map(|(id, _)| id)
+                .collect();
+            let mut quality = |id: ds_core::ids::PlayerId| {
+                let passing = hidden.characteristic(id, "passing").unwrap_or(0.0);
+                let left = hidden.characteristic(id, "left_foot").unwrap_or(0.0);
+                let right = hidden.characteristic(id, "right_foot").unwrap_or(0.0);
+                passing * 0.5f64.mul_add(left.max(right), 0.5)
+            };
+            let best = ids
+                .iter()
+                .copied()
+                .max_by(|a, b| quality(*a).total_cmp(&quality(*b)))
+                .expect("candidates");
+            let nearest = nearest_in_squad(&s.spatial, &m.home, spot).expect("nearest");
+            assert_eq!(got, best, "{kind:?}");
+            assert_ne!(best, nearest, "{kind:?}: the best foot is not the nearest");
+        }
     }
 
     #[test]

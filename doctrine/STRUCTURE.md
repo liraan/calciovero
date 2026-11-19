@@ -359,6 +359,7 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 077 | The second man on aerial balls (OI-102) | ? accepted (delegated) | OI-102: sulle palle alte anche il secondo uomo contesta. SIM 160. |
 | 078 | The keeper's depth is read, not fixed (10d) | ? accepted (delegated) | 10d: la profondità del portiere è la sua lettura del gioco. SIM 161. |
 | 079 | The opponents' lines and the space between them | ? accepted (delegated) | Le tre linee avversarie e gli spazi fra esse entrano nel valore del passaggio e del posto senza palla. SIM 162. |
+| 080 | The dead ball and the kicker | ? accepted (delegated) | La palla morta entra nella percezione: nessuno pressa il battitore, e il calcio va al ruolo e al piede adatti. SIM 163. |
 
 **Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048 (42). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
 

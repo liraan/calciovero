@@ -122,6 +122,11 @@ pub struct OffBallScene {
     /// How well the actor knows the teammate nearest to a loose ball (strato 3):
     /// the intesa that makes him yield it (or not). `[0, 1]`.
     pub partner_intesa: f64,
+    /// The ball is dead for a restart: everyone recognises it, so nobody
+    /// presses or challenges the kicker before it is in play (Laws 13-17,
+    /// ADR-080). It is a fact of what he perceives, not an order from the
+    /// engine.
+    pub dead_ball: bool,
 }
 
 /// The dangers a defender reads (ADR-052 §5), each the value of a space to
@@ -175,8 +180,9 @@ impl crate::GroundTruth {
         let mut options = vec![(held, OffBallAct::Hold)];
         let mut offer = |score: f64, act: OffBallAct| options.push((score, act));
         // In reach he no longer presses: he goes in, or he jockeys, which is
-        // a way of going in (ADR-042).
-        if !keeper && !s.carrier_in_reach {
+        // a way of going in (ADR-042). On a dead ball no one goes in: the
+        // kick is unchallenged until it is taken (Laws 13-17).
+        if !s.dead_ball && !keeper && !s.carrier_in_reach {
             offer(
                 th.carrier * in_time(c.distance_cm) * rank(c.rank),
                 OffBallAct::Press,
@@ -199,11 +205,11 @@ impl crate::GroundTruth {
             // In the lane he cuts out the ground pass to the man, not the
             // ball over him (he cannot know which: half); goal-side he
             // guards both.
-            if let Some(d) = th.lane_cm {
+            if let (false, Some(d)) = (s.dead_ball, th.lane_cm) {
                 offer(0.5 * th.man * in_time(d), OffBallAct::Intercept);
             }
         }
-        if s.carrier_in_reach && may_leave {
+        if !s.dead_ball && s.carrier_in_reach && may_leave {
             let skill = if keeper {
                 l.technical.goalkeeping
             } else {
@@ -256,8 +262,9 @@ impl crate::GroundTruth {
             }
         };
         // The first aim is the ball (ADR-052 note, 2026-11-14): a ball
-        // nobody has is worth more than any place, at any distance.
-        if let (Some(t), true) = (s.loose_ball, may_leave) {
+        // nobody has is worth more than any place, at any distance. On a
+        // restart the ball is dead, so it is nobody's to run to.
+        if let (Some(t), true, false) = (s.loose_ball, may_leave, s.dead_ball) {
             // Strato 3 (the call): a loose ball between two teammates of the
             // same side. The nearest (rank 0) always goes. A teammate who
             // knows him (intesa high enough) trusts that he will get there
@@ -291,10 +298,10 @@ impl crate::GroundTruth {
             }
         }
         if let Some(c) = s.carrier {
-            if !keeper {
+            if !s.dead_ball && !keeper {
                 offer(proximity(c.distance_cm) * rank(c.rank), OffBallAct::Press);
             }
-            if s.carrier_in_reach && may_leave {
+            if !s.dead_ball && s.carrier_in_reach && may_leave {
                 let skill = if keeper {
                     l.technical.goalkeeping
                 } else {
@@ -423,6 +430,7 @@ mod tests {
             asked: None,
             threats: None,
             partner_intesa: 0.0,
+            dead_ball: false,
         }
     }
 
@@ -643,6 +651,50 @@ mod tests {
         cover: None,
         lane_cm: None,
     };
+
+    /// Twin test (ADR-080): the same player, near the same ball, presses and
+    /// challenges when it is live; when he perceives a restart nobody can
+    /// take, he keeps his place, even if the coach asks him to press. The
+    /// same is true of a ball nobody has: a dead ball is not there to chase.
+    #[test]
+    fn nobody_chases_a_dead_ball() {
+        let pressing = OffBallScene {
+            carrier: at(400, 0),
+            threats: Some(QUIET),
+            ..scene()
+        };
+        assert_eq!(choose(&pressing), OffBallAct::Press);
+        let dead = OffBallScene {
+            dead_ball: true,
+            asked: Some(OffBallAct::Press),
+            ..pressing
+        };
+        assert_eq!(choose(&dead), OffBallAct::Hold, "even when asked");
+
+        let tackling = OffBallScene {
+            carrier: at(100, 0),
+            carrier_in_reach: true,
+            threats: Some(Threats { held: 0.0, ..QUIET }),
+            ..scene()
+        };
+        assert_eq!(choose(&tackling), OffBallAct::Challenge);
+        let dead = OffBallScene {
+            dead_ball: true,
+            ..tackling
+        };
+        assert_eq!(choose(&dead), OffBallAct::Hold);
+
+        let loose = OffBallScene {
+            loose_ball: at(500, 0),
+            ..scene()
+        };
+        assert_eq!(choose(&loose), OffBallAct::GoToBall);
+        let dead = OffBallScene {
+            dead_ball: true,
+            ..loose
+        };
+        assert_eq!(choose(&dead), OffBallAct::Hold);
+    }
 
     /// With a teammate pressing the carrier, a defender near the space
     /// behind him covers it (P1, plan L0-CLOSE 10c); with nobody pressing

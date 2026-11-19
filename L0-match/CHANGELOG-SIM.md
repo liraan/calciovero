@@ -8,6 +8,42 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 163 - The dead ball is seen, and the kicker is chosen by role
+
+A restart is now a fact in what each player perceives: `OffBallScene.dead_ball`
+is derived by `thought.rs` from the ball being held for the kick, not from an
+order to press or to stand. While it is true nobody presses, challenges,
+intercepts or runs to the ball: the kick is unchallenged until it is taken
+(Laws 13-17). Marking, covering and holding stay in the choice, each still
+weighed by that player's own saliences, reading and discipline: the fact is
+shared, the interpretation is his.
+
+`restart_taker` no longer gives every restart to the nearest man. A goal kick
+belongs to the keeper, a throw-in to the wide man or full back on that side
+(nearest of the two), a corner or a free kick to the best deliverer among the
+outfield men within the already-declared `TAKER_RADIUS_CM`, a penalty to the
+best finisher; a kick-off still goes to the nearest. The choice uses the
+candidate's own technique and better foot through `set_piece_taker`. No new
+numeric parameter, no team script, no die. The kicker still walks to the
+ball (BEHAVIOURS 25).
+
+A header away from his own goal now carries the same retry as a first-time
+clearance: a ball that came back off the crosser's body had let the same
+defender head it twice in two ticks, breaking `one_clearance_per_act`.
+
+Measured on 60 real-match-filtered seeds (42..101), engine 162 -> 163:
+passes 1282.9 -> 1250.1 a match (real 887.7), ground duels 179.5 -> 172.1
+(real 182.6), penalties 0.00 -> 0.02 (real 0.33). Scene counts: passes
+forward/lateral/back 27/50/23 % -> 26/51/23 %, ball in the attacking side's
+own half 71.0 % -> 71.2 %, free slow ball taken at once 69.3 % -> 69.1 %,
+widest two 40.3 -> 40.2 m, two deepest 31.2 -> 31.3 m, ball behind the
+carrier 25.5 % -> 25.7 %. Goals went 4.82 -> 5.20 (real 2.68): unchallenged
+restarts and a better foot produce more attempts, which is a calibration
+matter for L3, not a reason to make the kicker foul the Laws. Twin tests in
+`ds-orchestrator::offball` and a role/foot test in `set_pieces`.
+
+SIM_VERSION 162 -> 163. **Golden changed** (all three).
+
 ## 162 - The opponents' lines and the space between them
 
 Players now read the opponents' three lines — the first line of pressure,

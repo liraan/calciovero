@@ -287,7 +287,13 @@ impl MatchState {
                 (speed, contenders.len() > 1),
             );
         } else if depth(own) < length / 2 {
-            // A header away from his goal: up and out.
+            // A header away from his goal: up and out. A header is a play
+            // like any other: he needs the same moment before he can play
+            // the ball again as after a first-time clearance (SIM 135).
+            // Without it, after the ball came back off the crosser's body,
+            // the same defender headed it twice in two ticks.
+            let retry = ctx.hidden.duel_balance().retry_ticks;
+            self.challenges.insert(winner, tick + retry);
             let forward = if own.0 == 0 { 1.0 } else { -1.0 };
             #[allow(clippy::cast_possible_truncation)]
             let v = ((forward * speed) as i16, 0, (speed * 0.3) as i16);

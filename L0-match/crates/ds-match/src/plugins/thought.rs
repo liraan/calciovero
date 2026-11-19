@@ -902,6 +902,11 @@ impl MatchState {
                         view.threats(c, me, closed.unwrap_or(anchor), home, (length, width))
                     }),
                     partner_intesa,
+                    // A restart is a phase every player recognises from the
+                    // ball being held for the kick (Laws 13-17): it is not an
+                    // order to press or to hold, only what he perceives. The
+                    // choice in `choose_off_ball` follows from it.
+                    dead_ball: self.restart_pass.is_some(),
                 };
                 if let Some(place) = closed {
                     held.push((id, place));
