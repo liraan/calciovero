@@ -33,6 +33,7 @@ pub mod choice;
 pub mod control;
 pub mod duel;
 pub mod fatigue;
+pub mod keeper;
 pub mod kick;
 pub mod latency;
 pub mod movement;

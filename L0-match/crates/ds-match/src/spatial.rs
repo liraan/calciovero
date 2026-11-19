@@ -1613,7 +1613,13 @@ impl SpatialState {
             // between the ball and his goal, on his line when the ball is
             // on the line beside the post (ADR-051).
             let depth_cap = delta_x.abs() * f64::from(keeper_balance.depth_share_milli) / 1000.0;
-            let off_line = f64::mul_add(advance, t, f64::from(GK_LINE_OFFSET_CM)).min(depth_cap);
+            // 10d: how far he leaves his line is his own read, not a fixed
+            // number. A keeper who reads the play comes off his line to
+            // narrow the angle and claim space; one who does not stays
+            // ready on his line (ADR-078).
+            let read = hidden.foresight(gk);
+            let advance_cm = ds_calculator::keeper::line_depth_cm(advance, t, read);
+            let off_line = (advance_cm + f64::from(GK_LINE_OFFSET_CM)).min(depth_cap);
             let x_target = f64::mul_add(sign, off_line, goal_x);
             // Across, he stands on the bisector of the angle the ball makes
             // with his two posts, at his depth (SIM_VERSION 124): there he

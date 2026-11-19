@@ -8,6 +8,16 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 161 - 10d: the keeper's depth is read, not fixed
+
+The keeper's advance off his line is now his own game reading times the
+geometric closeness of the ball (`keeper::line_depth_cm`). Before, every
+keeper advanced the same `advance_cm * t`: the depth had no cause. A keeper
+who reads the play claims space; one who does not stays ready on his line.
+Twin test in `ds-calculator::keeper`.
+
+SIM_VERSION 160 -> 161.
+
 ## 160 - OI-102: the second man on aerial balls
 
 On an aerial ball (defending side), rank 1 players also contest if they
