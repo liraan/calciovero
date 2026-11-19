@@ -828,7 +828,15 @@ impl MatchState {
                             })
                         },
                         |d| {
-                            contests(rank(d) == 0).then(|| ds_orchestrator::Target {
+                            // OI-102: on an aerial ball the second man also
+                            // contests (he goes for it if he can reach it),
+                            // so the duel is not left to one man a side.
+                            let rank_ok = if air_drop.is_some() && home != passing_home {
+                                rank(d) <= 1
+                            } else {
+                                rank(d) == 0
+                            };
+                            contests(rank_ok).then(|| ds_orchestrator::Target {
                                 distance_cm: distance_squared(me, d).isqrt(),
                                 rank: 0,
                             })

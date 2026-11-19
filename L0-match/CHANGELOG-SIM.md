@@ -8,7 +8,15 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
-## 159 — OI-100: shot height is now a choice (radice rimasta)
+## 160 - OI-102: the second man on aerial balls
+
+On an aerial ball (defending side), rank 1 players also contest if they
+can reach the landing point, not only the nearest (rank 0). Before, only
+the nearest contested, so aerial duels were rare (10.4 vs 38.1 real).
+
+SIM_VERSION 159 -> 160.
+
+## 159 - OI-100: shot height is now a choice (radice rimasta)
 
 The shooter no longer only strikes low: a high shot (contact_height 1.0) is
 now a candidate alongside the low one, for each post and power. The high
