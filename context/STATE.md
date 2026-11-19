@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `facb467` - "docs(state): bookmark the call on a loose ball, LCV = e5c74a6"
+**Last commit verified:** `891fe62` - "merge: strato 3 (SIM 155-159) and OI-98/OI-100 into main"
 
 ## Mandato attivo (2026-11-16)
 
