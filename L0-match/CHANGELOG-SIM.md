@@ -8,6 +8,16 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 159 — OI-100: shot height is now a choice (radice rimasta)
+
+The shooter no longer only strikes low: a high shot (contact_height 1.0) is
+now a candidate alongside the low one, for each post and power. The high
+shot is harder to place (geom 0.85) and riskier (risk 0.1), so it wins only
+for a shooter who reads the game and accepts the risk. The lob remains a
+separate candidate.
+
+SIM_VERSION 158 -> 159.
+
 ## 158 — OI-98: the offside line is read with an error (perception)
 
 The offside line is no longer read perfectly: a player with poor game
