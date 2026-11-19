@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `891fe62` - "merge: strato 3 (SIM 155-159) and OI-98/OI-100 into main"
+**Last commit verified:** `2dfc379` - "feat(sim): OI-102 second man on aerial balls (SIM 160)"
 
 ## Mandato attivo (2026-11-16)
 
