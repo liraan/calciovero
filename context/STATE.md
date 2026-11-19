@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `adfe0eb5f5207d182b02357f4e4c4c70b7b1bfb2` - "feat(sim): the place without the ball, the space he closes (ADR-071 §5)"
+**Last commit verified:** `e5c74a6` - "feat(sim): the call on a loose ball (strato 3, first piece) (ADR-073, SIM 155)"
 
 ## Mandato attivo (2026-11-16)
 
