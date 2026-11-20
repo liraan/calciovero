@@ -8,6 +8,142 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 170 — La pressione mette alla prova il controllo del portatore (OI-132)
+
+Il maintainer, guardando la partita e poi correggendomi: «il contrasto è uno
+degli atti della partita, se è giusto il suo modo di leggere l'atto usalo per
+tutto», «vale per tutti gli atti». La frase è una **regola di metodo**: il
+criterio con cui ho giudicato il contrasto — ogni atto deve avere un riscontro
+nella partita vera e, se manca, si corregge la logica della simulazione, non la
+si avvicina statisticamente — vale per ogni atto. Non è un'architettura del
+codice: non tutti gli atti passano da `resolve_duel`, e infatti qui si tocca un
+solo atto.
+
+Filtrando con LUNA: il dito è il piede che aspetta (`Jockey`), la palla che
+rotola fra due tocchi, il contatore dei tick; la luna è lo stesso portatore,
+con il suo `first_touch`, il suo dribbling e il suo corpo, che legge
+l'avversario vicino e sceglie se e come tenere la palla. Prima il `Jockey` era
+esplicitamente «no contact this time»: per quanto l'avversario pressasse, il
+portatore non perdeva mai il pallone e `BallState::Possessed` restava stabile
+finché non arrivava un `Challenge`. In partita vera non è così: un giocatore
+sotto pressione sbaglia il controllo e la palla gli scappa via.
+
+Ora la pressione di chi aspetta mette alla prova la risposta del portatore con
+la stessa lettura deterministica del contrasto — `resolve_duel`, le forze e i
+numeri già dichiarati in `duel.json`, senza dado, senza bonus e senza ordine
+dalla panchina. Se il portatore non risponde, la palla **si scioglie dal suo
+tocco** (`loose_from_contact`): non è un tackle di chi ha solo jockeyato. Il
+cooldown è il `retry_ticks` già dichiarato. Cambia una causa sola.
+
+Gemello: stesso portatore, stesso pressatore fermo nella stessa posizione,
+stesse qualità; cambia solo il posto della palla — sotto il piede risponde e
+tiene, rotolando davanti fra due tocchi non risponde e la perde. Se cambiasse
+solo la vicinanza dell'avversario la causa sarebbe rigettata. Golden
+rigenerati. `SIM_VERSION` 169 -> 170.
+
+## 169 — Il portatore vicino sveglia chi correva alla palla (OI-131)
+
+Il maintainer, guardando la partita in 2.5D: «continuano a orbitare intorno
+alla palla», «chi arriva prima la prende e chi arriva dopo cerca di toglierla
+all'avversario». Filtrando con LUNA: la luna è lo stesso giocatore, con le sue
+capacità cognitive, psicologiche, fisiche e tecniche, che legge la scena e
+sceglie; il dito sono l'atto, la distanza e il contatore dei tick. Il giocatore
+che ha scelto `GoToBall` e trova un avversario con la palla a portata di contrasto
+ha già la scena cambiata davanti, ma resta fermo dentro `offball_due` per la sua
+latenza (0,7-3 s): corre verso la palla senza contrastare. Non gli manca la
+lettura — `defend()` sa già scegliere pressare, entrare o tenere il posto con la
+disciplina e il tackling — gli arriva tardi.
+
+Lo sveglia esistente (`arrived`, il pressatore a portata rilegge subito) vale ora
+anche per chi correva alla palla: stessa geometria già usata, `duel.reach_cm`,
+nessun numero nuovo, nessun ordine dalla panchina. Cambia quando il giocatore
+rilegge, non cosa gli viene detto di fare: dopo, sceglie da sé con le proprie
+capacità. La tattica resta fuori da questo intervento: con un portatore,
+`team_asked` e `obey` la fanno già arrivare.
+
+Gemello: stessa squadra, stessa scena, cambia solo la portata del portatore —
+dentro, il giocatore passa da `GoToBall` a `Press`/`Challenge`; fuori, resta alla
+palla. Golden aggiornato. `SIM_VERSION` 168 -> 169.
+
+## 168 — The through ball is seen (ADR-085, OI-129, DD-25, pass 2)
+
+Il maintainer non vede mai il passaggio filtrante: il motore lo sceglie dal SIM
+79, l'evento `Pass` porta il qualificatore `through: true`, ma nessun osservatore
+lo nomina. Il censimento di `context/plans/L0-REPERTOIRE-CENSUS.md` ha mostrato
+la catena intera: `read.rs::through_candidates` → `ChoiceKind::Through` →
+`thought.rs` → `fact.rs` → `state.rs`, e nessun lettore in `ds-narrative` né in
+`ds-gui`.
+
+Ora il commento dice «threads it through» invece di «passes», il filtrante ha
+importanza `Medium` e quindi appare nel commento anche senza «every touch», e la
+2.5D gli dà un gesto proprio: la stessa spinta del passaggio, più lunga e con
+un'inclinazione, mossa soltanto dal qualificatore già presente nell'evento.
+Nessuna scelta, nessuna quantità, nessun numero nuovo: la luna resta lo stesso
+giocatore che legge lo spazio e sceglie; cambia solo il dito che l'osservatore
+vede. Nessun evento speciale con una regola propria.
+
+Lo stato della partita non cambia: i tre golden restano identici, il bump è per
+il comportamento dell'osservatore e per la versione del record. Test: P1/twin
+`a_through_ball_is_told_and_shown` (narratore) e
+`the_through_ball_is_drawn_differently_from_the_same_pass` (GUI, lo stesso
+evento con e senza il qualificatore). `SIM_VERSION` 167 -> 168.
+
+## 167 - The possession is the movement (ADR-084, OI-128, DD-24)
+
+Il maintainer ha corretto la diagnosi guardando la partita: non si tratta di
+"trattare la palla come propria" (DD-22) né di palla congelata (DD-23).
+«Ottenere il possesso è quello che i giocatori fanno, ognuno con le proprie
+caratteristiche e abilità; ed essendo azione non è qualcosa di diverso da sé:
+invece di fare movimenti senza palla fa movimenti con la palla, controllandola
+e tentando di tenerla nella propria disponibilità.»
+
+Nel motore il controllo era un evento separato: `control_loose_ball` assegnava
+`carrier = Some(id)` per una soglia di distanza, mentre `move_agents` muoveva
+chi non aveva la palla con `OffBallAct` e chi ce l'avea con `follow_carrier`.
+Due nature, due sistemi: il possesso arrivava al giocatore invece di essere
+qualcosa che lui fa.
+
+Ora, per una palla libera, chi ha scelto `GoToBall` — atto che
+`choose_off_ball` ricava dalla sua lettura, dalla sua intesa e dalle sue gambe —
+controlla la palla entro il `loose_control_radius_cm` già dichiarato. Il
+movimento include il controllo; non serve un sistema di controllo a parte. I
+giocatori restano solo giocatori dal primo all'ultimo minuto: cambia la
+stanchezza e il fatto di avere palla o meno, non chi sono come atleti. Non
+vogliamo burattini ma giocatori evoluti cognitivamente, che scelgono la cosa
+giusta in base alla posizione in campo, alla disposizione di avversari e
+compagni (o no): la zona è un fattore della scena letta, non una regola che
+sceglie al posto del giocatore. Chi
+non si muove verso la palla fa movimenti senza palla e la sua portata resta
+`ball_reach_cm`, dalla sua reattività. Nessun numero nuovo, nessun dado, nessun
+bonus, nessun copione. Il P1
+`moving_to_a_free_ball_takes_it_without_a_separate_event` mostra il controllo
+nato dal movimento; il gemello `the_reader_of_the_race_takes_it_and_the_other_holds`
+cambia solo ciò che il giocatore vede della corsa e richiede che cambino l'atto
+e il possesso. Golden e test mirati aggiornati.
+
+## 166 - A free ball keeps rolling (ADR-083, OI-127, DD-23)
+
+Il maintainer ha chiesto di correggere prima la palla: una palla è una palla,
+rotola, rimbalza e rallenta; sono i corpi dei giocatori — piedi, teste,
+ginocchia — a spostarla. Prima di SIM 166 il motore aveva tre palle: `Possessed`
+senza fisica, `InFlight` con gravità e attrito, e `Loose` che, scesa sotto
+1 cm/tick, aveva la velocità azzerata e la fisica spenta. La palla cambiava
+natura per decreto, non per quello che succedeva in campo, e restava ferma
+sull'erba con un giocatore che le passava accanto.
+
+Ora `advance_ball` applica la fisica a ogni palla non in attesa di ripresa:
+quella sotto un piede ha velocità zero e il passo la lascia dov'è; quella
+libera, superata la soglia, passa da `InFlight` a `Loose` **senza perdere la
+velocità residua** e continua a rotolare finché l'attrito dichiarato in
+`ball.json` la esaurisce. Nessun numero nuovo, nessun dado, nessun copione: la
+soglia, l'attrito e il rimbalzo restano quelli di sempre. Il gemello
+`the_roll_is_the_balls_whatever_the_players_act` cambia solo l'atto di un
+giocatore (GoToBall contro Hold) e richiede la stessa traiettoria: il rotolamento
+è della palla, non di chi la guarda. Il P1
+`a_free_ball_keeps_rolling_after_it_slows_below_the_stop_threshold` verifica la
+discontinuità tolta. Il golden con istruzioni è stato rigenerato; quello
+semplice e la tabella delle 22 metriche non cambiano.
+
 ## 165 - The place without the ball is read, not imposed
 
 ADR-071 §5 was emended on 2026-11-19 (test del burattino): far from the ball
@@ -521,7 +657,7 @@ If none of the above is true, `SIM_VERSION` is **not** bumped. A refactor that p
 A `SIM_VERSION` bump requires **all five steps**, in order. In phase 1 (ruleset disabled, no CI, single maintainer) the local C2 verification replaces the CI merge gate; see `AGENT-POLICY.md` §1 and §9.
 
 1. **Bump the value** in `pcfm-match` (`crates/pcfm-match/src/save.rs`). The value is a monotonic integer. It never goes down.
-2. **Regenerate the golden hash** — run `cargo test -p ds-match --test golden_l0`, copy the `left:` value from the failure, replace `EXPECTED` in `golden_l0.rs`. At L0 the test is N matches (not 10 seasons: L1 does not exist). The L1 form is a future artefact.
+2. **Regenerate the golden hash** — run `cargo test -p ds-match --test suite golden_l0`, copy the `left:` value from the failure, replace `EXPECTED` in `tests/cases/golden_l0.rs`. At L0 the test is N matches (not 10 seasons: L1 does not exist). The L1 form is a future artefact.
 3. **Write the entry** in the "History" section below, using the template.
 4. **Verify save compatibility** — every existing save fixture must still load. If a save cannot be reconstructed under the new `SIM_VERSION`, the entry must say so explicitly and a migration must be provided (see `L0.07` §2.3).
 5. **Review by a second pair of eyes.** In phase 1 there is one maintainer: the post-push review (`AGENT-POLICY.md` §9) replaces the second reviewer. In phase 2 (ruleset active, branch + PR), the reviewer confirms that the golden hash change is expected and that the entry is honest.

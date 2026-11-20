@@ -6,8 +6,9 @@
 //! frames; the events of the records are exactly the events of the chain,
 //! in order, none invented and none lost; the movement is seen.
 
+use crate::ds_match::{simulate_from_seed, simulate_from_seed_recorded};
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, TickRecord, simulate_from_seed, simulate_from_seed_recorded};
+use ds_match::{MatchConfig, TickRecord};
 
 const SEED: u64 = 42;
 
@@ -309,14 +310,14 @@ fn a_defender_can_win_the_ball() {
 /// and the source of `MatchState` no longer selects a chaser.
 #[test]
 fn the_engine_does_not_pick_the_chaser() {
-    let source = include_str!("../src/spatial.rs");
+    let source = include_str!("../../src/spatial.rs");
     assert!(
         !source.contains(concat!("let ", "chasers")),
         "move_agents picks a chaser"
     );
     // The off-ball thought and the duel, plugins since ADR-063.
-    let thought = include_str!("../src/plugins/thought.rs");
-    let duels = include_str!("../src/plugins/duels.rs");
+    let thought = include_str!("../../src/plugins/thought.rs");
+    let duels = include_str!("../../src/plugins/duels.rs");
     assert!(
         thought.contains("OffBallAct::Challenge") && duels.contains("OffBallAct::Challenge"),
         "the duel follows the player's choice"
@@ -510,18 +511,10 @@ fn the_players_tire_and_half_time_rests_them() {
 /// changes, the ball was just by a goal line, towards the goal.
 #[test]
 fn every_goal_is_a_ball_over_the_line_between_the_posts() {
-    // Every goal of the first matches that have any (one match can end
-    // 0-0, as a real one can).
-    let mut goals = 0;
-    for seed in SEED..SEED + 6 {
-        if goals > 0 {
-            break;
-        }
-        let m = match_fixture(seed).expect("fixture");
-        let (_, records) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
-        goals += goals_over_the_line(&records);
-    }
-    assert!(goals > 0, "the sample has goals");
+    // Seed 42 has goals under SIM 170; the assertion below is the guard that
+    // keeps this seed honest if the engine changes. No scan of six matches.
+    let records = &recorded().1;
+    assert!(goals_over_the_line(records) > 0, "the sample has goals");
 }
 
 /// The goals of one match's record, each checked against Law 10.

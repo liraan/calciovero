@@ -8,8 +8,9 @@
 
 use std::sync::LazyLock;
 
+use crate::ds_match::simulate_from_seed;
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, MatchResult, simulate_from_seed};
+use ds_match::{MatchConfig, MatchResult};
 use ds_stats::EventType;
 
 /// Three of these tests only *look* at seed 42: play it once (MD-30).

@@ -519,6 +519,13 @@ impl MatchState {
             };
             let reach = if unready {
                 i64::from(crate::spatial::BODY_RADIUS_CM)
+            } else if passer.is_none()
+                && self.spatial.act(who) == Some(ds_orchestrator::OffBallAct::GoToBall)
+            {
+                // The movement towards a free ball includes the control
+                // (ADR-084): the reach is his, chosen by his reading, not a
+                // separate event that hands him the ball.
+                i64::from(radius)
             } else {
                 ctx.hidden.ball_reach_cm(who, radius)
             };

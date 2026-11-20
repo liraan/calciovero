@@ -13,7 +13,7 @@
 
 **Fatto:** passi 1-9; nel 10, le famiglie 10a, 10b, 10c, 10g; il 10d, 10e e 10f in parte; il ricontrollo (fase 1) e l'aggiornamento dei documenti (fase 2). Il motore è al `SIM_VERSION` 114 (448 test).
 
-**Fase 3, il calcio che manca, in quest'ordine** (ogni voce con il suo `SIM_VERSION`, i gemelli, il golden su glibc e musl, la misura su 60 seed):
+**Fase 3, il calcio che manca, in quest'ordine** (ogni voce con il suo `SIM_VERSION`, i gemelli, il golden su glibc e musl; la misura sulla finestra 42..101 solo quando serve una decisione sulle metriche, non come rito di chiusura — RULES C2, 2026-11-20):
 
 | # | Voce | Dipende da | Prima azione |
 |---|---|---|---|
@@ -27,7 +27,7 @@
 | 8 | **coraggio e compostezza fatti (119)** — Gli appannatori: lucidità, coraggio, aggressività (OI-70, ADR-057) | — | il coraggio come radice fissa, col gemello |
 | 9 | Le cause aperte del realismo: OI-102 (il secondo uomo in aria), OI-103 (protezione e dribbling), OI-64 (il corpo rispetto alla palla), 10d (il portiere che si piazza, esce), 10e (il tempo del salto), la tabella di ADR-057 | — | una per volta, la causa nel calcio vero prima del codice |
 
-**Fase 4, la taratura fine:** prima due proposte di dottrina al maintainer (RULES A6, la taratura a Claude Code; RULES A5-bis con i tre gradi della decisione 5), e si aspetta il suo ok; poi ogni parametro di grado 3 (356 su 381, `L0-AUDIT.md` §7) verso il grado 1 o 2, la misura su 60 seed con le bande scritte prima, ogni metrica fuori banda con la sua causa o il suo OI; la tabella in `L0-CALIBRATION.md`.
+**Fase 4, la taratura fine:** prima due proposte di dottrina al maintainer (RULES A6, la taratura a Claude Code; RULES A5-bis con i tre gradi della decisione 5), e si aspetta il suo ok; poi ogni parametro di grado 3 (356 su 381, `L0-AUDIT.md` §7) verso il grado 1 o 2, la misura sulla finestra di taratura con le bande scritte prima, ogni metrica fuori banda con la sua causa o il suo OI; la tabella in `L0-CALIBRATION.md`.
 
 **Stato al 2026-11-15:** fasi 1-5 svolte; L0 chiuso, in attesa della prova del maintainer (`STATE.md`, "Per il maintainer"); ciò che resta è negli OI-64, OI-100-OI-112.
 

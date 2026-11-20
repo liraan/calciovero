@@ -262,6 +262,9 @@ pub struct Token {
 pub enum Gesture {
     /// A small push towards the kick: a pass, a cross, a shot, a clearance.
     Kick,
+    /// A longer push and a lean: the pass into the space a teammate attacks
+    /// (ADR-085, SIM 168), read from the `through` qualifier of the event.
+    Through,
     /// Off the ground and down again: a header, an aerial duel.
     Jump,
     /// The keeper stretches and leans towards the side `1` (his right) or `-1`.

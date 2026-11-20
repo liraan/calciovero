@@ -2,8 +2,9 @@
 //! reaches the players by voice, by a gesture or at a pause; switched off,
 //! everything reaches everyone from the next tick.
 
+use crate::ds_match::simulate_from_seed;
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, simulate_from_seed};
+use ds_match::MatchConfig;
 use ds_model::{Channel, Instruction, Match, Order};
 use ds_stats::EventType;
 

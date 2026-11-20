@@ -65,9 +65,7 @@ impl MatchState {
         self.spatial
             .set_act(challenger, ds_orchestrator::OffBallAct::Press);
         if tackle == ds_calculator::duel::TackleKind::Jockey {
-            // He stays in front and waits: no contact this time.
-            self.challenges
-                .insert(challenger, tick + duel.retry_ticks / 2);
+            self.jockey_pressure(ctx, tick, carrier, challenger, ball);
             return;
         }
         let (from_behind, approach) = self.challenge_geometry(ctx, carrier, challenger, ball);
@@ -132,6 +130,45 @@ impl MatchState {
             // Beaten, he needs time to recover before he can try again; a
             // slide that missed leaves him on the ground longer.
             self.challenges.insert(challenger, tick + down);
+        }
+    }
+
+    /// The man who only jockeys makes no tackle, but his near pressure still
+    /// tests the carrier's answer with the duel's own deterministic reading
+    /// (SIM 170, ADR-086). A failed answer makes the ball loose from the
+    /// carrier's touch, not a tackle by the jockey.
+    fn jockey_pressure(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        carrier: PlayerId,
+        challenger: PlayerId,
+        ball: (i32, i32),
+    ) {
+        let duel = ctx.hidden.duel_balance();
+        let (from_behind, approach) = self.challenge_geometry(ctx, carrier, challenger, ball);
+        let stakes = Self::duel_stakes(
+            ctx,
+            carrier,
+            ball,
+            self.spatial.agent(challenger).map_or(ball, |a| a.position),
+        );
+        let mut outcome = ctx.hidden.resolve_duel(&ds_orchestrator::DuelContext {
+            attacker: carrier,
+            defender: challenger,
+            duel_type: ds_orchestrator::DuelType::Ground,
+            tackle: ds_calculator::duel::TackleKind::Jockey,
+            from_behind,
+            approach_cm_per_tick: approach,
+            stakes,
+            carrier_on_ball: self.spatial.ball_at_feet(),
+        });
+        self.challenges
+            .insert(challenger, tick + duel.retry_ticks / 2);
+        if !outcome.ball_retained {
+            outcome.loose = true;
+            self.emit_contact(ctx, tick, carrier, challenger, &outcome);
+            self.loose_from_contact(challenger, ball, duel.loose_speed_cm_per_tick);
         }
     }
 
@@ -332,5 +369,65 @@ mod tests {
     fn the_plugin_has_its_card() {
         assert!(super::Duels.card().is_valid());
         assert_eq!(super::Duels.card().name, "duels");
+    }
+
+    /// SIM 170: the same carrier, the same man jockeying him from the same
+    /// spot, the same abilities. Only the ball's place changes: under his foot
+    /// he answers the pressure and keeps it; rolling ahead, between two
+    /// touches, he cannot answer and the pressure makes him lose it — the
+    /// ball comes loose from his own touch, not from a tackle by the jockey.
+    #[test]
+    fn pressure_tests_the_carrier_answer_not_the_mans_tackle() {
+        use crate::context::MatchContext;
+        use ds_core::rng::RngRegistry;
+        use ds_stats::EventChain;
+
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = ds_orchestrator::GroundTruth::for_match(42, &m);
+        let jockey = m
+            .away
+            .players
+            .iter()
+            .skip(1) // the keeper is special-cased, never jockeys
+            .map(|p| p.id)
+            .find(|id| {
+                hidden.choose_tackle(*id, (false, true, false))
+                    == ds_calculator::duel::TackleKind::Jockey
+            })
+            .expect("an outfield player who jockeys in the fixture");
+        let carrier = m.home.players[7].id;
+
+        let scene = |at_foot: bool| {
+            let mut hidden = ds_orchestrator::GroundTruth::for_match(42, &m);
+            let depth = hidden.offball_balance().keeper_box_depth_cm;
+            let mut rng = RngRegistry::new(42);
+            let mut chain = EventChain::new();
+            let mut ctx = MatchContext {
+                match_: &m,
+                hidden: &mut hidden,
+                rng: &mut rng,
+                chain: &mut chain,
+                config: crate::context::MatchConfig::default(),
+            };
+            let mut s = crate::state::MatchState::new(&m);
+            // The away keeper's box, beyond a standing reach but inside the
+            // slide's, where the outfield man chose to jockey (duel.json).
+            // He stands at the same spot in both scenes; only the ball moves.
+            let (length, width) = crate::state::pitch_cm(&ctx);
+            let at = length - depth + 50;
+            let y = width / 2;
+            let ball = if at_foot { at } else { at + 60 };
+            assert!(s.spatial.set_position(carrier, (at, y)));
+            assert!(s.spatial.set_position(jockey, (at - 10, y + 130)));
+            s.spatial.set_ball_in_flight((ball, y, 0), (0, 0, 0));
+            s.spatial.set_carrier(Some(carrier));
+            s.spatial
+                .set_act(jockey, ds_orchestrator::OffBallAct::Challenge);
+            s.challenge_carrier(&mut ctx, 10_000);
+            s.spatial.carrier()
+        };
+
+        assert_eq!(scene(true), Some(carrier), "at his foot he keeps it");
+        assert_eq!(scene(false), None, "rolling ahead he loses it to pressure");
     }
 }

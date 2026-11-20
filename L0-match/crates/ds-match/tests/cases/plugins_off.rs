@@ -1,7 +1,8 @@
 //! The plugins that may be switched off (ADR-063 §4, plan PLUGINS step 6).
 
+use crate::ds_match::simulate_from_seed;
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, simulate_from_seed};
+use ds_match::MatchConfig;
 
 /// P1: with psychology switched off the match is played, to the end, and
 /// it is another match (courage and composure no longer move anyone); with

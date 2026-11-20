@@ -9,8 +9,9 @@
 //! are never played. At SIM 154 the first knock moved from seed 49 to 55;
 //! at SIM 162 it moved again, to seed 57: the range follows it.
 
+use crate::ds_match::simulate_from_seed_recorded;
 use ds_fixtures::{first_seed, match_fixture};
-use ds_match::{MatchConfig, simulate_from_seed_recorded};
+use ds_match::MatchConfig;
 use ds_stats::EventType;
 
 /// P1: in some matches a knock happens; the man it hits is told injured,

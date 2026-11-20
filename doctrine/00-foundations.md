@@ -164,7 +164,7 @@ Operational rules:
 - **No `HashMap`/`HashSet` in simulation paths**: `BTreeMap`, `BTreeSet`, or explicitly sorted `Vec`
 - **Portable transcendentals**: `libm` pinned, or fixed-point for the critical path
 - **Deterministic parallelism**: `rayon` with fixed partitioning and ordered reduction
-- **Golden tests**: at L0, N matches from a known seed range → concatenated state hash (`L0-match/crates/ds-match/tests/golden_l0.rs`). At L1, 10 seasons → state hash. The 10-season form requires L1, which does not exist yet; the L0 form exists and is regenerated on every `SIM_VERSION` bump. The golden is less informative now (determinism is structural), but it still catches regressions in the local transitions.
+- **Golden tests**: at L0, N matches from a known seed range → concatenated state hash (`L0-match/crates/ds-match/tests/cases/golden_l0.rs`). At L1, 10 seasons → state hash. The 10-season form requires L1, which does not exist yet; the L0 form exists and is regenerated on every `SIM_VERSION` bump. The golden is less informative now (determinism is structural), but it still catches regressions in the local transitions.
 - **`SIM_VERSION`**: bumped whenever simulation behaviour changes, with the five-step procedure documented in [`L0-match/CHANGELOG-SIM.md`](../L0-match/CHANGELOG-SIM.md)
 
 **Scope: local determinism (ADR-013, accepted).** The contract is: same save + same match + same plugin configuration = same result. Two saves with different plugin configurations are different worlds: their results are not comparable. Global determinism (same seed across different configurations) is no longer a requirement. See [`doctrine/adr/013-worlds.md`](adr/013-worlds.md).

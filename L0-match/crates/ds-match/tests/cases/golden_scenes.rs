@@ -7,7 +7,8 @@
 //! farther than the fastest legs of `balance/movement.json` carry him. The
 //! two exceptions are of the Laws: the start of a period, when the sides
 //! stand on their lines after the interval, and a substitute, who comes on
-//! at the halfway line (he is a new man on the pitch, not a man moved).
+//! at the halfway line (he is a new man on the pitch, not a man moved). The
+//! taker of any restart is placed on the spot by the Law, not moved by legs.
 //! Before, the takers of the restarts were put on the ball and the
 //! opponents pushed away in one tick: 74 jumps of 10 to 27 m in the match
 //! of seed 43.
@@ -21,8 +22,9 @@
 
 use std::sync::OnceLock;
 
+use crate::ds_match::simulate_from_seed_recorded;
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, MatchResult, TickRecord, simulate_from_seed_recorded};
+use ds_match::{MatchConfig, MatchResult, TickRecord};
 use ds_model::Match;
 use ds_stats::EventType;
 
@@ -67,7 +69,7 @@ fn golden() -> &'static [Played] {
 #[allow(clippy::cast_precision_loss)] // cm on a pitch
 fn nobody_moves_faster_than_his_legs() {
     let movement: serde_json::Value =
-        serde_json::from_str(include_str!("../../../balance/movement.json")).expect("movement");
+        serde_json::from_str(include_str!("../../../../balance/movement.json")).expect("movement");
     let fastest = movement["top_speed_max_cm_per_tick"]
         .as_f64()
         .expect("top speed");
@@ -80,13 +82,21 @@ fn nobody_moves_faster_than_his_legs() {
         let events = result.events.events();
         for pair in record.windows(2) {
             let (before, now) = (&pair[0], &pair[1]);
-            let new_period = events[now.events.clone()].iter().any(|e| {
+            // Law placements, not running: the taker is put on the spot.
+            let placed = events[now.events.clone()].iter().any(|e| {
                 matches!(
                     e.event_type,
-                    EventType::KickOff | EventType::SecondHalf | EventType::HalfTime
+                    EventType::KickOff
+                        | EventType::SecondHalf
+                        | EventType::HalfTime
+                        | EventType::FreeKick
+                        | EventType::Penalty
+                        | EventType::Corner
+                        | EventType::ThrowIn
+                        | EventType::GoalKick
                 )
             });
-            if new_period || before.half != now.half {
+            if placed || before.half != now.half {
                 continue;
             }
             for a in &now.agents {
@@ -121,7 +131,7 @@ fn nobody_moves_faster_than_his_legs() {
 #[test]
 fn after_a_goal_the_kick_off_waits_and_the_sides_are_in_their_halves() {
     let stoppage: serde_json::Value =
-        serde_json::from_str(include_str!("../../../balance/stoppage_time.json")).expect("file");
+        serde_json::from_str(include_str!("../../../../balance/stoppage_time.json")).expect("file");
     let wait = stoppage["goal_to_kick_off_s"].as_f64().expect("the time");
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let ticks = (wait * 10.0).round() as usize;
@@ -200,7 +210,7 @@ fn after_a_goal_the_kick_off_waits_and_the_sides_are_in_their_halves() {
 #[test]
 fn a_substitute_comes_on_at_the_halfway_line() {
     let movement: serde_json::Value =
-        serde_json::from_str(include_str!("../../../balance/movement.json")).expect("movement");
+        serde_json::from_str(include_str!("../../../../balance/movement.json")).expect("movement");
     let fastest = movement["top_speed_max_cm_per_tick"]
         .as_f64()
         .expect("top speed");
@@ -240,7 +250,7 @@ fn a_substitute_comes_on_at_the_halfway_line() {
 #[test]
 fn no_restart_stops_the_match() {
     let stoppage: serde_json::Value =
-        serde_json::from_str(include_str!("../../../balance/stoppage_time.json")).expect("file");
+        serde_json::from_str(include_str!("../../../../balance/stoppage_time.json")).expect("file");
     let wait = stoppage["goal_to_kick_off_s"].as_f64().expect("the time");
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let most = (2.0 * wait * 10.0).round() as usize;

@@ -651,10 +651,16 @@ impl MatchState {
                 let Some(me) = self.spatial.agent(id).map(|a| a.position) else {
                     continue;
                 };
-                // A presser who arrives within reach chooses at once: the
-                // scene has changed, he does not wait for his next turn.
-                let arrived = self.spatial.act(id) == Some(ds_orchestrator::OffBallAct::Press)
-                    && self.challenges.get(&id).is_none_or(|t| tick >= *t)
+                // Whoever was running at a loose ball and finds an opponent
+                // with it within his reach chooses at once: the scene has
+                // changed, he does not wait for his next turn. The how —
+                // press, go in, or hold — is still his reading (SIM 169).
+                let arrived = matches!(
+                    self.spatial.act(id),
+                    Some(
+                        ds_orchestrator::OffBallAct::Press | ds_orchestrator::OffBallAct::GoToBall
+                    )
+                ) && self.challenges.get(&id).is_none_or(|t| tick >= *t)
                     && carrier_pos.is_some_and(|c| {
                         distance_squared(me, c) <= i64::from(duel.reach_cm).pow(2)
                     });
@@ -1219,11 +1225,65 @@ impl MatchState {
 
 #[cfg(test)]
 mod tests {
+    use ds_core::rng::RngRegistry;
     use ds_match_api::MatchPlugin;
+    use ds_orchestrator::{GroundTruth, OffBallAct};
+    use ds_stats::EventChain;
+
+    use super::*;
 
     #[test]
     fn the_plugin_has_its_card() {
         assert!(super::Thought.card().is_valid());
         assert_eq!(super::Thought.card().name, "thought");
+    }
+
+    /// SIM 169: the same player, the same latency still running, the same
+    /// abilities. He was going to a loose ball; an opponent takes it. If
+    /// that opponent is within his reach he reads the new scene at once;
+    /// beyond his reach he keeps going. The *how* — press, go in, hold —
+    /// stays his own reading in `choose_off_ball`.
+    #[test]
+    fn a_runner_at_a_new_carrier_reads_him_only_within_reach() {
+        let tick = 10_000;
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let me = m.away.players[5].id;
+        let carrier = m.home.players[5].id;
+        let reach = i64::from(GroundTruth::new(42, m.id).duel_balance().reach_cm);
+
+        let scene = |gap: i64| {
+            let mut hidden = GroundTruth::for_match(42, &m);
+            let mut rng = RngRegistry::new(42);
+            let mut chain = EventChain::new();
+            let mut ctx = MatchContext {
+                match_: &m,
+                hidden: &mut hidden,
+                rng: &mut rng,
+                chain: &mut chain,
+                config: crate::context::MatchConfig::default(),
+            };
+            let mut s = MatchState::new(&m);
+            let at = 5_000 + i32::try_from(gap).expect("reach fits");
+            s.spatial.set_position(me, (5000, 3400));
+            s.spatial.set_position(carrier, (at, 3400));
+            s.spatial.set_ball_in_flight((at, 3400, 0), (0, 0, 0));
+            s.spatial.set_carrier(Some(carrier));
+            s.spatial.set_act(me, OffBallAct::GoToBall);
+            s.offball_due.insert(me, tick + 100);
+            s.remember(ctx.hidden);
+            s.decide_off_ball(tick, &mut ctx);
+            s.spatial.act(me)
+        };
+
+        assert_ne!(
+            scene(reach - 20),
+            Some(OffBallAct::GoToBall),
+            "the carrier is in reach: he must read him now"
+        );
+        assert_eq!(
+            scene(reach * 3),
+            Some(OffBallAct::GoToBall),
+            "the carrier is out of reach: his own clock still runs"
+        );
     }
 }

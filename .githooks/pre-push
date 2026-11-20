@@ -20,12 +20,12 @@ if ! git diff --quiet HEAD 2>/dev/null; then
   exit 1
 fi
 
-if [ ! -f context/scripts/gates.sh ]; then
-  echo "pre-push: context/scripts/gates.sh not found" >&2
+if [ ! -f context/scripts/session.sh ]; then
+  echo "pre-push: context/scripts/session.sh not found" >&2
   exit 1
 fi
 
-if bash context/scripts/gates.sh closing; then
+if bash context/scripts/session.sh check gates closing; then
   exit 0
 else
   echo "" >&2

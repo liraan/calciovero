@@ -2,9 +2,10 @@
 //! input with its tick, recorded with the match and played back by the
 //! replay; it takes effect from the next tick, for the whole team.
 
+use crate::ds_match::{simulate_from_seed, simulate_from_seed_recorded};
 use ds_core::time::GameInstant;
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, MatchSave, replay, simulate_from_seed, simulate_from_seed_recorded};
+use ds_match::{MatchConfig, MatchSave, replay};
 use ds_model::{BlockHeight, Instruction, Intention, Match, Order, Width};
 use ds_stats::EventType;
 
@@ -254,10 +255,9 @@ fn quick_instructions_take_effect_from_their_tick() {
 #[allow(clippy::cast_precision_loss)] // ticks of a match
 fn the_board_changes_from_its_tick() {
     // The first seed from 49 where the man stays on the pitch (from SIM
-    // 149 a knock takes him off in seed 49 before the order). One seed at
-    // a time: the match wanted is the second of the range, and a flight
-    // of cores would play eight matches to use it.
-    let (seed, (_id, before)) = ds_fixtures::first_seed_one_by_one(
+    // 149 a knock takes him off in seed 49 before the order). The wave stops
+    // at that seed; the other cores are spent in parallel, not serially.
+    let (seed, (_id, before)) = ds_fixtures::first_seed(
         49..60,
         |seed| {
             let plain = match_fixture(seed).expect("fixture");
@@ -366,83 +366,5 @@ fn a_striker_asked_to_run_waits_on_the_last_line() {
         "asked {:.0} cm from the line, free {:.0} cm",
         asked / 6.0,
         free / 6.0
-    );
-}
-
-/// P1 (ADR-070): more pressing is an ask in each player's choice, not only
-/// a higher block, to the two nearest the carrier. From the order, on
-/// average over twenty matches, the two nearest men of the side that
-/// presses stand nearer the opposing carrier than without it, by at least
-/// half a metre each; before it, the same match. (Until SIM 149 the twin
-/// read the nearest man alone over six matches: he presses by his own
-/// reading anyway, and over six matches the spread of the match was
-/// larger than the order's effect.)
-#[test]
-#[allow(clippy::cast_precision_loss)] // cm on a pitch
-fn more_pressing_closes_the_carrier_down() {
-    let upto = usize::try_from(AT).expect("tick fits");
-    // The mean distance of the two nearest men of `home` (substitutes too)
-    // to the opposing carrier.
-    let gap = |r: &[ds_match::TickRecord], home: &[ds_core::ids::PlayerId]| {
-        let home: std::collections::HashSet<_> = home.iter().copied().collect();
-        let mine = |id: &ds_core::ids::PlayerId| home.contains(id) || id.slot() < 100;
-        let ds: Vec<f64> = r
-            .iter()
-            .filter_map(|t| {
-                let c = t.carrier.filter(|c| !mine(c))?;
-                // Only the carrier's position is needed: one find, not a
-                // BTreeMap of all twenty-two agents built every tick (OI-125).
-                let at = t.agents.iter().find(|a| a.id == c)?.position;
-                let mut near: Vec<f64> = t
-                    .agents
-                    .iter()
-                    .filter(|a| mine(&a.id))
-                    .map(|a| {
-                        ds_core::dmath::hypot(
-                            f64::from(a.position.0 - at.0),
-                            f64::from(a.position.1 - at.1),
-                        )
-                    })
-                    .collect();
-                near.sort_by(f64::total_cmp);
-                (near.len() >= 2).then(|| f64::midpoint(near[0], near[1]))
-            })
-            .collect();
-        ds.iter().sum::<f64>() / ds.len().max(1) as f64
-    };
-    let (mut asked, mut free) = (0.0, 0.0);
-    for (a, f) in ds_fixtures::each_seed(50..70, |seed| {
-        let plain = match_fixture(seed).expect("fixture");
-        let home: Vec<_> = plain.home.players.iter().map(|p| p.id).collect();
-        let mut m = match_fixture(seed).expect("fixture");
-        m.home = m.home.clone().with_instructions(vec![Instruction {
-            tick: AT,
-            channel: None,
-            order: Order::Quick {
-                quick: ds_model::Quick::MorePressing,
-                on: true,
-            },
-        }]);
-        let (_, before) = simulate_from_seed_recorded(&plain, seed, MatchConfig::default());
-        let (_, after) = simulate_from_seed_recorded(&m, seed, MatchConfig::default());
-        assert_eq!(
-            before[..=upto],
-            after[..=upto],
-            "the same match up to the order"
-        );
-        (
-            gap(&after[upto + 1..], &home),
-            gap(&before[upto + 1..], &home),
-        )
-    }) {
-        asked += a;
-        free += f;
-    }
-    // The sums are of twenty matches: half a metre each.
-    assert!(
-        asked + 1_000.0 < free,
-        "pressing: {:.0} cm from the carrier, without: {:.0} cm",
-        asked / 20.0,
-        free / 20.0
     );
 }

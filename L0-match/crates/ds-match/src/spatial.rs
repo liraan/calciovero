@@ -339,9 +339,12 @@ impl FineBall {
     }
 }
 
-/// The state of the ball (MD-25). `Possessed` means at the carrier's feet
-/// (velocity zero, no physics). `InFlight` means travelling with its own
-/// velocity. `Loose` means free and at rest.
+/// The state of the ball (MD-25, ADR-083).
+///
+/// `Possessed` means at the carrier's feet (velocity zero; the physics step
+/// leaves it there). `InFlight` means travelling with its own velocity.
+/// `Loose` means free and no longer owned by a kick, but still physical: it
+/// keeps rolling until friction spends it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum BallState {
     /// At the carrier's feet.
@@ -1200,19 +1203,17 @@ impl SpatialState {
         )
     }
 
-    /// Advances the ball one tick if it is in flight (MD-17/18).
+    /// Advances the ball one tick (MD-17/18, ADR-083).
     ///
-    /// Applies gravity to `vz`, gravity to `z`, friction to the horizontal
-    /// velocity, and the stop threshold. `Possessed` and `Loose` are
-    /// untouched: only an in-flight ball moves. The constants are declared
-    /// (MD-24): gravity is ~10 cm/tick² (derived from g ≈ 9.8 m/s² at the
-    /// tick rate), friction `f = 990/1000` per tick (arbitrary, declared),
-    /// stop threshold 1 cm/tick (arbitrary, declared).
+    /// Applies gravity to `vz`, gravity to `z` and friction to the horizontal
+    /// velocity to every ball: a ball under a foot has velocity zero and stays
+    /// where his foot puts it; a free ball keeps rolling after it crosses the
+    /// stop threshold, until the declared friction spends its last speed.
+    /// A restart waiting for its kicker is not advanced at all: the match's
+    /// step returns before this (SIM 150). The constants are declared (MD-24)
+    /// in `balance/ball.json`.
     pub fn advance_ball(&mut self) {
         self.ball_steps = [self.ball_position; STEPS];
-        let BallState::InFlight = self.ball else {
-            return;
-        };
         // In small steps (decision BJ, ADR-069), in hundredths of a
         // centimetre; whoever struck, deflected or placed the ball in
         // centimetres since the last tick sets the fine state afresh.
@@ -1225,9 +1226,8 @@ impl SpatialState {
         self.ball_position = position;
         self.ball_velocity = velocity;
         self.ball_fine.synced = (position, velocity);
-        if stopped {
+        if stopped && self.ball == BallState::InFlight {
             self.ball = BallState::Loose;
-            self.ball_velocity = (0, 0, 0);
         }
     }
 
@@ -2698,6 +2698,49 @@ mod tests {
         s.advance_ball();
         assert_eq!(s.ball_3d(), before);
         assert_eq!(s.ball_state(), BallState::Possessed);
+    }
+
+    /// Twin (ADR-083, OI-127): the roll is the ball's, not the act of whoever
+    /// is looking at it. Changing only a player's act, with the same ball and
+    /// the same feet, leaves its path untouched.
+    #[test]
+    fn the_roll_is_the_balls_whatever_the_players_act() {
+        let trace = |act: ds_orchestrator::OffBallAct| {
+            let mut s = make_state();
+            s.set_act(PlayerId::new(1, 0), act);
+            s.set_ball_in_flight((0, 3400, 0), (150, 0, 0));
+            while s.ball_state() == BallState::InFlight {
+                s.advance_ball();
+            }
+            let mut xs = vec![s.ball_3d().0];
+            for _ in 0..50 {
+                s.advance_ball();
+                xs.push(s.ball_3d().0);
+            }
+            xs
+        };
+        assert_eq!(
+            trace(ds_orchestrator::OffBallAct::GoToBall),
+            trace(ds_orchestrator::OffBallAct::Hold)
+        );
+    }
+
+    /// P1 (ADR-083, OI-127): crossing the stop threshold changes the name of
+    /// the state, not the physics. A free ball keeps rolling until friction
+    /// spends what is left of its speed.
+    #[test]
+    fn a_free_ball_keeps_rolling_after_it_slows_below_the_stop_threshold() {
+        let mut s = make_state();
+        s.set_ball_in_flight((0, 3400, 0), (150, 0, 0));
+        while s.ball_state() == BallState::InFlight {
+            s.advance_ball();
+        }
+        assert_eq!(s.ball_state(), BallState::Loose);
+        let at = s.ball_3d().0;
+        for _ in 0..50 {
+            s.advance_ball();
+        }
+        assert!(s.ball_3d().0 > at, "a loose ball keeps rolling, not frozen");
     }
 
     /// Twin test (SIM 128, OI-100; ADR-069): the same ball dropped from

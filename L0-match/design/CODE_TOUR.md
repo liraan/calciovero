@@ -66,7 +66,7 @@ The quality gate (RULES C2) is in `README.md`.
 | `narrative.rs`, `engine.rs` | The commentary and the text engine. |
 | `balance.rs` | The loaders of `L0-match/balance/*.json`; every number has its row in `balance/SOURCES.md`. |
 
-The tests to read first: `tests/golden_l0.rs` (the golden), `tests/repertoire.rs` (every gesture appears), `tests/instructions.rs` (the coach speaks).
+The tests to read first: `tests/cases/golden_l0.rs` (the golden), `tests/cases/repertoire.rs` (every gesture appears), `tests/cases/instructions.rs` (the coach speaks); all three are modules of `tests/suite.rs` and share one match cache.
 
 ## Stage 5 — The tools
 

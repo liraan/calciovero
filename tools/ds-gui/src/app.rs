@@ -1006,6 +1006,13 @@ impl App {
                     wide = 0.12f32.mul_add(bump, 1.0);
                     tall = wide;
                 }
+                scene::Gesture::Through => {
+                    // The same kick, stretched towards the space he has read.
+                    shift = dir * (0.6 * r * bump);
+                    lean = 0.25 * bump;
+                    wide = 0.12f32.mul_add(bump, 1.0);
+                    tall = wide;
+                }
                 scene::Gesture::Celebrate => lift = 0.9 * r * (3.0 * PI * p).sin().abs(),
                 scene::Gesture::Card(red) => card = Some(red),
             }
@@ -1086,6 +1093,7 @@ impl App {
         game.gestures.get(&id)?.iter().find_map(|&(tick, g)| {
             let (before, after) = match g {
                 scene::Gesture::Kick => (5.0, 2.0),
+                scene::Gesture::Through => (6.0, 2.0),
                 scene::Gesture::Jump => (3.0, 4.0),
                 scene::Gesture::Lunge => (2.0, 3.0),
                 scene::Gesture::Dive(_) | scene::Gesture::Slide => (2.0, 8.0),
@@ -1371,6 +1379,9 @@ fn gestures(
                 || flag(e, "header");
             let g = match crate::animation::animation(e.event_type) {
                 crate::animation::Animation::KickOrHeader if header => scene::Gesture::Jump,
+                crate::animation::Animation::KickOrHeader if flag(e, "through") => {
+                    scene::Gesture::Through
+                }
                 crate::animation::Animation::KickOrHeader => scene::Gesture::Kick,
                 crate::animation::Animation::JumpIfAerial if flag(e, "aerial") => {
                     scene::Gesture::Jump
@@ -1682,7 +1693,7 @@ fn luminance(c: egui::Color32) -> f32 {
 mod tests {
     use super::*;
 
-    /// A fresh window on seed 42. The eight tests that only look at the
+    /// A fresh window on seed 42. The nine tests that only look at the
     /// pristine match share one played game and clone it (a memcpy, not a
     /// simulation); only the five tests that change the match by an order
     /// pay for a second run. Before, each of the eight calls replayed it.
@@ -1691,6 +1702,49 @@ mod tests {
         PRISTINE
             .get_or_init(|| App::new(Theme::all().expect("themes")))
             .clone()
+    }
+
+    /// The 2.5D shows what the engine already knows: the same pass with the
+    /// `through` qualifier gets its own pose (ADR-085, SIM 168). Nothing in
+    /// the match is replayed differently — only the view reads one more
+    /// field of the fact.
+    #[test]
+    fn the_through_ball_is_drawn_differently_from_the_same_pass() {
+        use ds_core::ids::{ActorId, EventId, MatchId};
+        use ds_core::time::GameInstant;
+        use ds_stats::{EventType, Half, MatchEvent};
+
+        let a = app();
+        let mut record = a.game.as_ref().expect("a match is played at start").records[0].clone();
+        record.events = 0..1;
+        let id = PlayerId::new(0, 0);
+        let mut pass = MatchEvent {
+            event_id: EventId::new(1, 0),
+            match_id: MatchId::new(1, 0),
+            actor: Some(ActorId::Player(id)),
+            half: Half::First,
+            timestamp_minute: 1,
+            timestamp_second: 0,
+            minutes_played_cumulative: 1,
+            event_type: EventType::Pass,
+            fields: serde_json::json!({ "complete": true }),
+            created_at: GameInstant::from_raw(10),
+        };
+        let plain = gestures(std::slice::from_ref(&record), std::slice::from_ref(&pass));
+        assert!(
+            plain
+                .get(&id)
+                .is_some_and(|gs| gs.iter().any(|(_, g)| *g == scene::Gesture::Kick)),
+            "an ordinary pass is a kick"
+        );
+        pass.fields = serde_json::json!({ "complete": true, "through": true });
+        let through = gestures(std::slice::from_ref(&record), std::slice::from_ref(&pass));
+        assert!(
+            through
+                .get(&id)
+                .is_some_and(|gs| gs.iter().any(|(_, g)| *g == scene::Gesture::Through)),
+            "the same pass, qualified as through, is drawn as a through ball"
+        );
     }
 
     #[test]

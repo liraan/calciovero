@@ -1914,6 +1914,140 @@ mod loose_reception_tests {
 }
 
 #[cfg(test)]
+mod possession_is_movement_tests {
+    use super::*;
+    use ds_core::rng::RngRegistry;
+    use ds_orchestrator::{GroundTruth, OffBallAct, OffBallScene, Place, Target};
+
+    /// P1 (ADR-084, OI-128): the movement to a free ball *is* its control.
+    /// The same man, the same ball just beyond his static reach: standing
+    /// still he leaves it; going for it, it is his, with no separate event.
+    #[test]
+    fn moving_to_a_free_ball_takes_it_without_a_separate_event() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = GroundTruth::new(42, m.id);
+        let mut rng = RngRegistry::new(42);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            rng: &mut rng,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let radius = 100; // loose_control_radius_cm, declared in reception.json
+        let away = m
+            .away
+            .players
+            .iter()
+            .map(|p| p.id)
+            .find(|id| ctx.hidden.ball_reach_cm(*id, radius) < i64::from(radius))
+            .expect("a player whose static reach is short of the control radius");
+        let distance = ctx.hidden.ball_reach_cm(away, radius) + 5;
+        let at = (2000, 1500);
+        let take = |s: &mut MatchState, ctx: &mut MatchContext<'_>, go: bool| {
+            s.spatial.set_position(away, at);
+            s.spatial.set_carrier(None);
+            if go {
+                s.spatial.set_act(away, OffBallAct::GoToBall);
+            }
+            s.spatial.set_ball_in_flight(
+                (
+                    at.0 + i32::try_from(distance).expect("distance fits"),
+                    at.1,
+                    0,
+                ),
+                (0, 0, 0),
+            );
+            s.ball_from = s.spatial.ball_3d();
+            s.spatial.advance_ball();
+            s.control_loose_ball(ctx, 0);
+            s.spatial.carrier()
+        };
+        let mut still = MatchState::new(&m);
+        assert_eq!(take(&mut still, &mut ctx, false), None, "out of reach");
+        let mut going = MatchState::new(&m);
+        assert_eq!(
+            take(&mut going, &mut ctx, true),
+            Some(away),
+            "he moved to it"
+        );
+    }
+
+    /// Twin (ADR-084, OI-128): only what the player sees of his place in the
+    /// race changes. The one who reads that he is nearest goes and controls;
+    /// the one who sees two mates closer holds and leaves it. The possession
+    /// follows the movement his reading chose.
+    #[test]
+    fn the_reader_of_the_race_takes_it_and_the_other_holds() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = GroundTruth::new(42, m.id);
+        let mut rng = RngRegistry::new(42);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            rng: &mut rng,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let radius = 100; // loose_control_radius_cm, declared in reception.json
+        let away = m
+            .away
+            .players
+            .iter()
+            .map(|p| p.id)
+            .find(|id| ctx.hidden.ball_reach_cm(*id, radius) < i64::from(radius))
+            .expect("a player whose static reach is short of the control radius");
+        let distance = ctx.hidden.ball_reach_cm(away, radius) + 5;
+        let scene = |rank| OffBallScene {
+            actor: away,
+            place: Place::Outfield,
+            loose_ball: Some(Target {
+                distance_cm: 500,
+                rank,
+            }),
+            loose_rival_cm: None,
+            carrier: None,
+            carrier_in_reach: false,
+            with_mate: None,
+            to_mark: None,
+            asked: None,
+            threats: None,
+            partner_intesa: 0.0,
+            dead_ball: false,
+        };
+        let near = ctx.hidden.choose_off_ball(&scene(0));
+        let third = ctx.hidden.choose_off_ball(&scene(2));
+        assert_eq!(near, OffBallAct::GoToBall);
+        assert_eq!(third, OffBallAct::Hold);
+
+        let at = (2000, 1500);
+        let take = |s: &mut MatchState, ctx: &mut MatchContext<'_>, act| {
+            s.spatial.set_position(away, at);
+            s.spatial.set_carrier(None);
+            s.spatial.set_act(away, act);
+            s.spatial.set_ball_in_flight(
+                (
+                    at.0 + i32::try_from(distance).expect("distance fits"),
+                    at.1,
+                    0,
+                ),
+                (0, 0, 0),
+            );
+            s.ball_from = s.spatial.ball_3d();
+            s.spatial.advance_ball();
+            s.control_loose_ball(ctx, 0);
+            s.spatial.carrier()
+        };
+        let mut reader = MatchState::new(&m);
+        assert_eq!(take(&mut reader, &mut ctx, near), Some(away));
+        let mut other = MatchState::new(&m);
+        assert_eq!(take(&mut other, &mut ctx, third), None);
+    }
+}
+
+#[cfg(test)]
 mod marking_tests {
     use super::*;
 

@@ -103,7 +103,20 @@ fn narrate_event(
     names: &BTreeMap<PlayerId, &str>,
     slot_map: &BTreeMap<u32, &str>,
 ) -> NarrativeEntry {
-    let importance = importance_for(ev.event_type);
+    // A through ball is the passer reading the space: it deserves to be
+    // shown in the commentary, where ordinary passes stay "every touch"
+    // (ADR-085, SIM 168). The event, the choice and the state are unchanged.
+    let importance = if ev.event_type == EventType::Pass
+        && ev
+            .fields
+            .get("through")
+            .and_then(serde_json::Value::as_bool)
+            == Some(true)
+    {
+        Importance::Medium
+    } else {
+        importance_for(ev.event_type)
+    };
     let player = match ev.actor {
         Some(ds_core::ids::ActorId::Player(id)) => names.get(&id).copied().unwrap_or("<unknown>"),
         Some(ds_core::ids::ActorId::Referee(_)) | None => "<match>",
@@ -140,8 +153,11 @@ fn slot_name(slot_map: &BTreeMap<u32, &str>, slot: Option<u32>) -> Option<String
 /// The verb a pass is told with: a cross is a pass (ADR-072), so the field and
 /// not the event type decides the word.
 fn pass_verb(fields: &serde_json::Value) -> &'static str {
-    if fields.get("cross").and_then(serde_json::Value::as_bool) == Some(true) {
+    let flag = |key: &str| fields.get(key).and_then(serde_json::Value::as_bool) == Some(true);
+    if flag("cross") {
         "crosses"
+    } else if flag("through") {
+        "threads it through"
     } else {
         "passes"
     }
@@ -469,6 +485,32 @@ mod tests {
             .unwrap();
         let narrative = narrate(&m, &chain);
         assert_eq!(narrative[0].importance, Importance::Low);
+    }
+
+    /// A through ball is the same event as a pass, with the qualifier the
+    /// engine already emits (ADR-085, SIM 168): the commentary names it and
+    /// shows it by default, while an ordinary pass stays "every touch".
+    #[test]
+    fn a_through_ball_is_told_and_shown() {
+        let m = make_match();
+        let mut chain = EventChain::new();
+        let mut pass = make_event(1, 10, EventType::Pass, PlayerId::new(0, 0));
+        chain.try_append(pass.clone()).unwrap();
+        pass.fields = serde_json::json!({ "through": true, "complete": true });
+        chain.try_append(pass).unwrap();
+        let narrative = narrate(&m, &chain);
+        assert_eq!(narrative[0].importance, Importance::Low);
+        assert!(
+            narrative[0].text.contains("passes"),
+            "{}",
+            narrative[0].text
+        );
+        assert_eq!(narrative[1].importance, Importance::Medium);
+        assert!(
+            narrative[1].text.contains("threads it through"),
+            "{}",
+            narrative[1].text
+        );
     }
 
     #[test]

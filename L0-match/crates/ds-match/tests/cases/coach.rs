@@ -2,8 +2,9 @@
 //! the men sent off, the fatigue; his changes at the minutes the real
 //! coaches made them with that score (grade 2, `balance/coach.json`).
 
+use crate::ds_match::simulate_from_seed;
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, simulate_from_seed};
+use ds_match::MatchConfig;
 use ds_stats::EventType;
 
 /// The minutes of a side's changes in a match, and the final score.

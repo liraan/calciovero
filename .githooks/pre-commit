@@ -19,15 +19,17 @@ fi
 echo "pre-commit: Rust files staged:"
 echo "$staged_rust" | sed 's/^/  /'
 
-echo "pre-commit: running cargo fmt --check..."
-cargo fmt --all -- --check
+# The checks live in session.sh; the hook only calls the modules, so there is
+# no second list of commands to keep in sync (OI-130).
+echo "pre-commit: check fmt..."
+bash context/scripts/session.sh check fmt
 
-# --all-targets, as in CI: without it a warning in a test passes here and
-# fails the remote gate.
-echo "pre-commit: running cargo clippy --workspace --all-targets -- -D warnings..."
-cargo clippy --workspace --all-targets -- -D warnings
+echo "pre-commit: check clippy..."
+bash context/scripts/session.sh check clippy
 
-echo "pre-commit: running cargo test --workspace..."
-cargo test --workspace
+# The script reads the staged crates and runs their tests only; a touched
+# core crate (or Cargo.toml/lock) switches it to the full suite.
+echo "pre-commit: check changed (staged)..."
+bash context/scripts/session.sh check changed staged
 
 echo "pre-commit: all checks passed."

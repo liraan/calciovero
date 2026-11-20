@@ -7,8 +7,9 @@
 
 use std::collections::BTreeSet;
 
+use crate::ds_match::simulate_from_seed_recorded;
 use ds_fixtures::match_fixture;
-use ds_match::{MatchConfig, simulate_from_seed_recorded};
+use ds_match::MatchConfig;
 use ds_stats::EventType;
 
 /// Acts so rare in real football that fourteen matches may not hold one:

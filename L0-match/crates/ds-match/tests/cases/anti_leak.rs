@@ -103,18 +103,18 @@ fn save_contains_no_latent_field_name() {
 #[test]
 fn match_state_does_not_call_resolve_choice() {
     let sources = [
-        include_str!("../src/state.rs"),
-        include_str!("../src/plugins/ball.rs"),
-        include_str!("../src/plugins/bench.rs"),
-        include_str!("../src/plugins/body.rs"),
-        include_str!("../src/plugins/duels.rs"),
-        include_str!("../src/plugins/fatigue.rs"),
-        include_str!("../src/plugins/keeper.rs"),
-        include_str!("../src/plugins/perception.rs"),
-        include_str!("../src/plugins/referee.rs"),
-        include_str!("../src/plugins/set_pieces.rs"),
-        include_str!("../src/plugins/technique.rs"),
-        include_str!("../src/plugins/thought.rs"),
+        include_str!("../../src/state.rs"),
+        include_str!("../../src/plugins/ball.rs"),
+        include_str!("../../src/plugins/bench.rs"),
+        include_str!("../../src/plugins/body.rs"),
+        include_str!("../../src/plugins/duels.rs"),
+        include_str!("../../src/plugins/fatigue.rs"),
+        include_str!("../../src/plugins/keeper.rs"),
+        include_str!("../../src/plugins/perception.rs"),
+        include_str!("../../src/plugins/referee.rs"),
+        include_str!("../../src/plugins/set_pieces.rs"),
+        include_str!("../../src/plugins/technique.rs"),
+        include_str!("../../src/plugins/thought.rs"),
     ];
     assert!(
         !sources.iter().any(|s| s.contains(".resolve_choice(")),

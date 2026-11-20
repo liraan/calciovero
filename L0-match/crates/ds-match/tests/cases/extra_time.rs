@@ -9,10 +9,18 @@
 //! `first_seed` walks the range a wave of cores at a time and stops at the
 //! seed the test needs, so the matches after it are never played.
 
-use ds_fixtures::{first_seed, first_seed_one_by_one, match_fixture};
-use ds_match::{MatchConfig, MatchResult, simulate_from_seed};
+use crate::ds_match::simulate_from_seed;
+use crate::support::CUP_SHOOTOUT_SEED;
+use ds_fixtures::match_fixture;
+use ds_match::{MatchConfig, MatchResult};
 use ds_model::Match;
 use ds_stats::{EventType, Half};
+
+/// The first level and the first decisive friendly of the range under SIM 170,
+/// found once by the scan that used to run on every test. Asserted below, so
+/// a change in the engine fails here instead of silently scanning again.
+const LEVEL_AT_90_SEED: u64 = 53;
+const DECIDED_AT_90_SEED: u64 = 42;
 
 /// The same fixture, as a cup tie: extra time is asked for.
 fn cup(seed: u64) -> Match {
@@ -64,7 +72,9 @@ fn full_time(r: &MatchResult) -> Option<Half> {
 /// second period. The twin: the same match as a friendly ends at 90'.
 #[test]
 fn a_cup_match_level_at_ninety_goes_to_extra_time() {
-    let (seed, friendly) = first_seed(42..80, friendly, level).expect("a draw among the seeds");
+    let seed = LEVEL_AT_90_SEED;
+    let friendly = friendly(seed);
+    assert!(level(&friendly), "seed {seed} is level at 90");
     assert_eq!(full_time(&friendly), Some(Half::Second));
     let cup = play_cup(seed);
     assert_eq!(full_time(&cup), Some(Half::ExtraSecond));
@@ -79,8 +89,8 @@ fn a_cup_match_level_at_ninety_goes_to_extra_time() {
 /// P1: a cup match with a winner at 90' ends there.
 #[test]
 fn a_cup_match_won_at_ninety_ends_there() {
-    let (seed, _) =
-        first_seed_one_by_one(42..80, friendly, |r| !level(r)).expect("a winner among the seeds");
+    let seed = DECIDED_AT_90_SEED;
+    assert!(!level(&friendly(seed)), "seed {seed} has a winner at 90");
     let r = play_cup(seed);
     assert!(r.events.events().iter().all(|e| e.half != Half::ExtraFirst));
     assert!(
@@ -94,8 +104,10 @@ fn a_cup_match_won_at_ninety_ends_there() {
 /// a friendly never has one.
 #[test]
 fn a_cup_match_level_after_extra_time_goes_to_penalties() {
-    let (seed, r) = first_seed(42..90, play_cup_with_shootout, |r| r.shootout.is_some())
-        .expect("a cup match level after extra time among the seeds");
+    // The first such seed was found once by the golden's one-off scan;
+    // playing it directly keeps this test inside the 80 s budget.
+    let seed = CUP_SHOOTOUT_SEED;
+    let r = play_cup_with_shootout(seed);
     let (h, a) = r.shootout.expect("level after extra time: penalties");
     // Every kick of the shoot-out is a shot (Law 10, Law 14).
     let kicks: Vec<_> = r
