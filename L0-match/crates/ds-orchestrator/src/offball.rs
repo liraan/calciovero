@@ -507,6 +507,21 @@ mod tests {
         assert!(!goes_for_loose_ball(2, 1.0, true));
     }
 
+    /// Twin test (ADR-081, SIM 164, C): the second man, the same rival at
+    /// the drop point, the same reading — only his distance changes. Near,
+    /// his own pace gets him there first and he goes; far, he holds his
+    /// place and leaves the high ball to the nearest man.
+    #[test]
+    fn the_second_reaches_the_near_ball_and_holds_for_the_far_one() {
+        let second = |distance_cm| OffBallScene {
+            loose_ball: at(distance_cm, 1),
+            loose_rival_cm: Some(1500),
+            ..scene()
+        };
+        assert_eq!(choose(&second(300)), OffBallAct::GoToBall);
+        assert_eq!(choose(&second(8000)), OffBallAct::Hold);
+    }
+
     /// The nearest player goes for a loose ball close to him; one with two
     /// teammates closer holds his place (P1, ADR-049).
     #[test]

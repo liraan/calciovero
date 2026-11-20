@@ -13,10 +13,16 @@ arrivava mai.
 
 ## Decisione
 
-1. Su una palla aerea (lato che difende), anche il secondo uomo (rank 1)
-   contesta se può raggiungere il punto di caduta.
-2. Il resto resta: il più vicino (rank 0) va sempre; il secondo solo se
-   può arrivare.
+1. Su ogni palla alta, da entrambi i lati, anche il secondo uomo (rank 1)
+   legge il punto di caduta e contesta se può raggiungerlo.
+2. Il più vicino (rank 0) va sempre; il secondo solo se può arrivare. Il
+   raggiungimento non è un punto fisso: il suo `Target` porta il rank vero,
+   così la corsa con il proprio passo (`offball.rs::goes_for_loose_ball`,
+   `ThoughtBalance::race`) e la sua lettura del gioco decidono se ci va.
+   Nessun numero nuovo.
+3. Emendata il 2026-11-20 da ADR-081 (scelta C): prima la lettura era
+   limitata al lato che difende e al pass in volo, e il `Target` aereo
+   hardcodificava `rank: 0`, quindi la corsa del secondo non scattava mai.
 
 ## Conseguenze
 

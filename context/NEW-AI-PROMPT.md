@@ -1,10 +1,12 @@
 # Prompt per una nuova IA
 
-> Da incollare così com'è (dalla riga sotto il separatore in poi) nella prima chat con un'IA che non ha mai visto la repo. È la versione lunga della frase di `RULES.md` ("Read `context/RULES.md` and `context/STATE.md`..."): stesse regole, più guida. I numeri che cambiano ogni giorno (la `SIM_VERSION`, le metriche, il passo in corso) non sono qui ma in `context/STATE.md`, così questo testo non invecchia.
+> Da incollare così com'è (dalla riga sotto il separatore in poi) nella prima chat con un'IA che non ha mai visto la repo. È la versione lunga della frase di `RULES.md` ("Read `context/RULES.md` and `context/STATE.md`..."): stesse regole, più guida. I numeri che cambiano ogni giorno **non** sono qui e **non** sono affidati a un solo file: la `SIM_VERSION` viva è in `L0-match/crates/ds-match/src/save.rs` e nell'ultima voce di `L0-match/CHANGELOG-SIM.md`; le metriche e le cause aperte sono nella tabella di `context/plans/L0-CALIBRATION.md`; il passo in corso è in `context/STATE.md`. `STATE.md` può essere indietro rispetto al codice (al 2026-11-20 la sezione "Motore L0" era ancora ferma al SIM 137): verificalo sempre contro `save.rs` e il changelog prima di crederci.
 
 ---
 
 Ciao. Lavorerai con me su **Calcio Vero – Deep Simulator** (`liraan/calciovero` su GitHub, copia su Codeberg): un gioco manageriale di calcio open source, offline, deterministico, scritto in Rust. Io sono il maintainer. Ti scrivo in italiano e mi rispondi in italiano.
+
+**Parti da qui (per non perdere tempo):** 1) leggi `context/RULES.md` e `context/STATE.md`; 2) esegui `bash context/scripts/session.sh start`; 3) fammi il rapporto breve descritto alla fine del §3 e **aspetta**. Non toccare nulla prima della mia risposta. Poi leggi il resto del §3 mentre lavori, non tutto in una volta.
 
 ## 1. Cos'è il progetto, in breve
 
@@ -28,14 +30,15 @@ Ti dirò io quale dei due ruoli hai. Se non te lo dico, chiedimelo prima di tocc
 3. `context/plans/GAME.md`: il piano di tutto il gioco, i livelli, le versioni, le regole di lavoro.
 4. `context/plans/DECISIONS-2026-11-15.md`: tutte le decisioni del maintainer, una riga per lettera (da A in poi). Quando una decisione è citata ("decisione AL"), è qui.
 5. `context/plans/BEHAVIOURS.md`: **la priorità di adesso.** Il catalogo dei comportamenti in campo, in quattro strati (come si gioca a pallone; posizionamento e responsabilità dei ruoli; le coppie affiatate; la tattica). Decisione BK: prima i comportamenti, poi i numeri; la taratura è ferma finché i comportamenti non sono giusti.
-6. `doctrine/VISION.md` §3 e `doctrine/00-foundations.md`: cosa vogliamo costruire e perché.
-7. Gli ADR in `doctrine/adr/`, almeno: 035 (niente dadi), 049 (l'atto è del giocatore), 051 (ogni gesto ha le sue radici), **052 (ogni giocatore pensa: la base di tutto)**, 058 (la palla si riceve dove arriva), 059 (l'allenatore parla durante la partita), 062 (quello che un giocatore vede non è esatto), 063 (la partita divisa in plugin), 065 (la registrazione è un contratto), 069 (i passi piccoli), 070 (gli ordini nella scelta).
-8. `L0-match/design/CHARACTERISTICS-AND-ABILITIES.md` (le caratteristiche e le abilità) e `L0-match/design/ACTIONS.md` (il catalogo dei gesti).
-9. `L0-match/CHANGELOG-SIM.md`: la storia del motore, una voce per ogni `SIM_VERSION`.
+6. `context/plans/L0-CALIBRATION.md`: la tabella delle 22 metriche reali contro il motore, i tre filtri (partita vera, LUNA, burattino), il modello a cipolla e l'OI di ogni metrica fuori banda. **Leggila insieme a `BEHAVIOURS.md`**: è il punto in cui i comportamenti diventano numeri da spiegare. La soglia di chiusura L0 è 16/22 con ogni fuori banda documentato (decisione L).
+7. `doctrine/VISION.md` §3 e `doctrine/00-foundations.md`: cosa vogliamo costruire e perché.
+8. Gli ADR in `doctrine/adr/`, almeno: 035 (niente dadi), 049 (l'atto è del giocatore), 051 (ogni gesto ha le sue radici), **052 (ogni giocatore pensa: la base di tutto)**, 058 (la palla si riceve dove arriva), 059 (l'allenatore parla durante la partita), 062 (quello che un giocatore vede non è esatto), 063 (la partita divisa in plugin), 065 (la registrazione è un contratto), 069 (i passi piccoli), 070 (gli ordini nella scelta). Per il lavoro L0 di adesso anche 071 (il posto senza palla, e il test del burattino), 077 e 081 (il secondo uomo sulle palle alte, scelta C), 080 (la palla morta). L'elenco completo e gli stati sono in `doctrine/STRUCTURE.md` e `doctrine/_index.md`.
+9. `L0-match/design/CHARACTERISTICS-AND-ABILITIES.md` (le caratteristiche e le abilità) e `L0-match/design/ACTIONS.md` (il catalogo dei gesti).
+10. `L0-match/CHANGELOG-SIM.md`: la storia del motore, una voce per ogni `SIM_VERSION`.
 
 Se lavori ai piani, leggi anche `context/plans/L1.md`, `L1-COACH.md`, `L1-MARKET.md`, `L2.md`, `L3.md` e `tools/ds-gui/DESIGN.md` (la GUI, il 2.5D, il 3D).
 
-Poi esegui `bash context/scripts/session.sh start`, fammi un rapporto breve (cosa hai letto, lo stato, il passo `[next]`, ogni differenza fra documenti e codice) e **aspetta**: non proporre e non cambiare nulla prima della mia risposta.
+Hai già eseguito `bash context/scripts/session.sh start` all'inizio: se non l'hai fatto, fallo ora. Fammi un rapporto breve (cosa hai letto, lo stato, il passo `[next]`, ogni differenza fra documenti e codice) e **aspetta**: non proporre e non cambiare nulla prima della mia risposta.
 
 ## 4. I tre filtri, per ogni decisione
 
@@ -76,4 +79,4 @@ Poi esegui `bash context/scripts/session.sh start`, fammi un rapporto breve (cos
 
 Se non hai letto un file, dillo. Non inventare mai numeri, hash, contenuti di file o output di strumenti: "non lo so" è meglio di un'invenzione. Dopo ogni modifica verifica che sia avvenuta (`git diff`, `grep -c`), non solo che il comando sia uscito senza errori. Un test che non può fallire è peggio di nessun test. "Deciso" non vuol dire "fatto": di' quale dei due.
 
-Quando hai letto tutto, esegui `session.sh start` e fammi il rapporto.
+Rapporto iniziale: tre righe (cosa hai letto, dove siamo, passo `[next]`) e le differenze fra documenti e codice. Poi aspetti.

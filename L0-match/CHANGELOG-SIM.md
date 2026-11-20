@@ -8,6 +8,39 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 165 - The place without the ball is read, not imposed
+
+ADR-071 §5 was emended on 2026-11-19 (test del burattino): far from the ball
+`read::soon` is zero at every candidate, so `choose_closed_place` weighed every
+space zero and put the man on the geometric point of the block. Changing his
+game reading, his intesa or his ability changed nothing — the place was imposed
+from outside the player. Now, when no opponent can arrive soon in his zone,
+his `game_reading` weighs the spaces of HIS OWN lane: he chooses the line,
+while the lanes beside it keep being weighed by the game (`read::soon`). The
+zone is still his discipline, so a wide man keeps his flank instead of running
+inland; where in his lane he stands is his choice. The same reading already
+drives where he offers with the ball; one man, one reading, two acts. The twin
+`the_reader_leaves_the_given_place_the_blind_man_keeps_it` changes only
+`game_reading` on the same scene and requires a different point. The ADR-070
+pressing guarantee that SIM 164 (choice C) had lowered below its half-metre
+threshold is green again, and the foot test `swapped_wide_men_strike_with_the_feet_they_have`
+keeps its outside-foot strikes: neither assertion nor seed range was touched.
+
+## 164 - The second man reads every high ball, if his legs can get there
+
+ADR-077 gave a second man a contest on an opponent's aerial pass, but
+`thought.rs` read the drop point only on the defending side, only for a pass in
+flight, and gave the aerial `Target` a hardcoded `rank: 0`. The second man's
+own race in `offball.rs::goes_for_loose_ball` — reading, first touch, and his
+own pace — therefore never started for him. ADR-081 (DD-19, choice C) removes
+the side and pass-only restriction and carries the real rank: the nearest man
+still goes, the second goes only when he can reach it, both sides, every high
+ball, no new number. The kick and the clearance are facts in what each player
+perceives; who chases is still each player's own reading of the ball and his
+legs. The twin `the_second_reaches_the_near_ball_and_holds_for_the_far_one`
+proves the reach test; `swapped_wide_men_strike_with_the_feet_they_have`
+keeps the sample that guards the foot decision.
+
 ## 163 - The dead ball is seen, and the kicker is chosen by role
 
 A restart is now a fact in what each player perceives: `OffBallScene.dead_ball`

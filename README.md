@@ -11,7 +11,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-559_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-561_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -127,7 +127,7 @@ of the classic Italian ones. The longer version is in
 
 ## Where we are, honestly
 
-**There is no playable game yet.** The match engine is close to complete and is being calibrated against real football, one verified step at a time, in the open. Engine version **163**; **559 tests** and a health check run on every commit.
+**There is no playable game yet.** The match engine is close to complete and is being calibrated against real football, one verified step at a time, in the open. Engine version **165**; **561 tests** and a health check run on every commit.
 
 ### The road, level by level
 
@@ -157,19 +157,20 @@ The game is built in four concentric levels; each one widens the previous and de
 
 ### The match against real football
 
-Measured on 60 matches against Serie A 2017-18 (380 real matches, Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one standard deviation of the real matches: the closing of L0 asks whether a single match is credible, since a real one can end 0-0 or 4-3. **Today 11 of 22 metrics are in band**; every metric outside has an open item with its cause. No number is ever tuned to hit a target: a distance is a question about how the players perceive, think or move.
+Measured on 60 matches against Serie A 2017-18 (380 real matches, Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one standard deviation of the real matches: the closing of L0 asks whether a single match is credible, since a real one can end 0-0 or 4-3. **Today 6 of 22 metrics are in band**; every metric outside has an open item with its cause. No number is ever tuned to hit a target: a distance is a question about how the players perceive, think or move.
 
 | In band | Real | Engine | | Not yet | Real | Engine |
 |---|---|---|---|---|---|---|
-| goals | 2.68 | 2.18 | | aerial duels | 38.1 | 6.6 |
-| shots | 24.6 | 20.9 | | fouls | 26.0 | 15.2 |
-| shots on target | 8.7 | 7.1 | | throw-ins | 42.7 | 16.8 |
-| corners | 10.3 | 9.4 | | goal kicks | 17.2 | 9.8 |
-| saves | 9.4 | 10.5 | | free kicks | 29.5 | 18.2 |
-| ground duels | 183 | 202 | | passes | 888 | 1320 |
-| offsides | 4.3 | 5.0 | | clearances | 29.5 | 42.5 |
+| penalties | 0.33 | 0.00 | | goals | 2.68 | 5.22 |
+| ground duels | 183 | 175 | | shots | 24.6 | 30.5 |
+| yellow cards | 3.97 | 5.00 | | shots on target | 8.69 | 12.42 |
+| red cards | 0.24 | 0.02 | | aerial duels | 38.1 | 10.9 |
+| goal kicks | 17.2 | 19.5 | | passes | 888 | 1257 |
+| stoppage, 2nd half (min) | 4.1 | 4.3 | | fouls | 26.0 | 13.5 |
+| | | | | throw-ins | 42.7 | 18.3 |
+| | | | | saves | 9.4 | 17.8 |
 
-The full table, with the cause of every distance, is in [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md).
+The full table, with the cause of every distance, is in [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md). The count has fallen from 12 to 6 as imposed order was removed from the model: L0 closes at 16 in band, so the work is to build the understanding back into the players, not to push the numbers ([`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md) §I tre filtri e il test del burattino).
 
 ## What the engine does, and what is coming
 
@@ -177,7 +178,7 @@ Every value an act reads comes from the player's characteristics; the full catal
 
 | Area | ✅ Done | 🟡 Partly | ⬜ To do |
 |---|---|---|---|
-| **The body** | top speed and acceleration by his characteristics; brake, stop, turn; his own pace; fatigue against endurance, rest at half-time | jump in the aerial duel | the timing of the jump; the second man on high balls |
+| **The body** | top speed and acceleration by his characteristics; brake, stop, turn; his own pace; fatigue against endurance, rest at half-time; the second man reads every high ball and goes only if his legs can reach it ([ADR-081](doctrine/adr/081-the-second-man-on-every-high-ball.md)) | jump in the aerial duel | the timing of the jump |
 | **The mind** ([ADR-052](doctrine/adr/052-every-player-thinks.md)) | every player imagines his options and picks the best he sees; a cone of sight; the memory of his last look, so he decides on what he has seen; vision, reading, anticipation, creativity, concentration; courage and composure | perception with its error ([ADR-062](doctrine/adr/062-what-a-player-sees-is-not-exact.md)) | |
 | **With the ball** | control; short and lofted pass, cross, switch, through ball; carry and dribble or shield; shot with power and lob; the foot on the ball's side, or a touch onto the strong one when there is space; header; clearance with its error, into touch when he chooses, first time when he would be robbed before he plays ([ADR-064](doctrine/adr/064-the-choice-at-the-reception.md)) | | |
 | **Without the ball** | press, challenge standing, sliding or jockeying; mark, offer, run in behind; hold the block's shape and width; intercept; cover; block a shot; react to a ball before it is played | | |

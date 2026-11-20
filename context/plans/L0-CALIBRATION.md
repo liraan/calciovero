@@ -10,38 +10,128 @@
   ```
   60 partite, le squadre di prova, blocco medio e ampiezza normale.
 - **Riferimento:** Serie A 2017-18, 380 partite, Wyscout (Pappalardo et al. 2019, *Scientific Data* 6, 236; CC BY 4.0), per partita ed entrambe le squadre.
-- **Motore:** `SIM_VERSION` 151 (rimisurato il 2026-11-17, il pallone davanti in conduzione: passaggi 1336, dribbling 24.0, tiri in porta 7.23; 10 su 22; la taratura è ferma, decisione BK; al 150, nessuno messo da nessuna parte: le riprese aspettano chi batte, il calcio d'inizio le squadre; gol 3.03, passaggi 1196, dribbling 20.4, rossi 0.02; 11 su 22; al 149, il pallone alto, OI-102: gol 3.72, tiri in porta 8.72, parate 12.07, duelli aerei 7.9, autogol 0.77; 11 su 22; al 148, i contatti a ogni passo piccolo: gol 3.50, autogol 0.68, spazzate 58.5, duelli aerei 6.1, rimesse 19.5; 11 su 22; al 147, con i passi piccoli, ADR-069: gol 2.95, rimesse 25.9, rinvii 12.6, angoli 10.8, rossi 0.23, spazzate 49.2, duelli aerei 6.2; 11 su 22; al 141, rimisurato il 2026-11-16, con il colpo che costringe al cambio, ADR-066: gol 2.67, parate 12.6 in banda, 12 su 22; al 140, con l'allenatore che legge la partita acceso di base, decisione Y: gol 2.60, tiri 25.4, in porta 9.4, angoli 13.8 e fuorigioco 4.5 in banda, parate 13.2 fuori; 11 su 22 come al 137, che lo era con un altro insieme; al 137, dopo il punto oltre l'uomo; al 136, la marcatura pesata dal passaggio che arriva all'uomo, OI-117 (A); al 135, il passaggio che sbatte sul corpo; al 134, la scelta alla ricezione, la spazzata di prima; al 133, la reazione dell'avversario al pallone calciato e il conteggio dei passaggi intercettati; al 132, la pressione sul passaggio e sulla spazzata; al 131, le forze del contrasto sulla stessa scala; al 130, la ricezione di ogni pallone libero; al 129, l'ampiezza con la palla in gioco, 47 m; al 128, il rimbalzo FIFA, 9 su 22; al 127, l'ampiezza del blocco dal tracking Metrica, 8 su 22; al 126 erano in banda 9 su 22, al 118 pure 9). La misura del 116, del 117 e del 118 è identica riga per riga: il 117 e il 118 cambiano solo le partite di coppa e le squadre con l'allenatore che reagisce.
+- **Motore:** `SIM_VERSION` 165 (rimisurato il 2026-11-20 su 60 partite 42..101, dopo l'attuazione dell'emendamento ADR-071 sul posto senza palla letto dal giocatore: gol 5.22, passaggi 1257, duelli aerei 10.85, rimesse 18.27; **6 su 22**). La tabella qui sotto è di questa versione. Storia delle misure: al 164, la scelta C di OI-102 (ADR-081): gol 5.25, duelli aerei 11.02, 6 su 22; al 163, i calci morti e il battitore scelto per ruolo (DD-21, ADR-080): gol 5.20, duelli aerei 10.82, 6 su 22; al 154, la posizione senza palla (ADR-071): 9 su 22; al 151, 11 su 22; al 147, i passi piccoli (ADR-069): gol 2.95, rimesse 25.9, 11 su 22; al 141, il colpo che costringe al cambio (ADR-066): 12 su 22. La taratura è ferma finché i comportamenti non sono giusti (decisione BK). La misura del 116, del 117 e del 118 è identica riga per riga: il 117 e il 118 cambiano solo le partite di coppa e le squadre con l'allenatore che reagisce.
 - **La banda:** media reale ± una deviazione standard delle 380 partite reali. **Il suo significato (decisione Y, maintainer, 2026-11-16):** L0 si chiude sulla credibilità della singola partita: una partita vera può finire 0-0 o 4-3, e la dispersione delle partite vere dice cosa è credibile. L1 si chiuderà sulle medie del campionato, con la banda sull'errore della media su una stagione intera, perché i totali di stagione (gol, capocannoniere) mostrano ogni scarto nelle medie. La fonte è lo stesso riferimento. È una regola sola per tutte le metriche, presa dalla dispersione del calcio vero e non dai valori del motore. Il caos del motore (circa 1.5 gol fra due esecuzioni che differiscono di un bit, SIM 101) sta dentro questa larghezza.
 - **Non confrontabili:** cross e intercetti. Le definizioni Wyscout e del motore differiscono (`ds-reference`, nota della tabella).
 
+## I due filtri e il test del burattino (maintainer, 2026-11-19)
+
+- **Partita vera** = confrontare ciò che si vede nel gioco con ciò che si vedrebbe
+  in una partita reale, annotare le differenze e da lì capire cosa migliorare.
+- **LUNA** = non fermarsi al dito: espandere la prospettiva e guardare la bigger
+  picture a cui i fatti puntano (il saggio indica la luna, lo stolto guarda il dito).
+- **Obiettivo (maintainer, 2026-11-19):** non 22 burattini belli e ordinati in campo,
+  ma 22 giocatori belli e ordinati **perché loro stessi sanno cosa fare in ogni
+  situazione di campo**: ognuno con la sua storia di formazione, le sue abilità e
+  la sua cognizione calcistica evoluta. L'ordine va letto come **effetto** della
+  cognizione, non imposto dall'esterno come causa. Per questo ADR-071 (il posto
+  senza palla pesato dalla disciplina) è il primo salto negativo della bisection:
+  più ordine esterno, meno calcio.
+- **Test del burattino — criterio di accettazione di ogni causa.** Nella stessa
+  scena, cambiare solo la lettura (o l'intesa, o l'abilità) del giocatore: se
+  l'atto non cambia, il giocatore non stava decidendo, stava obbedendo a una
+  forma; se cambia, stava giocando a calcio. I twin test già presenti
+  (`swapped_wide_men_strike_with_the_feet_they_have`,
+  `a_teammate_he_knows_yields_the_loose_ball`) sono questo criterio applicato al
+  piede e all'intesa; valgono come gate dell'obiettivo, non solo come regressione.
+- **Regola di sequenza:** ogni causa deve passare **sia** il test del burattino
+  **sia** la misura sulle stesse 60 partite. Una causa che alza le metriche ma
+  lascia l'atto invariato al cambiare della lettura è un burattino più ordinato
+  e va respinta. La soglia 16/22 resta la misura; il giudizio finale è lo
+  sguardo sul campo: *si vede un giocatore che ha giocato migliaia di ore?*
+
+## La cipolla (maintainer, 2026-11-19)
+
+La partita è una cipolla, e il filtro LUNA è il modo di guardarla: **ciò che si
+vede è la cipolla intera** (la *partita vera*: il confronto con una partita
+reale si fa sull'insieme, non su una riga); dentro ci sono gli strati, ognuno
+un fattore che la forma. Fermarsi alla superficie è guardare il dito; seguire
+gli strati fino al nocciolo è guardare la luna.
+
+Gli strati sono quelli che il progetto ha già, dal più interno al più esterno
+(`BEHAVIOURS.md`, `STRUCTURE.md`: le dipendenze fluiscono verso l'interno — non
+è una gerarchia nuova):
+
+| Strato della cipolla | Fattore | Dove vive già |
+|---|---|---|
+| **Nocciolo** — formazione calcistica cognitiva del giocatore | come si gioca a pallone: scopo, misura del gioco, pallone/spazio/tempo, lettura dell'avversario | Strato 1, ADR-052; abilità e anni di formazione nei latenti |
+| **Ruoli e coppie** | chi occupa quale spazio; intesa, movimenti complementari, divisione dei compiti | Strati 2 e 3, ADR-071, ADR-073, ADR-074 |
+| **Tattica** | la lavagna che coordina i movimenti di squadra, sposta le zone, aggiunge responsabilità | Strato 4 (AL, AG, AO, AP), ADR-070 |
+| **Il mondo** | allenatore, staff tecnico, allenamento, società, tifosi, media | L1-L3 (season, career, meta): il contesto che nutre la cipolla da fuori |
+
+**I tre criteri letti insieme con LUNA.** La cipolla si costruisce dal nocciolo
+verso l'esterno, ma ogni strato esterno è **letto** dal nocciolo, non imposto ad
+esso: la forma dà la zona da cui il giocatore guarda (ADR-071 §1), l'allenatore
+dà responsabilità che il giocatore pesa con la sua disciplina, l'intesa fa
+prevedere il compagno senza copione. È la differenza fra ordine-imposto
+(burattino) e ordine-effetto-della-cognizione (obiettivo). Uno strato che
+sostituisce la lettura del nocciolo con un punto o un copione è un burattino,
+anche se la cipolla è ordinata.
+
+**Regola di sequenza delle cause — dal nocciolo verso l'esterno.** Si aggiusta
+prima il nocciolo (il giocatore che sa cosa fare), poi via via gli strati che
+lo avvolgono; non si mette tattica o disciplina a mascherare un nocciolo che
+non legge. È la luna della bisection: ADR-071 (posto senza palla, uno strato
+esterno che imponeva il punto) è il primo salto negativo 12/22 → 9/22; OI-102
+(il secondo uomo che non legge la palla alta) è un danno al nocciolo e viene
+prima. Ogni causa va localizzata nello strato giusto e passa il test del
+burattino (il nocciolo decide ancora?) **e** la misura sulle 60 partite.
+
+## La demo, la simulazione e la sensazione di partita reale (maintainer, 2026-11-19)
+
+Alla fine è un **gioco simulativo**, ed è questa la luna sotto la demo. La demo
+ha parti abbozzate, perché interi strati della cipolla non sono ancora
+sviluppati nel gioco (il mondo L1-L3 — carriera, società, tifosi — è contesto,
+non richiesto in L0). Ma essere una demo non cambia la natura del prodotto: la
+**sensazione di una partita reale** non è un effetto scenico da rifinire, è
+l'esito del modello che gira. La dottrina lo dice (`00-foundations.md` §4-5:
+determinismo per costruzione, nessun dado, esiti dalle transizioni locali ed
+emergenti degli attori): qui non si recita una partita, la si simula.
+
+Il vincolo non è la completezza degli strati né la lucidatura, è la qualità del
+nocciolo. Uno strato esterno può essere grezzo — una lavagna semplice,
+un'intesa iniziale, una forma di base — senza che la partita sembri falsa,
+purché il nocciolo legga: 22 giocatori che scelgono da ciò che vedono, con le
+loro abilità, e da cui l'ordine in campo **emerge**. Se il nocciolo è un
+burattino, nessuna rifinitura degli strati esterni restituisce la sensazione di
+simulazione; se il nocciolo legge, anche una demo con strati abbozzati si guarda
+come calcio vero.
+
+È il giudizio finale già scritto sopra (*si vede un giocatore che ha giocato
+migliaia di ore?*) detto in termini di simulazione: **la misura è la sensazione
+che il modello produce, non la completezza né la vetrina**. Le 60 partite e la
+soglia 16/22 misurano quella sensazione; il test del burattino la garantisce.
+Non si giustifica un comportamento da burattino dicendo "è solo una demo": in
+un gioco simulativo è proprio quello che non può succedere.
+
 ## La tabella
 
-| Metrica | Reale | ± | Motore 137 | Banda | Dentro? | Causa o OI |
+| Metrica | Reale | ± | Motore 165 | Banda | Dentro? | Causa o OI |
 |---|---|---|---|---|---|---|
-| gol | 2.68 | 1.65 | 2.55 | 1.03–4.33 | sì | — |
-| autogol | 0.10 | 0.31 | 0.33 | 0–0.41 | sì | OI-100: dal 132 la spazzata sotto pressione devia di più; da guardare |
-| tiri | 24.60 | 5.46 | 23.13 | 19.1–30.1 | sì | — |
-| tiri in porta | 8.69 | 3.22 | 9.22 | 5.5–11.9 | sì | dal 2026-11-16 `ds-reference` conta i tiri respinti fuori dallo specchio, come Wyscout e StatsBomb; il tiro sotto gli 11 m resta troppo preciso (96% contro 46%, OI-100, il criterio di fallimento di `error_pressure_rad`) |
-| rigori | 0.33 | 0.56 | 0.02 | 0–0.89 | sì | — |
-| passaggi | 887.7 | 122.8 | 1318.63 | 765–1011 | no | OI-100: troppi passaggi, e troppi intercettati (290 a partita); dal 2026-11-16 `ds-reference` conta anche i passaggi intercettati, che il motore racconta solo come `Interception` (prima 1065) |
-| passaggi riusciti | 739.2 | 124.8 | 1121.12 | 614–864 | no | OI-100: l'83,9% dei tentati (Wyscout 83,3%), dal 133; troppi passaggi in tutto |
-| duelli aerei | 38.14 | 12.98 | 7.22 | 25.2–51.1 | no | OI-102: il secondo uomo sui palloni alti |
-| duelli a terra | 182.6 | 27.5 | 194.60 | 155–210 | sì | — |
-| dribbling riusciti | 16.03 | 5.67 | 25.88 | 10.4–21.7 | no | OI-103: dal 137 il portatore punta l'uomo nel 35% dei contatti (Wyscout 18,6%) |
-| falli | 26.00 | 6.69 | 14.23 | 19.3–32.7 | no | OI-114: dal 131 il difensore vince più contrasti, e un contrasto vinto non è fallo (ADR-042 §4) |
-| gialli | 3.97 | 1.96 | 5.47 | 2.0–5.9 | sì | — |
-| rossi | 0.24 | 0.49 | 0.07 | 0–0.73 | sì | — |
-| angoli | 10.30 | 3.58 | 13.35 | 6.7–13.9 | sì | — |
-| rimesse laterali | 42.72 | 8.92 | 17.27 | 33.8–51.6 | no | OI-100: raddoppiate dal 127 (3.85) con il rimbalzo; nel calcio vero il 21,5% segue una spazzata, il 19,7% un tocco, il 31% un duello, il 24% un passaggio sbagliato (Wyscout); nel motore un duello non manda quasi mai la palla fuori e il passaggio sbaglia poco |
-| rinvii dal fondo | 17.15 | 4.20 | 8.57 | 13.0–21.4 | no | OI-100: il tiro troppo preciso finisce poco fuori, quindi pochi rinvii |
-| punizioni | 29.45 | 6.81 | 16.92 | 22.6–36.3 | no | OI-112: probabilmente di conteggio |
-| fuorigioco | 4.26 | 2.40 | 4.48 | 1.9–6.7 | sì | — |
-| spazzate | 29.53 | 8.65 | 40.45 | 20.9–38.2 | no | appena sopra la banda dal 135: di testa 29.9 (StatsBomb 13.8), di piede 10.5 (16.2): la spazzata di testa è ancora una regola (ADR-064, passo 2) |
-| parate | 9.37 | 3.37 | 12.73 | 6.0–12.7 | no | — |
-| recupero, primo tempo (min) | 1.49 | 1.35 | 4.37 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
-| recupero, secondo tempo (min) | 4.08 | 1.61 | 2.92 | 2.5–5.7 | sì | — |
+| gol | 2.68 | 1.65 | 5.22 | 1.03–4.33 | no | OI-100: dal 163 le ripartenze libere e i piedi migliori (da tarare a L3); il tiro troppo preciso |
+| autogol | 0.10 | 0.31 | 1.00 | 0–0.41 | no | OI-100: dal 132 la spazzata sotto pressione devia di più; da guardare |
+| tiri | 24.60 | 5.46 | 30.52 | 19.1–30.1 | no | OI-100: troppi tiri, dalla catena dei passaggi e delle ripartenze |
+| tiri in porta | 8.69 | 3.22 | 12.42 | 5.5–11.9 | no | il tiro sotto gli 11 m resta troppo preciso (96% contro 46%, OI-100, il criterio di fallimento di `error_pressure_rad`); `ds-reference` conta i tiri respinti fuori dallo specchio, come Wyscout e StatsBomb |
+| rigori | 0.33 | 0.56 | 0.00 | 0–0.89 | sì | — |
+| passaggi | 887.7 | 122.8 | 1256.68 | 765–1011 | no | OI-100: troppi passaggi, e troppi intercettati (156 a partita); `ds-reference` conta anche i passaggi intercettati, che il motore racconta solo come `Interception` |
+| passaggi riusciti | 739.2 | 124.8 | 1014.23 | 614–864 | no | OI-100: l'83,9% dei tentati (Wyscout 83,3%), dal 133; troppi passaggi in tutto |
+| duelli aerei | 38.14 | 12.98 | 10.85 | 25.2–51.1 | no | OI-102: causa trovata e attuata in SIM 164 (ADR-081, scelta C), rimisurata al 165: il drop point letto da entrambi i lati e il rank vero; il conteggio resta basso (10.82 → 11.02 → 10.85), la causa è chiusa ma l'OI resta aperta sul divario |
+| duelli a terra | 182.6 | 27.5 | 174.68 | 155–210 | sì | — |
+| dribbling riusciti | 16.03 | 5.67 | 23.08 | 10.4–21.7 | no | OI-103: dal 137 il portatore punta l'uomo nel 35% dei contatti (Wyscout 18,6%) |
+| falli | 26.00 | 6.69 | 13.48 | 19.3–32.7 | no | OI-114: dal 131 il difensore vince più contrasti, e un contrasto vinto non è fallo (ADR-042 §4) |
+| gialli | 3.97 | 1.96 | 5.00 | 2.0–5.9 | sì | — |
+| rossi | 0.24 | 0.49 | 0.02 | 0–0.73 | sì | — |
+| angoli | 10.30 | 3.58 | 16.70 | 6.7–13.9 | no | OI-100: la catena dei troppi tiri |
+| rimesse laterali | 42.72 | 8.92 | 18.27 | 33.8–51.6 | no | OI-100: raddoppiate dal 127 (3.85) con il rimbalzo; nel calcio vero il 21,5% segue una spazzata, il 19,7% un tocco, il 31% un duello, il 24% un passaggio sbagliato (Wyscout); nel motore un duello non manda quasi mai la palla fuori e il passaggio sbaglia poco |
+| rinvii dal fondo | 17.15 | 4.20 | 19.48 | 13.0–21.4 | sì | — |
+| punizioni | 29.45 | 6.81 | 19.80 | 22.6–36.3 | no | OI-112: probabilmente di conteggio |
+| fuorigioco | 4.26 | 2.40 | 8.42 | 1.9–6.7 | no | OI-098 / OI-104: la linea è letta con posizioni esatte, l'errore di percezione non è ancora costruito |
+| spazzate | 29.53 | 8.65 | 58.95 | 20.9–38.2 | no | OI-100: la spazzata di testa resta una regola (ADR-064, passo 2) |
+| parate | 9.37 | 3.37 | 17.75 | 6.0–12.7 | no | OI-100: troppe parate seguono i troppi tiri in porta |
+| recupero, primo tempo (min) | 1.49 | 1.35 | 5.44 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
+| recupero, secondo tempo (min) | 4.08 | 1.61 | 4.27 | 2.5–5.7 | sì | — |
 
-**In banda (SIM 150): 11 metriche su 22 confrontabili (dentro i dribbling, fuori i rossi). In banda (SIM 149): 11 metriche su 22 confrontabili, le stesse del 147. In banda (SIM 148): 11 metriche su 22 confrontabili, le stesse del 147. In banda (SIM 147): 11 metriche su 22 confrontabili (gol, tiri, tiri in porta, rigori, duelli a terra, gialli, rossi, angoli, fuorigioco, parate, recupero del secondo tempo); al SIM 141: 12 metriche su 22 confrontabili (gol, autogol, tiri, tiri in porta, rigori, duelli a terra, gialli, rossi, angoli, fuorigioco, parate, recupero del secondo tempo). Al SIM 140 e al 137: 11.** Fuori banda: 11, ognuna con il suo OI aperto** (al 126: 9; al 127: 8, dentro i duelli a terra e fuori gol e falli; il 128 riporta dentro i gol, al bordo) (OI-100, OI-101, OI-102, OI-103, OI-112, OI-114).
+**In banda (SIM 165): 6 metriche su 22 confrontabili** (rigori, duelli a terra, gialli, rossi, rinvii dal fondo, recupero del secondo tempo). **Fuori banda: 16**, ognuna con la sua causa o il suo OI aperto (OI-098, OI-100, OI-101, OI-102, OI-103, OI-104, OI-112, OI-114). Storico: SIM 164 **6/22**; SIM 163 **6/22**; SIM 154 **9/22**; SIM 151 **11/22**; SIM 147 **11/22**; SIM 141 **12/22**. Il conteggio resta 6 come al 164: l'emendamento del burattino cambia il comportamento (duelli aerei 11.02 → 10.85, gialli 5.43 → 5.00, passaggi 1251 → 1257) senza ritoccare nessuna banda o soglia. La caduta da 12 a 6 non è un peggioramento dei numeri ma l'effetto di togliere i burattini: più ordine imposto (ADR-071, SIM 154; calci morti e piedi migliori, SIM 163), meno calcio; la rincorsa è dal nocciolo verso l'esterno, non il contrario.
 
 ## I parametri di grado 3 (fase 4.1)
 
@@ -57,6 +147,69 @@ Restano quindi tutti nel registro, con il conteggio in `STATE.md`.
 - **Reale, Metrica Sports** (partite campione 1 e 2): la palla sta nel decimo esterno il 7,5-9,8% del tempo per lato; con la palla l'uomo più vicino a una linea laterale ne dista 4 m (mediana).
 - **Motore 126** (semi 42-51, dal registro dei tick): l'1,6% dei passaggi parte dal decimo esterno; le ali non andavano oltre 9 m dalla linea (la lettura della griglia, corretta al 127).
 - **Dal centro verso la fascia:** dai decimi 2-4 della larghezza il 7,5-17,9% dei passaggi veri arriva nel decimo esterno del proprio lato (Wyscout); nel motore 128 lo 0,5-1,6%. Dalla fascia invece il motore è vicino al vero (dal decimo esterno ci resta il 39% contro il 29%). Manca il passaggio verso la linea, e il compagno che la tiene: con la palla in gioco e al centro, il più largo vero sta a 9-10 m dalla linea, quello del motore a circa 13 m (al 128; con la palla dovunque, mediana 10,6 m).
+
+## Auditoria delle tarature storiche (2026-11-19)
+
+Richiesta dal maintainer: distinguere i numeri scelti per spiegare il calcio
+da quelli scelti per far tornare un conteggio. Esito, letto su
+`CHANGELOG-SIM.md`, `balance/SOURCES.md` e `context/RULES.md` A5-bis:
+
+- **11 episodi sospetti o border-line**, di cui **7 ancora vivi** nel
+  comportamento e **4 morti o superati**.
+- I vivi più rilevanti: reach/reaction/aim del portiere (`save.json`,
+  SIM 61 e 71), soglie fallo/cartellino (`duel.json`, `laws.json`, SIM 64),
+  retry/slide dei duelli (`duel.json`, SIM 63), `progression_gain`
+  (`shot_choice.json`, SIM 57), velocità di calcio (`kick.json`, SIM 55),
+  contributi al recupero (`stoppage_time.json`, SIM 7).
+- Sono legittimi, con fonte o verifica fuori campione: reazione allenatore,
+  soglia knock, errore base del tiro, goal→kick-off, soglia offside,
+  larghezza del blocco, `line_break_milli` come scelta dichiarata.
+- Alcune documentazioni sono vecchie e contraddicono il valore attuale
+  (`save.json`, `duel.json`, `SOURCES.md`): va segnalato, non usato per
+  ricalibrare.
+
+**Regola operativa:** nessuno di questi numeri è una causa. Se una metrica
+fuori banda sembra richiederlo, si prepara un DD/ADR e ci si ferma, come per
+ogni scelta di modello.
+
+## Bisection delle regressioni (2026-11-19)
+
+Misura sugli stessi 60 semi, in worktree separati: SIM 141 **12/22**, SIM 147
+**11/22**, SIM 151 **11/22**, SIM 154 **9/22**, SIM 163 **6/22**, SIM 164
+**6/22**, SIM 165 **6/22**. Il primo salto negativo è con la posizione senza
+palla (SIM 154, ADR-071); il secondo con i calci morti e i piedi migliori
+(SIM 163). SIM 164 non aggiunge metriche in banda: la causa del duello aereo
+è tolta (11.02 da 10.82), ma il conteggio resta 6/22. SIM 165 attua
+l'emendamento del burattino: la lettura del giocatore sceglie la linea nel suo
+corridoio quando nessuno arriva, le fasce accanto restano pesate dal gioco.
+La garanzia di pressione ADR-070 e il test del piede restano verdi, e il
+conteggio resta 6/22: i gialli rientrano in banda (5.00), i duelli aerei
+tornano a 10.85.
+
+## OI-102: causa trovata, scelta C applicata (SIM 164)
+
+L'agente ha trovato la causa dell'isolamento del duello aereo: SIM 160 manda
+il secondo uomo solo sul lato che difende e solo su un passaggio in volo, e
+il `Target` aereo hardcodifica `rank: 0`, così la race del secondo uomo in
+`offball.rs` non scatta mai. Il trial B (ogni palla alta, entrambi i lati)
+portò i duelli aerei da 10,82 a 12,12 e i gol da 5,20 a 4,52 senza aggiungere
+metriche in banda, e fece sparire dal campione dei semi 42-49 i tiri e i cross
+laterali su cui si regge il test del piede (`feet.rs`).
+
+Il maintainer ha scelto **C** (DD-19, ADR-081 `Accepted`): ogni palla alta,
+entrambi i lati, ma il secondo va solo se può arrivarci, con la corsa e la
+lettura già esistenti, nessun numero nuovo. In SIM 164 `thought.rs` legge il
+drop point da entrambi i lati e passa il rank vero; `offball.rs` decide con la
+race sul passo del giocatore. Il gemello
+`the_second_reaches_the_near_ball_and_holds_for_the_far_one` e il test del
+piede `swapped_wide_men_strike_with_the_feet_they_have` sono verdi. La misura
+sulle stesse 60 partite 42..101 (2026-11-20) dà i numeri della tabella qui
+sopra: i duelli aerei salgono da 10.82 a 11.02, i gol da 5.20 a 5.25, e le
+metriche in banda restano 6 su 22. La causa di OI-102 è chiusa; il divario
+del conteggio resta e va cercato in un'altra causa del nocciolo. In SIM 165
+l'emendamento ADR-071 (posto senza palla letto dal giocatore, non imposto)
+rimette il gemello di pressione ADR-070 verde senza toccare semi né asserzioni,
+e il conteggio resta 6/22: le due cause sono accoppiate nel golden 165.
 
 ## La prossima misura
 

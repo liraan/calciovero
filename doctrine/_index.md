@@ -68,7 +68,7 @@ Modules marked *(planned)* below do not have a file yet. Their links are intenti
 | L0.10 | [`L0-match/10-ground-truth.md`](../L0-match/specs/10-ground-truth.md) | ✅ ratified | 00, L0.01, L0.03 |
 | L0.11 | [`L0-match/11-player-characteristics.md`](../L0-match/specs/11-player-characteristics.md) | 🟡 draft | 00, L0.03, L0.10, ADR-003, ADR-028 |
 
-**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (15 crates, 559 tests). See `doctrine/STRUCTURE.md` §3.
+**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (15 crates, 561 tests). See `doctrine/STRUCTURE.md` §3.
 
 ---
 
@@ -326,5 +326,6 @@ These are components that are referenced across modules but are not crates. They
 | [078](adr/078-the-keepers-depth-is-read.md) | The keeper's depth is read, not fixed (10d) | ? accepted (delegated) | La profondità del portiere è la sua lettura del gioco, non un numero fisso: chi legge esce, chi no resta pronto al tiro. SIM 161. |
 | [079](adr/079-the-lines-and-the-pocket.md) | The opponents' lines and the space between them | ? accepted (delegated) | Il giocatore legge le tre linee avversarie; un passaggio che ne rompe una vale di più e lo spazio fra le linee diventa un posto da occupare. SIM 162. |
 | [080](adr/080-the-dead-ball-and-the-kicker.md) | The dead ball and the kicker | ? accepted (delegated) | La palla morta è un fatto percepito: nessuno pressa il battitore; il calcio va a chi ha il ruolo e il piede adatto, non al più vicino. SIM 163. |
+| [081](adr/081-the-second-man-on-every-high-ball.md) | The second man on every high ball (OI-102) | ✅ accepted (2026-11-20) | DD-19: scelta C del maintainer — ogni palla alta, entrambi i lati, il secondo solo se può arrivarci con la corsa e la lettura esistenti, nessun numero nuovo. SIM 164; ADR-077 §Decision emendata. |
 
-**Accepted:** 001, 003, 004, 006, 007, 008, 012, 013, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 042, 043, 044, 045, 046, 047, 048, 049, 050, 051, 052, 053, 054, 055, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 072, 073, 074, 075, 076, 077, 078, 079, 080 (73; 064 to 080 delegated, to be reviewed by the maintainer). **Superseded:** 002 (by ADR-027), 005 (by ADR-055), 014 (by ADR-061), 023 (by ADR-024). **Proposed:** none.
+**Accepted:** 001, 003, 004, 006, 007, 008, 012, 013, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 042, 043, 044, 045, 046, 047, 048, 049, 050, 051, 052, 053, 054, 055, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 072, 073, 074, 075, 076, 077, 078, 079, 080, 081 (74; 064 to 080 delegated, to be reviewed by the maintainer). **Superseded:** 002 (by ADR-027), 005 (by ADR-055), 014 (by ADR-061), 023 (by ADR-024). **Proposed:** none.

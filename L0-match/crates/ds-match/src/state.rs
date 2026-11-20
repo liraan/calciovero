@@ -831,15 +831,17 @@ impl TeamView {
     /// be there (`read::soon`); it is his to close only if he is the nearest
     /// of his side to it, as a zone is. The carrier's own space is not one of
     /// them: that is pressing, another act. Far from the ball no opponent
-    /// can be in his zone soon and every space weighs nothing, so he keeps
-    /// his coach's place: the others close in, they do not chase it
-    /// (`BEHAVIOURS.md` 19). He never leaves his zone: that is his
-    /// discipline (ADR-071 §4).
+    /// can arrive soon, but the space still weighs what THIS man reads in it:
+    /// inside his own lane his reading picks the line, while the lanes beside
+    /// keep being weighed by the game (ADR-071 §5, emendamento 2026-11-19;
+    /// `BEHAVIOURS.md` 19). He never leaves his zone: that is his discipline
+    /// (ADR-071 §4).
     #[allow(clippy::cast_precision_loss)] // cm on a pitch
     pub(crate) fn choose_closed_place(
         &self,
         (me, anchor): ((i32, i32), (i32, i32)),
         (length, width): (i32, i32),
+        game_reading: f64,
     ) -> (i32, i32) {
         let block = crate::balance::BlockBalance::load();
         let corridor = (width / 5).max(1);
@@ -854,18 +856,13 @@ impl TeamView {
                 .iter()
                 .all(|m| *m == me || distance_squared(*m, p) >= mine)
         };
-        let value = |p: (i32, i32)| {
-            if !his(p) {
-                return 0.0;
-            }
-            let danger = ds_orchestrator::read::space_value(p, our_goal, their_goal);
-            let soon = self
-                .opponents
+        let danger = |p: (i32, i32)| ds_orchestrator::read::space_value(p, our_goal, their_goal);
+        let soon = |p: (i32, i32)| {
+            self.opponents
                 .iter()
                 .filter(|o| Some(**o) != self.carrier_at)
                 .map(|o| ds_orchestrator::read::soon(*o, p))
-                .fold(0.0, f64::max);
-            danger * soon
+                .fold(0.0, f64::max)
         };
         // Never two in the same corridor on the same line.
         let crowded = |p: (i32, i32)| {
@@ -874,7 +871,7 @@ impl TeamView {
             })
         };
         let k0 = (anchor.1 / corridor).clamp(0, 4);
-        let mut options: Vec<(f64, (i32, i32))> = Vec::new();
+        let mut candidates = Vec::new();
         for k in (k0 - 1).max(0)..=(k0 + 1).min(4) {
             for step in [0, 1, -1] {
                 let y = if k == k0 {
@@ -883,9 +880,30 @@ impl TeamView {
                     k * corridor + corridor / 2
                 };
                 let x = (anchor.0 + step * line * self.forward).clamp(0, length);
-                let p = (x, y.clamp(0, width));
-                options.push((if crowded(p) { 0.0 } else { value(p) }, p));
+                candidates.push((x, y.clamp(0, width)));
             }
+        }
+        // ADR-071 §5 (emendamento 2026-11-19): when no opponent can arrive
+        // soon in his zone, a space is still worth what THIS man reads in it
+        // — not zero. Where an opponent can arrive, the reading is the old
+        // `danger * soon`: a threat is a fact, not a matter of interpretation.
+        let quiet = soon(anchor) == 0.0 && candidates.iter().all(|p| soon(*p) == 0.0);
+        let value = |p: (i32, i32)| {
+            if !his(p) {
+                return 0.0;
+            }
+            // His reading chooses the line inside his own lane; the lanes
+            // beside it are still weighed by the game, not by his mood.
+            danger(p)
+                * if quiet && p.1 / corridor == k0 {
+                    game_reading.clamp(0.0, 1.0)
+                } else {
+                    soon(p)
+                }
+        };
+        let mut options: Vec<(f64, (i32, i32))> = Vec::new();
+        for p in candidates {
+            options.push((if crowded(p) { 0.0 } else { value(p) }, p));
         }
         // The zone of his role, first: the coach's ask (ADR-059 §4).
         let zone = (value(anchor), anchor);
@@ -1964,18 +1982,39 @@ mod marking_tests {
         let carrier = (5000, 3400);
         let alone = block_view(vec![me], vec![carrier], carrier);
         assert_eq!(
-            alone.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH)),
+            alone.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0),
             anchor,
             "nobody to close: the coach's place"
         );
         let man = (3300, 3400);
         let marked = block_view(vec![me], vec![carrier, man], carrier);
-        let place = marked.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH));
+        let place = marked.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0);
         assert!(place.0 < anchor.0, "he steps back to close it: {place:?}");
         assert!(
             (place.0 - man.0).abs() <= 1100,
             "on the space of the man: {place:?}"
         );
+    }
+
+    /// Twin test (ADR-071 §5, emendamento 2026-11-19): the same man, the same
+    /// zone, the same opponent — only his reading of the game changes. Far
+    /// from the ball nobody can arrive, so before the amendment every space
+    /// weighed zero and both men stood on the coach's point (the burattino).
+    /// Now the reader sees the space nearer his own goal and steps back into
+    /// it; a man who reads nothing keeps the given place.
+    #[test]
+    fn the_reader_leaves_the_given_place_the_blind_man_keeps_it() {
+        let (me, anchor) = ((4000, 3400), (4000, 3400));
+        let carrier = (5000, 3400);
+        let v = block_view(vec![me], vec![carrier], carrier);
+        assert_eq!(
+            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0),
+            anchor,
+            "no reading: no space to see, the coach's place"
+        );
+        let read = v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 1.0);
+        assert_ne!(read, anchor, "he reads a space and leaves the given place");
+        assert!(read.0 < anchor.0, "towards his own goal: {read:?}");
     }
 
     /// Twin test (ADR-071 §5, `BEHAVIOURS.md` 19): two men of the same side,
@@ -1990,7 +2029,7 @@ mod marking_tests {
         let beside = (3350, 3400);
         let v = block_view(vec![me, beside], vec![carrier, man], carrier);
         assert_eq!(
-            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH)),
+            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0),
             anchor,
             "the man beside him is nearer: not his"
         );
@@ -2005,7 +2044,7 @@ mod marking_tests {
         let carrier = (4800, 3400);
         let v = block_view(vec![me], vec![carrier], carrier);
         assert_eq!(
-            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH)),
+            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0),
             anchor
         );
     }

@@ -17,7 +17,7 @@ piece.
 |---|---|---|---|
 | **know football** | tell us what a fan would not recognise in a match ("a defender would never do that") | an issue with the template *It is not football* | no |
 | **know football** | tune the numbers that drive the match: the players' profiles by role, the team's shape, the duel, the ball, the keeper | [`L0-match/balance/`](L0-match/balance/README.md) | no (JSON) |
-| **know the Laws of the Game** | write a law the engine does not apply yet (offside, fouls, advantage) as a pure function | [`rules.rs`](L0-match/crates/ds-match/src/rules.rs) | a little Rust |
+| **know the Laws of the Game** | write a law the engine does not apply yet (offside, fouls, advantage) as a pure function | [`referee.rs`](L0-match/crates/ds-match/src/plugins/referee.rs) (the `rules` plugin) | a little Rust |
 | **know tactics** | add a formation, or improve how the block moves without instructions | [`shape.rs`](L0-match/crates/ds-match/src/shape.rs) | a little Rust |
 | **like testing** | write a scenario that proves something about a match | [`tools/`](tools/README.md) (`ds-testkit`) | Rust |
 | **like tools** | improve the 2D debug view, the board, the HTML page | [`tools/`](tools/README.md) (`ds-demo`) | Rust |

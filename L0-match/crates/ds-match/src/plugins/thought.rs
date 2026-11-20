@@ -659,15 +659,14 @@ impl MatchState {
                         distance_squared(me, c) <= i64::from(duel.reach_cm).pow(2)
                     });
                 let keeper = Some(id) == keeper_id;
-                // A ball in the air coming down for the other side: where it
-                // will come down, and whether it falls in his own area (the
-                // keeper reads the flight, not where the ball is now).
-                // A ball in the air nobody plays to is anyone's where it
-                // comes down: both sides read it there (a clearance, a
-                // goal kick, a header away).
-                let against = air_drop
-                    .filter(|_| home != passing_home)
-                    .or_else(|| ball_loose.then(|| self.spatial.drop_point(180)).flatten());
+                // Where a ball in the air comes down, read by both sides
+                // (ADR-081, SIM 164: C). The kicker's side reads its own
+                // lofted ball too — nobody meets his own pass (SIM 148), but
+                // the men around him do. A ball nobody plays to is anyone's
+                // where it comes down (a clearance, a goal kick, a header
+                // away). The keeper reads the flight, not the ball's now.
+                let against =
+                    air_drop.or_else(|| ball_loose.then(|| self.spatial.drop_point(180)).flatten());
                 let drop_in_box =
                     against.is_some_and(|d| in_keeper_box(d, home, (length, width), &off));
                 // Courage (ADR-057, OI-109): he goes up for a high ball where a
@@ -759,8 +758,12 @@ impl MatchState {
                     .spatial
                     .block_target(id, ball, false, false)
                     .unwrap_or(me);
+                // Strato 3: the same reading drives where he closes a space
+                // without the ball (ADR-071 §5, emendamento 2026-11-19) and
+                // where he offers with it. One man, one reading, two acts.
+                let game_reading = ctx.hidden.characteristic(id, "game_reading").unwrap_or(0.5);
                 let closed = (carrier_pos.is_some() && !keeper)
-                    .then(|| view.choose_closed_place((me, anchor), (length, width)));
+                    .then(|| view.choose_closed_place((me, anchor), (length, width), game_reading));
                 let partner_intesa = if ball_loose {
                     let nearest_mate = squad
                         .players
@@ -828,17 +831,16 @@ impl MatchState {
                             })
                         },
                         |d| {
-                            // OI-102: on an aerial ball the second man also
-                            // contests (he goes for it if he can reach it),
-                            // so the duel is not left to one man a side.
-                            let rank_ok = if air_drop.is_some() && home != passing_home {
-                                rank(d) <= 1
-                            } else {
-                                rank(d) == 0
-                            };
-                            contests(rank_ok).then(|| ds_orchestrator::Target {
+                            // OI-102: on every high ball the second man also
+                            // contests, on either side (ADR-081, SIM 164: C).
+                            // His target keeps his real rank, so the race and
+                            // game-reading in `goes_for_loose_ball` decide
+                            // whether he can actually get there — the reach
+                            // test ADR-077 only stated in words. Rank 0 (the
+                            // keeper coming out) still goes unconditionally.
+                            contests(rank(d) <= 1).then(|| ds_orchestrator::Target {
                                 distance_cm: distance_squared(me, d).isqrt(),
-                                rank: 0,
+                                rank: if keeper { 0 } else { rank(d) },
                             })
                         },
                     ),
@@ -886,7 +888,7 @@ impl MatchState {
                                     }
                                     if n > 0 { sum / f64::from(n) } else { 0.5 }
                                 },
-                                ctx.hidden.characteristic(id, "game_reading").unwrap_or(0.5),
+                                game_reading,
                             )
                         };
                         held.push((id, place));
