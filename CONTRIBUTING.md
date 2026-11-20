@@ -67,12 +67,16 @@ moving, you are ready. Other useful commands:
 ```bash
 cargo run --release -p ds-demo -- --seed 42 --roster          # who is who
 cargo run --release -p ds-demo -- --seed 42 --tui --frame 30  # the pitch at 30'
-cargo test --workspace                                         # all the tests (the gate)
-cargo nextest run --workspace --release                        # same tests, faster (no doctests)
+bash context/scripts/session.sh check changed                  # the test gate (modular, cached)
+bash context/scripts/session.sh close                          # the full C2 hard stop, before committing
 ```
 
-The hooks in `.githooks/` run the checks for you before a commit and a
-push: they are the same checks the CI runs.
+The gate is **not** a raw `cargo test --workspace`: `session.sh` runs the
+tests that guard the files you touched, with an 80 s total budget, and
+caches green results in `.cache/session-tests/` (gitignored) by content
+hash. An unchanged file is not retested; `close` disables the cache so the
+`C2-green` trailer stays true. The hooks in `.githooks/` call the same
+script before a commit and a push.
 
 ---
 
@@ -82,9 +86,10 @@ push: they are the same checks the CI runs.
    people do not do the same work.
 2. **Fork, branch, change one thing.** One change per pull request: one
    balance file, one law, one fix, one document.
-3. **Check it.** For code: `cargo fmt`, `cargo clippy --workspace
-   --all-targets -- -D warnings`, `cargo test --workspace`
-   (`cargo nextest run --workspace --release` is faster for daily runs; the gate is `cargo test`). For balance:
+3. **Check it.** For code: `bash context/scripts/session.sh close` runs
+   the C2 hard stop in order (build, clippy, the modular cached test gate,
+   fmt, runner, gates). While iterating, `session.sh check changed` is
+   enough and reuses the cache. For balance:
    run a few seeds in the 2D view and write in the PR what you saw before
    and after.
 4. **Open the pull request**, filling in the template. Say *why*, not only

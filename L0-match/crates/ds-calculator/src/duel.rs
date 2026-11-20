@@ -148,6 +148,16 @@ impl DuelBalance {
         serde_json::from_str(DUEL_JSON).expect("embedded duel file is valid JSON")
     }
 
+    /// A sliding defender's reach, in cm (ADR-042).
+    ///
+    /// One rule: the scene a player reads and the contact he actually makes
+    /// use this same number (LUNA). Before this helper the orchestrator
+    /// computed it in `f64` and the engine truncated an integer product.
+    #[must_use]
+    pub fn slide_reach_cm(&self) -> i64 {
+        i64::from(self.reach_cm) * i64::from(self.slide_reach_milli) / 1000
+    }
+
     /// The defender's contact force.
     #[must_use]
     pub fn defender_force(&self, d: &DuelBody, tackling: f32, slide: bool) -> f32 {

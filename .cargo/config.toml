@@ -2,6 +2,18 @@
 #
 # Intentionally minimal. Add only what is needed, and document why.
 #
+# The C2 quality gate is NOT a raw `cargo test`: it is `session.sh`, the single
+# source of truth (context/RULES.md §C2). Run `bash context/scripts/session.sh
+# check changed` while iterating and `bash context/scripts/session.sh close`
+# before committing. That script owns:
+#   - the guard map (which test functions cover a changed source file);
+#   - the 80 s TOTAL test budget (never raise it);
+#   - the result cache in .cache/session-tests/ (gitignored): a file whose
+#     content hash was already verified, under the same guard map, is not
+#     retested. A changed file, a changed guard map or no cache runs the tests.
+# `close` disables the cache so that a `Verified: C2-green` trailer stays true
+# (D1: the gate must have actually run in that session).
+#
 # Future entries (uncomment when needed):
 #
 # [alias]

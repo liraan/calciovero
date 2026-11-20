@@ -1901,7 +1901,18 @@ impl SpatialState {
                     .map_or_else(
                         || {
                             if contests {
-                                top_s
+                                // A man sent to a restart spot runs there but
+                                // brakes to a stop at the ball (SIM 173):
+                                // "run" is how he goes, not a licence to
+                                // overshoot. He stops within the referee's
+                                // arrival reach (2 bodies), with no momentum
+                                // left to carry him past it.
+                                if sent.is_some() {
+                                    let arrive = f64::from(BODY_RADIUS_CM);
+                                    top_s.min((2.0 * decel_s * (dist - arrive).max(0.0)).sqrt())
+                                } else {
+                                    top_s
+                                }
                             } else {
                                 in_time.min(top_s).min((2.0 * decel_s * dist).sqrt())
                             }
@@ -2449,6 +2460,54 @@ mod tests {
         assert!(
             distance_squared(still, (5293, 4089)) <= i64::from(2 * BODY_RADIUS_CM).pow(2),
             "the standing man stays: {still:?}"
+        );
+    }
+
+    /// A man sent running to a restart spot brakes to a stop where the ball
+    /// is given to him (the referee's arrival radius), not onto or past it:
+    /// "run" is how he goes, not a licence to carry momentum into the kick.
+    #[test]
+    fn a_man_sent_running_stops_at_his_place() {
+        let mut s = make_state();
+        let walker = PlayerId::new(10, 0);
+        let spot = (5150, 4208);
+        let ids: Vec<PlayerId> = s.iter().map(|(id, _)| *id).collect();
+        for id in ids {
+            let at = s.agent(id).unwrap().position;
+            s.send(id, at, false);
+        }
+        s.set_position(walker, (5347, 4011));
+        s.send(walker, spot, true);
+        s.set_ball_in_flight((5250, 3400, 0), (0, 0, 0));
+        let bodies = make_bodies();
+        let mut hidden = ds_orchestrator::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
+        let mut arrived = None;
+        for tick in 0..200 {
+            s.move_agents(
+                10500,
+                6800,
+                &bodies,
+                &mut hidden,
+                tick,
+                &crate::balance::ScanningBalance::load(),
+                &crate::balance::KeeperBalance::load(),
+            );
+            let d = distance_squared(s.agent(walker).unwrap().position, spot).isqrt();
+            if d <= i64::from(2 * BODY_RADIUS_CM) && arrived.is_none() {
+                arrived = Some(tick);
+            }
+            if let Some(at_tick) = arrived {
+                assert!(
+                    d <= i64::from(2 * BODY_RADIUS_CM),
+                    "he ran past his place at tick {tick} ({d} cm), first there at {at_tick}"
+                );
+            }
+        }
+        assert!(arrived.is_some(), "he never reached his place");
+        let final_d = distance_squared(s.agent(walker).unwrap().position, spot).isqrt();
+        assert!(
+            final_d <= i64::from(BODY_RADIUS_CM),
+            "he stopped {final_d} cm short of the ball instead of on it"
         );
     }
 

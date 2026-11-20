@@ -159,24 +159,15 @@ impl GroundTruth {
         &self.shot_choice_balance
     }
 
-    /// Resolves a duel.
+    /// Resolves a duel (ADR-042 §5): one deterministic contact, no die.
     ///
-    /// # The prototype formula
-    ///
-    /// `attacker_wins = noise * 0.2 + attacker_score > defender_score`
-    ///
-    /// - `noise` is uniform in `[0, 1)`, drawn from the `hidden` RNG stream.
-    /// - `0.2` is the **variance weight**: a higher value means the outcome
-    ///   is less predictable from the latents. It is a placeholder, not a
-    ///   calibrated value. A realistic model would derive it from the
-    ///   distribution of duels in real matches (e.g. what fraction of
-    ///   aerial duels the stronger player wins).
-    /// - `attacker_score` and `defender_score` are **latent** values
-    ///   (Plane A). They are read here, inside `pcfm-hidden`, and never
-    ///   leave. The outcome is a `DuelOutcome` (Plane B) with only
-    ///   observed fields; the engine builds the cause trace.
-    ///
-    /// See `L0-match/design/CODE_TOUR.md` "A note on the current simulation".
+    /// The ground duel weighs the defender's force against the carrier's
+    /// answer, both built from `balance/duel.json` and both read through
+    /// the custodian one characteristic at a time; the ball is won, kept or
+    /// loose in between, and the foul is a separate step. Aerial and
+    /// goalkeeper duels compare the two men's own characteristics.
+    /// The outcome is a `DuelOutcome` (Plane B) with only observed fields:
+    /// the hidden latents never leave this crate (ADR-041).
     pub fn resolve_duel(&mut self, ctx: &DuelContext) -> DuelOutcome {
         let attacker = self.latents_for(ctx.attacker);
         let defender = self.latents_for(ctx.defender);
@@ -394,6 +385,10 @@ impl GroundTruth {
             f64::from(ctx.to.0 - ctx.from.0),
             ctx.aim_y - f64::from(ctx.from.1),
         );
+        // ADR-087: below the source's 11 m the shot keeps the absolute
+        // spread it had there; the time and the body set-up are already
+        // in `clean` and `on_the_run`.
+        let error_distance = k.shot_error_distance_cm(distance);
         #[allow(clippy::cast_possible_truncation)]
         let base_dy = (ctx.aim_y - f64::from(ctx.to.1)) as i32;
         // The side of the miss: the way his body is moving when he strikes
@@ -417,11 +412,12 @@ impl GroundTruth {
             s => f64::from(s),
         };
         #[allow(clippy::cast_possible_truncation)]
-        let dy = base_dy + (distance * (aimed * clean).mul_add(contact, drag * on_the_run)) as i32;
+        let dy =
+            base_dy + (error_distance * (aimed * clean).mul_add(contact, drag * on_the_run)) as i32;
         // A miscued strike rises: the vertical share of the error lifts the
         // ball above the height he aimed at, the more the later he meets it.
         #[allow(clippy::cast_possible_truncation)]
-        let dz = (distance * error * k.vertical_share * 0.5 * (1.0 + contact)) as i32;
+        let dz = (error_distance * error * k.vertical_share * 0.5 * (1.0 + contact)) as i32;
         let to = (
             ctx.to.0,
             ctx.to.1 + dy,
@@ -1060,9 +1056,7 @@ impl GroundTruth {
         // and the player's data. The model says
         // `v = min(v + a, v_max_ref * max_speed)`, `x += v * (height / height_ref)`.
         // Fatigue dims the top speed too (plan L0-CLOSE step 6).
-        let v_max = (balance.top_speed_max_cm_per_tick - balance.top_speed_min_cm_per_tick)
-            .mul_add(f64::from(max_speed), balance.top_speed_min_cm_per_tick)
-            * self.fatigue_balance.v_max_factor(ctx.fatigue);
+        let v_max = self.top_speed_base(max_speed) * self.fatigue_balance.v_max_factor(ctx.fatigue);
         let deceleration = (balance.decel_max_cm_per_tick2 - balance.decel_min_cm_per_tick2)
             .mul_add(
                 f64::from(latents.body_control),
@@ -1156,15 +1150,24 @@ impl GroundTruth {
         f64::from(self.latents_for(player).psychological.courage)
     }
 
+    /// The top-speed interpolation of `movement.json` for `max_speed`,
+    /// before fatigue (LUNA: one pace, three readers).
+    ///
+    /// The body that moves, the coach who reads from the bench and the player
+    /// judging a race all start from this number; only the one who has run
+    /// already dims it by fatigue.
+    pub(crate) fn top_speed_base(&self, max_speed: f32) -> f64 {
+        let balance = &self.movement_balance;
+        (balance.top_speed_max_cm_per_tick - balance.top_speed_min_cm_per_tick)
+            .mul_add(f64::from(max_speed), balance.top_speed_min_cm_per_tick)
+    }
+
     /// How fast `player` can run now, cm a tick, as tired as `fatigue`: the
     /// top speed of the movement, dimmed by fatigue (plan L0-CLOSE step 6).
     /// What his coach sees of him from the bench (plan L0-CLOSE 10h-c).
     pub fn top_speed_now(&mut self, player: PlayerId, fatigue: f64) -> f64 {
         let max_speed = self.latents_for(player).physical.max_speed;
-        let balance = &self.movement_balance;
-        (balance.top_speed_max_cm_per_tick - balance.top_speed_min_cm_per_tick)
-            .mul_add(f64::from(max_speed), balance.top_speed_min_cm_per_tick)
-            * self.fatigue_balance.v_max_factor(fatigue)
+        self.top_speed_base(max_speed) * self.fatigue_balance.v_max_factor(fatigue)
     }
 
     fn latents_for(&mut self, player: PlayerId) -> PlayerLatents {
@@ -1366,6 +1369,25 @@ mod movement_tests {
             weight_kg: weight,
             fatigue: 0.0,
         }
+    }
+
+    /// Twin test (2026-11-20): the pace that clamps the body's movement and
+    /// the pace the coach reads from the bench are the same number. The
+    /// off-ball races start from the same interpolation; a third copy must
+    /// not drift away from these two.
+    #[test]
+    fn the_pace_that_moves_and_the_pace_that_is_read_are_one_number() {
+        let mut g = gt();
+        let mut c = ctx(1, 78.0);
+        c.fatigue = 0.4;
+        let moving = g.resolve_movement(&c).v_max;
+        let read = g.top_speed_now(c.player, c.fatigue);
+        let max_speed = g.latents_for(c.player).physical.max_speed;
+        let base = g.top_speed_base(max_speed);
+        let tired = base * g.fatigue_balance.v_max_factor(c.fatigue);
+        assert!(moving > 0.0);
+        assert_eq!(moving, read);
+        assert_eq!(tired, read);
     }
 
     #[test]

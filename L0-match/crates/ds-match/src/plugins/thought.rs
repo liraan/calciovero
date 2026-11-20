@@ -125,9 +125,10 @@ impl MatchState {
                 let stop = i64::from(self.carry_balance.carry_stop_from_goal_cm) + 100;
                 d > stop * stop
             });
-        let keeper_reach_cm = gk.and_then(|g| self.bodies.get(&g)).map_or(0.0, |b| {
-            b.height_cm * ctx.hidden.save_balance().standing_reach_share
-        });
+        let keep = ctx.hidden.save_balance();
+        let keeper_reach_cm = gk
+            .and_then(|g| self.bodies.get(&g))
+            .map_or(0.0, |b| keep.standing_reach_cm(b.height_cm));
         let own_goal = (i32::from(ctx.match_.pitch.length_m) * 100 - goal.0, goal.1);
         let mut scene = scene_from(
             &self.spatial,
@@ -603,7 +604,7 @@ impl MatchState {
         let duel = ctx.hidden.duel_balance();
         // Within a slide's reach he may go in; how is chosen at the contact
         // (ADR-042, amended).
-        let slide_reach = i64::from(duel.reach_cm) * i64::from(duel.slide_reach_milli) / 1000;
+        let slide_reach = duel.slide_reach_cm();
         let off = ctx.hidden.offball_balance();
         let (length, width) = pitch_cm(ctx);
         for (squad, other, home) in [
@@ -1225,7 +1226,6 @@ impl MatchState {
 
 #[cfg(test)]
 mod tests {
-    use ds_core::rng::RngRegistry;
     use ds_match_api::MatchPlugin;
     use ds_orchestrator::{GroundTruth, OffBallAct};
     use ds_stats::EventChain;
@@ -1253,12 +1253,10 @@ mod tests {
 
         let scene = |gap: i64| {
             let mut hidden = GroundTruth::for_match(42, &m);
-            let mut rng = RngRegistry::new(42);
             let mut chain = EventChain::new();
             let mut ctx = MatchContext {
                 match_: &m,
                 hidden: &mut hidden,
-                rng: &mut rng,
                 chain: &mut chain,
                 config: crate::context::MatchConfig::default(),
             };

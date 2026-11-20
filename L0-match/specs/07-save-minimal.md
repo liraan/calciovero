@@ -106,10 +106,11 @@ pub fn migrate_save_if_needed(save: &mut MatchSave) -> Result<()>;
 The save does not contain `GroundTruth`. When a match is reloaded:
 
 1. The `world_seed` and `match_id` are read from the save.
-2. The `RngRegistry` is recreated with the same seed (see `L0.01` §2.2).
-3. The `GroundTruth` is recreated via `GroundTruth::new(world_seed, match_id)` — the API is in [`10-ground-truth.md`](10-ground-truth.md) §2.1.
-4. The `command_log` is replayed from the start of the match.
-5. The events are re-emitted, and the chain hash is verified against the saved hash.
+2. The `GroundTruth` is recreated via `GroundTruth::new(world_seed, match_id)` — the API is in [`10-ground-truth.md`](10-ground-truth.md) §2.1.
+3. The `command_log` is replayed from the start of the match.
+4. The events are re-emitted, and the chain hash is verified against the saved hash.
+
+No RNG is reconstructed: there is no random component at L0 (ADR-035).
 
 This is why the save is small and why it cannot leak latents: the latents never leave `pcfm-hidden`. The reconstruction is the mechanism that makes the save work without storing Plane A.
 
@@ -167,7 +168,7 @@ At L0, there are no interactive commands (a friendly match runs to completion). 
 
 - [`../00-foundations.md`](../../doctrine/00-foundations.md) §4 — determinism
 - [`00-overview.md`](00-overview.md) — L0 cell map
-- [`01-rng.md`](01-rng.md) — seed and stream reconstruction
+- [`01-rng.md`](01-rng.md) — retired: the seed is an input, no stream is reconstructed
 - [`03-entities-minimal.md`](03-entities-minimal.md) — entities saved
 - [`05-match-events.md`](05-match-events.md) — event chain
 - [`06-match-output.md`](06-match-output.md) — result saved

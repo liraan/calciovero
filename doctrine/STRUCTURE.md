@@ -56,9 +56,9 @@ The specification is not a flat list of 25 modules. It is organised in **four co
                            │ expands
 ┌──────────────────────────▼──────────────────────────────────┐
 │  L0 — MATCH (core)                                          │
-│  rng, event-bus, entities-minimal, match-engine,            │
-│  match-events, match-output, save-minimal, random-events,   │
-│  context-modifiers, ground-truth                            │
+│  entities-minimal, match-engine, match-events, calculator,      │
+│  orchestrator, match-output, save-minimal,                      │
+│  context-modifiers, ground-truth                                │
 └──────────────────────────┬──────────────────────────────────┘
                            │ grounded in
 ┌──────────────────────────▼──────────────────────────────────┐
@@ -366,6 +366,8 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 084 | The possession is the movement (OI-128) | ✅ accepted (2026-11-20) | DD-24: il possesso è l'azione del giocatore con le sue abilità — il movimento verso la palla include il controllo; emenda la diagnosi di 082 e 083. SIM 167. |
 | 085 | One repertoire, every gesture distinguished (OI-129) | ✅ accepted (2026-11-20) | DD-25: repertorio tecnico intero e aperto, un gesto per riga con il filtro LUNA (dito che cambia, luna che resta), censire prima e aggiungere dopo, nessun evento con regola propria. |
 | 086 | Il controllo sotto pressione (OI-132) | ✅ accepted (2026-11-20) | DD-26: il metodo del contrasto vale per ogni atto come criterio di analisi, non come architettura; la pressione rimette alla prova il controllo con `resolve_duel`. SIM 170. |
+| 087 | Il tiro non diventa preciso perché è vicino (OI-100) | ✅ accepted (2026-11-20) | DD-27: sotto gli 11 m lo scarto del tiro resta quello misurato a 11 m; la mira resta del calciatore, il contatto no. SIM 171. |
+| 088 | Chi corre a una ripresa si ferma sulla palla (DD-28) | ✅ accepted (2026-11-20) | DD-28: chi è mandato al punto di una ripresa frena per arrivarci, chi contesta un pallone vivo resta a tutta velocità; dal 173 il freno si esaurisce entro un raggio corpo (45 cm), non sul punto. SIM 172-173. |
 
 **Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048, 081 (43). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
 

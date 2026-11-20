@@ -28,6 +28,98 @@ Il catalogo si costruisce dalla base, nell'ordine in cui si impara il calcio:
 
 Le tendenze del calciatore della parte 1 si ridistribuiscono negli strati 1 e 2 man mano che si scrivono.
 
+### Il calcio moderno fa parte del gioco (maintainer, 20 novembre 2026)
+
+Il maintainer: «dobbiamo inserire in behaviours i concetti del calcio moderno,
+semplicemente perché codifica quello che succede in campo». Non è un modulo
+nuovo da insegnare al motore: è la stessa grammatica letta con più risoluzione.
+Ogni voce sotto è una tendenza osservabile — percezione più caratteristiche —
+non un copione; la lavagna dell'allenatore (strato 4) può assegnarla, non
+impiantarla. Nessun numero nuovo, nessun dado.
+
+| Concetto moderno | Quello che si vede in campo | Dove vive già nel catalogo |
+|---|---|---|
+| **Occupazione dello spazio, ruolo come funzione** | il terzino entra dentro, il centravanti viene incontro: restano il terzino e il centravanti | strato 2, «Il linguaggio dello spazio» e «I ruoli di base» |
+| **Costruzione dal basso** | portiere e centrali si offrono, c'è sempre una linea di passaggio, si rompe la prima linea avversaria | strato 2 (portiere, difensore centrale); strato 3 (portiere e centrali) |
+| **Terzino invertito, centrale che si allarga, falso nove** | chi occupa il corridoio cambia, la funzione resta; la punta scende e trattiene il difensore | varianti della lavagna (decisione AL) nei «Ruoli di base» |
+| **Pressing alto e contropressing** | subito dopo la perdita chi riaggredisce e chi copre la profondità | strato 1 (fasi), strato 2 (colonna «Nelle transizioni») |
+| **Difesa preventiva, linea alta e fuorigioco** | quanti restano dietro la palla (di solito tre più due), la linea sale e il portiere copre dietro | «Da dove vengono», strato 3 (portiere e centrali); la scelta è strato 4 |
+| **Rotazioni e triangoli** | se uno si sposta, un altro occupa il suo spazio; si esce dalla pressione insieme | strato 3, «Le unità del calcio moderno» |
+| **Chiamate e intesa in campo** | «lascia!», «esco io!», «uomo!»: chi le sente le segue quanto si fida | strato 3, «Come funziona nel motore» |
+| **Transizioni rapide** | appena vinta o persa, la prima scelta è in avanti, non ricomporsi | strato 2, colonna «Nelle transizioni» |
+
+Questa tabella codifica **cosa succede**, non dichiara che il motore lo esegua già:
+dove la catena cognitiva non c'è ancora, la tabella dei test di questa stessa
+pagina segna la voce come da verificare.
+
+### L'istinto: presenza comune, qualità personale (maintainer, 20 novembre 2026)
+
+Il maintainer: «dobbiamo rendere determinati concetti *istintivi* per i giocatori
+in campo, non tutti dipendendo dalle loro caratteristiche ovviamente». Il
+concetto non è un modulo né un copione: è un termine della salienza che c'è in
+ogni giocatore anche quando la caratteristica è minima. La caratteristica non
+decide *se* l'atto esiste, ma *quanto bene e quanto presto* viene eseguito.
+
+| Asse | Che cosa decide | Dove sta |
+|---|---|---|
+| **Presenza — l'istinto** | ogni giocatore sa che il pallone libero si prende, che davanti alla propria porta si spazza o si marca, che il più vicino pressa e il secondo copre, che in area si sta fra uomo e porta, che dopo la perdita si riaggredisce o si rientra | grammatica comune del gioco (ADR-052 + Leggi): termine costante della salienza |
+| **Qualità — le caratteristiche** | quanto bene e quanto presto lo fa: lettura, reattività, tecnica, corpo, coraggio | i latents già presenti in `ds-db` |
+| **Assegnazione — ruolo e tattica** | *chi* lo fa in quella fase: difesa preventiva, ampiezza, profondità, terzino invertito, falso nove, portiere libero | strati 2 e 4 del catalogo |
+
+**La regola in codice.** Dove un istinto incontra una caratteristica, il
+termine ha la forma `base + guadagno × caratteristica`, non il solo prodotto:
+anche il peggiore agisce, il migliore agisce meglio. La regola è nominata
+`instinct(base, guadagno, caratteristica)` in
+`ds-orchestrator/src/offball.rs:389`, con il gemello che la prova; la sfida è
+`challenge_salience × (0.5 + 0.5 × tackling)` (riga 311), la marcatura ha lo
+stesso base sulla lettura (riga 320), e l'offerta e l'inserimento sono
+space value × corsa, senza dado. La presenza, poi, è garantita *prima* della
+caratteristica: il più vicino va al pallone libero a qualsiasi distanza
+(`goes_for_loose_ball(0, reading, _)` è `true` anche con `reading = 0.0`), e il
+primo difensore pressa e marca con peso 1 (`rank(0) = 1.0`). I gemelli che lo
+provano sono `the_nearest_goes_for_a_loose_ball_at_any_distance` e
+`in_reach_he_challenges`.
+
+**Ciò che resta una lettura, non un istinto.** I termini ancora prodotto puro
+sono quelli del *secondo* uomo (`rank(1) = reading × secondo lettore`, righe
+164-168 e 245-249): decidere se raddoppiare, o se andare in due sullo stesso
+pallone, è una scelta di chi legge meglio la scena, non un riflesso. Renderla
+istintiva farebbe correre due giocatori su ogni pallone, lascerebbe scoperti
+gli spazi e contraddirebbe il gemello ADR-051. Anche l'intesa (strato 3) è un
+fattore di assegnazione: chi conosce il compagno cede, chi non lo conosce
+può andare. La distinzione va tenuta: istinto = il primo agisce sempre,
+lettura = il secondo sceglie se aggiungersi.
+
+### Una regola, una funzione (maintainer, 20 novembre 2026)
+
+Il maintainer: «ogni crate abbia una funzione», «in modo che non siano
+ridondanti e non creino regole contraddittorie che mutano il comportamento
+dei giocatori in campo». Il criterio è LUNA: se la stessa regola è scritta due
+volte, lo stesso giocatore legge la scena con un numero ed esegue con un
+altro. Ogni formula vive quindi nel crate che la possiede, e gli altri la
+chiamano:
+
+| Regola | Funzione unica | Chi la chiama |
+|---|---|---|
+| portata dello scivolo | `DuelBalance::slide_reach_cm` (`ds-calculator`) | scena di ricezione (`ds-orchestrator`), duelli e ricezione (`ds-match`) |
+| portata in piedi del portiere | `SaveBalance::standing_reach_cm` (`ds-calculator`) | tiro immaginato, parata, barriera (`ds-calculator`, `ds-match`) |
+| interpolazione della velocità massima | `GroundTruth::top_speed_base` (`ds-orchestrator`) | movimento, lettura dalla panchina, gare senza palla |
+
+Nello stesso spirito, a L0 non c'è nessun componente casuale, nemmeno
+inutilizzato (maintainer, 20 novembre 2026): il modulo RNG e le dipendenze
+`rand` sono rimossi. Il giocatore sceglie con la sua lettura della scena e le
+sue caratteristiche; un dato che il modello non sa spiegare non si copre con
+un numero estratto (ADR-035).
+
+La fatica resta un moltiplicatore esplicito di chi ha già corso: la gara
+senza palla usa il passo che il giocatore *crede* di avere, il movimento e la
+panchina quello che ha, ma l'interpolazione di partenza è una sola. I gemelli
+`reach_has_one_value` e `the_pace_that_moves_and_the_pace_that_is_read_are_one_number`
+bloccano i valori vecchi: l'unificazione è aritmeticamente identica (golden
+intatti, nessun `SIM_VERSION` nuovo). Non sono unificate le quantità diverse
+che hanno lo stesso nome, come i due `mark_radius_cm` (300 cm per offrirsi,
+800 cm per lo sguardo): sono due situazioni, non una regola scritta male.
+
 ## Strato 1 · Come si gioca a pallone (approvato dal maintainer)
 
 La base esiste già nella dottrina: è l'ADR-052 (ogni giocatore pensa), con la sua nota del 14 novembre (il primo obiettivo è il pallone). Qui è detta come la vive un calciatore.

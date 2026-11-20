@@ -12,7 +12,12 @@ referenced_by: ["L0.06", "L2-psyche"]
 conforms_to: "00-foundations (v2.0)"
 ---
 
-> **Superseded in the engine (note 2026-11-15, OI-49).** Since ADR-035 (no dice) the match draws no random number: every outcome is a cause of the players' characteristics, the scene and the Laws. This module is kept as the history of the decision and for the world generator, which derives values by key from the world seed (`ds-db`), not by stream. Read ADR-035 first.
+> **Retired at L0 (maintainer, 2026-11-20).** No random component is allowed
+> at L0: this cell's streams, probability functions and `RandomEvent` family
+> are a rejected prototype, not a target. The RNG module and its dependencies
+> are gone; nothing here may be implemented. Phenomena emerge from the local
+> transitions of the players (ADR-035). This file stays only as the record of
+> that rejected design.
 
 
 <!--

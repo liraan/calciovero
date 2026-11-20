@@ -46,6 +46,15 @@ impl SaveBalance {
         serde_json::from_str(SAVE_JSON).expect("embedded save file is valid JSON")
     }
 
+    /// What a keeper of `height_cm` reaches standing, in cm (ADR-051).
+    ///
+    /// One rule: the keeper the shooter imagines, the man who makes the save
+    /// and the wall at a free kick all take this same share (LUNA).
+    #[must_use]
+    pub fn standing_reach_cm(&self, height_cm: f64) -> f64 {
+        height_cm * self.standing_reach_share
+    }
+
     /// The keeper's reaction time, in ticks, from his reactivity.
     #[must_use]
     pub fn reaction_ticks(&self, reactivity: f32) -> f64 {

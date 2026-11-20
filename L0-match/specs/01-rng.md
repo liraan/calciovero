@@ -4,15 +4,21 @@ level: 0
 cell: "L0-match"
 module_id: "L0.01"
 version: "1.0"
-status: "ratified"
-last_updated: "2026-10-25"
+status: "superseded"
+last_updated: "2026-11-20"
 supersedes: null
 depends_on: ["00-foundations"]
 referenced_by: ["L0.02", "L0.04", "L0.08", "L1-season", "L2-market", "L2-psyche"]
 conforms_to: "00-foundations (v2.0)"
 ---
 
-> **Superseded in the engine (note 2026-11-15, OI-49).** Since ADR-035 (no dice) the match draws no random number: every outcome is a cause of the players' characteristics, the scene and the Laws. This module is kept as the history of the decision and for the world generator, which derives values by key from the world seed (`ds-db`), not by stream. Read ADR-035 first.
+> **Retired at L0 (maintainer, 2026-11-20).** No random component — not even an
+> unused one — is allowed at L0. The `ds-core::rng` module, the `rand_chacha`
+> and `rand_core` dependencies and the `Feature::CoreRng` id are removed;
+> nothing in this cell may be implemented. Every outcome is a cause of the
+> players' characteristics, the scene and the Laws (ADR-035). The world is
+> derived by key from the seed (`ds-db`), not by stream. This file stays only
+> as the record of a rejected design. Read ADR-035 first.
 
 
 > **Note (2026-11-07) -- superseded by ADR-035.** This file describes the

@@ -11,7 +11,6 @@
 use std::sync::LazyLock;
 
 use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
-use ds_core::rng::RngRegistry;
 use ds_core::time::GameInstant;
 use ds_model::{
     FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
@@ -70,12 +69,10 @@ fn simulate_once(match_: &Match, seed: u64, for_match: bool) -> MatchResult {
     } else {
         GroundTruth::new(seed, match_.id)
     };
-    let mut rng = RngRegistry::new(seed);
     let mut chain = EventChain::new();
     let ctx = crate::context::MatchContext {
         match_,
         hidden: &mut hidden,
-        rng: &mut rng,
         chain: &mut chain,
         config: MatchConfig::default(),
     };

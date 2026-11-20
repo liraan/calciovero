@@ -42,7 +42,7 @@ impl MatchState {
         let ball = self.spatial.ball();
         let duel = ctx.hidden.duel_balance();
         let reach = i64::from(duel.reach_cm);
-        let slide_reach = reach * i64::from(duel.slide_reach_milli) / 1000;
+        let slide_reach = duel.slide_reach_cm();
         let (_, opponents) = self.squads(ctx);
         let keeper = opponents.players.first().map(|p| p.id);
         let Some(challenger) = opponents.players.iter().map(|p| p.id).find(|id| {
@@ -342,16 +342,13 @@ mod tests {
     #[test]
     fn a_man_in_front_is_worth_beating_one_behind_is_not() {
         use crate::context::MatchContext;
-        use ds_core::rng::RngRegistry;
         use ds_stats::EventChain;
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut hidden = ds_orchestrator::GroundTruth::new(42, m.id);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config: crate::context::MatchConfig::default(),
         };
@@ -379,7 +376,6 @@ mod tests {
     #[test]
     fn pressure_tests_the_carrier_answer_not_the_mans_tackle() {
         use crate::context::MatchContext;
-        use ds_core::rng::RngRegistry;
         use ds_stats::EventChain;
 
         let m = ds_fixtures::match_fixture(42).expect("fixture");
@@ -400,12 +396,10 @@ mod tests {
         let scene = |at_foot: bool| {
             let mut hidden = ds_orchestrator::GroundTruth::for_match(42, &m);
             let depth = hidden.offball_balance().keeper_box_depth_cm;
-            let mut rng = RngRegistry::new(42);
             let mut chain = EventChain::new();
             let mut ctx = MatchContext {
                 match_: &m,
                 hidden: &mut hidden,
-                rng: &mut rng,
                 chain: &mut chain,
                 config: crate::context::MatchConfig::default(),
             };

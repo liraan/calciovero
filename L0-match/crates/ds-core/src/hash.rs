@@ -4,8 +4,8 @@
 //! `observed_attrs_snapshot_hash`, and for any other place where a
 //! deterministic, collision-resistant digest is needed.
 //!
-//! BLAKE3 is chosen for the same reason as the seed derivation in
-//! `ds-core::rng`: fast, deterministic, cryptographic.
+//! BLAKE3 is fast, deterministic and cryptographic; it is also what
+//! `ds-db` uses for keyed derivation of the world (never a die, ADR-035).
 
 use serde::{Deserialize, Serialize};
 

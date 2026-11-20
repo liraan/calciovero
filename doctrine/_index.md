@@ -56,7 +56,7 @@ Modules marked *(planned)* below do not have a file yet. Their links are intenti
 | ID | File | Status | Depends on |
 |---|---|---|---|
 | L0.00 | [`L0-match/00-overview.md`](../L0-match/specs/00-overview.md) | ✅ ratified | 00 |
-| L0.01 | [`L0-match/01-rng.md`](../L0-match/specs/01-rng.md) | ✅ ratified | 00 |
+| L0.01 | [`L0-match/01-rng.md`](../L0-match/specs/01-rng.md) | ⛔ superseded (no random component at L0) | 00 |
 | L0.02 | [`L0-match/02-event-bus.md`](../L0-match/specs/02-event-bus.md) | ✅ ratified | 00 |
 | L0.03 | [`L0-match/03-entities-minimal.md`](../L0-match/specs/03-entities-minimal.md) | ✅ ratified | 00, L0.01 |
 | L0.04 | [`L0-match/04-match-engine.md`](../L0-match/specs/04-match-engine.md) | ✅ ratified | 00, L0.01, L0.02, L0.03, L0.10 |
@@ -68,7 +68,7 @@ Modules marked *(planned)* below do not have a file yet. Their links are intenti
 | L0.10 | [`L0-match/10-ground-truth.md`](../L0-match/specs/10-ground-truth.md) | ✅ ratified | 00, L0.01, L0.03 |
 | L0.11 | [`L0-match/11-player-characteristics.md`](../L0-match/specs/11-player-characteristics.md) | 🟡 draft | 00, L0.03, L0.10, ADR-003, ADR-028 |
 
-**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (15 crates, 569 tests). See `doctrine/STRUCTURE.md` §3.
+**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (15 crates, 564 tests). See `doctrine/STRUCTURE.md` §3.
 
 ---
 
@@ -332,5 +332,7 @@ These are components that are referenced across modules but are not crates. They
 | [084](adr/084-the-possession-is-the-movement.md) | The possession is the movement (OI-128) | ✅ accepted (2026-11-20) | DD-24: ottenere il possesso è l'azione del giocatore con le sue abilità — il movimento verso la palla include il controllo; emenda la diagnosi di 082 e 083. SIM 167. |
 | [085](adr/085-the-technical-repertoire.md) | One repertoire, every gesture distinguished (OI-129) | ✅ accepted (2026-11-20) | DD-25: un ADR unico per tutto il repertorio tecnico, aperto; ogni gesto distinto con il filtro LUNA (dito che cambia, luna che resta), radici già dichiarate, nessun evento speciale con regole proprie. |
 | [086](adr/086-control-under-pressure.md) | Il controllo sotto pressione (OI-132) | ✅ accepted (2026-11-20) | DD-26: il metodo del contrasto vale per ogni atto come criterio di analisi, non come architettura; la pressione di chi jockeya rimette alla prova il controllo del portatore con `resolve_duel` e i numeri già dichiarati. SIM 170. |
+| [087](adr/087-the-miss-keeps-its-width.md) | Il tiro non diventa preciso perché è vicino (OI-100) | ✅ accepted (2026-11-20) | DD-27: sotto gli 11 m il tiro conserva lo scarto assoluto misurato a 11 m; la mira resta del calciatore, il contatto no. SIM 171. |
+| [088](adr/088-the-runner-brakes-at-the-spot.md) | Chi corre a una ripresa si ferma sulla palla (DD-28) | ✅ accepted (2026-11-20) | DD-28: chi è mandato al punto di una ripresa frena per arrivarci, chi contesta un pallone vivo resta a tutta velocità; «run» è come va, non il permesso di superare il punto; dal 173 il freno si esaurisce entro un raggio corpo (45 cm), non sul punto, così al rilascio non resta momentum. SIM 172-173. |
 
-**Accepted:** 001, 003, 004, 006, 007, 008, 012, 013, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 042, 043, 044, 045, 046, 047, 048, 049, 050, 051, 052, 053, 054, 055, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 072, 073, 074, 075, 076, 077, 078, 079, 080, 081, 082, 083, 084, 085, 086 (79; 064 to 080 delegated, to be reviewed by the maintainer). **Superseded:** 002 (by ADR-027), 005 (by ADR-055), 014 (by ADR-061), 023 (by ADR-024). **Proposed:** none.
+**Accepted:** 001, 003, 004, 006, 007, 008, 012, 013, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 042, 043, 044, 045, 046, 047, 048, 049, 050, 051, 052, 053, 054, 055, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 072, 073, 074, 075, 076, 077, 078, 079, 080, 081, 082, 083, 084, 085, 086, 087, 088 (81; 064 to 080 and 082 to 088 delegated, to be reviewed by the maintainer). **Superseded:** 002 (by ADR-027), 005 (by ADR-055), 014 (by ADR-061), 023 (by ADR-024). **Proposed:** none.

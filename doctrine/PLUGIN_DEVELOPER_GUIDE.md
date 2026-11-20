@@ -214,9 +214,7 @@ Current dependencies (as of 2026-10-26):
 
 | Crate | Why | License |
 |---|---|---|
-| `rand_chacha` | ChaCha20Rng, reproducible RNG | MIT/Apache-2.0 |
-| `rand_core` | The traits used by `ChaCha20Rng` | MIT/Apache-2.0 |
-| `blake3` | Seed derivation and hash chain | CC0/Apache-2.0 |
+| `blake3` | Keyed derivation and hash chain (no die, ADR-035) | CC0/Apache-2.0 |
 | `thiserror` | Error derive macro | MIT/Apache-2.0 |
 | `serde` | Serialisation | MIT/Apache-2.0 |
 | `serde_json` | JSON serialisation (for `MatchEvent.fields`) | MIT/Apache-2.0 |

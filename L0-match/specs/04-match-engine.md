@@ -53,11 +53,9 @@ pub trait MatchEngine: Send + Sync {
 }
 
 pub struct MatchContext<'a> {
-    pub match_: Match,                       // from L0.03
+    pub match_: &'a Match,                   // from L0.03
     pub hidden: &'a mut GroundTruth,         // from L0.10 — opaque, no public fields
-    pub rng: &'a mut RngRegistry,            // from L0.01
-    pub bus: &'a mut EventBus,               // from L0.02
-    pub modifiers: ContextModifiers,         // from L0.09
+    pub chain: &'a mut EventChain,           // from ds-stats (Plane B)
     pub config: MatchConfig,                 // from L0-match/balance/match_engine.toml
 }
 
@@ -86,7 +84,7 @@ for tick in 0..(90 * 10) {                    // 90 minutes at 1/10 s
 }
 ```
 
-The tick loop is **strictly sequential within a match**. There is no internal parallelism. Parallelism is at the level of multiple matches running concurrently (each with its own `GroundTruth`, `RngRegistry`, `EventBus`).
+The tick loop is **strictly sequential within a match**. There is no internal parallelism. Parallelism is at the level of multiple matches running concurrently (each with its own `GroundTruth` and `EventChain`). There is no RNG and no event bus in the engine (ADR-035; OI-40).
 
 ### 2.3 Micro-decision model
 
@@ -244,8 +242,8 @@ The engine produces `MatchEvent`s (see `L0.05`) and consumes `ContextModifiers` 
 
 - [`../00-foundations.md`](../../doctrine/00-foundations.md) §3 (Three Planes), §4 (determinism)
 - [`00-overview.md`](00-overview.md) — L0 cell map
-- [`01-rng.md`](01-rng.md) — RNG
-- [`02-event-bus.md`](02-event-bus.md) — event bus
+- [`01-rng.md`](01-rng.md) — retired: no random component at L0
+- [`02-event-bus.md`](02-event-bus.md) — retired: events live in `ds-stats`
 - [`03-entities-minimal.md`](03-entities-minimal.md) — entities (without latents)
 - [`05-match-events.md`](05-match-events.md) — event type
 - [`08-random-events.md`](08-random-events.md) — discrete events

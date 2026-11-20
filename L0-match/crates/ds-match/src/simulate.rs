@@ -98,7 +98,6 @@ fn step(
     let mut now = MatchContext {
         match_: live,
         hidden: &mut *ctx.hidden,
-        rng: &mut *ctx.rng,
         chain: &mut *ctx.chain,
         config: ctx.config,
     };

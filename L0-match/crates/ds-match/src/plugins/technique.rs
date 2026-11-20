@@ -129,6 +129,9 @@ impl MatchState {
         let error = ctx.hidden.header_error_rad(winner, contested);
         let (dx0, dy0) = (f64::from(goal.0 - bx), f64::from(goal.1 - by));
         let reach = dmath::hypot(dx0, dy0).max(1.0);
+        // ADR-087: a header near the goal keeps the spread of the kick it
+        // inherits, instead of becoming precise because it is close.
+        let error_reach = ctx.hidden.kick_balance().shot_error_distance_cm(reach);
         let incoming = self.spatial.ball_velocity().1;
         let side = match incoming.signum() {
             0 if by >= goal.1 => -1.0,
@@ -136,11 +139,11 @@ impl MatchState {
             s => f64::from(s),
         };
         #[allow(clippy::cast_possible_truncation)]
-        let aim_y = goal.1 + (side * reach * error) as i32;
+        let aim_y = goal.1 + (side * error_reach * error) as i32;
         let (dx, dy) = (f64::from(goal.0 - bx), f64::from(aim_y - by));
         let len = dmath::hypot(dx, dy).max(1.0);
         let rise =
-            reach * error * ctx.hidden.kick_balance().vertical_share / (len / speed.max(1.0));
+            error_reach * error * ctx.hidden.kick_balance().vertical_share / (len / speed.max(1.0));
         #[allow(clippy::cast_possible_truncation)]
         let v = (
             (dx / len * speed) as i16,
@@ -560,9 +563,10 @@ impl MatchState {
         let goal = (if home { length } else { 0 }, 3400);
         let own_goal = (length - goal.0, goal.1);
         let gk = opponents.first().copied();
-        let keeper_reach_cm = gk.and_then(|g| self.bodies.get(&g)).map_or(0.0, |b| {
-            b.height_cm * ctx.hidden.save_balance().standing_reach_share
-        });
+        let keep = ctx.hidden.save_balance();
+        let keeper_reach_cm = gk
+            .and_then(|g| self.bodies.get(&g))
+            .map_or(0.0, |b| keep.standing_reach_cm(b.height_cm));
         let mut scene = crate::state::scene_from(
             &self.spatial,
             id,
@@ -752,7 +756,7 @@ impl MatchState {
         ctx: &MatchContext<'_>,
     ) -> ds_orchestrator::ReceptionParams {
         let duel = ctx.hidden.duel_balance();
-        let reach = i64::from(duel.reach_cm) * i64::from(duel.slide_reach_milli) / 1000;
+        let reach = duel.slide_reach_cm();
         self.reception_balance.to_params(
             ctx.hidden.kick_balance().speed_ref_cm_per_tick,
             i32::try_from(reach).unwrap_or(i32::MAX),

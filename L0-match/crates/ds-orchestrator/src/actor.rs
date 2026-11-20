@@ -119,8 +119,9 @@ impl Actor {
             .value(ds_calculator::Characteristic::GameReading);
         scene.reception.speed_ref = hidden.kick_balance().speed_ref_cm_per_tick;
         let duel = hidden.duel_balance();
-        scene.reception.reach_cm =
-            f64::from(duel.reach_cm) * f64::from(duel.slide_reach_milli) / 1000.0;
+        #[allow(clippy::cast_precision_loss)] // cm on a pitch: far below 2^52
+        let reach_cm = duel.slide_reach_cm() as f64;
+        scene.reception.reach_cm = reach_cm;
         for id in &scene.teammates {
             let touch = f64::from(hidden.latents_for(*id).technical.first_touch);
             scene.reception.first_touch.insert(*id, touch);

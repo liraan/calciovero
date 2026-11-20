@@ -4,7 +4,6 @@
 //! carries the tuneable parameters (loaded from `L0-match/balance/match_engine.toml`
 //! in a future step; for now, defaults are enough).
 
-use ds_core::rng::RngRegistry;
 use ds_model::Match;
 use ds_orchestrator::GroundTruth;
 use ds_stats::EventChain;
@@ -35,8 +34,6 @@ pub struct MatchContext<'a> {
     pub match_: &'a Match,
     /// The hidden state (Plane A). Never read directly; only `resolve_*`.
     pub hidden: &'a mut GroundTruth,
-    /// The RNG registry. Used for action selection, not for resolution.
-    pub rng: &'a mut RngRegistry,
     /// The event chain (Plane B). Append-only.
     pub chain: &'a mut EventChain,
     /// The engine configuration.

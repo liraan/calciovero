@@ -12,8 +12,6 @@ use std::borrow::Cow;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Feature {
     // ── Core primitives ─────────────────────────────────────────────
-    /// The RNG registry (`ds-core::rng`).
-    CoreRng,
     /// Entity identifiers (`ds-core::ids`).
     CoreIds,
     /// Hashing primitives (`ds-core::hash`).
@@ -83,7 +81,6 @@ impl Feature {
     /// features are discovered dynamically from the registry, not from
     /// this list.
     pub const ALL_BUILTIN: &'static [Self] = &[
-        Self::CoreRng,
         Self::CoreIds,
         Self::CoreHash,
         Self::L0Match,
@@ -123,7 +120,6 @@ impl Feature {
     #[must_use]
     pub fn label(&self) -> Cow<'static, str> {
         match self {
-            Self::CoreRng => Cow::Borrowed("core::rng"),
             Self::CoreIds => Cow::Borrowed("core::ids"),
             Self::CoreHash => Cow::Borrowed("core::hash"),
             Self::L0Match => Cow::Borrowed("L0::match"),

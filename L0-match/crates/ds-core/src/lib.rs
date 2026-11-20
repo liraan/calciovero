@@ -1,14 +1,13 @@
 //! `ds-core` — the primitives (ADR-041 §2).
 //!
-//! **One responsibility:** the vocabulary every other crate shares. It
-//! contains no game logic; only infrastructure: IDs, time, hash,
-//! deterministic geometry, the event bus, and the RNG (kept for the
-//! generator; the engine draws no die, ADR-035, except the one declared
-//! in `resolve_duel`, Plan E).
+//! **One responsibility:** the vocabulary every other crate shares: IDs,
+//! time, hash, deterministic geometry. It contains no game logic and no
+//! random component: ADR-035 forbids dice, `resolve_duel` is deterministic
+//! (ADR-042 §5), and the RNG module is gone (maintainer, 2026-11-20).
+//! There is no event bus: events live in `ds-stats` (Plane B).
 //!
 //! # Modules
 //!
-//! - [`rng`] — deterministic, isolated, named random streams (L0.01)
 //! - [`ids`] — generational entity identifiers (L0.03 §3.1)
 //! - [`time`] — monotonic simulation clock
 //! - [`hash`] — 32-byte BLAKE3 digest
@@ -21,7 +20,6 @@ pub mod geometry;
 pub mod hash;
 pub mod identity;
 pub mod ids;
-pub mod rng;
 pub mod time;
 
 /// Returns the version of `ds-core`, as declared in `Cargo.toml`.

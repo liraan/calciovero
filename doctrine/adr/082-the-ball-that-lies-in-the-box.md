@@ -65,3 +65,36 @@ tiro (OI-100): `SIM_VERSION` +1, voce in `CHANGELOG-SIM`, gemello del burattino,
 golden, test mirato, `fmt`, `clippy`, `cargo test --workspace`, gate `closing`,
 misura 42..101, aggiornamento della tabella autorevole. Nessun merge in `main`
 senza autorizzazione.
+
+## Esito della verifica (2026-11-20, dopo SIM 171)
+
+La verifica chiesta dalla raccomandazione è stata fatta sullo stato della
+simulazione, non sulla sola forma del referto:
+
+- il blocco di 110 tick al tick 56038 del seed 42 non è una palla libera in
+  area: è la sosta del calcio d'inizio. Il pallone è a `(5250, 3400, 0)`,
+  `carrier = None`, `waiting = Some`, `restart_pass = Some(KickOff)`; ognuno
+  legge `dead_ball = true` e `loose_ball = None`, quindi `GoToBall` non viene
+  scelto (`offball.rs:267`), e `control_loose_ball` è bloccato a sua volta
+  (`technique.rs:860`). La palla è fuori gioco: per la raccomandazione
+  **non è questa la causa**.
+- *free slow ball taken at once* conta palloni `InFlight` che rotolano
+  (passaggi in corso e palle sciolte da un contatto), non palloni `Loose`
+  fermi: su seed 42, SIM 171, 65 situazioni, 51 prese al tick dopo e **zero**
+  palloni `Loose` a riposo entro 80 cm fuori da una ripresa. Le 14 mancate
+  prese sono passaggi lenti che il giocatore supera o palle che escono dal
+  contatto ad alta velocità, non un pallone in area che nessuno raccoglie.
+
+La lettura della scelta A è già nel motore: `choose_off_ball`
+(`offball.rs:267-299` e `goes_for_loose_ball`, 406-412) fa andare chi legge di
+arrivare primo, e `who_takes_the_ball` (`technique.rs:523-534`) usa
+`loose_control_radius_cm` per chi ha scelto `GoToBall` e `ball_reach_cm` per
+gli altri, senza numeri nuovi. Il gemello del burattino è
+`the_reader_of_the_race_takes_it_and_the_other_holds` (`state.rs:1982`).
+Non c'è una seconda attuazione da fare: far andare i giocatori su una palla
+morta significherebbe giocare una palla fuori gioco, una decisione diversa da
+DD-22. Questa diagnosi non alza `SIM_VERSION`. Il guardiano sbagliato era il
+test `the_match_never_freezes`, che contava come gelo la sosta legale dopo il
+gol: ora esclude la palla morta. Se il difetto visivo resta in 2.5D dopo SIM
+171, serve una nuova causa atto per atto su quel tick, non un ritocco di questa
+lettura.

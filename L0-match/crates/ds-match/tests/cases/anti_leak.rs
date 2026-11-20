@@ -3,7 +3,6 @@
 //! Structural, not exhaustive: covers the names in the current prototype.
 
 use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
-use ds_core::rng::RngRegistry;
 use ds_core::time::GameInstant;
 use ds_match::{MatchConfig, MatchContext, MatchEngine, MatchSave, TextMatchEngine};
 use ds_model::{
@@ -63,12 +62,10 @@ fn make_match() -> Match {
 fn save_contains_no_latent_field_name() {
     let match_ = make_match();
     let mut hidden = GroundTruth::new(42, match_.id);
-    let mut rng = RngRegistry::new(42);
     let mut chain = EventChain::new();
     let ctx = MatchContext {
         match_: &match_,
         hidden: &mut hidden,
-        rng: &mut rng,
         chain: &mut chain,
         config: MatchConfig::default(),
     };

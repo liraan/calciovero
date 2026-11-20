@@ -20,7 +20,7 @@ The direction of the project is a **deterministic, phenomenological chessboard**
 
 Operational rules:
 
-- **No RNG in simulation paths.** No `ChaCha20Rng` stream is consumed to decide an outcome. The `Rng` type stays in `pcfm-core` for the generator (`pcfm-gen`, not written yet), not for the engine.
+- **No RNG in simulation paths.** No `ChaCha20Rng` stream is consumed to decide an outcome. The generator paragraph here is amended by the 2026-11-20 note below: at L0 the RNG type itself is gone.
 - **Each piece has a transition function.** A player perceives (cone, gaze, latency), decides among perceived options (MD-43, geometric), and moves (F.7 formula). The ball has a declared trajectory (`advance_ball`). The interaction (pass, shot, duel, save) is the composition of these local transitions; the outcome is what happens when they meet, not a draw.
 - **Derivation is not a die.** `hash(world_seed, ...)` for latents (OI-53) stays: it is a deterministic function of the world and the identity, not a decision made in place of the actor.
 - **Perception is derived, not noisy by hash.** ADR-029's noise half is revised: the error of perception is a function of the characteristics (`vision`, `concentration_level`), the distance, and the angle, not a hash. A player with low vision sees less; the same player in the same situation sees the same thing. The world is deterministic; the information is incomplete, and it is incomplete in a way the model explains.
@@ -71,3 +71,18 @@ The line, sharp:
 - **Simulation (forbidden):** every outcome inside a match. There the model *can* know (characteristics, scene, contact), and a die would be a blanket over a hole.
 
 The selection of a youngster by an observer is **not** generation and **not** simulation: it is a decision on what the observer sees, with the error of his level (L2-scouting, OI-8). It is not a die.
+
+## Note (2026-11-20, no random component at L0)
+
+The maintainer: «nessun componente casuale (dado) è ammesso nel progetto,
+almeno a L0». This goes one step past the simulation ban: L0 has **no RNG
+component at all**, not even an unused primitive. `ds-core::rng`, the
+`rand_chacha`/`rand_core` dependencies and the `Feature::CoreRng` id are
+removed; `L0.01` and `L0.08` are retired as rejected designs. The golden is
+unchanged because nothing ever drew a number (structural determinism, not
+luck of the seed).
+
+The 2026-11-09 generation exception stays where it is — **outside L0**, in a
+generator that does not exist yet. If L1/L2 ever ask for a random component,
+that is a new decision with its own ADR; it must not reintroduce the module
+into `ds-core` or into the match.

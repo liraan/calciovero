@@ -220,7 +220,7 @@ The full schema of each context/outcome is defined in `pcfm-hidden`'s source, no
 - [`../../docs/adr/003-plane-a-enforcement.md`](../../doctrine/adr/003-plane-a-enforcement.md) — the decision this cell implements (accepted)
 - [`../../docs/adr/004-panic-strategy-ffi.md`](../../doctrine/adr/004-panic-strategy-ffi.md) — `catch_unwind` at the call site
 - [`00-overview.md`](00-overview.md) — L0 cell map
-- [`01-rng.md`](01-rng.md) — the seed that `GroundTruth` is derived from
+- [`01-rng.md`](01-rng.md) — retired: `GroundTruth` derives from the seed by key, not by stream
 - [`03-entities-minimal.md`](03-entities-minimal.md) — the `Player` entity (without latents)
 - [`04-match-engine.md`](04-match-engine.md) — the consumer
 - [`05-match-events.md`](05-match-events.md) — the `MatchEvent` that `drain_observations` feeds

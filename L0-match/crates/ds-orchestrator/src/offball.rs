@@ -280,11 +280,7 @@ impl crate::GroundTruth {
             }
             // The second one's race: his own pace (movement.json, his
             // max speed), against the nearest opponent at the pace he believes.
-            let mv = &self.movement_balance;
-            let pace = (mv.top_speed_max_cm_per_tick - mv.top_speed_min_cm_per_tick).mul_add(
-                f64::from(l.physical.max_speed),
-                mv.top_speed_min_cm_per_tick,
-            );
+            let pace = self.top_speed_base(l.physical.max_speed);
             #[allow(clippy::cast_precision_loss)] // cm on a pitch
             let first = s.loose_rival_cm.is_none_or(|rival| {
                 ds_calculator::thought::ThoughtBalance::load().race(
@@ -308,7 +304,7 @@ impl crate::GroundTruth {
                     l.technical.tackling
                 };
                 offer(
-                    milli(b.challenge_salience_milli) * 0.5f64.mul_add(f64::from(skill), 0.5),
+                    milli(b.challenge_salience_milli) * instinct(0.5, 0.5, f64::from(skill)),
                     OffBallAct::Challenge,
                 );
             }
@@ -317,7 +313,7 @@ impl crate::GroundTruth {
             #[allow(clippy::cast_precision_loss)]
             let near = 1.0 / (1.0 + t.distance_cm.max(0) as f64 / f64::from(b.mark_zone_cm.max(1)));
             offer(
-                milli(b.mark_salience_milli) * near * rank(t.rank) * 0.5f64.mul_add(reading, 0.5),
+                milli(b.mark_salience_milli) * near * rank(t.rank) * instinct(0.5, 0.5, reading),
                 OffBallAct::Mark,
             );
         }
@@ -336,11 +332,7 @@ impl crate::GroundTruth {
             let mut options = vec![(held, OffBallAct::Hold), (spaces.offer, OffBallAct::Offer)];
             if m.to_line_cm.is_some() {
                 // His own top speed, as his body has it (movement.json).
-                let mv = &self.movement_balance;
-                let pace = (mv.top_speed_max_cm_per_tick - mv.top_speed_min_cm_per_tick).mul_add(
-                    f64::from(l.physical.max_speed),
-                    mv.top_speed_min_cm_per_tick,
-                );
+                let pace = self.top_speed_base(l.physical.max_speed);
                 #[allow(clippy::cast_precision_loss)]
                 let run = spaces.run
                     * thought.race(spaces.run_cm as f64, pace, spaces.defender_cm as f64);
@@ -379,6 +371,15 @@ pub fn obey(
         .and_then(|a| options.iter().find(|(_, o)| *o == a))
         .filter(|(v, _)| *v >= best.0 * gives_up)
         .map_or(best.1, |(_, a)| *a)
+}
+
+/// Presence and quality (BEHAVIOURS.md, 20 novembre 2026): `base` is what
+/// every player has, `gain` is what his characteristic adds. The arithmetic
+/// the saliences already used, now named: the finger is the term, the moon
+/// is the same player acting on it however small his gift.
+#[must_use]
+fn instinct(base: f64, gain: f64, characteristic: f64) -> f64 {
+    gain.mul_add(characteristic, base)
 }
 
 /// How much the place his coach's shape gives him weighs for a player.
@@ -441,6 +442,16 @@ mod tests {
 
     fn choose(s: &OffBallScene) -> OffBallAct {
         GroundTruth::new(42, MatchId::new(1, 0)).choose_off_ball(s)
+    }
+
+    /// Twin test (BEHAVIOURS.md, l'istinto): the weakest player keeps the
+    /// base, the strongest gets base plus gain. A low characteristic cannot
+    /// take the act away; it only makes it worse.
+    #[test]
+    fn instinct_is_in_everyone_and_better_in_the_gifted() {
+        assert!((instinct(0.5, 0.5, 0.0) - 0.5).abs() < 1e-12);
+        assert!((instinct(0.5, 0.5, 1.0) - 1.0).abs() < 1e-12);
+        assert!(instinct(0.5, 0.5, 1.0) > instinct(0.5, 0.5, 0.0));
     }
 
     /// The first aim is the ball (ADR-052 note, 2026-11-14): the nearest of

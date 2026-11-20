@@ -6,19 +6,13 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Core infrastructure for Calcio Vero - Deep Simulator: RNG, event bus, IDs, deterministic math"
+description = "Core infrastructure for Calcio Vero - Deep Simulator: IDs, hash, deterministic math"
 documentation = "https://github.com/liraan/pcfootballmanager/tree/main/specs/L0-match"
 
 [dependencies]
-rand_chacha.workspace = true
-rand_core.workspace = true
 blake3.workspace = true
 libm.workspace = true
-thiserror.workspace = true
 serde.workspace = true
-
-[dev-dependencies]
-serde_json.workspace = true
 
 [lints]
 workspace = true

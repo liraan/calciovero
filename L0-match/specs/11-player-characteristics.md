@@ -374,7 +374,13 @@ the term must also be added to the catalogue, and the formula that uses it
 must be validated against the new catalogue. This is the point where the
 model and the code meet, and it is deliberately narrow.
 
-### 4.7 Modulators: the calculator samples, it does not read a fixed value
+### 4.7 Modulators: the calculator reads the man, not a draw
+
+> **Note (2026-11-20, maintainer): no random component at L0.** The
+> "dedicated deterministic random stream" described below is a prototype
+> residue: `01-rng.md` is retired and no stream exists. A modulator is a
+> term of the formula that reads the player's own characteristics and state;
+> it is never a sample from a distribution.
 
 A modulator is a datum that changes how a characteristic behaves without
 producing an effect of its own (§2.2). The calculator treats it

@@ -92,7 +92,7 @@ If any of those seven fails, L0 is not done.
 
 | ID | Cell | Purpose | Status |
 |---|---|---|---|
-| L0.01 | [`01-rng.md`](01-rng.md) | Deterministic RNG streams | ✅ ratified |
+| L0.01 | [`01-rng.md`](01-rng.md) | RNG streams — retired, no random component at L0 (ADR-035) | ⛔ superseded |
 | L0.02 | [`02-event-bus.md`](02-event-bus.md) | Deterministic event dispatch | ✅ ratified |
 | L0.03 | [`03-entities-minimal.md`](03-entities-minimal.md) | Minimal entities: Player, Squad, Pitch, Referee | ✅ ratified |
 | L0.04 | [`04-match-engine.md`](04-match-engine.md) | The `MatchEngine` trait and text implementation | ✅ ratified |

@@ -51,7 +51,6 @@
 //! - If the chain hash does not verify, the save is rejected (tampering).
 
 use ds_core::ids::MatchId;
-use ds_core::rng::RngRegistry;
 use ds_core::time::GameInstant;
 use ds_model::Match;
 use ds_orchestrator::GroundTruth;
@@ -82,7 +81,7 @@ pub const SCHEMA_VERSION: u32 = 3;
 /// event emission). A bump requires a `L0-match/CHANGELOG-SIM.md` entry and a
 /// golden-test regeneration. See `doctrine/adr/003-plane-a-enforcement.md` and
 /// `L0-match/CHANGELOG-SIM.md`.
-pub const SIM_VERSION: u32 = 170;
+pub const SIM_VERSION: u32 = 173;
 
 /// The save of a single match.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -214,13 +213,11 @@ impl MatchSave {
 #[must_use]
 pub fn replay(save: &MatchSave) -> MatchResult {
     let mut hidden = GroundTruth::for_match(save.world_seed, &save.match_);
-    let mut rng = RngRegistry::new(save.world_seed);
     let mut chain = EventChain::new();
     let config = MatchConfig::default();
     let ctx = MatchContext {
         match_: &save.match_,
         hidden: &mut hidden,
-        rng: &mut rng,
         chain: &mut chain,
         config,
     };

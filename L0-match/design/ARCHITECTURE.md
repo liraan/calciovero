@@ -55,7 +55,7 @@ The engine produces data: events, the tick record, the narrative as entries (`na
 
 ## 6. What is not yet implemented
 
-Tracked in `context/plans/L0-CLOSE.md` and `context/STATE.md`: the memory of what was seen (MD-40) and the scene through the cone only (OI-106); the size of the perception error, parts (a) and (c) (ADR-062); extra time and the shoot-out; the wall; the opposing coach reacting in the match; the knock that takes a player off; the dimmers (composure, courage, aggressiveness). Residues to remove: `ds_core::rng` (carried in `MatchContext`, never drawn from), the event bus of `ds-core` (OI-40).
+Tracked in `context/plans/L0-CLOSE.md` and `context/STATE.md`: the memory of what was seen (MD-40) and the scene through the cone only (OI-106); the size of the perception error, parts (a) and (c) (ADR-062); extra time and the shoot-out; the wall; the opposing coach reacting in the match; the knock that takes a player off; the dimmers (composure, courage, aggressiveness). The two old residues are gone: the RNG registry is no longer carried in `MatchContext` (the engine draws no die, ADR-035 and ADR-042), and `ds-core` has no event bus — events live in `ds-stats` (OI-40).
 
 ## 7. References
 

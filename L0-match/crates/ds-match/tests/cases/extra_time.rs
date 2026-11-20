@@ -16,10 +16,10 @@ use ds_match::{MatchConfig, MatchResult};
 use ds_model::Match;
 use ds_stats::{EventType, Half};
 
-/// The first level and the first decisive friendly of the range under SIM 170,
+/// The first level and the first decisive friendly of the range under SIM 173,
 /// found once by the scan that used to run on every test. Asserted below, so
 /// a change in the engine fails here instead of silently scanning again.
-const LEVEL_AT_90_SEED: u64 = 53;
+const LEVEL_AT_90_SEED: u64 = 44;
 const DECIDED_AT_90_SEED: u64 = 42;
 
 /// The same fixture, as a cup tie: extra time is asked for.
@@ -104,8 +104,8 @@ fn a_cup_match_won_at_ninety_ends_there() {
 /// a friendly never has one.
 #[test]
 fn a_cup_match_level_after_extra_time_goes_to_penalties() {
-    // The first such seed was found once by the golden's one-off scan;
-    // playing it directly keeps this test inside the 80 s budget.
+    // The golden's first shoot-out seed, replayed directly to stay inside
+    // the 80 s budget. Its shoot-out is only kicks, no rebound play.
     let seed = CUP_SHOOTOUT_SEED;
     let r = play_cup_with_shootout(seed);
     let (h, a) = r.shootout.expect("level after extra time: penalties");

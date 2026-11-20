@@ -54,7 +54,8 @@ and nowhere else.
 | `Tackle` | `tackling` | — | — | emitted (from `Duel`) |
 | `Pressure` | — | coverage (distance to carrier) | — | emitted (`Fact::RelationEnterExit`) |
 
-**Findings in this block.**
+**Findings in this block.** (Dated 2026-11-20: no random component exists at
+L0; finding 1 is the history of the die that ADR-042 removed.)
 
 1. **`Duel` is the only emitted event with a die.** `resolve_duel` draws
    `next_unit` (Plan E). It reads `tackling`, `dribbling`, `heading`,

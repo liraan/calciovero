@@ -273,13 +273,23 @@ fn pressure_is_not_a_flood() {
 }
 
 /// The match never freezes (P1): no spell of more than ten seconds in which
-/// nothing moves. Before `SIM_VERSION` 46 a blocked carrier pushed against
-/// a centre back for 38 minutes and the whole match stood still with him.
+/// nothing moves *during play*. Before `SIM_VERSION` 46 a blocked carrier
+/// pushed against a centre back for 38 minutes and the whole match stood
+/// still with him. The pause from a goal to the kick-off is not play: the
+/// ball is dead and the law gives the sides time to line up (SIM 150).
 #[test]
 fn the_match_never_freezes() {
-    let (_, records) = recorded();
-    let (mut run, mut longest) = (0, 0);
+    let (result, records) = recorded();
+    let events = result.events.events();
+    let (mut run, mut longest, mut stoppage) = (0, 0, false);
     for w in records.windows(2) {
+        for e in &events[w[0].events.clone()] {
+            stoppage = e.event_type == ds_stats::EventType::Goal;
+        }
+        if stoppage {
+            run = 0;
+            continue;
+        }
         if w[0].agents == w[1].agents && w[0].ball == w[1].ball {
             run += 1;
             longest = longest.max(run);

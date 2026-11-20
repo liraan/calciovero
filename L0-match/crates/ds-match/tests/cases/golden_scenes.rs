@@ -153,7 +153,7 @@ fn after_a_goal_the_kick_off_waits_and_the_sides_are_in_their_halves() {
             // has it, or it has left the centre spot); the moment before it,
             // the sides as they stood for it.
             let centre = (length / 2, i32::from(m.pitch.width_m) * 50);
-            let Some(back) = record[i + 1..].iter().position(|r| {
+            let Some(back) = record[i..].iter().position(|r| {
                 r.carrier.is_some() || (r.ball.position.0, r.ball.position.1) != centre
             }) else {
                 continue; // the whistle came first

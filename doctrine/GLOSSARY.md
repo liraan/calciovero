@@ -70,9 +70,9 @@ a performance is something the player does.
 | **Estimate** | "his passing is good, with low confidence" | **C** | the scouting crate (does not exist yet) | the manager |
 
 - **"Hidden" is a crate, not a meaning.** `ds-db` contains the
-  hidden performances, plus the RNG and the observations buffer (mechanics,
-  not player properties). "hidden = the attributes" confuses the container
-  with the content.
+  hidden performances and the observations buffer (mechanics, not player
+  properties). "hidden = the attributes" confuses the container with the
+  content. There is no RNG: the world is derived by key from the seed.
 - **The manager never reads a true value.** He reads an estimate in Plane
   C, for every datum: a measurement for a dimension, a test for a physical
   performance, many matches for a technical skill. This is what makes
@@ -197,7 +197,11 @@ The struct that carries external state into the match engine. Produced by L1/L2,
 
 ### `RandomEvent`
 
-A discrete in-match event (injury, card, brawl, weather interruption). "Random" means unpredictable to the player, not non-deterministic to the system. Sampled from a dedicated stream. Defined in [`L0-match/specs/08-random-events.md`](../L0-match/specs/08-random-events.md).
+**Retired at L0 (maintainer, 2026-11-20).** A prototype label for an in-match
+event sampled from a stream. No stream exists and no event is sampled:
+phenomena emerge from the players' transitions (ADR-035). The dormant
+`EventType::RandomEvent` variant is a history residue, not a producer.
+The prototype record is in [`L0-match/specs/08-random-events.md`](../L0-match/specs/08-random-events.md).
 
 ### Entity ID
 
@@ -221,11 +225,11 @@ Same seed + same inputs = same result. Always. A non-negotiable pillar. See [`do
 
 ### Named RNG stream
 
-**Superseded in the match (ADR-035, no dice).** A random stream identified by a name and derived from `(world_seed, stream_name)`; the engine no longer draws from any. The world generator derives values by key from the world seed instead (`ds-db`). See [`L0-match/specs/01-rng.md`](../L0-match/specs/01-rng.md).
+**Banned at L0 (maintainer, 2026-11-20).** A random stream identified by a name and derived from `(world_seed, stream_name)`: it belonged to the rejected prototype (ADR-035). The module, the dependencies and the feature id are gone. The world derives values by key from the seed instead (`ds-db`). The old record is in [`L0-match/specs/01-rng.md`](../L0-match/specs/01-rng.md).
 
 ### `world_seed`
 
-The top-level seed from which every value of the world is derived, by key. Changing it changes the entire world. Stored in the save. See [`L0-match/specs/01-rng.md`](../L0-match/specs/01-rng.md) §2.4.
+The top-level seed from which every value of the world is derived, by key. Changing it changes the entire world. Stored in the save. See [ADR-029](adr/029-keyed-derivation.md).
 
 ### `SIM_VERSION`
 
@@ -321,7 +325,7 @@ Any path by which Plane A data reaches a module outside `ds-db` / `ds-match` / t
 
 ### `HashMap` in simulation paths
 
-**Banned.** Use `BTreeMap`, `BTreeSet`, or explicitly sorted `Vec`. Iteration order of `HashMap` is not deterministic. See [`L0-match/specs/01-rng.md`](../L0-match/specs/01-rng.md) §2.5.
+**Banned.** Use `BTreeMap`, `BTreeSet`, or explicitly sorted `Vec`. Iteration order of `HashMap` is not deterministic. See [`doctrine/00-foundations.md`](00-foundations.md) §5.
 
 ### Hardcoded balance values
 
@@ -375,7 +379,7 @@ Translations. Italian is the first planned translation, in `locales/it/`. *(plan
 | **UB** | Undefined Behaviour |
 | **MSRV** | Minimum Supported Rust Version |
 | **SIM_VERSION** | The version identifier of the simulation behaviour |
-| **RNG** | Random Number Generator |
+| **RNG** | Random Number Generator (retired at L0, ADR-035) |
 | **HSV** | Hue, Saturation, Value (the colour space used for club colours) |
 | **UI** | User Interface |
 | **API** | Application Programming Interface |

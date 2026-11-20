@@ -479,10 +479,9 @@ impl MatchState {
                 .hidden
                 .characteristic(k, "explosive_force")
                 .unwrap_or(0.5);
-            height.mul_add(
-                save.standing_reach_share,
-                save.dive_max_cm * 0.5f64.mul_add(ef, 0.5),
-            )
+            // The wall keeps the fused add; the standing term is the one rule.
+            save.standing_reach_cm(height)
+                .mul_add(1.0, save.dive_max_cm * 0.5f64.mul_add(ef, 0.5))
         });
         let half = f64::from(self.obstacle_balance.goal_half_width_cm);
         // The keeper at the middle covers `cover` on each side: what is left
@@ -577,7 +576,6 @@ mod tests {
     use crate::context::MatchContext;
     use crate::rules::{RestartKind, Side};
     use crate::state::{MatchState, nearest_in_squad};
-    use ds_core::rng::RngRegistry;
     use ds_match_api::MatchPlugin;
     use ds_orchestrator::GroundTruth;
     use ds_stats::EventChain;
@@ -588,12 +586,10 @@ mod tests {
     fn taker(kind: RestartKind, spot: (i32, i32), side: Side) -> Option<ds_core::ids::PlayerId> {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut hidden = GroundTruth::for_match(42, &m);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let mut ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config: crate::context::MatchConfig::default(),
         };
@@ -606,12 +602,10 @@ mod tests {
     fn wall_at(spot: (i32, i32)) -> Vec<(i32, i32)> {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut hidden = GroundTruth::for_match(42, &m);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let mut ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config: crate::context::MatchConfig::default(),
         };

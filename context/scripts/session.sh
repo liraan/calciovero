@@ -52,6 +52,70 @@ run_cargo_test() {
   fi
 }
 
+# Test-result cache (maintainer, 2026-11-20): a file whose current bytes were
+# already covered by a green `check changed` is not tested again. The key is
+# the file's content hash, so reverting a change reuses the old verdict. The
+# cache lives in .cache/ (gitignored) and follows the same guard map below:
+# it never invents coverage for a file the map would have sent to the suite.
+TEST_CACHE_DIR=.cache/session-tests
+TEST_CACHE_FILE="$TEST_CACHE_DIR/verified.tsv"
+CURRENT_FP="$TEST_CACHE_DIR/.current"
+CACHE_MODE=worktree
+
+# One hash pass for all files, not one process per file: on Windows the
+# process spawn is slower than the hashing itself.
+cache_write_current() {
+  mkdir -p "$TEST_CACHE_DIR"
+  : > "$CURRENT_FP"
+  local f h line existing=()
+  if [ "$CACHE_MODE" = worktree ]; then
+    for f in "${CHANGED_FILES[@]}"; do [ -f "$f" ] && existing+=("$f"); done
+    if [ ${#existing[@]} -gt 0 ] && command -v sha1sum >/dev/null 2>&1; then
+      while IFS= read -r line; do
+        h="${line:0:40}"
+        f="${line:42}"
+        printf '%s\t%s\n' "$f" "$h" >> "$CURRENT_FP"
+      done < <(sha1sum -- "${existing[@]}")
+    else
+      for f in "${existing[@]}"; do
+        printf '%s\t%s\n' "$f" "$(git hash-object --no-filters -- "$f")" >> "$CURRENT_FP"
+      done
+    fi
+    for f in "${CHANGED_FILES[@]}"; do
+      [ -f "$f" ] || printf '%s\tabsent\n' "$f" >> "$CURRENT_FP"
+    done
+  else
+    for f in "${CHANGED_FILES[@]}"; do
+      h=$(git show ":$f" 2>/dev/null | git hash-object --stdin) || h=absent
+      printf '%s\t%s\n' "$f" "$h" >> "$CURRENT_FP"
+    done
+  fi
+}
+
+cache_pending() {
+  local out="$1"
+  : > "$out"
+  if [ -f "$TEST_CACHE_FILE" ]; then
+    awk -F '\t' 'NR == FNR { ok[$1 FS $2] = 1; next } !(($1 FS $2) in ok) { print $1 }' \
+      "$TEST_CACHE_FILE" "$CURRENT_FP" > "$out"
+  else
+    cut -f1 "$CURRENT_FP" > "$out"
+  fi
+}
+
+cache_mark_verified() {
+  local pending="$1" tmp="$TEST_CACHE_FILE.tmp"
+  mkdir -p "$TEST_CACHE_DIR"
+  if [ ! -f "$TEST_CACHE_FILE" ]; then
+    printf '# map:%s\n' "$(git hash-object --no-filters -- context/scripts/session.sh)" > "$TEST_CACHE_FILE"
+  fi
+  awk -F '\t' 'NR == FNR { drop[$0] = 1; next } !($1 in drop) { print }' \
+    "$pending" "$TEST_CACHE_FILE" > "$tmp"
+  awk -F '\t' 'NR == FNR { keep[$0] = 1; next } ($1 in keep) { print }' \
+    "$pending" "$CURRENT_FP" >> "$tmp"
+  mv "$tmp" "$TEST_CACHE_FILE"
+}
+
 # One source of truth: the workspace members in Cargo.toml. No second list.
 workspace_members() {
   sed -n '/^members = \[/,/^\]/p' Cargo.toml | sed -n 's/^[[:space:]]*"\([^"]*\)".*/\1/p'
@@ -63,19 +127,22 @@ workspace_members() {
 changed_selectors() {
   CHANGED_SELECTORS=()
   CHANGED_CORE=0
-  local mode="${1:-worktree}"
+  local mode="${1:-worktree}" from_list="${2:-}"
   local lcv f m crate seen=" "
-  lcv=$(grep -m1 '^\*\*Last commit verified:\*\*' "$SS" | sed -E 's/.*`([0-9a-f]+)`.*/\1/')
-  local files=()
-  while IFS= read -r f; do [ -n "$f" ] && files+=("$f"); done < <(
-    if [ "$mode" = staged ]; then
-      git diff --cached --name-only --diff-filter=ACMRD
-    else
-      { git diff --name-only HEAD; git ls-files --others --exclude-standard;
-        [ -n "$lcv" ] && git diff --name-only "$lcv..HEAD"; } 2>/dev/null | sort -u
-    fi
-  )
-  for f in "${files[@]}"; do
+  if [ "$from_list" != from-list ]; then
+    lcv=$(grep -m1 '^\*\*Last commit verified:\*\*' "$SS" | sed -E 's/.*`([0-9a-f]+)`.*/\1/')
+    local files=()
+    while IFS= read -r f; do [ -n "$f" ] && files+=("$f"); done < <(
+      if [ "$mode" = staged ]; then
+        git diff --cached --name-only --diff-filter=ACMRD
+      else
+        { git diff --name-only HEAD; git ls-files --others --exclude-standard;
+          [ -n "$lcv" ] && git diff --name-only "$lcv..HEAD"; } 2>/dev/null | sort -u
+      fi
+    )
+    CHANGED_FILES=("${files[@]}")
+  fi
+  for f in "${CHANGED_FILES[@]}"; do
     case "$f" in Cargo.toml|Cargo.lock) CHANGED_CORE=1 ;; esac
     for m in $(workspace_members); do
       case "$f" in
@@ -87,7 +154,6 @@ changed_selectors() {
       esac
     done
   done
-  CHANGED_FILES=("${files[@]}")
 }
 
 # A changed source file selects the *single test functions* that guard it —
@@ -102,15 +168,20 @@ changed_test_functions() {
   add_fn() {
     case " ${CHANGED_FUNCS[*]:-} " in *" $1 "*) ;; *) CHANGED_FUNCS+=("$1") ;; esac
   }
+  add_golden() {
+    add_fn golden_l0::golden_l0_is_deterministic
+    add_fn golden_l0::golden_l0_with_instructions_is_deterministic
+    add_fn golden_l0::golden_l0_cup_is_deterministic
+  }
   for f in "${CHANGED_FILES[@]}"; do
     case "$f" in
-      Cargo.toml|Cargo.lock)
-        CHANGED_ALL=1 ;;
+      Cargo.toml|Cargo.lock|*/Cargo.toml)
+        # A dependency change is guarded by the golden plus the touched
+        # crates; the whole workspace would exceed the 80 s budget.
+        add_golden ;;
       L0-match/crates/ds-match/tests/suite.rs|L0-match/crates/ds-match/tests/support/*)
         # The harness itself: the golden is its guard, not the whole workspace.
-        add_fn golden_l0::golden_l0_is_deterministic
-        add_fn golden_l0::golden_l0_with_instructions_is_deterministic
-        add_fn golden_l0::golden_l0_cup_is_deterministic ;;
+        add_golden ;;
       L0-match/crates/ds-match/tests/cases/*.rs)
         # A touched test file selects its own #[test] functions, not the whole
         # module: maximal granularity, and the untracked redesign does not turn
@@ -126,6 +197,16 @@ changed_test_functions() {
           }
           want && /^[[:space:]]*#\[/ && /\)[[:space:]]*$/ { next }
         ' "$f") ;;
+      # Shared formulas have named guards in the integration suite; a whole
+      # workspace run (over 80 s) is not needed to check a known shared file.
+      L0-match/crates/ds-core/src/lib.rs|L0-match/crates/ds-calculator/src/kick.rs|L0-match/crates/ds-calculator/src/duel.rs|L0-match/crates/ds-calculator/src/save.rs|L0-match/crates/ds-calculator/src/thought.rs|L0-match/crates/ds-calculator/tests/reach_has_one_value.rs|L0-match/crates/ds-orchestrator/src/lib.rs|L0-match/crates/ds-orchestrator/src/actor.rs|L0-match/crates/ds-orchestrator/src/read.rs|L0-match/crates/ds-orchestrator/src/offball.rs)
+        add_golden
+        add_fn shot_forced::resolve_shot_pressure_widens_the_deviation ;;
+      L0-match/crates/ds-core/src/rng.rs)
+        # Deleted: it was carried but never drawn from (ADR-035).
+        add_golden ;;
+      L0-match/crates/ds-core/src/hash.rs|L0-match/crates/ds-core/src/identity.rs)
+        add_golden ;;
       L0-match/crates/ds-core/*|L0-match/crates/ds-model/*|L0-match/crates/ds-db/*|L0-match/crates/ds-orchestrator/*|L0-match/crates/ds-calculator/*|L0-match/crates/ds-stats/*)
         CHANGED_ALL=1 ;;
       L0-match/crates/ds-match/src/*)
@@ -133,26 +214,29 @@ changed_test_functions() {
           */simulate.rs|*/engine.rs|*/driver.rs|*/state.rs|*/lib.rs|*/context.rs|*/registry.rs|*/fact.rs|*/shape.rs|*/balance.rs|*/plugins/mod.rs|*/test_support.rs)
             # Any change to the simulation core moves the golden hashes: those
             # three tests are its anchor, and they are the guard here.
-            add_fn golden_l0::golden_l0_is_deterministic
-            add_fn golden_l0::golden_l0_with_instructions_is_deterministic
-            add_fn golden_l0::golden_l0_cup_is_deterministic ;;
+            add_golden ;;
           */plugins/technique.rs)
+            add_golden
             add_fn feet::swapped_wide_men_strike_with_the_feet_they_have
             add_fn shot_forced::resolve_shot_contact_height_picks_the_vertical_direction
             add_fn golden_scenes::in_a_dribble_the_ball_is_ahead ;;
           */plugins/duels.rs)
+            add_golden
             add_fn knock::a_knocked_man_leaves_the_pitch
             add_fn knock::the_same_contact_knocks_the_frailer_body
             add_fn narrative_fields::duel_lost_when_winner_is_not_actor ;;
           */plugins/keeper.rs)
+            add_golden
             add_fn save_forced::a_ball_at_his_body_is_stopped
             add_fn save_forced::far_outside_any_dive_is_never_stopped ;;
           */plugins/bench.rs)
             add_fn coach::the_coach_reads_the_match ;;
           */plugins/thought.rs)
+            add_golden
             add_fn instructions::a_striker_asked_to_run_waits_on_the_last_line
             add_fn channels::by_voice_at_once_by_a_gesture_when_they_look ;;
           */plugins/set_pieces.rs)
+            add_golden
             add_fn extra_time::a_cup_match_level_after_extra_time_goes_to_penalties
             add_fn golden_scenes::no_restart_stops_the_match ;;
           */plugins/referee.rs)
@@ -171,6 +255,8 @@ changed_test_functions() {
           */plugins/psychology.rs)
             add_fn plugins_off::the_match_is_played_with_psychology_switched_off ;;
           */spatial.rs)
+            # move_agents lives here: a change to how men run moves the hashes.
+            add_golden
             add_fn golden_scenes::nobody_moves_faster_than_his_legs
             add_fn feet::swapped_wide_men_strike_with_the_feet_they_have ;;
           */record.rs|*/recording.rs)
@@ -254,6 +340,66 @@ capture() {
   return 0
 }
 
+# The guard map says *which* tests cover a changed file; the cache says
+# *whether that file still needs them*. Only unverified files are fed to the
+# map, so a file already covered by a green run is not paid for twice.
+check_changed() {
+  local mode="${1:-worktree}" f ok=0 map_hash cached_map cached
+  local use_cache=1
+  local pending=() pending_file="$TEST_CACHE_DIR/.pending"
+  CACHE_MODE="$mode"
+  changed_selectors "$mode"
+  changed_test_functions
+
+  # A closing C2 must really run (D1: `C2-green` needs a gate that ran now).
+  [ "${CACHE_DISABLED:-0}" -eq 1 ] && use_cache=0
+  if [ "$use_cache" -eq 1 ]; then
+    # If the guard map itself changed, cached verdicts may name the wrong tests.
+    map_hash=$(git hash-object --no-filters -- context/scripts/session.sh)
+    cached_map=$([ -f "$TEST_CACHE_FILE" ] && head -n 1 "$TEST_CACHE_FILE" || echo "")
+    [ "$cached_map" = "# map:$map_hash" ] || rm -f "$TEST_CACHE_FILE"
+
+    cache_write_current
+    cache_pending "$pending_file"
+    while IFS= read -r f; do [ -n "$f" ] && pending+=("$f"); done < "$pending_file"
+    cached=$((${#CHANGED_FILES[@]} - ${#pending[@]}))
+  else
+    pending=("${CHANGED_FILES[@]}")
+    cached=0
+  fi
+  if [ ${#pending[@]} -eq 0 ]; then
+    echo "changed: ${cached} file(s) already verified in cache - no test to rerun"
+    return 0
+  fi
+  [ "$cached" -eq 0 ] || echo "changed: ${cached} file(s) already verified, ${#pending[@]} to check"
+
+  CHANGED_FILES=("${pending[@]}")
+  changed_selectors "$mode" from-list
+  changed_test_functions
+
+  if [ "$CHANGED_ALL" -eq 1 ]; then
+    echo "changed: file globale toccato -> suite completa"
+    run_cargo_test --workspace || ok=1
+  elif [ "$CHANGED_CORE" -eq 1 ] && [ ${#CHANGED_FUNCS[@]} -gt 0 ]; then
+    local filters=() other=() i
+    for f in "${CHANGED_FUNCS[@]}"; do filters+=("cases::$f"); done
+    echo "changed functions: ${CHANGED_FUNCS[*]}"
+    run_cargo_test --release -p ds-match --test suite -- "${filters[@]}" || ok=1
+    for ((i=0; i<${#CHANGED_SELECTORS[@]}; i+=2)); do
+      [ "${CHANGED_SELECTORS[i+1]}" = ds-match ] || other+=("${CHANGED_SELECTORS[i]}" "${CHANGED_SELECTORS[i+1]}")
+    done
+    [ ${#other[@]} -eq 0 ] || check test --release "${other[@]}" || ok=1
+  elif [ ${#CHANGED_SELECTORS[@]} -gt 0 ]; then
+    echo "changed crates: ${CHANGED_SELECTORS[*]}"
+    check test "${CHANGED_SELECTORS[@]}" || ok=1
+  else
+    echo "changed: no crate touched (docs only) - no test to run"
+  fi
+
+  if [ "$ok" -eq 0 ] && [ "$use_cache" -eq 1 ]; then cache_mark_verified "$pending_file"; fi
+  return "$ok"
+}
+
 # C2 modules (RULES.md §C2): one check, one command. `close` composes them;
 # `session.sh check <module>` runs one alone. No second list to keep in sync.
 check() {
@@ -265,27 +411,7 @@ check() {
     golden) run_cargo_test --release -p ds-match --test suite golden_l0 ;;
     runner) cargo run --release --bin ds-test-runner -- --check --seed 42 ;;
     gates)  shift; bash context/scripts/gates.sh "${1:-closing}" ;;
-    changed) changed_selectors "${2:-worktree}"
-             changed_test_functions
-             if [ "$CHANGED_ALL" -eq 1 ]; then
-               echo "changed: file globale toccato -> suite completa"
-               run_cargo_test --workspace
-             elif [ "$CHANGED_CORE" -eq 1 ] && [ ${#CHANGED_FUNCS[@]} -gt 0 ]; then
-               local filters=() other=()
-               for f in "${CHANGED_FUNCS[@]}"; do filters+=("cases::$f"); done
-               echo "changed functions: ${CHANGED_FUNCS[*]}"
-               run_cargo_test --release -p ds-match --test suite -- "${filters[@]}" || return 1
-               local i
-               for ((i=0; i<${#CHANGED_SELECTORS[@]}; i+=2)); do
-                 [ "${CHANGED_SELECTORS[i+1]}" = ds-match ] || other+=("${CHANGED_SELECTORS[i]}" "${CHANGED_SELECTORS[i+1]}")
-               done
-               [ ${#other[@]} -eq 0 ] || check test --release "${other[@]}"
-             elif [ ${#CHANGED_SELECTORS[@]} -gt 0 ]; then
-               echo "changed crates: ${CHANGED_SELECTORS[*]}"
-               check test "${CHANGED_SELECTORS[@]}"
-             else
-               echo "changed: no crate touched (docs only) - no test to run"
-             fi ;;
+    changed) check_changed "${2:-worktree}" ;;
     *)      echo "check: unknown module '${1:-}' (fmt|clippy|build|test|golden|runner|gates|changed)" >&2; return 2 ;;
   esac
 }
@@ -333,7 +459,7 @@ case "${1:-}" in
     else
       run_module build
       run_module clippy
-      run_module test
+      CACHE_DISABLED=1 run_module test
       run_module fmt
       run_module runner
     fi

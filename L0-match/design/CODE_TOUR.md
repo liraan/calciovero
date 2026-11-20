@@ -30,7 +30,7 @@ The quality gate (RULES C2) is in `README.md`.
 | `dmath.rs` | Why `hypot`, `ln`, `powf` do not come from `std`: one bit of the system's libm changes a match (SIM 101). |
 | `geometry.rs`, `ids.rs`, `time.rs`, `hash.rs` | Integer geometry, generational ids, the clock, the BLAKE3 hash of the state. |
 | `identity.rs` | The two facts that identify a match in a world. |
-| `rng.rs`, `event_bus.rs` | Residues: the engine draws no random number (ADR-035) and nobody listens to the bus (OI-40). Do not build on them. |
+| — | The old `rng.rs` and `event_bus.rs` are gone: no random component at L0 (maintainer, 2026-11-20) and events live in `ds-stats`. |
 
 ## Stage 2 — The entities: `ds-model` and `ds-db`
 

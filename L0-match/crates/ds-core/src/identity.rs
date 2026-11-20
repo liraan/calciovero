@@ -5,8 +5,8 @@
 //! `match_id` were two fields of `GroundTruth` inside `pcfm-hidden`, a
 //! crate that held both the vault and the orchestrator. When the two are
 //! split, each needs the identity: the vault to derive latents by key
-//! (`PlayerLatents::from_key`), the orchestrator to name its streams
-//! (`StreamName`). Two copies of the same two fields is the defect D5
+//! (`PlayerLatents::from_key`), the orchestrator to derive the match's
+//! hidden truth from the same two facts. Two copies of the same two fields is the defect D5
 //! names; one type, passed to both by value, is the fix. It lives in
 //! `ds-core` because it is a primitive of the world, not a rule of the
 //! vault or of the orchestrator.

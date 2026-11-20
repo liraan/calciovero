@@ -126,7 +126,7 @@ shapes them.
 
 ### Why phenomenological
 
-It is deterministic (integer coordinates, named RNG streams, no
+It is deterministic (integer coordinates, no random component, no
 platform-dependent floating point), calibratable (each model has
 parameters in `L0-match/balance/`), and it produces events a fan recognises. A
 physical engine would require fixed-point physics, months of calibration,
@@ -337,15 +337,15 @@ movement, `PositionSnapshot`, attempt/outcome events. Those are §5.
 
 **This is deliberately minimal.** It proves the loop: position → perception →
 decision → movement. Everything else is vocabulary.
-### 3.5 OI-22 (RNG streams without `match_id`) closes here
+### 3.5 OI-22 (RNG streams without `match_id`) — obsolete
 
-The streams today are `"match:actions"`, `"match:action_kind"`,
-`"match:player_pick"` (`state.rs:60-64`). The spec (`01-rng.md:66-68`) wants
-`match:{id}:...`. The positional slice changes the RNG consumption anyway, so
-`SIM_VERSION` bumps regardless. Closing OI-22 now avoids a second bump.
+> **Retired (maintainer, 2026-11-20).** No random component exists at L0: the
+> streams, the spec and the action below are history, not work to do. This
+> section stays only to explain why OI-22 no longer applies.
 
-**Action:** `MatchState::new` takes `match_id` and builds
-`format!("match:{}:actions", id.slot())`. Same for the other streams.
+The streams then were `"match:actions"`, `"match:action_kind"`,
+`"match:player_pick"` (`state.rs:60-64`). The old spec wanted
+`match:{id}:...`; that naming convention is retired with `01-rng.md`.
 
 ### 3.6 OI-24 (getters on `GroundTruth`) — deferred, with a recommendation
 

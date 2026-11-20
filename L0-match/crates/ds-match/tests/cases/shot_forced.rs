@@ -132,6 +132,29 @@ fn resolve_shot_pressure_widens_the_deviation() {
         (low.to.1 - 3400).abs(),
         (high.to.1 - 3400).abs()
     );
+    // ADR-087: a hurried close shot keeps the spread it had at the 11 m
+    // measurement, and can miss the target; the same shot from 11 m is
+    // identical. The aim is unchanged: the contact is what he cannot see
+    // (ADR-054), so his choice stays the same (twin in `KickBalance`).
+    let hurried = ShotContext {
+        from: (10100, 3400, 0),
+        gait: 0.99,
+        power: 1.0,
+        run_cm_per_tick: 80.0,
+        across: 1.0,
+        ..ctx_at(3400, 100)
+    };
+    let measured = ShotContext {
+        from: (9400, 3400, 0),
+        ..hurried
+    };
+    let near = gt.resolve_shot(&hurried);
+    let far = gt.resolve_shot(&measured);
+    assert_eq!(near.to, far.to, "the spread must not shrink under 11 m");
+    assert!(
+        !near.on_target,
+        "a hurried close shot must be able to miss: {near:?}"
+    );
 }
 
 /// On the run, across the body, tired (P1, plan L0-CLOSE 11): the same

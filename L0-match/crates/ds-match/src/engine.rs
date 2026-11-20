@@ -49,7 +49,6 @@ impl MatchEngine for TextMatchEngine {
 mod tests {
     use super::*;
     use crate::context::MatchConfig;
-    use ds_core::rng::RngRegistry;
     use ds_model::Match;
     use ds_orchestrator::GroundTruth;
     use ds_stats::EventChain;
@@ -61,13 +60,11 @@ mod tests {
     fn simulate_once(seed: u64) -> MatchResult {
         let match_ = make_match();
         let mut hidden = GroundTruth::new(seed, match_.id);
-        let mut rng = RngRegistry::new(seed);
         let mut chain = EventChain::new();
         let config = MatchConfig::default();
         let ctx = MatchContext {
             match_: &match_,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config,
         };
@@ -164,13 +161,11 @@ mod tests {
         use crate::simulate::simulate_match;
         let match_ = make_match();
         let mut hidden = GroundTruth::new(42, match_.id);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let config = MatchConfig::default();
         let mut ctx = MatchContext {
             match_: &match_,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config,
         };

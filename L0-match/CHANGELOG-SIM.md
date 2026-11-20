@@ -8,6 +8,61 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 173 — Il freno finisce prima dell'attesa
+
+Il maintainer, vista la 2.5D del 172: «mooooolto meglio», ma «succede ancora
+in misura minore», «è come se avessero troppo momentum». Filtrando con LUNA:
+il dito è il battitore che, al calcio d'inizio del seme 42, entra nell'attesa
+a 106 cm dal punto con 34 cm/tick ancora addosso, scorre fino a 15 cm oltre e
+torna indietro; la luna è lo stesso giocatore, con la stessa velocità e lo
+stesso freno, a cui il 172 aveva insegnato a frenare **verso il punto** (d=0),
+mentre l'arbitro lo rilascia **all'arrivo** (90 cm = due raggi corpo,
+`2*BODY_RADIUS_CM`). Il freno arrivava quindi a destinazione con il piede ancora
+in moto: il resto lo faceva il momentum. Ora chi è mandato a una ripresa frena
+fino a fermarsi **entro** un raggio corpo dal punto (`BODY_RADIUS_CM = 45` cm):
+sotto radice c'è `(dist - BODY_RADIUS_CM)`, invece di `dist`; al rilascio il
+battitore è a 41 cm dal pallone e non lo supera. Fermarsi esattamente sulla
+soglia dei 90 cm era peggiorato: il corpo si fermava a 96 cm, appena fuori
+portata, e la ripresa non partiva più. Nessun numero nuovo, nessuna scelta
+cambiata: il gemello del burattino regge ancora. Il guardiano
+`a_man_sent_running_stops_at_his_place` ora chiede che si fermi sul pallone e
+non lo corra oltre.
+
+## 172 — Chi corre a una ripresa si ferma sulla palla
+
+Filtrando con LUNA: il dito è il battitore che si avvicina al pallone, lo
+supera, torna indietro e lo controlla — davanti alla barriera, a ogni
+punizione. La luna è lo stesso giocatore, mandato al punto del calcio
+d'inizio: il suo corpo ha la stessa velocità, la stessa accelerazione e lo
+stesso freno; cambia solo che nessuno gli dice di frenare. `send(id, spot,
+true)` voleva dire «vacci correndo» (SIM 150: non teletrasportare più 22 uomini
+in un tick), ma `move_agents` leggeva il `run` come `contests` e gli dava
+`top_s` senza frenata: arrivava a tutta velocità (75-100 cm/tick,
+`movement.json`), superava il punto anche di 6 m, rigirava e ci riprovava
+finché l'arbitro non lo trovava entro 90 cm. Non è una
+scelta sbagliata di chi prende il pallone: è l'esecuzione del gesto, quindi
+regge il gemello del burattino. Ora chi è mandato a un punto frena per
+arrivarci; chi contesta un pallone vivo resta a tutta velocità. Nessun numero
+nuovo. Il guardiano è `a_man_sent_running_stops_at_his_place`, che prima
+falliva (superava il punto al tick 14, dopo esserci arrivato all'11).
+
+## 171 — Il tiro non diventa preciso perché è vicino (OI-100)
+
+ADR-087/DD-27, dopo il tiro di prima tentato e tolto in SIM 166 di prova: la
+distanza usata per lo scarto angolare del tiro non scende sotto gli 11 m della
+misura di Shimotashiro e Shinya 2024. Non è un numero nuovo: è la distanza già
+dichiarata della fonte di `error_ref_rad`. La mira del calciatore resta
+`distanza × angolo` — ADR-054 dice che non può vedere la fase del contatto — e
+la scelta del tiro non cambia; cambia solo dove arriva il pallone quando il
+contatto avviene vicino alla porta. Valgono tiro e testata, non i passaggi.
+
+Su 60 partite 42..101, sotto gli 11 m il tiro in porta passa dal 96% al 54,6%
+(131/240; StatsBomb Liga 2020/21 46%); 11-18 m 52,2%, 18-25 m 43,9%, oltre
+25 m 15,6%. Tiri 32,35 (30,65 al 169), in porta 13,20 (12,43), parate 18,85
+(18,38), angoli 18,05 (15,90), rinvii dal fondo 20,07 ancora in banda: restano
+6/22 metriche in banda. Il conteggio dei tiri non è stato ritoccato per far
+tornare le metriche.
+
 ## 170 — La pressione mette alla prova il controllo del portatore (OI-132)
 
 Il maintainer, guardando la partita e poi correggendomi: «il contrasto è uno

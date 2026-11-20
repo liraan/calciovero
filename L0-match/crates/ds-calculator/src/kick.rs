@@ -20,6 +20,9 @@ pub struct KickBalance {
     pub speed_explosive_base: f64,
     /// Angular error of the worst kicker at medium power, radians.
     pub error_ref_rad: f64,
+    /// Distance of the shot-error measurement (ADR-087): a closer shot keeps
+    /// the same absolute spread instead of becoming unrealistically precise.
+    pub shot_error_min_distance_cm: f64,
     /// The angle a shot struck at full run adds to the error, for a player
     /// with no body control, radians.
     pub run_error_rad: f64,
@@ -109,6 +112,14 @@ impl KickBalance {
         )
     }
 
+    /// The distance a shot's error is applied to, cm (ADR-087): the real
+    /// distance, never less than the distance at which the source measured
+    /// the kick. The time and the body set-up are already in the error.
+    #[must_use]
+    pub const fn shot_error_distance_cm(&self, distance_cm: f64) -> f64 {
+        distance_cm.max(self.shot_error_min_distance_cm)
+    }
+
     /// The base of his miss as he reckons it, radians (ADR-052, plan
     /// L0-CLOSE 11): the error angle for his finishing and his better foot,
     /// as well as he reads the game. A poor reader underrates it.
@@ -151,6 +162,8 @@ mod tests {
         let b = KickBalance::load();
         assert!(b.speed_ref_cm_per_tick > 0.0 && b.error_ref_rad > 0.0);
         assert!(b.aim_low_cm < b.aim_high_cm);
+        assert!((b.shot_error_distance_cm(300.0) - b.shot_error_min_distance_cm).abs() < 1e-12);
+        assert!((b.shot_error_distance_cm(1800.0) - 1800.0).abs() < 1e-12);
     }
 
     /// Twin test (ADR-051 §3): two kickers identical but for explosive

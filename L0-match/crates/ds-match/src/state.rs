@@ -1831,7 +1831,6 @@ mod intercept_tests {
 #[cfg(test)]
 mod control_tests {
     use super::*;
-    use ds_core::rng::RngRegistry;
     use ds_orchestrator::GroundTruth;
 
     /// ADR-041 §5 (P1): a loose ball within reach of a player is his, and
@@ -1840,12 +1839,10 @@ mod control_tests {
     fn a_loose_ball_within_reach_belongs_to_the_nearest_player() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut hidden = GroundTruth::new(42, m.id);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let mut ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config: crate::context::MatchConfig::default(),
         };
@@ -1874,7 +1871,6 @@ mod control_tests {
 #[cfg(test)]
 mod loose_reception_tests {
     use super::*;
-    use ds_core::rng::RngRegistry;
     use ds_orchestrator::GroundTruth;
 
     /// Twin test (OI-117, SIM 130): the same player, the same ball nobody
@@ -1885,12 +1881,10 @@ mod loose_reception_tests {
     fn a_loose_ball_is_received_like_a_pass() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut hidden = GroundTruth::new(42, m.id);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let mut ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config: crate::context::MatchConfig::default(),
         };
@@ -1916,7 +1910,6 @@ mod loose_reception_tests {
 #[cfg(test)]
 mod possession_is_movement_tests {
     use super::*;
-    use ds_core::rng::RngRegistry;
     use ds_orchestrator::{GroundTruth, OffBallAct, OffBallScene, Place, Target};
 
     /// P1 (ADR-084, OI-128): the movement to a free ball *is* its control.
@@ -1926,12 +1919,10 @@ mod possession_is_movement_tests {
     fn moving_to_a_free_ball_takes_it_without_a_separate_event() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut hidden = GroundTruth::new(42, m.id);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let mut ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config: crate::context::MatchConfig::default(),
         };
@@ -1982,12 +1973,10 @@ mod possession_is_movement_tests {
     fn the_reader_of_the_race_takes_it_and_the_other_holds() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut hidden = GroundTruth::new(42, m.id);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let mut ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config: crate::context::MatchConfig::default(),
         };
@@ -2298,7 +2287,6 @@ mod marking_tests {
 #[cfg(test)]
 mod reaction_tests {
     use super::*;
-    use ds_core::rng::RngRegistry;
     use ds_orchestrator::GroundTruth;
 
     /// Twin test (SIM 133, OI-100): the same opponent, a step from the
@@ -2309,12 +2297,10 @@ mod reaction_tests {
     fn a_ball_just_struck_is_past_the_man_who_has_not_reacted() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut hidden = GroundTruth::new(42, m.id);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let mut ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config: crate::context::MatchConfig::default(),
         };
@@ -2357,7 +2343,6 @@ mod reaction_tests {
 #[cfg(test)]
 mod body_block_tests {
     use super::*;
-    use ds_core::rng::RngRegistry;
     use ds_orchestrator::GroundTruth;
 
     /// Twin test (OI-119, SIM 135, DD-4): the same pass just struck, the
@@ -2368,12 +2353,10 @@ mod body_block_tests {
     fn a_pass_struck_into_a_body_comes_off_it() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
         let mut hidden = GroundTruth::new(42, m.id);
-        let mut rng = RngRegistry::new(42);
         let mut chain = EventChain::new();
         let mut ctx = MatchContext {
             match_: &m,
             hidden: &mut hidden,
-            rng: &mut rng,
             chain: &mut chain,
             config: crate::context::MatchConfig::default(),
         };

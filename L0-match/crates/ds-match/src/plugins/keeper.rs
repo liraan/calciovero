@@ -36,8 +36,11 @@ impl MatchState {
         // line he narrows the angle and has less time (the line from the
         // strike to the crossing, cut at his depth). The distance is from
         // the centre of his body, across and up.
-        let share = ctx.hidden.save_balance().standing_reach_share;
-        let reach_cm = self.bodies.get(&gk).map_or(0.0, |b| b.height_cm * share);
+        let save = ctx.hidden.save_balance();
+        let reach_cm = self
+            .bodies
+            .get(&gk)
+            .map_or(0.0, |b| save.standing_reach_cm(b.height_cm));
         let v = self.spatial.ball_velocity();
         let speed = dmath::hypot3(f64::from(v.0), f64::from(v.1), f64::from(v.2));
         #[allow(clippy::cast_precision_loss)] // ticks of one match: far below 2^52
