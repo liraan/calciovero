@@ -361,6 +361,7 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 079 | The opponents' lines and the space between them | ? accepted (delegated) | Le tre linee avversarie e gli spazi fra esse entrano nel valore del passaggio e del posto senza palla. SIM 162. |
 | 080 | The dead ball and the kicker | ? accepted (delegated) | La palla morta entra nella percezione: nessuno pressa il battitore, e il calcio va al ruolo e al piede adatti. SIM 163. |
 | 081 | The second man on every high ball (OI-102) | ✅ accepted (2026-11-20) | DD-19: scelta C del maintainer — ogni palla alta, entrambi i lati, il secondo solo se può arrivarci con la corsa e la lettura esistenti, nessun numero nuovo. SIM 164; ADR-077 §Decision emendata. |
+| 082 | The ball that lies in the box (OI-126) | ✅ accepted (2026-11-20) | DD-22: scelta A — la palla libera è di chi legge di poterci arrivare, con percezione e portata già esistenti, nessun numero nuovo; attuazione dopo l'ADR angolare di OI-100. |
 
 **Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048, 081 (43). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
 
