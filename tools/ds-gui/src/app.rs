@@ -1099,7 +1099,12 @@ impl App {
                 scene::Gesture::Dive(_) | scene::Gesture::Slide => (2.0, 8.0),
                 scene::Gesture::Fall => (0.0, 20.0),
                 scene::Gesture::Throw => (8.0, 2.0),
-                scene::Gesture::Celebrate => (0.0, 40.0),
+                // DD-37: the party lasts the measured pause from the goal to
+                // the kick-off, so it can be seen at the default x16.
+                scene::Gesture::Celebrate => (
+                    0.0,
+                    ds_match::balance::StoppageTime::load().goal_to_kick_off_s * TICKS_PER_SECOND,
+                ),
                 scene::Gesture::Card(_) => (0.0, 25.0),
             };
             #[allow(clippy::cast_precision_loss)]
@@ -1368,6 +1373,25 @@ fn gestures(
     };
     for (k, r) in records.iter().enumerate() {
         for e in events.get(r.events.clone()).unwrap_or(&[]) {
+            // DD-37 (LUNA): the goal is a fact of the side whose score rose.
+            // Every man of that side in the field celebrates — read from the
+            // score, so an own goal is the right side's party. No assist, no
+            // name: only the score and the men on the grass (ADR-065 §3).
+            if e.event_type == ds_stats::EventType::Goal {
+                let (mut home, mut away) = (false, false);
+                if let Some(prev) = k.checked_sub(1).map(|j| &records[j].score) {
+                    home = r.score.home > prev.home;
+                    away = r.score.away > prev.away;
+                }
+                for a in &r.agents {
+                    if (a.id.slot() < 100 && home) || (a.id.slot() >= 100 && away) {
+                        out.entry(a.id)
+                            .or_default()
+                            .push((k, scene::Gesture::Celebrate));
+                    }
+                }
+                continue;
+            }
             let Some(ds_core::ids::ActorId::Player(p)) = e.actor else {
                 continue;
             };
@@ -1646,7 +1670,14 @@ fn cheers(
 fn crowd_mood(cheers: &[(usize, bool, f32)], now: f32) -> (f32, f32) {
     let mut mood = (0.0_f32, 0.0_f32);
     for &(tick, home, strength) in cheers {
-        let lasts = if strength >= 1.0 { 60.0 } else { 10.0 };
+        #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+        let lasts = if strength >= 1.0 {
+            // DD-37: the fans' roar lasts the goal's party (the measured
+            // pause), not six seconds hidden by the default x16.
+            (ds_match::balance::StoppageTime::load().goal_to_kick_off_s * TICKS_PER_SECOND) as f32
+        } else {
+            10.0
+        };
         #[allow(clippy::cast_precision_loss)]
         let since = now - tick as f32;
         if (0.0..lasts).contains(&since) {
@@ -1744,6 +1775,57 @@ mod tests {
                 .get(&id)
                 .is_some_and(|gs| gs.iter().any(|(_, g)| *g == scene::Gesture::Through)),
             "the same pass, qualified as through, is drawn as a through ball"
+        );
+    }
+
+    /// DD-37 (LUNA): the whole side celebrates the goal, read from the score
+    /// so an own goal goes to the side that benefits; the party lasts the
+    /// measured pause, not a 40-tick blink the default x16 hides.
+    #[test]
+    fn the_side_that_scores_celebrates_and_the_party_is_seen() {
+        let mut a = app();
+        let pause = ds_match::balance::StoppageTime::load().goal_to_kick_off_s * TICKS_PER_SECOND;
+        assert!(pause > 40.0, "the pause is longer than the old blink");
+
+        let game = a.game.as_ref().expect("game");
+        let (tick, home, _) = game
+            .cheers
+            .iter()
+            .find(|c| c.2 >= 1.0)
+            .expect("a goal in the golden");
+        let record = &game.records[*tick];
+        let men: Vec<_> = record
+            .agents
+            .iter()
+            .filter(|m| (m.id.slot() < 100) == *home)
+            .collect();
+        assert!(men.len() > 1, "a side has more than the scorer");
+        for man in men {
+            assert!(
+                game.gestures.get(&man.id).is_some_and(|gs| {
+                    gs.iter()
+                        .any(|&(k, g)| k == *tick && g == scene::Gesture::Celebrate)
+                }),
+                "every man of the side celebrates: {:?}",
+                man.id
+            );
+        }
+        // Halfway into the pause the scorer is still seen celebrating at x16.
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let middle = (pause / 2.0) as usize;
+        a.tick = *tick + middle;
+        assert!(
+            a.gesture_now(
+                game.gestures
+                    .iter()
+                    .find_map(|(id, gs)| gs
+                        .iter()
+                        .any(|&(k, g)| k == *tick && g == scene::Gesture::Celebrate)
+                        .then_some(*id))
+                    .expect("a scorer")
+            )
+            .is_some_and(|(g, _)| g == scene::Gesture::Celebrate),
+            "the party is visible halfway into the pause"
         );
     }
 
