@@ -769,8 +769,14 @@ impl MatchState {
                 // without the ball (ADR-071 §5, emendamento 2026-11-19) and
                 // where he offers with it. One man, one reading, two acts.
                 let game_reading = ctx.hidden.characteristic(id, "game_reading").unwrap_or(0.5);
-                let closed = (carrier_pos.is_some() && !keeper)
-                    .then(|| view.choose_closed_place((me, anchor), (length, width), game_reading));
+                let closed = (carrier_pos.is_some() && !keeper).then(|| {
+                    view.choose_closed_place(
+                        (me, anchor),
+                        (length, width),
+                        game_reading,
+                        self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
+                    )
+                });
                 let partner_intesa = if ball_loose {
                     let nearest_mate = squad
                         .players

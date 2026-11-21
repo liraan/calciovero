@@ -72,7 +72,7 @@ bash context/scripts/session.sh close                          # the full C2 har
 ```
 
 The gate is **not** a raw `cargo test --workspace`: `session.sh` runs the
-tests that guard the files you touched, with an 80 s total budget, and
+tests that guard the files you touched, runs them to completion, and
 caches green results in `.cache/session-tests/` (gitignored) by content
 hash. An unchanged file is not retested; `close` disables the cache so the
 `C2-green` trailer stays true. The hooks in `.githooks/` call the same

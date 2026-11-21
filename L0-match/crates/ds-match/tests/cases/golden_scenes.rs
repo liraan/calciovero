@@ -82,7 +82,8 @@ fn nobody_moves_faster_than_his_legs() {
         let events = result.events.events();
         for pair in record.windows(2) {
             let (before, now) = (&pair[0], &pair[1]);
-            // Law placements, not running: the taker is put on the spot.
+            // Law placements, not running: the taker is put on the spot, and
+            // a sent-off man is put on the bench (the halfway line, y = -300).
             let placed = events[now.events.clone()].iter().any(|e| {
                 matches!(
                     e.event_type,
@@ -94,7 +95,7 @@ fn nobody_moves_faster_than_his_legs() {
                         | EventType::Corner
                         | EventType::ThrowIn
                         | EventType::GoalKick
-                )
+                ) || (e.event_type == EventType::Card && e.fields["color"] == "red")
             });
             if placed || before.half != now.half {
                 continue;

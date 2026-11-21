@@ -614,7 +614,7 @@ impl App {
             );
             ui.separator();
             ui.spacing_mut().slider_width = (ui.available_width() - 16.0).max(80.0);
-            ui.add(egui::Slider::new(&mut self.tick, 0..=last).show_value(false));
+            ui.add(egui::Slider::new(&mut self.tick, 0..=last).show_value(true));
         });
     }
 

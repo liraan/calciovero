@@ -351,7 +351,8 @@ pub enum BallState {
     Possessed,
     /// Travelling with a velocity.
     InFlight,
-    /// Free and at rest.
+    /// Free of a kick and no one's, but still physical: it keeps rolling
+    /// until the declared friction spends it (ADR-083).
     Loose,
 }
 // The ball's physical properties (gravity, friction in the air and on the
@@ -594,7 +595,17 @@ impl SpatialState {
     pub fn set_hold_at(&mut self, id: PlayerId, place: Option<(i32, i32)>) {
         match place {
             Some(p) => {
-                self.hold_at.insert(id, p);
+                // SIM 176: a place within a body of the one he is already
+                // holding is the same space. Without this dead band a read
+                // that flips between two near-identical spots made him brake
+                // and set off again every decision (the automaton's dance).
+                let same = self.hold_at.get(&id).is_some_and(|held| {
+                    dmath::hypot(f64::from(p.0 - held.0), f64::from(p.1 - held.1))
+                        <= f64::from(BODY_RADIUS_CM)
+                });
+                if !same {
+                    self.hold_at.insert(id, p);
+                }
             }
             None => {
                 self.hold_at.remove(&id);
@@ -1366,6 +1377,7 @@ impl SpatialState {
     /// in his hands (`hold`), it is at his feet. If he has not reached it
     /// when the touch is due (he turned, he was held up) it rolls on until
     /// he does. A no-op if nobody carries it.
+    #[allow(clippy::too_many_lines)] // the won-branch now reads the receiver's run
     pub fn follow_carrier(
         &mut self,
         tick: u64,
@@ -1419,13 +1431,37 @@ impl SpatialState {
                 f64::from(self.ball_position.0),
                 f64::from(self.ball_position.1),
             );
+            // OI-123 (ADR-058 §5): the first touch is his, not the ball's.
+            // Running into the pass he takes it into his own stride; playing
+            // it back where it came from would leave it behind for him to
+            // fetch (the maintainer, 2026-11-21: it never happens in a real
+            // match). The same touch as any other: his pace sets where and
+            // how far it rolls, and he meets it again when it is due.
+            let run = (f64::from(agent.velocity.0), f64::from(agent.velocity.1));
+            let pace = dmath::hypot(run.0, run.1);
+            // The sign gates a touch: keep the arithmetic bit-identical to SIM 177.
+            #[allow(clippy::suboptimal_flops)]
+            let with_the_ball = run.0 * vx + run.1 * vy;
             if spill >= 1.0 {
+                // He also takes it with him when he is simply faster than the
+                // ball he has just won: the same reading of the ball's roll
+                // and his own stride, not a new rule (OI-123, SIM 178).
+                let (dir, speed, period) = if pace >= 1.0 && (with_the_ball < 0.0 || spill < pace) {
+                    let period = period_of(carrier, pace).max(1.0);
+                    (
+                        (run.0 / pace, run.1 / pace),
+                        touch_speed(pace, period, keep),
+                        period,
+                    )
+                } else {
+                    ((vx / incoming, vy / incoming), spill, 0.0)
+                };
                 self.touch = Some(Touch {
                     from,
-                    dir: (vx / incoming, vy / incoming),
-                    speed: spill,
+                    dir,
+                    speed,
                     at: tick,
-                    period: 0.0,
+                    period,
                     held_cm: 0.0,
                 });
             } else if !at_body {
@@ -1761,10 +1797,15 @@ impl SpatialState {
             } else {
                 // The place he chose (ADR-071): in his zone with the ball,
                 // the space he closes without it; else his side's shape.
+                // SIM 176: the place he read keeps guiding him while the ball
+                // is in flight too. Before, it was thrown away as soon as no
+                // one carried the ball and the side's geometry took over: a
+                // man who had chosen a space followed the ball instead, then
+                // went back when a carrier appeared again. A possession
+                // change clears the place (`set_home_in_possession`).
                 self.hold_at
                     .get(&entry.0)
                     .copied()
-                    .filter(|_| self.carrier.is_some())
                     .or_else(|| {
                         self.block_target(
                             entry.0,
@@ -1929,7 +1970,21 @@ impl SpatialState {
                                     contest_top
                                 }
                             } else {
-                                in_time.min(top_s).min((2.0 * decel_s * dist).sqrt())
+                                // SIM 176: a place is covered when he is
+                                // within a body of it. Braking to the exact
+                                // point made him walk back into the push of
+                                // `separate` every tick (the automaton's
+                                // dance); a body of slack is the same space.
+                                // The keeper keeps his angle: he has no
+                                // slack, or he would stop following the ball.
+                                let arrive = if keeper {
+                                    0.0
+                                } else {
+                                    f64::from(BODY_RADIUS_CM)
+                                };
+                                in_time
+                                    .min(top_s)
+                                    .min((2.0 * decel_s * (dist - arrive).max(0.0)).sqrt())
                             }
                         },
                         |pace| pace.min(top_s),
@@ -2379,6 +2434,20 @@ mod tests {
         assert_eq!(make_state().len(), 22);
     }
 
+    /// ADR-091, SIM 176: a re-read within a body of the place he holds is the
+    /// same space, so his target does not flip and he does not brake and set
+    /// off again; a real change of space still moves him.
+    #[test]
+    fn a_near_reread_keeps_the_place_he_holds() {
+        let mut s = make_state();
+        let id = PlayerId::new(0, 0);
+        s.set_hold_at(id, Some((4000, 3400)));
+        s.set_hold_at(id, Some((4020, 3410)));
+        assert_eq!(s.hold_at.get(&id).copied(), Some((4000, 3400)));
+        s.set_hold_at(id, Some((5000, 3400)));
+        assert_eq!(s.hold_at.get(&id).copied(), Some((5000, 3400)));
+    }
+
     #[test]
     fn same_input_same_output() {
         let a = make_state();
@@ -2712,6 +2781,63 @@ mod tests {
         assert_eq!(later, at, "a dead ball under his foot in a step");
         let (_, first, later) = won(10.0);
         assert!(first.0 > at.0 && later.0 > first.0, "a poor touch runs on");
+    }
+
+    /// OI-123 (ADR-058 §5), SIM 177: the first touch is the receiver's. Running
+    /// into the pass he takes it with him, instead of leaving it behind and
+    /// going back for it. One running the ball's way still plays it ahead.
+    #[test]
+    fn a_man_running_into_the_pass_takes_it_with_him() {
+        let id = PlayerId::new(1, 0);
+        let receive = |run: i16| {
+            let mut s = make_state();
+            let at = s.agent(id).map_or((0, 0), |a| a.position);
+            s.agent_mut(id).unwrap().velocity = (run, 0);
+            s.set_ball_in_flight((at.0 + 80, at.1, 0), (60, 0, 0));
+            s.set_carrier(Some(id));
+            s.follow_carrier(1, false, |_, _| 2.5, |_, _| 10.0, 45);
+            s.follow_carrier(4, false, |_, _| 2.5, |_, _| 10.0, 45);
+            (at, s.ball())
+        };
+        let (at, against) = receive(-60);
+        assert!(
+            against.0 < at.0 - BODY_RADIUS_CM,
+            "taken into his own run, not back where it came: {at:?} {against:?}"
+        );
+        let (at, along) = receive(60);
+        assert!(
+            along.0 > at.0 + BODY_RADIUS_CM,
+            "still played ahead when running with it: {at:?} {along:?}"
+        );
+    }
+
+    /// OI-123 (SIM 178): a man faster than the ball he has just won takes
+    /// it into his own stride, instead of running past a ball that only
+    /// rolls at a fraction of his pace. Same ball, same touch, same
+    /// direction: only his pace changes.
+    #[test]
+    fn a_man_faster_than_the_spilled_ball_takes_it_with_him() {
+        let id = PlayerId::new(1, 0);
+        let first = |run: i16| {
+            let mut s = make_state();
+            let at = s.agent(id).map_or((0, 0), |a| a.position);
+            s.agent_mut(id).unwrap().velocity = (run, 0);
+            s.set_ball_in_flight((at.0 + 80, at.1, 0), (4, 0, 0));
+            s.set_carrier(Some(id));
+            s.follow_carrier(1, false, |_, _| 10.0, |_, _| 1.0, 45);
+            s.follow_carrier(4, false, |_, _| 10.0, |_, _| 1.0, 45);
+            s.ball().0 - at.0
+        };
+        let fast = first(60);
+        let slow = first(3);
+        assert!(
+            fast > slow + 100,
+            "the faster man plays it at his own pace: {fast} vs {slow}"
+        );
+        assert!(
+            slow < 100,
+            "a slower man still lets the spill roll on: {slow}"
+        );
     }
 
     /// His own ball within his reach (P1, plan L0-CLOSE 11): he plays it

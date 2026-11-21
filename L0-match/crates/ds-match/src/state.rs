@@ -835,13 +835,15 @@ impl TeamView {
     /// inside his own lane his reading picks the line, while the lanes beside
     /// keep being weighed by the game (ADR-071 §5, emendamento 2026-11-19;
     /// `BEHAVIOURS.md` 19). He never leaves his zone: that is his discipline
-    /// (ADR-071 §4).
+    /// (ADR-071 §4). SIM 176 (ADR-091): fatigue discounts the far side of
+    /// that zone — the tired man covers what he can still reach.
     #[allow(clippy::cast_precision_loss)] // cm on a pitch
     pub(crate) fn choose_closed_place(
         &self,
         (me, anchor): ((i32, i32), (i32, i32)),
         (length, width): (i32, i32),
         game_reading: f64,
+        fatigue: f64,
     ) -> (i32, i32) {
         let block = crate::balance::BlockBalance::load();
         let corridor = (width / 5).max(1);
@@ -894,12 +896,21 @@ impl TeamView {
             }
             // His reading chooses the line inside his own lane; the lanes
             // beside it are still weighed by the game, not by his mood.
-            danger(p)
+            let worth = danger(p)
                 * if quiet && p.1 / corridor == k0 {
                     game_reading.clamp(0.0, 1.0)
                 } else {
                     soon(p)
-                }
+                };
+            // SIM 176: a tired man covers the space he can still reach. One
+            // line of the block is the declared reach a fresh man steps
+            // across; at full fatigue even that is beyond him, so he holds
+            // the nearer space instead of chasing danger with legs that no
+            // longer carry him there. No new number: fatigue is declared
+            // in [0, 1] and `line` is the declared depth divided by three.
+            #[allow(clippy::cast_precision_loss)] // cm on a pitch
+            let far = (distance_squared(me, p).isqrt() as f64 / f64::from(line.max(1))).min(1.0);
+            worth * fatigue.clamp(0.0, 1.0).mul_add(-far, 1.0)
         };
         let mut options: Vec<(f64, (i32, i32))> = Vec::new();
         for p in candidates {
@@ -2095,13 +2106,13 @@ mod marking_tests {
         let carrier = (5000, 3400);
         let alone = block_view(vec![me], vec![carrier], carrier);
         assert_eq!(
-            alone.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0),
+            alone.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0),
             anchor,
             "nobody to close: the coach's place"
         );
         let man = (3300, 3400);
         let marked = block_view(vec![me], vec![carrier, man], carrier);
-        let place = marked.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0);
+        let place = marked.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0);
         assert!(place.0 < anchor.0, "he steps back to close it: {place:?}");
         assert!(
             (place.0 - man.0).abs() <= 1100,
@@ -2121,13 +2132,31 @@ mod marking_tests {
         let carrier = (5000, 3400);
         let v = block_view(vec![me], vec![carrier], carrier);
         assert_eq!(
-            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0),
+            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0),
             anchor,
             "no reading: no space to see, the coach's place"
         );
-        let read = v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 1.0);
+        let read = v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 1.0, 0.0);
         assert_ne!(read, anchor, "he reads a space and leaves the given place");
         assert!(read.0 < anchor.0, "towards his own goal: {read:?}");
+    }
+
+    /// Twin test (ADR-091, SIM 176): the same defender, the same opponent
+    /// in the space behind him; only his fatigue changes. The fresh man
+    /// closes the far space, the tired one holds a nearer part of his zone.
+    #[test]
+    fn fatigue_keeps_the_tired_man_in_the_space_he_can_reach() {
+        let (me, anchor) = ((4000, 3400), (4000, 3400));
+        let carrier = (5000, 3400);
+        let man = (3300, 3400);
+        let v = block_view(vec![me], vec![carrier, man], carrier);
+        let fresh = v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0);
+        let tired = v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 1.0);
+        assert!(fresh.0 < anchor.0, "fresh closes the far space: {fresh:?}");
+        assert!(
+            tired.0 > fresh.0,
+            "the tired man does not chase as far: fresh {fresh:?} tired {tired:?}"
+        );
     }
 
     /// Twin test (ADR-071 §5, `BEHAVIOURS.md` 19): two men of the same side,
@@ -2142,7 +2171,7 @@ mod marking_tests {
         let beside = (3350, 3400);
         let v = block_view(vec![me, beside], vec![carrier, man], carrier);
         assert_eq!(
-            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0),
+            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0),
             anchor,
             "the man beside him is nearer: not his"
         );
@@ -2157,7 +2186,7 @@ mod marking_tests {
         let carrier = (4800, 3400);
         let v = block_view(vec![me], vec![carrier], carrier);
         assert_eq!(
-            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0),
+            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0),
             anchor
         );
     }

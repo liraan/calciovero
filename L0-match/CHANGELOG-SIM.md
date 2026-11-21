@@ -8,6 +8,130 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 178 — L'uomo più veloce della palla se la porta con sé (DD-34)
+
+Il maintainer, dopo SIM 177: «risolvi i problemi in partita se é possibile
+farlo nei limiti della visione del giocatore decidente». Ricostruendo i
+carrier-gap ancora su seed 42 restano quattro episodi lunghi: il giocatore
+prende una palla che rotola via a pochi cm/tick e corre a 50-60 cm/tick,
+superandola di 3-5 m prima di frenare e tornare (tick 665-684, away slot 8,
+gap 466 cm). SIM 177 copriva solo la corsa **contro** la palla in arrivo.
+
+Con LUNA: il dito è il residuo `spill` della palla e la velocità dell'uomo, due
+fatti che vede nel proprio cono; la luna è lo stesso giocatore che, appena
+prende la palla, sceglie di portarla nel proprio passo invece di rincorrerla.
+Cambia il come esegue il controllo, non chi prende il pallone né la fisica.
+
+Nella branca `won` di `follow_carrier`, il primo tocco prende la direzione
+della corsa se l'uomo corre contro il passaggio (`run·ball < 0`, SIM 177) **o**
+se è più veloce del residuo di rotolamento (`spill < pace`), con `pace >= 1.0`.
+Stessa formula del SIM 177 e del tocco successivo (`period_of`, `touch_speed`,
+frenata dichiarata), lo confronto è tra due velocità in cm/tick: nessun numero
+nuovo, nessun gate su `BallState`, nessun dado. Negli altri casi il tocco resta
+quello del SIM 93.
+
+A/B su partita vera, stessi semi: seed 42, portatore oltre 90 cm 2814 → 1398,
+oltre 200 cm 1180 → 160, oltre 500 cm 257 → 0, picco 675 → 373 cm; passaggi
+1224 → 1255, gol 8 → 9. Seed 53, 2390 → 1456 / 879 → 152 / 213 → 0, picco
+723 → 352 cm; passaggi 1212 → 1205, gol 10 → 3. I tre episodi lunghi di seed
+42 spariscono; resta un tocco pesante da fermo, fuori da questa decisione.
+Guardiano `a_man_faster_than_the_spilled_ball_takes_it_with_him` (gemello:
+stessa palla, cambia solo la velocità di corsa); verdi i due guardiani del SIM
+177. Golden e semi rigenerati (coppa 49 → 48, pareggio al 90' 42 → 48,
+decisivo 43 → 42, shoot-out di soli tiri 49 → 48).
+
+## 177 — Il primo tocco è del ricevitore (DD-33)
+
+Il maintainer, guardando seed 42 in 2.5D: «non puoi fixarle da solo questi
+comportamenti? sono cose chiaramente che non succedono nella partita reale …
+la cosa più importante è capire perché succede, non il fatto nello specifico».
+Il caso indicato («secondo 16, 9 rosso») è stato seguito tick per tick: tick 152
+il home slot 8 controlla a 2 cm con velocità −67 cm/tick; tick 153 il primo
+tocco lancia la palla a 4,84 cm/tick in direzione `(0,7775, 0,6289)`, cioè
+**indietro, da dove era venuta**, con `period = 0` e `held_cm = 0`; dal tick 154
+al 188 l'uomo ha già la palla come bersaglio (`overdue`) e frena come in SIM
+173/174, ma l'inerzia lo porta 651 cm oltre il pallone al tick 170, mentre la
+palla si è mossa di circa 70 cm; tick 189 torna a 0 cm e la gioca lunga (tick
+190, `z = 127`). 37 tick, 3,7 s, per un controllo che in partita vera non
+esiste.
+
+La causa non è il caso singolo: nella branca `won` di `follow_carrier` il primo
+tocco usava solo la velocità con cui la palla era arrivata (`won`, `spill_of`)
+e mai la velocità del ricevitore. Era un atto della palla, non dell'uomo:
+ADR-058 §5 lo dichiarava «Declared, not read yet» e ADR-053 lasciava aperto
+OI-123. Filtrando con LUNA: il dito è il vettore in arrivo e il residuo di
+`first_touch`; la luna è lo stesso giocatore che arriva, con la propria corsa,
+e che sceglie dove mettere il primo controllo. La tattica dà solo la tendenza;
+l'agency è nel come esegue.
+
+Quando corre **contro** il passaggio (`dot(velocità_uomo, velocità_palla) < 0`)
+il tocco va ora nella sua direzione, con la stessa formula del tocco successivo:
+`period_of`, `touch_speed` e la frenata già dichiarati. Chi corre insieme alla
+palla la gioca ancora avanti, come dal SIM 93 (guardiano
+`a_ball_won_is_taken_where_it_is`). Nessun numero nuovo, nessun gate di stato,
+nessuna regola ridondante: la fisica libera resta identica (audit di
+`advance_ball`, che non legge mai `BallState`).
+
+La prima versione, che metteva la palla sotto il piede, è stata provata e
+scartata: su seed 53 dimezzava i passaggi (1196 → 630) e i gol (6 → 2) e
+perdeva la seconda pausa idrica. Quella finale su seed 42 porta i tick con
+portatore oltre 90 cm da 8296 a 2864 (−65%) e quelli con palla ferma da 7558 a
+1766 (−77%), in 65.000 tick invece di 63.200; su seed 53 i passaggi restano
+1302 e le due pause ci sono ancora. Guardiano
+`a_man_running_into_the_pass_takes_it_with_him` (gemello: stessa palla, sola
+la direzione di corsa cambia). Il guardiano
+`nobody_moves_faster_than_his_legs` ora esclude il cartellino rosso, che è un
+posizionamento di Legge (`referee.rs` manda l'espulso a `y = -300`), non una
+corsa: SIM 177 ha spostato un rosso sul seed 44 al tick 33883. Golden e semi
+rigenerati (coppa 58 → 49, pareggio al 90' 49 → 42, decisivo 42 → 43).
+
+## 176 — Il posto scelto continua a guidare chi è senza palla (DD-32)
+
+Il maintainer, dopo SIM 175: «continuano ogni tanto a perdersi la palla e
+soprattutto la cosa più strana è il movimento senza palla … sembra facciano solo
+movimenti dondolanti come automi», «è piuttosto comune, lo vedo quasi sempre».
+Prima di scrivere codice ho misurato la partita vera (seed 42, 61.800 tick).
+Le 7 corse di 607 tick con pallone fermo e nessun portatore finiscono tutte con
+un `Goal`: 607 = 606 + 1, i 60,6 s dichiarati di `goal_to_kick_off_s`. Le corse
+di 49-65 tick finiscono con `ThrowIn`, `Corner` o `FreeKick`. Il pallone piantato
+è la sosta legale, già ridotta in SIM 175 da 1510 a 606 tick; il rimettitore è
+già a 41-45 cm dal punto, dentro i 90 cm di `at_ball`. **Non c'era un secondo
+bug: nessun tempo di sosta è stato toccato.** Il dondolio invece era reale: il
+peggior giocatore di movimento invertiva la marcia 92 volte in gioco aperto
+(61.800 tick), con passi di 2-3 cm; i due portieri, 135 e 131, seguono il
+pallone per mestiere.
+
+Filtrando con LUNA: il dito è l'argmax senza memoria, il `hold_at` buttato via
+appena il pallone non ha portatore e la frena sul punto esatto; la luna è lo
+stesso giocatore che ha già letto la scena e scelto uno spazio, con la propria
+fatica e le proprie gambe. Non cambia l'atto, né chi prende il pallone: cambia
+il modo in cui esegue e il modo in cui tiene il posto.
+
+Quattro modifiche, tutte con numeri già dichiarati:
+
+1. `spatial::move_agents` usa il `hold_at` anche quando `carrier` è `None`: nel
+   passaggio in volo il posto letto resta, invece della geometria della squadra.
+   Il cambio di possesso lo cancella ancora (`set_home_in_possession`).
+2. `set_hold_at` ignora una rilettura entro `BODY_RADIUS_CM` (45 cm): lo stesso
+   spazio, non un nuovo bersaglio a cui frenare e ripartire.
+3. `choose_closed_place` riceve la fatica (dichiarata in `[0, 1]`) e sconta il
+   valore degli spazi lontani in linee del blocco (`depth_out_of_possession_cm /
+   3`): il giocatore stanco copre ciò che può ancora raggiungere. La fatica non
+   era prima nella scelta, solo nella velocità e nella latenza (ADR-030).
+4. Chi arriva frena entro un corpo dal posto, non sul punto esatto: la
+   separazione non può più spingerlo fuori e riportarlo dentro ogni tick. Il
+   portiere è escluso perché deve seguire l'angolo con la palla; contese e
+   `sent` alle riprese mantengono la loro frenata (ADR-088/089).
+
+Guardiani: `fatigue_keeps_the_tired_man_in_the_space_he_can_reach` (gemello con
+la sola fatica che cambia) e `a_near_reread_keeps_the_place_he_holds`. Su seed 42
+le inversioni del peggiore giocatore di movimento scendono da 92 (61.800 tick)
+a 60 (63.200 tick); i due portieri vanno da 135 e 131 a 141 e 137, perché devono
+seguire il pallone. I 175 test di libreria restano verdi, compreso
+`move_agents_moves_the_goalkeeper_toward_the_ball_segment`, che ha imposto
+l'esclusione del portiere. Golden e semi dei test rigenerati con
+`SIM_VERSION = 176`.
+
 ## 175 — Il passo della contesa è quello della partita vera (DD-30)
 
 Il maintainer, guardando il seed 42 in 2.5D: «i giocatori non corrono quasi mai

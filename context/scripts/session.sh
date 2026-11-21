@@ -32,24 +32,11 @@ usage() {
 
 CORE_CRATES="ds-core ds-model ds-db ds-orchestrator ds-calculator ds-match ds-stats"
 
-# One budget for the whole check, not one per command: the maintainer
-# (2026-11-20) does not want to wait more than 80 s of tests in total. Every
-# test call spends the time left; when it runs out the check fails.
-TEST_BUDGET=80
-TEST_STARTED=0
+# Tests run to completion: a deadline killed the second compile after all
+# guards were already green, turning a passing check into a failure
+# (maintainer, 2026-11-21: "togli il limite di secondi altrimenti fa saltare tutto").
 run_cargo_test() {
-  local left
-  [ "$TEST_STARTED" -eq 0 ] && TEST_STARTED=$(date +%s)
-  left=$((TEST_BUDGET - ($(date +%s) - TEST_STARTED)))
-  if [ "$left" -le 0 ]; then
-    echo "test budget of ${TEST_BUDGET}s exhausted" >&2
-    return 1
-  fi
-  if command -v timeout >/dev/null 2>&1; then
-    timeout "$left" cargo test "$@"
-  else
-    cargo test "$@"
-  fi
+  cargo test "$@"
 }
 
 # Test-result cache (maintainer, 2026-11-20): a file whose current bytes were
@@ -177,7 +164,7 @@ changed_test_functions() {
     case "$f" in
       Cargo.toml|Cargo.lock|*/Cargo.toml)
         # A dependency change is guarded by the golden plus the touched
-        # crates; the whole workspace would exceed the 80 s budget.
+        # crates; the whole workspace is not needed for that.
         add_golden ;;
       L0-match/crates/ds-match/tests/suite.rs|L0-match/crates/ds-match/tests/support/*)
         # The harness itself: the golden is its guard, not the whole workspace.
@@ -198,7 +185,7 @@ changed_test_functions() {
           want && /^[[:space:]]*#\[/ && /\)[[:space:]]*$/ { next }
         ' "$f") ;;
       # Shared formulas have named guards in the integration suite; a whole
-      # workspace run (over 80 s) is not needed to check a known shared file.
+      # workspace run is not needed to check a known shared file.
       L0-match/crates/ds-core/src/lib.rs|L0-match/crates/ds-calculator/src/kick.rs|L0-match/crates/ds-calculator/src/duel.rs|L0-match/crates/ds-calculator/src/fatigue.rs|L0-match/crates/ds-calculator/src/save.rs|L0-match/crates/ds-calculator/src/thought.rs|L0-match/crates/ds-calculator/tests/reach_has_one_value.rs|L0-match/crates/ds-orchestrator/src/lib.rs|L0-match/crates/ds-orchestrator/src/actor.rs|L0-match/crates/ds-orchestrator/src/read.rs|L0-match/crates/ds-orchestrator/src/offball.rs|L0-match/crates/ds-orchestrator/src/outcome.rs)
         add_golden
         add_fn shot_forced::resolve_shot_pressure_widens_the_deviation ;;
