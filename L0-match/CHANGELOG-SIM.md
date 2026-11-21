@@ -8,6 +8,38 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 183 — La squadra che ha segnato va alla porta (DD-40)
+
+Il maintainer guarda la GUI/TUI dopo SIM 181/182 e segnala «i giocatori non
+vanno a festeggiare» e «sono molto disordinati tatticamente»; interrogato sul
+momento, indica la **sosta dopo il gol**. Con LUNA: il dito è l'evento `Goal`,
+il tick, il punto del varco, la sosta dichiarata e le destinazioni `sent`;
+la luna è la stessa squadra che ha segnato che legge il gol, va insieme alla
+porta e poi rientra nel blocco. Cambia il come esegue durante la sosta, non
+l'etichetta dell'evento, non la fisica e non la regola del calcio d'inizio.
+
+DD-37 aveva dato a tutti la posa, ma i frame GUI al tick 6137 mostravano i
+centroidi fermi e, in TUI al minuto 11, la squadra era già sparsa verso i posti
+del calcio d'inizio. La festa era solo un'animazione: spostare i corpi nella
+vista inventerebbe posizioni assenti dal record (ADR-065 §5), quindi il
+movimento va nel motore e la riserva SIM 180 dell'ADR-094 si chiude qui.
+
+Ora `call_restart` riceve il punto reale del varco e manda a correre verso la
+porta gli uomini di movimento della squadra che ha segnato, con lo stesso
+`spatial.send` di SIM 150; il portiere resta alla sua porta e il battitore
+avversario va al pallone. A metà della sosta dichiarata `goal_to_kick_off_s`
+(nessun numero nuovo) `resume_restart` rimanda tutti nel blocco con lo stesso
+`block_target`. P1 `the_side_that_scores_goes_to_the_goal_before_the_kick_off`
+con il gemello della squadra che segna fuori casa.
+
+TUI seed 42: gol ospite al tick 1384, distanza media dal punto 35,1 m → 6,4 m
+al tick 1480, rientro a 61,9 m al tick 1785, ripartenza al tick 2007 (623
+tick, 606 dichiarati più 17 per la Law 8). Gol di casa al tick 14426: 35,0 m →
+2,5 m. Golden e semi rigenerati (coppa 81 → 117, pareggio al 90' 53 → 44,
+decisivo 42 → 42, shoot-out 81 → 117). `ds-reference 42..51`: gol 11.90 →
+11.30, tiri 49.30 → 47.60, in porta 23.70 → 21.50, passaggi 1374.70 →
+1384.00.
+
 ## 182 — La porta si vede, il proprio pallone si riprende (DD-38, DD-39)
 
 Dopo SIM 181 il maintainer guarda la GUI e segnala due cose: «invece di tirare

@@ -79,6 +79,7 @@ impl MatchState {
         ctx: &mut MatchContext<'_>,
         tick: u64,
         restart: crate::rules::Restart,
+        goal_party: Option<GoalParty>,
     ) -> Option<PlayerId> {
         let taker = self.restart_taker(ctx, &restart)?;
         self.stoppage = true;
@@ -97,7 +98,10 @@ impl MatchState {
         self.spatial.send(taker, restart.spot, true);
         self.clear_the_spot(ctx, &restart, (taker, true));
         let kick_off = restart.kind == crate::rules::RestartKind::KickOff;
-        if kick_off {
+        let tps = f64::from(ctx.config.ticks_per_second.max(1));
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let most = (crate::balance::StoppageTime::load().goal_to_kick_off_s * tps).round() as u64;
+        let party = if kick_off {
             // Back to his half, walking (Law 8): his place in his side's
             // block at the kick-off.
             let ids: Vec<(PlayerId, bool)> = ctx
@@ -109,21 +113,37 @@ impl MatchState {
                 .chain(ctx.match_.away.players.iter().map(|p| (p.id, false)))
                 .collect();
             let restarting_home = restart.side == crate::rules::Side::Home;
+            let scoring_home = !restarting_home;
+            let celebration = goal_party.filter(|p| p.side_home == scoring_home);
+            let keeper = |id: PlayerId| {
+                ctx.match_.home.players.first().is_some_and(|p| p.id == id)
+                    || ctx.match_.away.players.first().is_some_and(|p| p.id == id)
+            };
             for (id, home) in ids {
-                if id == taker {
+                // The keepers stay at their goals: one running to the
+                // other goal would have to come back before the kick-off.
+                if id == taker || keeper(id) {
                     continue;
                 }
-                if let Some(place) =
+                if let Some(p) = celebration.filter(|p| home == p.side_home) {
+                    // The side that scored goes to the goal together:
+                    // the party lasts half the pause a real kick-off
+                    // takes, then they walk back into their block.
+                    self.spatial.send(id, p.point, true);
+                } else if let Some(place) =
                     self.spatial
                         .block_target(id, restart.spot, home == restarting_home, true)
                 {
                     self.spatial.send(id, place, false);
                 }
             }
-        }
-        let tps = f64::from(ctx.config.ticks_per_second.max(1));
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let most = (crate::balance::StoppageTime::load().goal_to_kick_off_s * tps).round() as u64;
+            celebration.map(|p| Party {
+                side_home: p.side_home,
+                until: tick + most / 2,
+            })
+        } else {
+            None
+        };
         self.waiting = Some(Waiting {
             taker,
             kind: restart.kind,
@@ -132,6 +152,7 @@ impl MatchState {
             // The referee waits for the men sent no longer than that time
             // (not at the kick-off: Law 8 waits for everyone).
             until: tick + most,
+            party,
         });
         Some(taker)
     }
@@ -159,6 +180,25 @@ impl MatchState {
             w.taker = next;
             self.waiting = Some(w);
             self.spatial.send(next, w.spot, true);
+        }
+        if let Some(p) = w.party {
+            if tick >= p.until {
+                // The party is over: the side that scored walks back into
+                // its block for the kick-off (Law 8).
+                let ids: Vec<PlayerId> = self
+                    .spatial
+                    .iter()
+                    .filter(|(id, _)| (crate::perception::team_of(**id) == 0) == p.side_home)
+                    .map(|(id, _)| *id)
+                    .collect();
+                for id in ids {
+                    if let Some(place) = self.spatial.block_target(id, w.spot, false, true) {
+                        self.spatial.send(id, place, false);
+                    }
+                }
+                w.party = None;
+                self.waiting = Some(w);
+            }
         }
         if w.kind == crate::rules::RestartKind::KickOff {
             // Whoever came on since (a substitute takes his man's place,
@@ -556,6 +596,24 @@ impl MatchState {
     }
 }
 
+/// The side that scored and the point it runs to before the kick-off.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct GoalParty {
+    /// Whether the side that scored is the home side.
+    pub(crate) side_home: bool,
+    /// Where the goal was scored, in cm.
+    pub(crate) point: (i32, i32),
+}
+
+/// A goal party in progress.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Party {
+    /// Whether the side celebrating is the home side.
+    pub(crate) side_home: bool,
+    /// The tick after which it walks back into its block.
+    pub(crate) until: u64,
+}
+
 /// A restart called and not yet taken (SIM 150).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Waiting {
@@ -569,13 +627,16 @@ pub(crate) struct Waiting {
     pub(crate) ready_at: u64,
     /// The tick after which the referee waits for nobody but the taker.
     pub(crate) until: u64,
+    /// The goal party still in progress, if any (SIM 183).
+    pub(crate) party: Option<Party>,
 }
 
 #[cfg(test)]
 mod tests {
+    use super::GoalParty;
     use crate::context::MatchContext;
     use crate::rules::{RestartKind, Side};
-    use crate::state::{MatchState, nearest_in_squad};
+    use crate::state::{MatchState, nearest_in_squad, pitch_cm};
     use ds_match_api::MatchPlugin;
     use ds_orchestrator::GroundTruth;
     use ds_stats::EventChain;
@@ -695,6 +756,74 @@ mod tests {
             let nearest = nearest_in_squad(&s.spatial, &m.home, spot).expect("nearest");
             assert_eq!(got, best, "{kind:?}");
             assert_ne!(best, nearest, "{kind:?}: the best foot is not the nearest");
+        }
+    }
+
+    /// SIM 183 (DD-40, ADR-098): after a goal the side that scored runs to
+    /// the goal together; half the pause later it walks back into its block
+    /// for the kick-off. The conceding side goes straight to its places.
+    #[test]
+    fn the_side_that_scores_goes_to_the_goal_before_the_kick_off() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut hidden = GroundTruth::for_match(42, &m);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let mut s = MatchState::new(&m);
+        let point = (10_500, 3_400);
+        // Home kicks off: away has just scored.
+        let restart = crate::rules::kick_off(Side::Home, pitch_cm(&ctx));
+        let taker = s
+            .call_restart(
+                &mut ctx,
+                100,
+                restart,
+                Some(GoalParty {
+                    side_home: false,
+                    point,
+                }),
+            )
+            .expect("taker");
+        let party = s.waiting.expect("waiting").party.expect("party");
+        assert!(!party.side_home);
+        for p in m.away.players.iter().skip(1) {
+            assert_eq!(
+                s.spatial.sent_to(p.id),
+                Some(point),
+                "{} runs to the goal",
+                p.id.slot()
+            );
+        }
+        for p in m.home.players.iter().skip(1) {
+            if p.id == taker {
+                continue;
+            }
+            assert_ne!(
+                s.spatial.sent_to(p.id),
+                Some(point),
+                "{} goes to his place",
+                p.id.slot()
+            );
+        }
+        s.resume_restart(party.until - 1);
+        assert!(
+            s.waiting.expect("still waiting").party.is_some(),
+            "the party is still on before its end"
+        );
+        s.resume_restart(party.until);
+        let after = s.waiting.expect("still waiting");
+        assert!(after.party.is_none(), "the party is over");
+        for p in m.away.players.iter().skip(1) {
+            assert_ne!(
+                s.spatial.sent_to(p.id),
+                Some(point),
+                "{} walks back into his block",
+                p.id.slot()
+            );
         }
     }
 

@@ -201,6 +201,10 @@ impl MatchState {
             ctx,
             tick,
             crate::rules::kick_off(side_of(defending), pitch_cm(ctx)),
+            Some(crate::plugins::set_pieces::GoalParty {
+                side_home: defending == Possession::Away,
+                point: (plane_x, y_at),
+            }),
         );
     }
 
@@ -300,6 +304,10 @@ impl MatchState {
             ctx,
             tick,
             crate::rules::kick_off(side_of(defending), pitch_cm(ctx)),
+            Some(crate::plugins::set_pieces::GoalParty {
+                side_home: defending == Possession::Away,
+                point: (impact.0, impact.1),
+            }),
         );
     }
 }

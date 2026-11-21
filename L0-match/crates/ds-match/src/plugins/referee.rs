@@ -405,7 +405,8 @@ impl MatchState {
         } else {
             crate::rules::Side::Home
         };
-        if let Some(taker) = self.call_restart(ctx, tick, crate::rules::free_kick(side, spot)) {
+        if let Some(taker) = self.call_restart(ctx, tick, crate::rules::free_kick(side, spot), None)
+        {
             self.emit_event(
                 ctx,
                 tick,
@@ -580,7 +581,7 @@ impl MatchState {
         } else {
             EventType::FreeKick
         };
-        if let Some(taker) = self.call_restart(ctx, tick, restart) {
+        if let Some(taker) = self.call_restart(ctx, tick, restart, None) {
             self.emit_event(
                 ctx,
                 tick,
@@ -619,7 +620,7 @@ impl MatchState {
         let Some(restart) = crate::rules::out_of_play((x, y), last, pitch_cm(ctx)) else {
             return;
         };
-        if let Some(taker) = self.call_restart(ctx, tick, restart) {
+        if let Some(taker) = self.call_restart(ctx, tick, restart, None) {
             // Every time the ball leaves the pitch the restart is told
             // (Laws 15-17): throw-in, goal kick, corner.
             let kind = match restart.kind {
