@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `afacf72` - "fix(recording): harden base64 padding, ticks limit and varint decoding"
+**Last commit verified:** `49a05ed` - "feat(sim-181): the press targets the man, not the ball"
 
 ## Mandato attivo (2026-11-16)
 
