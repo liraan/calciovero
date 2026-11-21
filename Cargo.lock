@@ -852,7 +852,7 @@ dependencies = [
  "ds-narrative",
  "ds-orchestrator",
  "ds-stats",
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "serde",
  "serde_json",
  "thiserror 2.0.21",

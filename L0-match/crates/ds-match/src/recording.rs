@@ -148,10 +148,19 @@ struct Reader<'a> {
 impl Reader<'_> {
     fn uint(&mut self) -> Result<u64, RecordError> {
         let mut v = 0_u64;
-        for shift in (0..64).step_by(7) {
+        for (i, shift) in (0..64).step_by(7).enumerate() {
             let b = *self.bytes.get(self.at).ok_or(RecordError::Damaged)?;
             self.at += 1;
-            v |= u64::from(b & 0x7f) << shift;
+            // The last byte of a varint may only contribute its low bit
+            // (V-03): more than that is a non-canonical, over-long encoding.
+            if i == 9 && (b & 0x7e) != 0 {
+                return Err(RecordError::Damaged);
+            }
+            // Overflow check on the accumulation (V-03).
+            let addend = u64::from(b & 0x7f)
+                .checked_shl(u32::try_from(shift).unwrap_or(0))
+                .ok_or(RecordError::Damaged)?;
+            v = v.checked_add(addend).ok_or(RecordError::Damaged)?;
             if b & 0x80 == 0 {
                 return Ok(v);
             }
@@ -174,7 +183,10 @@ fn put(w: &mut Writer, values: impl Iterator<Item = (i64, i64, i64)>) {
 
 /// The value in a column, from its two predecessors.
 fn get(r: &mut Reader<'_>, p1: i64, p2: i64) -> Result<i64, RecordError> {
-    Ok(r.int()? + p1 + p2)
+    r.int()?
+        .checked_add(p1)
+        .and_then(|v| v.checked_add(p2))
+        .ok_or(RecordError::Damaged)
 }
 
 const fn half_code(h: Half) -> i64 {
@@ -437,9 +449,23 @@ fn from_base64(s: &str) -> Result<Vec<u8>, RecordError> {
     if bytes.len() % 4 != 0 {
         return Err(RecordError::Damaged);
     }
+    // Padding, if any, is only valid in the final chunk and only as 0, 1 or
+    // 2 trailing '=' (V-01): more than two, or padding in a non-final chunk,
+    // is malformed and must not reach the slice arithmetic below.
     let mut out = Vec::with_capacity(bytes.len() / 4 * 3);
-    for chunk in bytes.chunks(4) {
+    for (i, chunk) in bytes.chunks(4).enumerate() {
+        let is_last = i == bytes.len() / 4 - 1;
         let pad = chunk.iter().rev().take_while(|&&c| c == b'=').count();
+        if pad > 2 {
+            return Err(RecordError::Damaged);
+        }
+        if pad > 0 && !is_last {
+            return Err(RecordError::Damaged);
+        }
+        // A non-final chunk with any '=' is also malformed.
+        if pad > 0 && chunk[..4 - pad].contains(&b'=') {
+            return Err(RecordError::Damaged);
+        }
         let mut n = 0_u32;
         for &c in &chunk[..4 - pad] {
             n = (n << 6) | value(c)?;
@@ -472,12 +498,18 @@ impl PackedRecord {
     /// [`RecordError::FormatTooNew`] for a record of a newer format,
     /// [`RecordError::Damaged`] if the data does not read back.
     pub fn unpack(&self) -> Result<Vec<TickRecord>, RecordError> {
+        // The most ticks a recorded match can plausibly have (V-02): about
+        // 120 minutes at 10 ticks/s, plus a generous margin for extra time.
+        const MAX_TICKS: u32 = 200_000;
         let format = self.header.format_version;
         if format > RECORD_FORMAT_VERSION {
             return Err(RecordError::FormatTooNew {
                 record: format,
                 current: RECORD_FORMAT_VERSION,
             });
+        }
+        if self.ticks > MAX_TICKS {
+            return Err(RecordError::Damaged);
         }
         let deflated = from_base64(&self.data)?;
         let columns = miniz_oxide::inflate::decompress_to_vec_with_limit(&deflated, 1 << 30)
