@@ -36,24 +36,42 @@ impl MatchState {
     pub fn decide(&mut self, tick: u64, ctx: &mut MatchContext<'_>) {
         self.remember(ctx.hidden);
         self.decide_off_ball(tick, ctx);
-        let Some((attacker, defender)) = self.pick_from_space(ctx) else {
+        // Only the player who has the ball plays it: the carrier is a
+        // physical fact, not a role the engine assigns by distance (OI-97;
+        // before, the ball left from the nearest man's position, a teleport).
+        // Without a carrier nobody decides: the players move, and the first
+        // to reach the ball controls it (ADR-041 §5).
+        let Some(attacker) = self.spatial.carrier() else {
+            self.last_carrier = None;
             return;
         };
+        if self.last_carrier != Some(attacker) {
+            self.last_carrier = Some(attacker);
+            self.carrier_decided = false;
+        }
 
         // IDEA-DESIGN-011 (R.1-latency): the actor decides when he is due,
         // not when a die says so. The latency is the actor's own pace,
         // resolved from his `decision_making` (ADR-035: no die). If the
         // actor is not due, the tick advances the body and the scene (above)
         // and returns; nothing needs deciding yet.
-        // Only the player who has the ball can play it: the nearest player
-        // of the side in possession does not kick a ball he is not
-        // touching (OI-97; before, the ball left from his position, a
-        // teleport). Without a carrier nobody decides: the players move,
-        // and the first to reach the ball controls it (ADR-041 §5).
-        if self.spatial.carrier() != Some(attacker) {
-            return;
+        let mut due_at = self.latencies.get(&attacker).copied().unwrap_or(0);
+        // A receiver who is already standing on the ball with nowhere to
+        // take it has nothing to execute: the clock of his last possession
+        // is all that holds him. He reads once now, then his choice (even
+        // `Hold`) stands for the rest of the clock. A moving carrier keeps
+        // his pace (SIM 184).
+        if !self.carrier_decided
+            && tick < due_at
+            && self.spatial.ball_at_feet()
+            && self.spatial.carry_target().is_none()
+            && self
+                .spatial
+                .agent(attacker)
+                .is_some_and(|a| a.velocity == (0, 0))
+        {
+            due_at = tick;
         }
-        let due_at = self.latencies.get(&attacker).copied().unwrap_or(0);
         if tick < due_at {
             return;
         }
@@ -62,6 +80,7 @@ impl MatchState {
         if !self.spatial.ball_at_feet() {
             return;
         }
+        self.carrier_decided = true;
 
         let (teammates, opponents): (Vec<PlayerId>, Vec<PlayerId>) = {
             let (own, other) = self.squads(ctx);
@@ -524,6 +543,21 @@ impl MatchState {
         } else if let ChosenAction::Clear(to) = chosen {
             self.play_clearance(ctx, tick, attacker, to);
         } else if chosen == ChosenAction::Duel {
+            // `build_choice` does not emit Duel today (Plan E). When it does,
+            // the defender is the nearest opponent the carrier *sees*, not
+            // one the engine picks from true positions (ADR-062).
+            let defender = {
+                let (_, opponents) = self.squads(ctx);
+                opponents
+                    .players
+                    .iter()
+                    .filter_map(|q| self.perceived(attacker, q.id).map(|at| (q.id, at)))
+                    .min_by_key(|(_, at)| distance_squared(*at, self.spatial.ball()))
+                    .map(|(id, _)| id)
+            };
+            let Some(defender) = defender else {
+                return;
+            };
             let ctx_duel = ds_orchestrator::DuelContext {
                 attacker,
                 defender,
@@ -791,12 +825,12 @@ impl MatchState {
                 // where he offers with it. One man, one reading, two acts.
                 let game_reading = ctx.hidden.characteristic(id, "game_reading").unwrap_or(0.5);
                 let closed = (carrier_pos.is_some() && !keeper).then(|| {
-                    view.choose_closed_place(
+                    ds_orchestrator::offball::choose_closed_place(&view.closed_place_scene(
                         (me, anchor),
                         (length, width),
                         game_reading,
                         self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
-                    )
+                    ))
                 });
                 let partner_intesa = if ball_loose {
                     let nearest_mate = squad
@@ -950,7 +984,15 @@ impl MatchState {
                 for (who, place) in std::mem::take(&mut held) {
                     self.spatial.set_hold_at(who, Some(place));
                 }
-                let act = ctx.hidden.choose_off_ball(&scene);
+                let (act, available_at) = ctx.hidden.choose_off_ball(&scene, tick);
+                if available_at > tick {
+                    // The second man's phrase is not in his read yet: he
+                    // keeps the act he already had and reads again when it
+                    // is (ADR-099 Form B). The +1 is before the choice, not
+                    // a second wait after it.
+                    self.offball_due.insert(id, available_at);
+                    continue;
+                }
                 self.spatial.set_act(id, act);
                 if let Some(t) = view.act_target(act, me, &off, (length, width)) {
                     self.spatial.set_act_target(id, t);
@@ -959,24 +1001,6 @@ impl MatchState {
                 self.offball_due.insert(id, tick.saturating_add(wait));
             }
         }
-    }
-
-    /// The attacker and defender of the next action, from space (slice B2).
-    ///
-    /// The attacker is the agent of the possessing team nearest to the
-    /// ball; the defender is the nearest opponent to the attacker. Ties
-    /// are broken by `PlayerId` (deterministic).
-    ///
-    /// Special case of influence (`03-entities-minimal` §2.9): the general
-    /// case reads the latents inside `pcfm-hidden`; here only the space term
-    /// is used. The per-agent slice replaces this with the full formula.
-    pub(crate) fn pick_from_space(&self, ctx: &MatchContext<'_>) -> Option<(PlayerId, PlayerId)> {
-        let (attacker_squad, defender_squad) = self.squads(ctx);
-        let ball = self.spatial.ball();
-        let attacker = nearest_in_squad(&self.spatial, attacker_squad, ball)?;
-        let attacker_pos = self.spatial.agent(attacker).map_or(ball, |a| a.position);
-        let defender = nearest_in_squad(&self.spatial, defender_squad, attacker_pos)?;
-        Some((attacker, defender))
     }
 
     /// The two scene terms for the latency formula (ADR-044 §6).
@@ -1153,7 +1177,10 @@ impl MatchState {
         let mut crowd_count: u32 = 0;
         let mut nearest_sq: i64 = i64::MAX;
         for &opp in opponents {
-            let Some(op) = self.spatial.agent(opp).map(|a| a.position) else {
+            // The duration of the chain is read from what he perceives
+            // (ADR-044 §6, ADR-062): an opponent he never saw does not slow
+            // him down.
+            let Some(op) = self.perceived(actor, opp) else {
                 continue;
             };
             let dx = i64::from(op.0 - actor_pos.0);
@@ -1309,6 +1336,104 @@ mod tests {
             scene(reach * 3),
             Some(OffBallAct::GoToBall),
             "the carrier is out of reach: his own clock still runs"
+        );
+    }
+
+    /// SIM 184 (DD-41): a receiver standing on the ball with no destination
+    /// reads it once instead of waiting out the clock of his last possession.
+    /// A moving carrier keeps his pace, and a choice of `Hold` is not undone.
+    #[test]
+    fn a_new_carrier_decides_without_waiting_for_the_old_clock() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let carrier = m.home.players[5].id;
+        let mut hidden = GroundTruth::for_match(42, &m);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let mut s = MatchState::new(&m);
+        let at = (5000, 3400);
+        s.spatial.set_position(carrier, at);
+        s.spatial.set_ball_in_flight((at.0, at.1, 0), (0, 0, 0));
+        s.spatial.set_carrier(Some(carrier));
+        s.last_carrier = Some(m.away.players[5].id);
+        s.latencies.insert(carrier, 1000);
+
+        s.decide(10, &mut ctx);
+
+        assert!(
+            s.last_decision.is_some(),
+            "the new carrier must have chosen"
+        );
+        let due = s.latencies.get(&carrier).copied().unwrap_or(0);
+        assert!(
+            due < 1000,
+            "his next decision is due after his new read, not the old clock (due={due})"
+        );
+        if due > 11 {
+            s.decide(11, &mut ctx);
+            assert_eq!(
+                s.latencies.get(&carrier).copied().unwrap_or(0),
+                due,
+                "one read per possession: a choice of Hold is not undone"
+            );
+        }
+    }
+
+    /// SIM 184 (DD-41): the duration of the chain is read from what the
+    /// player perceives (ADR-044 §6, ADR-062). An opponent at his feet he
+    /// has never seen is not a pressing threat. Before, `latency_scene`
+    /// read his true position and slowed him down for a man he could not
+    /// know was there.
+    #[test]
+    fn an_unseen_opponent_does_not_extend_the_chain() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let me = m.home.players[5].id;
+        let opp = m.away.players[5].id;
+        let mut s = MatchState::new(&m);
+
+        s.spatial.set_position(me, (5000, 3400));
+        s.spatial.set_position(opp, (5010, 3400));
+        // No perceive phase has run: `opp` has never been in his cone.
+
+        assert_eq!(s.latency_scene(me, &[opp]), (0.0, 0.0));
+    }
+
+    /// SIM 184 (DD-41): the one who plays the ball is the carrier, a physical
+    /// fact, not the man of his side nearest to the ball's coordinates. A
+    /// tie on distance is broken by slot, so the carrier here is *not* the
+    /// nearest; he must still decide. Before, `pick_from_space` chose the
+    /// lower slot and the gate `carrier() == attacker` silenced him.
+    #[test]
+    fn the_carrier_decides_even_when_a_mate_is_nearest() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let carrier = m.home.players[5].id;
+        let mate = m.home.players[3].id;
+        let mut hidden = GroundTruth::for_match(42, &m);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let mut s = MatchState::new(&m);
+        let at = (5000, 3400);
+
+        s.spatial.set_position(carrier, at);
+        s.spatial.set_position(mate, at);
+        s.spatial.set_ball_in_flight((at.0, at.1, 0), (0, 0, 0));
+        s.spatial.set_carrier(Some(carrier));
+        s.latencies.insert(carrier, 0);
+
+        s.decide(10_000, &mut ctx);
+
+        assert!(
+            s.spatial.carry_target().is_some(),
+            "the carrier must have played the ball, whoever is nearest to it"
         );
     }
 }

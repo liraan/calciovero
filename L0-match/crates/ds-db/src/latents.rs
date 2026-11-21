@@ -53,7 +53,6 @@ pub struct PlayerLatents {
 #[derive(Debug, Clone, Copy)]
 pub struct PhysicalLatents {
     /// Explosive force, consumed by the movement (F.7).
-    #[allow(dead_code)] // the consumer is resolve_movement, F.7 step 6
     pub explosive_force: f32,
     /// Max speed, consumed by the movement (F.7).
     pub max_speed: f32,

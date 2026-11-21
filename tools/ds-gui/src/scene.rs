@@ -30,8 +30,9 @@ pub const TOKEN_CM: f32 = 55.0;
 pub const MIN_TOKEN_PX: f32 = 6.5;
 /// The smallest the ball is drawn, its radius in points.
 pub const MIN_BALL_PX: f32 = 3.5;
-/// The ball's radius, cm (Law 2: a circumference of 68-70 cm).
-const BALL_RADIUS_CM: f32 = 11.0;
+/// The ball's radius, cm, as the physics declares it (Law 2).
+#[allow(clippy::cast_possible_truncation, reason = "11 cm is exact in f32")]
+const BALL_RADIUS_CM: f32 = ds_core::geometry::BALL_RADIUS_CM as f32;
 /// The goal's depth behind the line, cm (a drawing size).
 const GOAL_DEPTH_CM: f32 = 200.0;
 /// A point of the pitch, cm, `(x, y, z)`: `z` up from the grass.
@@ -252,8 +253,8 @@ pub struct Token {
     pub carrier: bool,
     /// His spot on the grass, cm.
     pub at: (f32, f32),
-    /// Which way he faces, degrees.
-    pub heading: f32,
+    /// Where he looks, degrees (the eyes, not the run).
+    pub gaze: f32,
 }
 
 /// A gesture, only from a fact of the match (DESIGN.md, the table of the
@@ -333,7 +334,7 @@ fn token(
     geom: &Geometry,
     id: PlayerId,
     (x, y): (f32, f32),
-    heading: f32,
+    gaze: f32,
     carrier: bool,
 ) -> Option<Token> {
     let ground = geom.project((x, y, 0.0))?;
@@ -341,8 +342,8 @@ fn token(
         clippy::disallowed_methods,
         reason = "drawing only: the view never feeds the simulation"
     )]
-    let (s, c) = heading.to_radians().sin_cos();
-    // Heading: 0 towards positive y, clockwise (the record's convention).
+    let (s, c) = gaze.to_radians().sin_cos();
+    // Gaze: 0 towards positive y, clockwise (the record's convention).
     let facing = geom.project((s.mul_add(100.0, x), c.mul_add(100.0, y), 0.0))?;
     let slot = id.slot();
     Some(Token {
@@ -354,7 +355,7 @@ fn token(
         keeper: slot % 100 == 0,
         carrier,
         at: (x, y),
-        heading,
+        gaze,
     })
 }
 
@@ -368,9 +369,7 @@ pub fn frame(m: &Moment, geom: &Geometry) -> Frame {
     let mut items: Vec<Item> = m
         .players
         .iter()
-        .filter_map(|p| {
-            token(geom, p.id, p.at, p.heading, m.carrier == Some(p.id)).map(Item::Token)
-        })
+        .filter_map(|p| token(geom, p.id, p.at, p.gaze, m.carrier == Some(p.id)).map(Item::Token))
         .collect();
     if let Some(r) = token(geom, referee, m.referee, 0.0, false) {
         items.push(Item::Referee(r));

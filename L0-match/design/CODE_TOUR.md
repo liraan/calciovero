@@ -2,15 +2,11 @@
 
 **Version:** 2.0
 **Status:** active
-**Last updated:** 2026-11-15 (rewritten against the code at `SIM_VERSION` 114, OI-49)
+**Last updated:** 2026-11-21 (reading path checked against the code at `SIM_VERSION` 183; the doctrine lives in `doctrine/`)
 
 This is the **reading path** for the code, for someone who wants to contribute and does not know where to start. It follows the code as it is, not as it was planned. The rules of the game are in `context/RULES.md`; the doctrine in `doctrine/`.
 
-Three ideas hold the engine together:
-
-- **No dice** (ADR-035). Every outcome is a cause: the players' characteristics, what each one sees, the physics of the ball, the Laws of the Game. The same match from the same inputs is the same, bit for bit, on every machine (`ds_core::dmath`, the golden test).
-- **Every player thinks** (ADR-052). The engine does not decide for anybody: it gives each player the scene he perceives, he imagines his options and picks one with a single measure (closer to scoring, closer to conceding).
-- **Three planes** (`00-foundations` §3). Plane A is what a player is (hidden values, `ds-db`); Plane B is what can be seen (positions, events, `ds-stats`); Plane C is what someone believes. Nothing of Plane A leaves to the events.
+The three ideas that hold the engine together — **no dice** (ADR-035), **every player thinks** (ADR-052) and the **three planes** (`00-foundations` §3) — are defined in [`doctrine/00-foundations.md`](../../doctrine/00-foundations.md). Read that first if you have not: this page is the map of *where the code is*, not a second statement of the rules.
 
 ## Before you start
 
@@ -60,7 +56,7 @@ The quality gate (RULES C2) is in `README.md`.
 | `state.rs` | The match in progress: who decides when, the scene each player gets (`decide_off_ball`, the carrier's choice), the restarts, the substitutions. The largest file (OI-94: it has too many reasons to change). |
 | `spatial.rs` | Positions, the ball's flight through the air and on the grass, interceptions. |
 | `perception.rs` | The vision cone and the scan (ADR-033, ADR-034). |
-| `rules.rs` | The Laws: restarts, offside, the obvious chance, the penalty. |
+| `plugins/referee.rs` | The Laws: restarts, offside, the obvious chance, the penalty. |
 | `fact.rs` | Facts become events (Plane B). |
 | `save.rs`, `record.rs` | The save, the replay, `SIM_VERSION`, the tick record the 2D view plays back. |
 | `narrative.rs`, `engine.rs` | The commentary and the text engine. |

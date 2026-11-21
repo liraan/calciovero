@@ -8,6 +8,58 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 184 — Il riconoscimento chiude la catena (DD-41, ADR-099)
+
+Il maintainer, rilette le fasi in ordine reale con la luna del giocatore,
+segnala che l'ultimo termine della latenza (`plausible_options`) è aperto dal
+SIM 31 e che certe soste in TUI/2.5D non sono una sua lettura. Il dito è il
+tick in cui una frase diventa disponibile, la posizione percepita dell'avversario,
+l'id del portatore, la velocity zero del ricevitore; la luna è lo stesso uomo
+che legge con i propri occhi, riconosce con il proprio bagaglio, sceglie fra ció
+che ha in mano ed esegue con il proprio corpo. Cambia il quando e il come della
+catena, non l'etichetta dell'atto, non la fisica, non la Legge.
+
+**Forma B (scelta del maintainer, 21 nov).** Il +1 tick va sulla disponibilità
+della frase nella lettura, prima dell'argmax: istantanea per il primo uomo
+(istinto), un tick dopo per il secondo (pensiero). Non è un ritardo dopo la
+scelta (forma A, respinta: ADR-044 §6 la vieta). OI-96 si chiude spostando il
+conteggio delle opzioni dal tempo della latenza al riconoscimento, dove ADR-047
+lo mette: nessun peso "istinto", nessuna lista di atti pensati, nessun numero
+nuovo. Il riconoscimento sta nell'orchestratore (ADR-041/043, ADR-099 §4), che
+restituisce al motore il tick di disponibilità e il motore scrive in
+`offball_due`. Gemello `the_second_man_gets_the_phrase_one_tick_later`.
+
+**Latenza da ciò che si vede.** `latency_scene` leggeva `crowding` e
+`nearest_threat` da posizioni vere: un avversario fuori dal cono, mai visto,
+rallentava la catena. Ora usa `self.perceived(actor, opp)`; la durata è la
+relazione percepita (ADR-044 §6, ADR-062). Gemello
+`an_unseen_opponent_does_not_extend_the_chain`.
+
+**L'attore è chi ha il pallone.** `pick_from_space` eleggeva il portatore più
+vicino e `decide()` subito dopo esigeva `carrier() == attacker`: nei tick in cui
+il portatore non era il più vicino nessuno decideva. Ora `decide()` prende
+`self.spatial.carrier()`, un fatto fisico, non un ruolo assegnato dal motore per
+distanza. `nearest_in_squad` resta alla Legge e alla copertura.
+
+**Il portatore fermo non aspetta il vecchio orologio.** Un ricevitore con palla
+al piede, velocity zero e `carry_target = None` restava fermo fino a scadere il
+`latencies` del possesso precedente. Se è fermo e senza destinazione, legge una
+volta subito e la sua scelta (anche `Hold`) resta valida per il suo tempo; chi
+corre conserva il ritmo. Sul seed 42 le finestre di sosta scendono da 83/1132
+tick a 39/519; il reset per tutti dava 23 gol sul seed 4 ed è scartato.
+Gemello `a_new_carrier_decides_without_waiting_for_the_old_clock`.
+
+**Casa della regola del posto.** `choose_closed_place` e `ClosedPlaceScene`
+si spostano da `ds-match/src/state.rs` a `ds-orchestrator/src/offball.rs`, il
+read dell'attore (ADR-071 §5 nota 2026-11-21): nessuna formula o soglia cambia.
+
+Golden e semi rigenerati (coppa 117 → 45, pareggio al 90' 44 → 44, decisivo
+42 → 42, shoot-out 117 → 45); `the_match_never_freezes` rivalutato e verde.
+`ds-reference compare --seeds 42..51`: gol 11.30 → 12.80, tiri 47.60 → 49.20,
+in porta 21.50 → 20.90, passaggi 1384.00 → 1526.10; su 42..101, 5 misure su 22
+in banda. Lo spostamento è caotico e non tarato: nessun numero di `balance/`
+è statofitto a un bersaglio.
+
 ## 183 — La squadra che ha segnato va alla porta (DD-40)
 
 Il maintainer guarda la GUI/TUI dopo SIM 181/182 e segnala «i giocatori non

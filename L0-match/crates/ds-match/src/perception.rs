@@ -322,10 +322,8 @@ pub const fn team_of(id: PlayerId) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::make_squad;
     use ds_model::Pitch;
-
-    use ds_core::ids::SquadId;
-    use ds_model::{FormationId, PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId};
 
     #[test]
     fn scan_returns_none_when_ball_is_out_of_reach() {
@@ -358,38 +356,6 @@ mod tests {
         let ball = (origin.0 + 500, origin.1);
         assert!(scan(&s, from, ball, &balance).is_some());
     }
-    fn make_squad(slot_base: u32) -> Squad {
-        let players: Vec<Player> = (0..11)
-            .map(|i| {
-                Player::try_new(
-                    PlayerId::new(slot_base + i, 0),
-                    format!("P{}", slot_base + i),
-                    RoleId::new("midfielder").unwrap(),
-                    180,
-                    78,
-                    PhysicalStateMinimal::default(),
-                    PsychologicalStateMinimal::default(),
-                )
-                .unwrap()
-            })
-            .collect();
-        Squad::try_new(
-            SquadId::new(slot_base, 0),
-            players,
-            vec![],
-            FormationId::new("4-4-2").unwrap(),
-        )
-        .unwrap()
-    }
-
-    #[test]
-    fn distance_squared_is_symmetric() {
-        let a = (0, 0);
-        let b = (3, 4);
-        assert_eq!(distance_squared(a, b), 25);
-        assert_eq!(distance_squared(b, a), 25);
-    }
-
     #[test]
     fn nearest_teammates_skips_self() {
         let (home, away) = (make_squad(0), make_squad(100));

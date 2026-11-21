@@ -9,6 +9,20 @@ This page tells you **what you can do, where, and how**. Each directory of
 the repository has its own `README.md` that goes into the details of that
 piece.
 
+### Start here (15 minutes, in this order)
+
+1. [`README.md`](README.md) — what the project is; run a match in two commands.
+2. **This page** — pick one of the paths below.
+3. [`doctrine/00-foundations.md`](doctrine/00-foundations.md), then
+   [`VISION.md`](doctrine/VISION.md) and [`STRUCTURE.md`](doctrine/STRUCTURE.md)
+   — the rules that do not move. If a file contradicts these, the file is wrong.
+4. [`L0-match/design/CODE_TOUR.md`](L0-match/design/CODE_TOUR.md) — where each
+   piece of the engine lives, read in the order you will meet it.
+
+You can ignore `context/` (the maintainer's working memory) and `doctrine/adr/`
+(read one only when a decision concerns your task). Each crate declares its one
+responsibility in its own `README.md`.
+
 ---
 
 ## 1. Pick your path

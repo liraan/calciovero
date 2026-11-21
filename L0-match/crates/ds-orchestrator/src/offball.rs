@@ -5,7 +5,12 @@
 //! deterministic function of what he perceives and of his characteristics
 //! (ADR-040), with the weights of `balance/offball.json`.
 
+use ds_core::geometry::distance_squared;
 use ds_core::ids::PlayerId;
+
+pub use crate::behaviour::{goes_for_loose_ball, instinct, obey, place_weight};
+
+use crate::behaviour::{soon, space_value};
 
 /// What a player without the ball chooses to do.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,6 +39,21 @@ pub enum OffBallAct {
     /// With an opponent on the ball: step into the passing lane between the
     /// carrier and the man (plan L0-CLOSE 10c).
     Intercept,
+}
+
+/// Whether `act` is the second reader's phrase (BEHAVIOURS.md 83-91).
+///
+/// He doubles up on the carrier or on a loose ball only when another
+/// teammate is nearer. The first man's same act is a reflex, available in
+/// the tick he sees it; this one is recognised a tick later (ADR-099).
+#[must_use]
+pub fn second_read(act: OffBallAct, s: &OffBallScene) -> bool {
+    match act {
+        OffBallAct::Press => s.carrier.is_some_and(|c| c.rank >= 1),
+        OffBallAct::Mark => s.to_mark.is_some_and(|m| m.rank >= 1),
+        OffBallAct::GoToBall => s.loose_ball.is_some_and(|t| t.rank >= 1),
+        _ => false,
+    }
 }
 
 /// A target the player perceives: how far it is, and how many teammates
@@ -229,10 +249,32 @@ impl crate::GroundTruth {
         self.offball_balance().ball_reach_cm(radius_cm, reactivity)
     }
 
-    /// The player's off-ball act (ADR-049): the most salient of hold, press,
-    /// challenge and go to the ball. Ties go to holding his place.
+    /// The player's off-ball act and the tick its phrase became available
+    /// (ADR-049, ADR-099 Form B). The first man's reflex is in his read at
+    /// once; the second man's phrase — doubling up, going after the same
+    /// loose ball — is there a tick later. The engine writes the tick in
+    /// `offball_due`; no choice is made or delayed there.
     #[must_use]
-    pub fn choose_off_ball(&mut self, s: &OffBallScene) -> OffBallAct {
+    pub fn choose_off_ball(&mut self, s: &OffBallScene, tick: u64) -> (OffBallAct, u64) {
+        let act = self.choose_act(s);
+        let available_at = if second_read(act, s) {
+            match self.recognition.get(&s.actor) {
+                Some((seen, first)) if *seen == act && *first < tick => *first,
+                _ => {
+                    self.recognition.insert(s.actor, (act, tick));
+                    tick.saturating_add(1)
+                }
+            }
+        } else {
+            self.recognition.insert(s.actor, (act, tick));
+            tick
+        };
+        (act, available_at)
+    }
+
+    /// The most salient act (ADR-049): hold, press, challenge, go to the
+    /// ball. Ties go to holding his place.
+    fn choose_act(&mut self, s: &OffBallScene) -> OffBallAct {
         let b = self.offball_balance();
         let l = self.latents_for(s.actor);
         let milli = |v: i32| f64::from(v) / 1000.0;
@@ -345,71 +387,132 @@ impl crate::GroundTruth {
     }
 }
 
-/// The act a player chooses among `options` (value, act), with what his
-/// coach asks of him (ADR-059 §4, step 4).
+/// The facts the engine hands the actor to value the place he would hold
+/// (ADR-043 Option B): only positions and the coach's geometry, no choice.
+pub struct ClosedPlaceScene<'a> {
+    /// Where this player stands.
+    pub me: (i32, i32),
+    /// The place his zone gives him, from the coach's shape.
+    pub anchor: (i32, i32),
+    /// Pitch length and width, cm.
+    pub pitch: (i32, i32),
+    /// `1` attacking to the right, `-1` to the left.
+    pub forward: i32,
+    /// The declared depth of the block out of possession, cm.
+    pub block_depth_cm: i32,
+    /// The goal he defends.
+    pub our_goal: (i32, i32),
+    /// The goal he attacks.
+    pub their_goal: (i32, i32),
+    /// Where his teammates stand.
+    pub ours: &'a [(i32, i32)],
+    /// Where the opponents stand.
+    pub opponents: &'a [(i32, i32)],
+    /// The opposing carrier, if one has the ball.
+    pub carrier: Option<(i32, i32)>,
+    /// How well he reads the game, in `[0, 1]`.
+    pub game_reading: f64,
+    /// How tired he is, in `[0, 1]`.
+    pub fatigue: f64,
+}
+
+/// The place this player would hold if he chose `Hold` (ADR-071 §5).
 ///
-/// His own best, unless the act
-/// asked is among them and what he gives up for it is within what his
-/// discipline accepts: the asked act worth at least `1 - discipline` of
-/// his best. The fully disciplined always does it, the undisciplined only
-/// if it is his own choice too. No number of its own. Ties go to the first
-/// option, as before.
+/// It is the *content* of one option, not the act: the engine passes the
+/// scene, the actor values the candidates with the shared measures
+/// (`behaviour::space_value`, `behaviour::soon`) and his own reading and
+/// fatigue, and returns the place. `ds-match` then only stores it for `Hold`
+/// and uses it to value that act against the others. Same arithmetic as
+/// before this function moved out of the engine: no number, no tick changed.
 #[must_use]
-pub fn obey(
-    options: &[(f64, OffBallAct)],
-    asked: Option<OffBallAct>,
-    discipline: f64,
-) -> OffBallAct {
-    let mut best = options.first().copied().unwrap_or((0.0, OffBallAct::Hold));
-    for &(v, a) in options.iter().skip(1) {
-        if v > best.0 {
-            best = (v, a);
+#[allow(clippy::cast_precision_loss)] // cm on a pitch
+pub fn choose_closed_place(scene: &ClosedPlaceScene<'_>) -> (i32, i32) {
+    let ClosedPlaceScene {
+        me,
+        anchor,
+        pitch: (length, width),
+        forward,
+        block_depth_cm,
+        our_goal,
+        their_goal,
+        ours,
+        opponents,
+        carrier,
+        game_reading,
+        fatigue,
+    } = *scene;
+    let corridor = (width / 5).max(1);
+    let line = (block_depth_cm / 3).max(1);
+    // The space is his only if no teammate is nearer to it: zones do not
+    // overlap, as the men of a real block do not.
+    let his = |p: (i32, i32)| {
+        let mine = distance_squared(me, p);
+        ours.iter()
+            .all(|m| *m == me || distance_squared(*m, p) >= mine)
+    };
+    let danger = |p: (i32, i32)| space_value(p, our_goal, their_goal);
+    let soon = |p: (i32, i32)| {
+        opponents
+            .iter()
+            .filter(|o| Some(**o) != carrier)
+            .map(|o| soon(*o, p))
+            .fold(0.0, f64::max)
+    };
+    // Never two in the same corridor on the same line.
+    let crowded = |p: (i32, i32)| {
+        ours.iter()
+            .any(|m| *m != me && (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2)
+    };
+    let k0 = (anchor.1 / corridor).clamp(0, 4);
+    let mut candidates = Vec::new();
+    for k in (k0 - 1).max(0)..=(k0 + 1).min(4) {
+        for step in [0, 1, -1] {
+            let y = if k == k0 {
+                anchor.1
+            } else {
+                k * corridor + corridor / 2
+            };
+            let x = (anchor.0 + step * line * forward).clamp(0, length);
+            candidates.push((x, y.clamp(0, width)));
         }
     }
-    let gives_up = 1.0 - discipline.clamp(0.0, 1.0);
-    asked
-        .and_then(|a| options.iter().find(|(_, o)| *o == a))
-        .filter(|(v, _)| *v >= best.0 * gives_up)
-        .map_or(best.1, |(_, a)| *a)
-}
-
-/// Presence and quality (BEHAVIOURS.md, 20 novembre 2026): `base` is what
-/// every player has, `gain` is what his characteristic adds. The arithmetic
-/// the saliences already used, now named: the finger is the term, the moon
-/// is the same player acting on it however small his gift.
-#[must_use]
-fn instinct(base: f64, gain: f64, characteristic: f64) -> f64 {
-    gain.mul_add(characteristic, base)
-}
-
-/// How much the place his coach's shape gives him weighs for a player.
-///
-/// By his discipline (VISION §3: the psychology interprets the role;
-/// ADR-059 §4: how far he follows the coach's intention rather than his
-/// own reading). The least disciplined weighs it `floor` (`offball.json`
-/// `discipline_floor_milli`), the most disciplined fully.
-#[must_use]
-pub fn place_weight(discipline: f64, floor: f64) -> f64 {
-    (1.0 - floor).mul_add(discipline.clamp(0.0, 1.0), floor)
-}
-
-/// Whether a player goes for a ball nobody has.
-///
-/// ADR-052 note, 2026-11-14: the first aim of every player is the ball, and
-/// how he seeks it is his. The nearest of his side (`rank` 0) always goes,
-/// at any distance: the ball is the whole possession, worth more than any
-/// place. The next one (`rank` 1) goes too if he reads the play better than
-/// an average player (`game_reading` above the middle of its scale), so he
-/// sees that the first may not win it, and if he would get there before the
-/// nearest opponent (`first`: his own race, his pace). The others keep
-/// their place.
-#[must_use]
-pub const fn goes_for_loose_ball(rank: u32, game_reading: f64, first: bool) -> bool {
-    match rank {
-        0 => true,
-        1 => game_reading > 0.5 && first,
-        _ => false,
+    // ADR-071 §5 (emendamento 2026-11-19): when no opponent can arrive
+    // soon in his zone, a space is still worth what THIS man reads in it
+    // — not zero. Where an opponent can arrive, the reading is the old
+    // `danger * soon`: a threat is a fact, not a matter of interpretation.
+    let quiet = soon(anchor) == 0.0 && candidates.iter().all(|p| soon(*p) == 0.0);
+    let value = |p: (i32, i32)| {
+        if !his(p) {
+            return 0.0;
+        }
+        // His reading chooses the line inside his own lane; the lanes
+        // beside it are still weighed by the game, not by his mood.
+        let worth = danger(p)
+            * if quiet && p.1 / corridor == k0 {
+                game_reading.clamp(0.0, 1.0)
+            } else {
+                soon(p)
+            };
+        // SIM 176: a tired man covers the space he can still reach. One
+        // line of the block is the declared reach a fresh man steps
+        // across; at full fatigue even that is beyond him, so he holds
+        // the nearer space instead of chasing danger with legs that no
+        // longer carry him there. No new number: fatigue is declared
+        // in [0, 1] and `line` is the declared depth divided by three.
+        let far = (distance_squared(me, p).isqrt() as f64 / f64::from(line.max(1))).min(1.0);
+        worth * fatigue.clamp(0.0, 1.0).mul_add(-far, 1.0)
+    };
+    let mut options: Vec<(f64, (i32, i32))> = Vec::new();
+    for p in candidates {
+        options.push((if crowded(p) { 0.0 } else { value(p) }, p));
     }
+    // The zone of his role, first: the coach's ask (ADR-059 §4).
+    let zone = (value(anchor), anchor);
+    options
+        .iter()
+        .copied()
+        .fold(zone, |b, o| if o.0 > b.0 { o } else { b })
+        .1
 }
 
 #[cfg(test)]
@@ -441,7 +544,9 @@ mod tests {
     }
 
     fn choose(s: &OffBallScene) -> OffBallAct {
-        GroundTruth::new(42, MatchId::new(1, 0)).choose_off_ball(s)
+        GroundTruth::new(42, MatchId::new(1, 0))
+            .choose_off_ball(s, 0)
+            .0
     }
 
     /// Twin test (BEHAVIOURS.md, l'istinto): the weakest player keeps the
@@ -452,6 +557,43 @@ mod tests {
         assert!((instinct(0.5, 0.5, 0.0) - 0.5).abs() < 1e-12);
         assert!((instinct(0.5, 0.5, 1.0) - 1.0).abs() < 1e-12);
         assert!(instinct(0.5, 0.5, 1.0) > instinct(0.5, 0.5, 0.0));
+    }
+
+    /// ADR-099 Form B: the same phrase is in the first man's read at once
+    /// and in the second man's one tick later, before the choice. Once it
+    /// is in his read it stays there: the next tick does not add a second
+    /// wait after the argmax.
+    #[test]
+    fn the_second_man_gets_the_phrase_one_tick_later() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let second = (1..=200_u32)
+            .map(|slot| PlayerId::new(slot, 0))
+            .find(|&actor| {
+                let s = OffBallScene {
+                    actor,
+                    loose_ball: at(1000, 1),
+                    ..scene()
+                };
+                GroundTruth::new(42, MatchId::new(1, 0))
+                    .choose_off_ball(&s, 0)
+                    .0
+                    == OffBallAct::GoToBall
+            })
+            .expect("a second reader of a loose ball");
+        let first = OffBallScene {
+            actor: second,
+            loose_ball: at(1000, 0),
+            ..scene()
+        };
+        let later = OffBallScene {
+            loose_ball: at(1000, 1),
+            ..first
+        };
+        assert_eq!(g.choose_off_ball(&first, 10), (OffBallAct::GoToBall, 10));
+        // A different player: the first man's recognition is not his.
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        assert_eq!(g.choose_off_ball(&later, 20), (OffBallAct::GoToBall, 21));
+        assert_eq!(g.choose_off_ball(&later, 21), (OffBallAct::GoToBall, 20));
     }
 
     /// The first aim is the ball (ADR-052 note, 2026-11-14): the nearest of
@@ -779,8 +921,8 @@ mod tests {
             }),
             ..scene()
         };
-        assert_eq!(g.choose_off_ball(&s(strong.0)), OffBallAct::Hold);
-        assert_eq!(g.choose_off_ball(&s(weak.0)), OffBallAct::Press);
+        assert_eq!(g.choose_off_ball(&s(strong.0), 0).0, OffBallAct::Hold);
+        assert_eq!(g.choose_off_ball(&s(weak.0), 0).0, OffBallAct::Press);
     }
 
     /// The goalkeeper does not press, and comes out only inside his area.

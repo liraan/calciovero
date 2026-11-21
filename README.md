@@ -11,7 +11,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-578_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-586_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -29,17 +29,18 @@
     cargo run --release -p ds-gui                              # the window: the 2.5D board, commentary, why you conceded
     cargo run --release --bin ds-demo -- --seed 42 --tui       # the same match on a text pitch in the terminal
 
-More options in [Try the engine today](#try-the-engine-today).
+More options in [Try the engine today](#try-the-engine-today). New here?
+[CONTRIBUTING.md](CONTRIBUTING.md) has a 15-minute reading path that starts from zero.
 
 ---
 
-> You have been here before. Your striker is "in superb form". The
-> scout gave him four and a half stars. You lose 3-0 at home, and the
-> match engine shrugs.
+> You have been here before. Your striker is "in superb form". The scout
+> gave him four and a half stars. You lose 3-0 at home, and the match
+> engine shrugs.
 >
-> Why did he miss? Was it his finishing, the defender, the pressure, the
-> pass that arrived on his weak foot? Somewhere a number knows. You will
-> never see it.
+> Why did he miss? His finishing? The defender? The pressure? The pass
+> that arrived on his weak foot? Somewhere a number knows — and you
+> will never see it.
 >
 > **Calcio Vero - Deep Simulator is built on the opposite idea.**
 
@@ -47,53 +48,67 @@ More options in [Try the engine today](#try-the-engine-today).
 
 <img src="assets/demo-2.5d-tokens.webp" alt="The 2.5D view: the camera follows the ball, a cross from the right into the box and a header in the net, the players as numbered tokens, the fans rising at the goal" width="800">
 
-*Seed 43, engine version 138, from 38'09": a cross from the right and a header in the net, in the 2.5D view zoomed in at 50° with the camera following the ball, the board's Lavagna theme. The players are tokens with their numbers; the keeper stretches in his dive, the header lifts its man off the grass with his shadow below, and the home end rises at the goal: every movement comes from a fact of the match, nothing else. Everything is the engine's own tick record (where the twenty-two and the ball are, ten times a second), drawn by the GUI at 60 frames a second: between two ticks the players move on curves with their speed, the ball flies on the gravity the match was played with, and every curve ends exactly on the next tick. The drawing never touches the simulation ([`tools/ds-gui/DESIGN.md`](tools/ds-gui/DESIGN.md)). The terminal view is in [`assets/demo-2d.gif`](assets/demo-2d.gif).*
+*Seed 43, engine version 138, from 38'09": a cross from the right and a
+header in the net. The players are tokens with their numbers; the keeper
+stretches in his dive, the header lifts its man off the grass with his
+shadow below, and the home end rises at the goal. Every movement comes
+from a fact of the match, nothing else.*
+
+*It is all the engine's own tick record — where the twenty-two and the ball
+are, ten times a second — drawn by the GUI at 60 frames a second: between
+two ticks the players move on curves at their own pace, the ball flies on
+the gravity the match was played with, and every curve ends exactly on the
+next tick. The drawing never touches the simulation
+([`tools/ds-gui/DESIGN.md`](tools/ds-gui/DESIGN.md)). The terminal view is in
+[`assets/demo-2d.gif`](assets/demo-2d.gif).*
 
 </div>
 
 ## If you play football managers, this is for you
 
 You already know what makes these games great: the squad you built
-yourself, the kid from the academy who made it, the season that
-turned in February. Calcio Vero - Deep Simulator keeps all of that. What it changes is
-**what you are allowed to understand**.
+yourself, the kid from the academy who made it, the season that turned
+in February. Calcio Vero - Deep Simulator keeps all of that. What it changes is
+**how much you are allowed to understand**.
 
 | You know this feeling… | Calcio Vero - Deep Simulator's answer |
 |---|---|
 | "My team played badly" is the whole post-match analysis. | **Every event has a cause you can read.** "Their 8 pressed your 6 from his blind side four times; he lost the ball twice; the second one was the goal." |
-| A 4.5-star player turns out to be a 2-star player. | **The scout gives an estimate *and how sure he is*.** A narrow band is a safe signing. A wide band is a gamble, and you can see it is one. |
-| Somewhere, a hidden "current ability" decides everything. | **There is no CA/PA.** A player is what he does: his characteristics, read in the situation, from his own point of view. |
-| The result feels like a dice roll you are not shown. | **No die is ever rolled in a match.** What looks like luck is a cause you have not spotted yet, and the game can show it to you. |
-| You cannot check the formulas, only argue about them on forums. | **Every formula is public.** Every parameter is a JSON file. Change a number, replay the same match, watch what changes. |
+| A 4.5-star player turns out to be a 2-star player. | **The scout gives an estimate *and how sure he is*.** A narrow band is a safe signing. A wide band is a gamble — and you can see it is one. |
+| Somewhere, a hidden "current ability" decides everything. | **There is no CA/PA.** A player is the way he reads the moment and plays it: his own pace, his own feet, his own nerve. |
+| The result feels like a dice roll you are not shown. | **No die is ever rolled in a match.** What looks like luck is a cause nobody has spotted yet, and the game can show it to you. |
+| You cannot check the formulas, only argue about them on forums. | **Every formula is public.** Every parameter is a JSON file. Change a number, replay the same match, watch what moves. |
 | You lose a great save to a patch. | **Same save + same match = same result, on every machine.** Saves are reproducible from their seed. |
 
-## The match: decisions, and a ball with physics
+## The match: twenty-two people and one ball
 
-The players are not puppets moved by a script. Each one is an **actor**:
-he sees the pitch from where he stands, with his own vision and his own
-reading of the game, and he chooses. A late pass is late *because* the
-passer was under pressure and looked up a moment too slowly. A defender
-who arrives a step late arrived late for a reason.
+Nobody on the pitch is a pawn. Each of the twenty-two is the same man from
+the kick-off to the final whistle: he carries his own pace, his own feet,
+his own reading of the game and his own nerve. He sees what his eyes and
+his position let him see, reads what is there, and plays the ball the way
+only he would. The pass is late because he looked up a heartbeat too late;
+the defender arrives a step short because that is as far as his legs and
+his reading carried him. A tactic gives him a leaning, never an order: the
+disciplined full back stays, the free spirit goes anyway.
 
 The ball is the other half. It does not choose: it has declared physical
 properties, gravity, friction, the bounce off the post, computed in
 integers so that the same match is the same everywhere.
 
 That is the whole design: **the players decide, the ball obeys physics,
-and every event carries the reason it happened.** The rest of the game,
-from scouting to the academy, is built so that you can ask "why?" and
-get an honest answer.
+and every event carries the reason it happened.** Everything else, from
+scouting to the academy, exists so that you can ask "why?" and get an
+honest answer.
 
 ### The coach on the touchline
 
-Every piece of the match is checked with two questions before it enters
-the engine: *what does it reveal about football?* and *would a fan at the
-stadium recognise it, and who on the pitch produces it?* The bench is
-the latest part to pass them.
+Nothing enters the engine until it has passed two questions: *what does
+it reveal about football?* and *would a fan in the stand recognise it, and
+the man who does it?* The bench is the latest part to pass them.
 
 | What football is | What you see on the pitch | In the engine |
 |---|---|---|
-| A coach draws his team, and the drawing can change during the match. | The wingers swap sides at the half-hour; the back three becomes a four. | The free board: where each player stands with the ball and without, and what each is asked to do (go out on the carrier, cover, mark, attack the depth, come short, stay back); changed with a tick, from the bench post-it or the tactics. |
+| A coach draws his team, and the drawing can change during the match. | The wingers swap sides at the half-hour; the back three becomes a four. | The free board: where each player stands with the ball and without, and what each is asked to do (go out on the carrier, cover, mark, attack the depth, come short, stay back); changed with a tick, from the orders in the top bar or the tactics. |
 | A player follows his coach as he is, not as a robot. | The disciplined full back stays; the free spirit goes anyway. | He does what is asked if what he gives up is within what his discipline accepts. |
 | The foot is a choice. | The right-footer on the left who cuts inside to shoot; the back on the wrong side who crosses with his weak foot. | The ball is on the foot of the side where it is; with space he touches it onto his strong foot, under pressure he strikes with the one he has. |
 | A coach reads the score and the clock. | Losing at the hour, he sends on a striker; winning late, a defender. | The opponent coach changes players at the minutes the real coaches of Serie A changed them with that score. |
@@ -110,24 +125,27 @@ inside the match:  watch    ->  understand  ->  adjust  ->  (watch)
 ```
 
 Two cycles, one inside the other, each on its own clock. **Between
-matches** you **observe** what your players actually did, through
-ratings and data built from events and the reports of your staff, never
-from hidden numbers; you **understand** why; you **decide** the eleven,
-the tactic, the training, the signings. **Inside the match** you
-**watch** it, on the tilted board of the 2.5D view or as radio commentary; you **understand**
-what is happening, down to the moment and the reason; you **adjust**
-from the touchline, at half-time, with the substitutions. In both,
-understanding comes before acting: you change because you understood,
-not because a number went up.
+matches** you **observe** what your players actually did, through ratings
+and data built from events and the reports of your staff, never from hidden
+numbers; you **understand** why; you **decide** the eleven, the tactic, the
+training, the signings. **Inside the match** you **watch** it, on the
+tilted board of the 2.5D view or as radio commentary; you **understand**
+what is happening, down to the moment and the reason; you **adjust** from
+the touchline, at half-time, with the substitutions. In both, understanding
+comes before acting: you change because you understood, not because a
+number went up.
 
-The soul is old-school: dense, readable screens, text commentary, a
-world that reacts. Think of the depth of the modern games with the soul
-of the classic Italian ones. The longer version is in
+The soul is old-school: dense, readable screens, text commentary, a world
+that reacts. Think of the depth of the modern games with the soul of the
+classic Italian ones. The longer version is in
 [`doctrine/VISION.md`](doctrine/VISION.md).
 
 ## Where we are, honestly
 
-**There is no playable game yet.** The match engine is close to complete and is being calibrated against real football, one verified step at a time, in the open. Engine version **183**; **578 tests** and a health check run on every commit.
+**There is no full game yet.** What you can watch today is a friendly: the
+engine is close to complete and is being measured against real football,
+one verified step at a time, in the open. Engine version **184**;
+**586 tests** and a health check run on every commit.
 
 ### The road, level by level
 
@@ -140,7 +158,7 @@ The game is built in four concentric levels; each one widens the previous and de
 | **L1 · The season** | three divisions and the cup in the real Italian format, every match played by the engine | ⬜ planned, starts when L0 is closed | [`L1`](context/plans/L1.md) |
 | **L2 · The career** | contracts, market, scouts, academy, growth, finances, the dressing room, the coach's life | ⬜ planned | [ADR-060](doctrine/adr/060-the-season-is-true-the-career-builds.md) |
 | **L3 · Make it yours** | editor for every value, packs, a local importer for your own data, external plugins in WebAssembly | ⬜ planned | [decisions](context/plans/DECISIONS-2026-11-15.md) |
-| **Interface** | desktop window today: the 2.5D view (numbered tokens with their gestures from the facts, a continuous zoom, follow the ball or drag the view, the stadium and its crowd, three themes), the bench as a post-it for substitutions while watching, commentary, why you conceded; the full design is decided | 🟡 | [`DESIGN`](tools/ds-gui/DESIGN.md) |
+| **Interface** | desktop window today: the 2.5D view (numbered tokens with their gestures from the facts, a continuous zoom, follow the ball or drag the view, the stadium and its crowd, three themes), orders in the top bar, the bench in a collapsible right panel, commentary, why you conceded; the full design is decided | 🟡 | [`DESIGN`](tools/ds-gui/DESIGN.md) |
 | **Android** | the same game, the same plugins, light asset packs | ⬜ after the desktop | [ADR-061](doctrine/adr/061-android-is-the-same-game.md) |
 
 ### Releases
@@ -157,29 +175,42 @@ The game is built in four concentric levels; each one widens the previous and de
 
 ### The match against real football
 
-Measured on 60 matches against Serie A 2017-18 (380 real matches, Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one standard deviation of the real matches: the closing of L0 asks whether a single match is credible, since a real one can end 0-0 or 4-3. **Today 6 of 22 metrics are in band**; every metric outside has an open item with its cause. No number is ever tuned to hit a target: a distance is a question about how the players perceive, think or move.
+We measure the engine against real football instead of tuning it to a
+target. Sixty simulated matches against Serie A 2017-18 (380 real matches,
+Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one
+standard deviation of the real matches: a real match can end 0-0 or 4-3,
+so the question is whether a single simulated one is credible. **Today 5 of
+22 metrics are in band**; every metric outside has an open item with its
+cause. No number is ever fitted to hit a target: a distance is a question
+about how a player sees, thinks or moves.
 
 | In band | Real | Engine | | Not yet | Real | Engine |
 |---|---|---|---|---|---|---|
-| penalties | 0.33 | 0.00 | | goals | 2.68 | 5.22 |
-| ground duels | 183 | 175 | | shots | 24.6 | 30.5 |
-| yellow cards | 3.97 | 5.00 | | shots on target | 8.69 | 12.42 |
-| red cards | 0.24 | 0.02 | | aerial duels | 38.1 | 10.9 |
-| goal kicks | 17.2 | 19.5 | | passes | 888 | 1257 |
-| stoppage, 2nd half (min) | 4.1 | 4.3 | | fouls | 26.0 | 13.5 |
-| | | | | throw-ins | 42.7 | 18.3 |
-| | | | | saves | 9.4 | 17.8 |
+| penalties | 0.33 | 0.02 | | goals | 2.68 | 13.2 |
+| ground duels | 183 | 164 | | shots | 24.6 | 52.7 |
+| take-ons won | 16.0 | 20.0 | | shots on target | 8.69 | 24.8 |
+| yellow cards | 3.97 | 4.20 | | aerial duels | 38.1 | 15.8 |
+| red cards | 0.24 | 0.13 | | passes | 888 | 1526 |
+| | | | | fouls | 26.0 | 11.4 |
+| | | | | throw-ins | 42.7 | 30.6 |
+| | | | | saves | 9.4 | 30.0 |
 
-The full table, with the cause of every distance, is in [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md). The count has fallen from 12 to 6 as imposed order was removed from the model: L0 closes at 16 in band, so the work is to build the understanding back into the players, not to push the numbers ([`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md) §I tre filtri e il test del burattino).
+The full table, with the cause of every distance, is in
+[`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md). The count has fallen
+from 12 to 5 as imposed order was removed from the model: L0 closes at 16
+in band, so the work is to build the understanding back into the players,
+not to push the numbers
+([`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md), §il test del burattino).
 
 ## What the engine does, and what is coming
 
-Every value an act reads comes from the player's characteristics; the full catalogue, act by act, is [`L0-match/design/ACTIONS.md`](L0-match/design/ACTIONS.md).
+Every act is read through the man performing it; the full catalogue, act
+by act, is [`L0-match/design/ACTIONS.md`](L0-match/design/ACTIONS.md).
 
 | Area | ✅ Done | 🟡 Partly | ⬜ To do |
 |---|---|---|---|
 | **The body** | top speed and acceleration by his characteristics; brake, stop, turn; his own pace; fatigue against endurance, rest at half-time; the second man reads every high ball and goes only if his legs can reach it ([ADR-081](doctrine/adr/081-the-second-man-on-every-high-ball.md)) | jump in the aerial duel | the timing of the jump |
-| **The mind** ([ADR-052](doctrine/adr/052-every-player-thinks.md)) | every player imagines his options and picks the best he sees; a cone of sight; the memory of his last look, so he decides on what he has seen; vision, reading, anticipation, creativity, concentration; courage and composure | perception with its error ([ADR-062](doctrine/adr/062-what-a-player-sees-is-not-exact.md)) | |
+| **The mind** ([ADR-052](doctrine/adr/052-every-player-thinks.md)) | every player imagines his options and picks the best he sees; a cone of sight and a gaze that returns to the ball; he decides on what he can see from where he stands; vision, reading, anticipation, creativity, concentration; courage and composure | perception with its error ([ADR-062](doctrine/adr/062-what-a-player-sees-is-not-exact.md)) | the memory of what he saw (MD-40) |
 | **With the ball** | control; short and lofted pass, cross, switch, through ball; carry and dribble or shield; shot with power and lob; the foot on the ball's side, or a touch onto the strong one when there is space; header; clearance with its error, into touch when he chooses, first time when he would be robbed before he plays ([ADR-064](doctrine/adr/064-the-choice-at-the-reception.md)) | | |
 | **Without the ball** | press, challenge standing, sliding or jockeying; mark, offer, run in behind; hold the block's shape and width; intercept; cover; block a shot; react to a ball before it is played | | |
 | **In goal** | dive, hold or parry, claim crosses; split the angle of his posts; throw | coming out (in his area only) | reading the shot to position himself; getting set |
@@ -196,7 +227,7 @@ Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
     cd calciovero
     cargo run --release --bin ds-demo -- --seed 42 --tui
 
-Or open the window (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): choose seed, block and width, watch the match on the 2.5D board with the commentary, click an event to go back to it, and read why you conceded. The wheel (two fingers on a touch screen) zooms from the whole pitch to about 25 m; the camera follows the ball until you drag the view, and "Back to the ball" or a double click brings it back; the tilt goes from 0° (from above) to 75°, with a slow motion and three themes. From the bench post-it you make a substitution while you watch: the match is the same up to that moment and goes on with your change. `--help` lists the options (`--seed`, `--zoom`, `--free`, `--tilt`, `--theme`, `--slow`).
+Or open the window (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): choose seed, block and width, watch the match on the 2.5D board with the commentary, click an event to go back to it, and read why you conceded. The wheel (two fingers on a touch screen) zooms from the whole pitch to about 25 m; the camera follows the ball until you drag the view, and "Back to the ball" or a double click brings it back; the tilt goes from 0° (from above) to 75°, with a slow motion and three themes. From the orders in the top bar you bend the block while you watch; from the Bench panel on the right you make a substitution: the match is the same up to that moment and goes on with your change. `--help` lists the options (`--seed`, `--zoom`, `--free`, `--tilt`, `--theme`, `--slow`).
 
     cargo run --release -p ds-gui
 
@@ -224,8 +255,8 @@ again.
 
 Calcio Vero - Deep Simulator is not built by a studio. It is built by people who love
 football and want a manager they can read to the bottom, and **it is
-designed so that each of them can own a piece**. You do not need to
-know the whole project, and for most pieces you do not need to code.
+designed so that each of them can own a piece**. You do not need to know
+the whole project, and for most pieces you do not need to code.
 
 | You know… | Your piece | Code? |
 |---|---|---|
@@ -256,9 +287,12 @@ context/     how the work is done: the bookmark, the rules, the plans, the ideas
 
 Start with [`doctrine/00-foundations.md`](doctrine/00-foundations.md),
 then [`doctrine/STRUCTURE.md`](doctrine/STRUCTURE.md) and
-[`L0-match/README.md`](L0-match/README.md). The three rules you will
-meet everywhere:
+[`L0-match/README.md`](L0-match/README.md). Four ideas you will meet
+everywhere:
 
+- **One man, one actor.** The same player reads the scene and plays it in
+  his own way; an instruction bends what he is likely to do, it never
+  picks his act for him.
 - **Three planes.** The truth (hidden), the observation (events and
   statistics), the estimate (what the manager sees). Nothing leaks from
   the first to the third.

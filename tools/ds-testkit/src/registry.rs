@@ -96,10 +96,4 @@ impl RunReport {
             .filter(|c| c.passed)
             .count()
     }
-
-    /// Number of failing checks.
-    #[must_use]
-    pub fn failed_checks(&self) -> usize {
-        self.total_checks() - self.passed_checks()
-    }
 }

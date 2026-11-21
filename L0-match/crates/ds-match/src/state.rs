@@ -251,6 +251,12 @@ pub struct MatchState {
     /// Where the carrier was at his last decision: if he has not got
     /// anywhere since, he is blocked (OI-97).
     pub(crate) last_decision: Option<(PlayerId, (i32, i32))>,
+    /// Who had the ball at the last tick: a new carrier reads it at once
+    /// (SIM 184), instead of waiting for the clock of his last possession.
+    pub(crate) last_carrier: Option<PlayerId>,
+    /// Whether the current carrier has already read the ball: a frozen
+    /// receiver may read it once, a man who chose `Hold` keeps his choice.
+    pub(crate) carrier_decided: bool,
     /// When a player who lost the ball may challenge again (ADR-042).
     pub(crate) challenges: BTreeMap<PlayerId, u64>,
     /// When each player without the ball chooses again (ADR-049).
@@ -821,109 +827,31 @@ impl TeamView {
         best.1
     }
 
-    /// The place a man of the side without the ball closes (ADR-071 §5,
-    /// SIM 154): from his role's zone `anchor` (the block without the ball),
-    /// among his corridor and the two beside it and his line and one line
-    /// ahead or behind (a line, a third of the block's depth without the
-    /// ball), the space that takes away the most danger.
-    ///
-    /// A space is dangerous as much as it is worth to the opponents
-    /// (`read::space_value` towards our goal) and as soon as one of them can
-    /// be there (`read::soon`); it is his to close only if he is the nearest
-    /// of his side to it, as a zone is. The carrier's own space is not one of
-    /// them: that is pressing, another act. Far from the ball no opponent
-    /// can arrive soon, but the space still weighs what THIS man reads in it:
-    /// inside his own lane his reading picks the line, while the lanes beside
-    /// keep being weighed by the game (ADR-071 §5, emendamento 2026-11-19;
-    /// `BEHAVIOURS.md` 19). He never leaves his zone: that is his discipline
-    /// (ADR-071 §4). SIM 176 (ADR-091): fatigue discounts the far side of
-    /// that zone — the tired man covers what he can still reach.
-    #[allow(clippy::cast_precision_loss)] // cm on a pitch
-    pub(crate) fn choose_closed_place(
+    /// The facts the actor needs to value the place he would hold (ADR-043
+    /// Option B): the engine provides the scene, `ds-orchestrator` decides.
+    /// No choice here — only the coach's geometry and where men stand.
+    pub(crate) fn closed_place_scene(
         &self,
         (me, anchor): ((i32, i32), (i32, i32)),
         (length, width): (i32, i32),
         game_reading: f64,
         fatigue: f64,
-    ) -> (i32, i32) {
+    ) -> ds_orchestrator::offball::ClosedPlaceScene<'_> {
         let block = crate::balance::BlockBalance::load();
-        let corridor = (width / 5).max(1);
-        let line = (block.depth_out_of_possession_cm / 3).max(1);
-        let our_goal = (length - self.their_goal_x, width / 2);
-        let their_goal = (self.their_goal_x, width / 2);
-        // The space is his only if no teammate is nearer to it: zones do not
-        // overlap, as the men of a real block do not.
-        let his = |p: (i32, i32)| {
-            let mine = distance_squared(me, p);
-            self.ours
-                .iter()
-                .all(|m| *m == me || distance_squared(*m, p) >= mine)
-        };
-        let danger = |p: (i32, i32)| ds_orchestrator::read::space_value(p, our_goal, their_goal);
-        let soon = |p: (i32, i32)| {
-            self.opponents
-                .iter()
-                .filter(|o| Some(**o) != self.carrier_at)
-                .map(|o| ds_orchestrator::read::soon(*o, p))
-                .fold(0.0, f64::max)
-        };
-        // Never two in the same corridor on the same line.
-        let crowded = |p: (i32, i32)| {
-            self.ours.iter().any(|m| {
-                *m != me && (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2
-            })
-        };
-        let k0 = (anchor.1 / corridor).clamp(0, 4);
-        let mut candidates = Vec::new();
-        for k in (k0 - 1).max(0)..=(k0 + 1).min(4) {
-            for step in [0, 1, -1] {
-                let y = if k == k0 {
-                    anchor.1
-                } else {
-                    k * corridor + corridor / 2
-                };
-                let x = (anchor.0 + step * line * self.forward).clamp(0, length);
-                candidates.push((x, y.clamp(0, width)));
-            }
+        ds_orchestrator::offball::ClosedPlaceScene {
+            me,
+            anchor,
+            pitch: (length, width),
+            forward: self.forward,
+            block_depth_cm: block.depth_out_of_possession_cm,
+            our_goal: (length - self.their_goal_x, width / 2),
+            their_goal: (self.their_goal_x, width / 2),
+            ours: &self.ours,
+            opponents: &self.opponents,
+            carrier: self.carrier_at,
+            game_reading,
+            fatigue,
         }
-        // ADR-071 §5 (emendamento 2026-11-19): when no opponent can arrive
-        // soon in his zone, a space is still worth what THIS man reads in it
-        // — not zero. Where an opponent can arrive, the reading is the old
-        // `danger * soon`: a threat is a fact, not a matter of interpretation.
-        let quiet = soon(anchor) == 0.0 && candidates.iter().all(|p| soon(*p) == 0.0);
-        let value = |p: (i32, i32)| {
-            if !his(p) {
-                return 0.0;
-            }
-            // His reading chooses the line inside his own lane; the lanes
-            // beside it are still weighed by the game, not by his mood.
-            let worth = danger(p)
-                * if quiet && p.1 / corridor == k0 {
-                    game_reading.clamp(0.0, 1.0)
-                } else {
-                    soon(p)
-                };
-            // SIM 176: a tired man covers the space he can still reach. One
-            // line of the block is the declared reach a fresh man steps
-            // across; at full fatigue even that is beyond him, so he holds
-            // the nearer space instead of chasing danger with legs that no
-            // longer carry him there. No new number: fatigue is declared
-            // in [0, 1] and `line` is the declared depth divided by three.
-            #[allow(clippy::cast_precision_loss)] // cm on a pitch
-            let far = (distance_squared(me, p).isqrt() as f64 / f64::from(line.max(1))).min(1.0);
-            worth * fatigue.clamp(0.0, 1.0).mul_add(-far, 1.0)
-        };
-        let mut options: Vec<(f64, (i32, i32))> = Vec::new();
-        for p in candidates {
-            options.push((if crowded(p) { 0.0 } else { value(p) }, p));
-        }
-        // The zone of his role, first: the coach's ask (ADR-059 §4).
-        let zone = (value(anchor), anchor);
-        options
-            .iter()
-            .copied()
-            .fold(zone, |b, o| if o.0 > b.0 { o } else { b })
-            .1
     }
 
     /// Where a player who chose to offer or to run goes: away from his
@@ -1130,6 +1058,8 @@ impl MatchState {
             carry_balance: crate::balance::CarryBalance::load(),
             pressure_balance: crate::balance::PressureBalance::load(),
             last_decision: None,
+            last_carrier: None,
+            carrier_decided: false,
             challenges: BTreeMap::new(),
             offball_due: BTreeMap::new(),
             intesa: {
@@ -1416,6 +1346,7 @@ impl MatchState {
                         id: *id,
                         position: a.position,
                         heading: a.heading,
+                        gaze: a.gaze,
                         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
                         fatigue_milli: self
                             .bodies
@@ -1627,35 +1558,31 @@ mod tests {
         assert!(!super::is_cross((9_000, 400), (7_000, 3_400), goal, &laws));
     }
 
-    use super::*;
-    use ds_core::ids::SquadId;
-    use ds_model::{
-        FormationId, PhysicalStateMinimal, Pitch, Player, PsychologicalStateMinimal, RoleId,
-    };
+    /// A man can run one way and look another (ADR-034): the record keeps
+    /// both. The 2.5D draws the gaze; before it drew the run and a defender
+    /// tracking a counter looked like he was staring at his own goal.
+    #[test]
+    fn the_record_keeps_the_gaze_apart_from_the_run() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut s = MatchState::new(&m);
+        let id = m.home.players[5].id;
+        let man = s.spatial.agent_mut(id).expect("the man on the pitch");
+        man.heading = 270; // running west
+        man.gaze = 90; // watching east, where the ball is
 
-    fn make_squad(slot_base: u32) -> Squad {
-        let players: Vec<Player> = (0..11)
-            .map(|i| {
-                Player::try_new(
-                    PlayerId::new(slot_base + i, 0),
-                    format!("P{}", slot_base + i),
-                    RoleId::new("midfielder").unwrap(),
-                    180,
-                    78,
-                    PhysicalStateMinimal::default(),
-                    PsychologicalStateMinimal::default(),
-                )
-                .unwrap()
-            })
-            .collect();
-        Squad::try_new(
-            SquadId::new(slot_base, 0),
-            players,
-            vec![],
-            FormationId::new("4-4-2").unwrap(),
-        )
-        .unwrap()
+        let frame = s.record(0, 10, 0..0);
+        let seen = frame
+            .agents
+            .iter()
+            .find(|a| a.id == id)
+            .expect("the man in the record");
+        assert_eq!(seen.heading, 270);
+        assert_eq!(seen.gaze, 90);
     }
+
+    use super::*;
+    use crate::test_support::make_squad;
+    use ds_model::Pitch;
 
     fn setup() -> (SpatialState, Vec<PlayerId>, Vec<PlayerId>) {
         let home = make_squad(0);
@@ -2018,8 +1945,8 @@ mod possession_is_movement_tests {
             partner_intesa: 0.0,
             dead_ball: false,
         };
-        let near = ctx.hidden.choose_off_ball(&scene(0));
-        let third = ctx.hidden.choose_off_ball(&scene(2));
+        let near = ctx.hidden.choose_off_ball(&scene(0), 0).0;
+        let third = ctx.hidden.choose_off_ball(&scene(2), 0).0;
         assert_eq!(near, OffBallAct::GoToBall);
         assert_eq!(third, OffBallAct::Hold);
 
@@ -2106,6 +2033,22 @@ mod marking_tests {
     const PITCH_LENGTH: i32 = 10_500;
     const PITCH_WIDTH: i32 = 6_800;
 
+    /// The engine builds the scene; the actor chooses the place.
+    fn closed_place(
+        v: &TeamView,
+        me: (i32, i32),
+        anchor: (i32, i32),
+        reading: f64,
+        fatigue: f64,
+    ) -> (i32, i32) {
+        ds_orchestrator::offball::choose_closed_place(&v.closed_place_scene(
+            (me, anchor),
+            (PITCH_LENGTH, PITCH_WIDTH),
+            reading,
+            fatigue,
+        ))
+    }
+
     /// Twin test (ADR-071 §5, SIM 154, `BEHAVIOURS.md` 19 and 20): the same
     /// defender, the same zone of the block, the same ball; only a man of
     /// theirs in a space of the zone changes. With nobody there he keeps
@@ -2117,13 +2060,13 @@ mod marking_tests {
         let carrier = (5000, 3400);
         let alone = block_view(vec![me], vec![carrier], carrier);
         assert_eq!(
-            alone.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0),
+            closed_place(&alone, me, anchor, 0.0, 0.0),
             anchor,
             "nobody to close: the coach's place"
         );
         let man = (3300, 3400);
         let marked = block_view(vec![me], vec![carrier, man], carrier);
-        let place = marked.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0);
+        let place = closed_place(&marked, me, anchor, 0.0, 0.0);
         assert!(place.0 < anchor.0, "he steps back to close it: {place:?}");
         assert!(
             (place.0 - man.0).abs() <= 1100,
@@ -2143,11 +2086,11 @@ mod marking_tests {
         let carrier = (5000, 3400);
         let v = block_view(vec![me], vec![carrier], carrier);
         assert_eq!(
-            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0),
+            closed_place(&v, me, anchor, 0.0, 0.0),
             anchor,
             "no reading: no space to see, the coach's place"
         );
-        let read = v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 1.0, 0.0);
+        let read = closed_place(&v, me, anchor, 1.0, 0.0);
         assert_ne!(read, anchor, "he reads a space and leaves the given place");
         assert!(read.0 < anchor.0, "towards his own goal: {read:?}");
     }
@@ -2161,8 +2104,8 @@ mod marking_tests {
         let carrier = (5000, 3400);
         let man = (3300, 3400);
         let v = block_view(vec![me], vec![carrier, man], carrier);
-        let fresh = v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0);
-        let tired = v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 1.0);
+        let fresh = closed_place(&v, me, anchor, 0.0, 0.0);
+        let tired = closed_place(&v, me, anchor, 0.0, 1.0);
         assert!(fresh.0 < anchor.0, "fresh closes the far space: {fresh:?}");
         assert!(
             tired.0 > fresh.0,
@@ -2182,7 +2125,7 @@ mod marking_tests {
         let beside = (3350, 3400);
         let v = block_view(vec![me, beside], vec![carrier, man], carrier);
         assert_eq!(
-            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0),
+            closed_place(&v, me, anchor, 0.0, 0.0),
             anchor,
             "the man beside him is nearer: not his"
         );
@@ -2196,10 +2139,7 @@ mod marking_tests {
         let (me, anchor) = ((4500, 3400), (4500, 3400));
         let carrier = (4800, 3400);
         let v = block_view(vec![me], vec![carrier], carrier);
-        assert_eq!(
-            v.choose_closed_place((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), 0.0, 0.0),
-            anchor
-        );
+        assert_eq!(closed_place(&v, me, anchor, 0.0, 0.0), anchor);
     }
 
     /// Twin test (strato 3, complementary movement): the same man, the same

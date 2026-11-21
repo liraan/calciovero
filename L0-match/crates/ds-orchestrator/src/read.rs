@@ -265,7 +265,7 @@ fn controls(
 /// fact of football, not a model choice.
 const GOAL_WIDTH_CM: i64 = 732;
 /// The ball's radius, cm (Law 2: a circumference of 68-70 cm).
-pub const BALL_RADIUS_CM: f64 = 11.0;
+pub use ds_core::geometry::BALL_RADIUS_CM;
 /// The post's radius, cm (Law 1: posts and bar at most 12 cm wide).
 const POST_RADIUS_CM: f64 = 6.0;
 
@@ -528,13 +528,13 @@ fn carry_salience(
 }
 
 /// The balances the player's thought reads (ADR-052), parsed once.
-struct Mind {
-    thought: ds_calculator::thought::ThoughtBalance,
-    kick: ds_calculator::kick::KickBalance,
-    save: ds_calculator::save::SaveBalance,
+pub(crate) struct Mind {
+    pub(crate) thought: ds_calculator::thought::ThoughtBalance,
+    pub(crate) kick: ds_calculator::kick::KickBalance,
+    pub(crate) save: ds_calculator::save::SaveBalance,
 }
 
-fn mind() -> &'static Mind {
+pub(crate) fn mind() -> &'static Mind {
     static MIND: std::sync::OnceLock<Mind> = std::sync::OnceLock::new();
     MIND.get_or_init(|| {
         let save = ds_calculator::save::SaveBalance::load();
@@ -580,38 +580,13 @@ fn imagined(scene: &PerceivedScene) -> Vec<ds_calculator::thought::Imagined> {
 /// Where he expects the keeper to stand off his line when the ball is
 /// `d` cm from the goal, for a space he imagines and cannot see yet: a
 /// modern keeper comes out as the ball approaches (about 2 m, up to 6 m).
-fn keeper_off(d: f64) -> f64 {
+pub(crate) fn keeper_off(d: f64) -> f64 {
     (1.0 - d / 3000.0).clamp(0.0, 1.0).mul_add(400.0, 200.0)
 }
 
-/// How sure he is that a player at `from` gets to `to` soon (within the
-/// trust of a forecast), running at the speed he believes.
-#[must_use]
-pub fn soon(from: (i32, i32), to: (i32, i32)) -> f64 {
-    let t = &mind().thought;
-    let run = dmath::hypot(f64::from(from.0 - to.0), f64::from(from.1 - to.1));
-    t.confidence(
-        t.trust_ticks - t.believed_reaction_ticks - run / t.believed_speed_cm_per_tick.max(1.0),
-    )
-}
-
-/// What a space is worth to the side attacking `goal` (ADR-052 §3), in
-/// units of keeping the ball, from the side defending `other`.
-#[must_use]
-#[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
-pub fn space_value(p: (i32, i32), goal: (i32, i32), other: (i32, i32)) -> f64 {
-    let m = mind();
-    let d = distance_squared(p, goal).isqrt() as f64;
-    let length = f64::from((goal.0 - other.0).abs());
-    let chance = ds_calculator::thought::chance(
-        (d, keeper_off(d), 0.0),
-        goal_cone(p, goal),
-        &m.kick,
-        &m.save,
-        &m.thought,
-    );
-    m.thought.space_value(d, length, chance)
-}
+// The two shared measures live in `behaviour` (one definition, no copy);
+// the old paths stay valid for the engine's callers.
+pub use crate::behaviour::{soon, space_value};
 
 /// The opponents' lines, as a player reads them (ADR-052).
 ///

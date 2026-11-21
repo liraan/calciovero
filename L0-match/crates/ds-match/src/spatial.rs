@@ -1246,23 +1246,6 @@ impl SpatialState {
         }
     }
 
-    /// One tick of the ball's physics, pure: gravity, the friction of the air
-    /// or of the grass, and the stop threshold. `advance_ball` applies it,
-    /// and whoever imagines where a ball goes ([`Self::ball_at_line`]) uses
-    /// the same step, so what is foreseen is what happens. Returns the new
-    /// position, the new velocity and whether the ball has stopped.
-    #[must_use]
-    pub fn ball_step(
-        p: &crate::balance::BallBalance,
-        position: (i32, i32, i32),
-        velocity: (i16, i16, i16),
-    ) -> ((i32, i32, i32), (i16, i16, i16), bool) {
-        let mut b = FineBall::from_cm(position, velocity);
-        let stopped = b.tick(&FineKick::of(p));
-        let (position, velocity) = b.to_cm();
-        (position, velocity, stopped)
-    }
-
     /// Where a ball struck from `from` with `velocity` crosses the line
     /// `x = line_x`, by the same step the ball moves with: `(y, z)` at the
     /// crossing, or `None` if it stops (or turns back) before reaching it.
@@ -2415,8 +2398,7 @@ mod tests {
     }
 
     use super::*;
-    use ds_core::ids::SquadId;
-    use ds_model::{PhysicalStateMinimal, Player, PsychologicalStateMinimal, RoleId};
+    use crate::test_support::make_squad;
 
     fn make_bodies() -> BTreeMap<PlayerId, PlayerBody> {
         let mut m = BTreeMap::new();
@@ -2436,30 +2418,6 @@ mod tests {
             }
         }
         m
-    }
-
-    fn make_squad(slot_base: u32) -> Squad {
-        let players: Vec<Player> = (0..11)
-            .map(|i| {
-                Player::try_new(
-                    PlayerId::new(slot_base + i, 0),
-                    format!("P{}", slot_base + i),
-                    RoleId::new("midfielder").unwrap(),
-                    180,
-                    78,
-                    PhysicalStateMinimal::default(),
-                    PsychologicalStateMinimal::default(),
-                )
-                .unwrap()
-            })
-            .collect();
-        Squad::try_new(
-            SquadId::new(slot_base, 0),
-            players,
-            vec![],
-            ds_model::FormationId::new("4-4-2").unwrap(),
-        )
-        .unwrap()
     }
 
     fn make_state() -> SpatialState {

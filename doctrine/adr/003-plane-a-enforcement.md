@@ -234,9 +234,9 @@ If a future crate needs `pcfm-hidden` for a reason other than match engine input
 
 ### References
 
-- [`crates/pcfm-debug/Cargo.toml`](../../crates/pcfm-debug/Cargo.toml) — the dependency declaration
+- [`tools/ds-test-runner/Cargo.toml`](../../tools/ds-test-runner/Cargo.toml) — the tool that replaced `pcfm-debug` (where the exception was declared)
 - [`doctrine/00-foundations.md`](../00-foundations.md) §3 — the Three Planes doctrine
-- [`crates/pcfm-debug/src/check.rs`](../../crates/pcfm-debug/src/check.rs) — the health check that uses the exception
+- [`L0-match/crates/ds-match/tests/cases/anti_leak.rs`](../../L0-match/crates/ds-match/tests/cases/anti_leak.rs) — the health check that guards Plane A today
 
 ## Dated notes
 

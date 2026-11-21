@@ -25,6 +25,7 @@
 
 #![deny(missing_docs)]
 
+pub mod behaviour;
 pub mod context;
 pub mod observation;
 pub mod offball;
@@ -77,6 +78,10 @@ pub struct GroundTruth {
     shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance,
     save_balance: ds_calculator::save::SaveBalance,
     kick_balance: ds_calculator::kick::KickBalance,
+    /// The phrase each player last recognised, and the tick he first saw it
+    /// (ADR-099 Form B). Recognition is the actor's read, so its state lives
+    /// here; the engine only receives the tick a phrase became available.
+    recognition: std::collections::BTreeMap<PlayerId, (crate::offball::OffBallAct, u64)>,
 }
 
 impl GroundTruth {
@@ -101,6 +106,7 @@ impl GroundTruth {
             shot_choice_balance: ds_calculator::shot_choice::ShotChoiceBalance::load(),
             save_balance: ds_calculator::save::SaveBalance::load(),
             kick_balance: ds_calculator::kick::KickBalance::load(),
+            recognition: std::collections::BTreeMap::new(),
         }
     }
 

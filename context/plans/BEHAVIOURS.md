@@ -105,6 +105,44 @@ chiamano:
 | portata in piedi del portiere | `SaveBalance::standing_reach_cm` (`ds-calculator`) | tiro immaginato, parata, barriera (`ds-calculator`, `ds-match`) |
 | interpolazione della velocità massima | `GroundTruth::top_speed_base` (`ds-orchestrator`) | movimento, lettura dalla panchina, gare senza palla |
 
+### La casa delle misure (maintainer, 21 novembre 2026)
+
+Le misure condivise con cui un giocatore valuta le opzioni che percepisce
+hanno una casa sola: `ds-orchestrator/src/behaviour.rs` (`behaviour`). Una
+responsabilità — dire quanto vale un'opzione percepita — in un crate solo,
+quello che possiede già la decisione (ADR-041 §1, ADR-043). Chi sceglie
+l'atto resta l'attore; chi applica l'effetto resta il motore. Le funzioni
+`soon`, `space_value`, `place_weight`, `instinct`, `obey` e
+`goes_for_loose_ball` vivono lì una volta sola e gli altri moduli le
+chiamano: due copie della stessa misura farebbero leggere la scena con un
+numero e agire con un altro.
+
+Dentro `behaviour.rs` ci sono due ingressi della stessa misura, non due
+responsabilità (maintainer, 21 novembre 2026):
+
+- **Nozioni base (istinto, sempre presenti in L0):** `instinct`,
+  `goes_for_loose_ball`, `soon`, `space_value`. Ogni professionista le sa
+  anche con la caratteristica minima: la caratteristica cambia quanto bene
+  e quanto presto agisce, non se l'atto esiste (§55-81).
+- **Nozioni attivabili (tattica, L1):** `place_weight` e `obey`. Non
+  insegnano nulla al giocatore: cambiano quanto conta, in questa partita,
+  una cosa che già sa. Arrivano a runtime come intenzione del coach
+  (`ds_model::Intention`: forma, altezza del blocco, ampiezza) e come atto
+  chiesto (`OffBallScene::asked`); la disciplina dice quanto il giocatore
+  segue il piano invece della propria lettura. Mai un peso sull'opzione né
+  una caratteristica (ADR-059:41, :58).
+
+Entrambe le nozioni **sottintendono sempre alla lettura di campo del
+giocatore**: pesano solo opzioni che lui percepisce (ADR-043, ADR-062); ciò
+che non vede non esiste per la sua misura. L'intenzione del coach non
+sostituisce la lettura — la disciplina dice quanto segue il piano *invece*
+della propria lettura, non quanto la lettura valga meno (ADR-059:41-42).
+
+Questo non è un modulo nuovo che insegna il calcio al motore (§31-38): è la
+stessa grammatica con una casa dichiarata. Il catalogo resta per noi; i
+giocatori leggono le funzioni, non il documento. Spostare una funzione non
+cambia un tick: nessun numero nuovo, nessun dado, nessun SIM bump.
+
 Nello stesso spirito, a L0 non c'è nessun componente casuale, nemmeno
 inutilizzato (maintainer, 20 novembre 2026): il modulo RNG e le dipendenze
 `rand` sono rimossi. Il giocatore sceglie con la sua lettura della scena e le
@@ -213,7 +251,7 @@ Verificata riga per riga contro il codice il 2026-11-20: ogni voce ha ora un rif
 | # | Tendenza | Catena cognitiva | Si prova con | Stato nel motore |
 |---|---|---|---|---|
 | 1 | Sapere dove si è | percepisce gli sguardi → legge dove sono palla, porte, vicini visti → si orienta prima di ricevere | test dichiarato (sguardo vs nessuno), non scritto | `perception.rs:106,218`, `state.rs:1266,1279`, `scanning.json`; percezione a ultimo sguardo, non onnisciente |
-| 2 | Stare nel posto giusto | percepisce palla, uomo, porta, zona del ruolo → legge quale spazio vale → si aggiusta di continuo | `he_closes_the_space_an_opponent_can_be_played_into`, `the_reader_leaves_the_given_place_the_blind_man_keeps_it` (SIM 165, gemello del burattino) | attuato in SIM 165: `choose_closed_place` (`state.rs:839`) pesa con la lettura del giocatore la linea nel suo corridoio quando nessuno può arrivarci; i corridoi accanto restano pesati dal gioco, la zona resta la disciplina (ADR-071 §5 emendata) |
+| 2 | Stare nel posto giusto | percepisce palla, uomo, porta, zona del ruolo → legge quale spazio vale → si aggiusta di continuo | `he_closes_the_space_an_opponent_can_be_played_into`, `the_reader_leaves_the_given_place_the_blind_man_keeps_it` (SIM 165, gemello del burattino) | attuato in SIM 165: `choose_closed_place` (oggi `ds-orchestrator/src/offball.rs::ClosedPlaceScene`, ADR-071 §5 nota 2026-11-21) pesa con la lettura del giocatore la linea nel suo corridoio quando nessuno può arrivarci; i corridoi accanto restano pesati dal gioco, la zona resta la disciplina (ADR-071 §5 emendata) |
 | 3 | Dosare lo sforzo | percepisce distanza del gioco e pressione → legge quanto serve correre → cammina o scatta | nessun gemello dedicato | `fatigue.rs:99,115`, `offball.rs:1088 work_share`, `spatial.rs:1820-1906`; camminare è effetto della distanza dal bersaglio, non un atto esplicito |
 | 4 | Chi arriva prima ci va | percepisce palla libera, distanze, compagni, avversario → legge chi arriva primo → ci va o copre | `the_nearest_goes_for_a_loose_ball_at_any_distance`, `the_better_reader_goes_second_for_a_loose_ball`, `a_teammate_he_knows_yields_the_loose_ball` | attuato (`offball.rs:406`), ma il rango 0 va anche a 60 m e il rango 1 entra 36/1921 volte |
 | 5 | Chi lo manca si gira | percepisce il pallone dietro o di lato → legge se è ancora il più vicino → ci torna | `golden_scenes.rs:19` (OI-123) | emergente: `control_spill` (`lib.rs:874`) → palla libera → riconquista; nessun atto "girati" dedicato |

@@ -29,8 +29,9 @@ pub struct PlayerAt {
     pub id: PlayerId,
     /// Where, cm.
     pub at: (f32, f32),
-    /// Which way he faces, degrees, `0` towards positive `y`, clockwise.
-    pub heading: f32,
+    /// Where he looks, degrees, `0` towards positive `y`, clockwise
+    /// (ADR-034: the scan and the ball, not the direction he runs).
+    pub gaze: f32,
     /// His speed between the two ticks, cm a tick.
     pub speed: f32,
     /// How tired he looks at the tick before, `[0, 1]`.
@@ -130,18 +131,18 @@ impl Moment {
                 let seg = (p1.0 - p0.0, p1.1 - p0.1);
                 let m0 = limit(((p1.0 - pb.0) / 2.0, (p1.1 - pb.1) / 2.0), seg);
                 let m1 = limit(((pa.0 - p0.0) / 2.0, (pa.1 - p0.1) / 2.0), seg);
-                let h1 = r1
+                let g1 = r1
                     .agents
                     .iter()
                     .find(|b| b.id == a.id)
-                    .map_or_else(|| f32::from(a.heading), |b| f32::from(b.heading));
+                    .map_or_else(|| f32::from(a.gaze), |b| f32::from(b.gaze));
                 PlayerAt {
                     id: a.id,
                     at: (
                         hermite(p0.0, p1.0, m0.0, m1.0, s),
                         hermite(p0.1, p1.1, m0.1, m1.1, s),
                     ),
-                    heading: turn(f32::from(a.heading), h1, s),
+                    gaze: turn(f32::from(a.gaze), g1, s),
                     #[allow(clippy::cast_possible_truncation)]
                     speed: ds_core::dmath::hypot(f64::from(seg.0), f64::from(seg.1)) as f32,
                     fatigue: f32::from(a.fatigue_milli) / 1000.0,

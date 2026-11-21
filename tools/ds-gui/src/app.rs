@@ -120,6 +120,10 @@ pub struct App {
     placed: bool,
     /// The aid of the orders: the line and the block drawn (off).
     show_shape: bool,
+    /// The right panel opens when the pointer reaches its edge (a scomparsa).
+    panel_open: bool,
+    /// The panel's rectangle last frame, to know when the pointer left it.
+    panel_rect: Option<egui::Rect>,
 }
 
 impl App {
@@ -155,6 +159,8 @@ impl App {
             rec_clock: (0, 0, false),
             placed: false,
             show_shape: false,
+            panel_open: false,
+            panel_rect: None,
         };
         app.play_match();
         app
@@ -283,10 +289,10 @@ impl App {
         self.playing = playing;
     }
 
-    /// The bench as a post-it over the match (DESIGN.md, decision T): who
-    /// is on, who is on the bench, the orders given and whether they have
-    /// been made.
-    fn bench_postit(&mut self, ctx: &egui::Context) {
+    /// The bench (DESIGN.md, decision T): who is on, who is on the bench,
+    /// the orders given and whether they have been made. It lives in the
+    /// right panel now; the floating post-it sat under the top bar.
+    fn bench_here(&mut self, ui: &mut egui::Ui) {
         let Some(game) = &self.game else { return };
         let Some(now) = game.records.get(self.tick) else {
             return;
@@ -322,76 +328,51 @@ impl App {
                 | ds_model::Order::Board(_) => None,
             })
             .collect();
-        let paper = self.theme.postit;
-        let ink = self.theme.postit_ink;
+        let side = self.theme.home;
         let mut give = None;
-        egui::Area::new(egui::Id::new("bench-postit"))
-            .anchor(egui::Align2::LEFT_TOP, egui::vec2(12.0, 52.0))
-            .show(ctx, |ui| {
-                egui::Frame::NONE
-                    .fill(paper)
-                    .inner_margin(10.0)
-                    .shadow(egui::epaint::Shadow {
-                        offset: [2, 3],
-                        blur: 6,
-                        spread: 0,
-                        color: self.theme.postit_shadow,
-                    })
-                    .show(ui, |ui| {
-                        ui.style_mut().visuals = egui::Visuals::light();
-                        ui.visuals_mut().override_text_color = Some(ink);
-                        ui.set_max_width(220.0);
-                        ui.strong("Bench");
-                        let (out, inn) = &mut self.pick;
-                        egui::ComboBox::from_id_salt("sub-off")
-                            .selected_text(out.map_or_else(|| "off…".to_owned(), name))
-                            .show_ui(ui, |ui| {
-                                for &p in on.iter().skip(1) {
-                                    ui.selectable_value(out, Some(p), name(p));
-                                }
-                            });
-                        egui::ComboBox::from_id_salt("sub-on")
-                            .selected_text(inn.map_or_else(|| "on…".to_owned(), name))
-                            .show_ui(ui, |ui| {
-                                for &p in &bench {
-                                    ui.selectable_value(inn, Some(p), name(p));
-                                }
-                            });
-                        let ready = out.is_some_and(|o| on.contains(&o))
-                            && inn.is_some_and(|i| bench.contains(&i));
-                        if ui
-                            .add_enabled(ready, egui::Button::new("Make the change"))
-                            .on_hover_text("at the next stoppage, as the Laws say")
-                            .clicked()
-                        {
-                            give = out.zip(*inn);
-                            *out = None;
-                            *inn = None;
-                        }
-                        for (tick, o, i, made) in &orders {
-                            let min = tick / 600;
-                            let state = if *made { "made" } else { "waiting" };
-                            ui.small(format!("{min}' {} → {}: {state}", name(*o), name(*i)));
-                        }
-                    });
+        ui.label(RichText::new("Bench").color(side).strong());
+        let (out, inn) = &mut self.pick;
+        egui::ComboBox::from_id_salt("sub-off")
+            .selected_text(out.map_or_else(|| "off…".to_owned(), name))
+            .show_ui(ui, |ui| {
+                for &p in on.iter().skip(1) {
+                    ui.selectable_value(out, Some(p), name(p));
+                }
             });
+        egui::ComboBox::from_id_salt("sub-on")
+            .selected_text(inn.map_or_else(|| "on…".to_owned(), name))
+            .show_ui(ui, |ui| {
+                for &p in &bench {
+                    ui.selectable_value(inn, Some(p), name(p));
+                }
+            });
+        let ready = out.is_some_and(|o| on.contains(&o)) && inn.is_some_and(|i| bench.contains(&i));
+        if ui
+            .add_enabled(ready, egui::Button::new("Make the change"))
+            .on_hover_text("at the next stoppage, as the Laws say")
+            .clicked()
+        {
+            give = out.zip(*inn);
+            *out = None;
+            *inn = None;
+        }
+        for (tick, o, i, made) in &orders {
+            let min = tick / 600;
+            let state = if *made { "made" } else { "waiting" };
+            ui.small(format!("{min}' {} → {}: {state}", name(*o), name(*i)));
+        }
         if let Some((outgoing, incoming)) = give {
             self.order(ds_model::Order::Substitute { outgoing, incoming });
         }
     }
 
-    /// The orders during the match (the maintainer's pure error 2d): a
-    /// button over the pitch, in the colour of the side they go to, with
-    /// the same menus as the choices before the match. Each change is an
-    /// order at the tick on the screen (ADR-059, ADR-070): the block's
-    /// height and width, more pressing, everyone forward, the two
-    /// transitions. Before, the block and the width of the top bar were
-    /// choices for the next match only, and changing them while watching
-    /// changed nothing.
-    fn orders_bar(&mut self, ctx: &egui::Context) {
-        if self.game.is_none() {
-            return;
-        }
+    /// The orders during the match (the maintainer's pure error 2d): in the
+    /// top bar, under the theme's own colours, with the same menus as the
+    /// choices before the match. Each change is an order at the tick on the
+    /// screen (ADR-059, ADR-070): the block's height and width, more
+    /// pressing, everyone forward, the two transitions. It used to be a
+    /// floating post-it at y=44, hidden under the top panel.
+    fn orders_here(&mut self, ui: &mut egui::Ui) {
         // What he has said so far, the last word on each.
         let mut now = ds_model::TeamOrders::default();
         let mut intention = self.choices.home;
@@ -407,35 +388,15 @@ impl App {
             }
         }
         let side = self.theme.home;
-        let mut give: Vec<ds_model::Order> = Vec::new();
-        let mut shape = self.show_shape;
-        egui::Area::new(egui::Id::new("orders-bar"))
-            .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 44.0))
-            .show(ctx, |ui| {
-                egui::Frame::NONE
-                    .fill(self.theme.postit)
-                    .stroke(Stroke::new(2.0_f32, side))
-                    .inner_margin(6.0)
-                    .show(ui, |ui| {
-                        ui.style_mut().visuals = egui::Visuals::light();
-                        ui.visuals_mut().override_text_color = Some(self.theme.postit_ink);
-                        ui.horizontal(|ui| {
-                            // To whom: the side's colour and its name.
-                            let (dot, _) =
-                                ui.allocate_exact_size(egui::vec2(14.0, 14.0), Sense::hover());
-                            ui.painter().circle_filled(dot.center(), 6.0, side);
-                            ui.strong("Orders to Home");
-                            ui.separator();
-                            give = order_menus(ui, intention, now);
-                            ui.separator();
-                            // An aid, off by default (the match has no lines
-                            // drawn on it): where the side's line and block
-                            // stand.
-                            ui.checkbox(&mut shape, "Show the line and the block");
-                        });
-                    });
-            });
-        self.show_shape = shape;
+        let (dot, _) = ui.allocate_exact_size(egui::vec2(14.0, 14.0), Sense::hover());
+        ui.painter().circle_filled(dot.center(), 6.0, side);
+        ui.label(RichText::new("Orders to Home").color(side).strong());
+        ui.separator();
+        let give = order_menus(ui, intention, now);
+        ui.separator();
+        // An aid, off by default (the match has no lines drawn on it): where
+        // the side's line and block stand.
+        ui.checkbox(&mut self.show_shape, "Show the line and the block");
         for order in give {
             self.order(order);
         }
@@ -521,51 +482,63 @@ impl App {
             ui.separator();
             ui.label("Seed");
             ui.add(egui::DragValue::new(&mut self.seed));
-            // Choices for the next match: the orders while watching are the
-            // button over the pitch.
             ui.separator();
-            ui.label(RichText::new("Before the match:").italics());
-            let block = &mut self.choices.home.block;
-            ui.label("Block");
-            egui::ComboBox::from_id_salt("block")
-                .selected_text(block_label(*block))
-                .show_ui(ui, |ui| {
-                    for b in [BlockHeight::High, BlockHeight::Mid, BlockHeight::Low] {
-                        ui.selectable_value(block, b, block_label(b));
-                    }
-                });
-            let width = &mut self.choices.home.width;
-            ui.label("Width");
-            egui::ComboBox::from_id_salt("width")
-                .selected_text(width_label(*width))
-                .show_ui(ui, |ui| {
-                    for w in [Width::Narrow, Width::Normal, Width::Wide] {
-                        ui.selectable_value(width, w, width_label(w));
-                    }
-                });
-            ui.label("Board");
-            let current = self.theme.name.clone();
-            egui::ComboBox::from_id_salt("theme")
-                .selected_text(current.as_str())
-                .show_ui(ui, |ui| {
-                    for t in &self.themes {
-                        if ui
-                            .selectable_label(t.name == current, t.name.as_str())
-                            .clicked()
-                        {
-                            self.theme = t.clone();
+            if self.game.is_some() {
+                // Once the match is on, the top bar gives the orders instead
+                // of the pre-match choices: the floating post-it used to sit
+                // at y=44, under this panel, and was never seen.
+                self.orders_here(ui);
+            } else {
+                ui.label(RichText::new("Before the match:").italics());
+                let block = &mut self.choices.home.block;
+                ui.label("Block");
+                egui::ComboBox::from_id_salt("block")
+                    .selected_text(block_label(*block))
+                    .show_ui(ui, |ui| {
+                        for b in [BlockHeight::High, BlockHeight::Mid, BlockHeight::Low] {
+                            ui.selectable_value(block, b, block_label(b));
                         }
-                    }
-                });
-            if ui.button("Play the match").clicked() {
-                // A new match: the orders given watching the old one go.
-                self.choices.live.clear();
-                self.play_match();
+                    });
+                let width = &mut self.choices.home.width;
+                ui.label("Width");
+                egui::ComboBox::from_id_salt("width")
+                    .selected_text(width_label(*width))
+                    .show_ui(ui, |ui| {
+                        for w in [Width::Narrow, Width::Normal, Width::Wide] {
+                            ui.selectable_value(width, w, width_label(w));
+                        }
+                    });
             }
+            ui.separator();
+            self.board_and_play(ui);
             if let Some(e) = &self.error {
                 ui.colored_label(self.theme.critical, e);
             }
         });
+    }
+
+    /// The board and the play button, in both the pre-match and the in-match
+    /// top bar.
+    fn board_and_play(&mut self, ui: &mut egui::Ui) {
+        ui.label("Board");
+        let current = self.theme.name.clone();
+        egui::ComboBox::from_id_salt("theme")
+            .selected_text(current.as_str())
+            .show_ui(ui, |ui| {
+                for t in &self.themes {
+                    if ui
+                        .selectable_label(t.name == current, t.name.as_str())
+                        .clicked()
+                    {
+                        self.theme = t.clone();
+                    }
+                }
+            });
+        if ui.button("Play the match").clicked() {
+            // A new match: the orders given watching the old one go.
+            self.choices.live.clear();
+            self.play_match();
+        }
     }
 
     fn playback_bar(&mut self, ui: &mut egui::Ui) {
@@ -619,6 +592,13 @@ impl App {
     }
 
     fn commentary(&mut self, ui: &mut egui::Ui) {
+        // The bench first: it needs `&mut self`, the rest of this panel only
+        // reads the game.
+        if self.game.is_some() {
+            egui::CollapsingHeader::new("Bench")
+                .default_open(false)
+                .show(ui, |ui| self.bench_here(ui));
+        }
         let Some(game) = &self.game else { return };
         let mut jump = None;
         egui::CollapsingHeader::new("Why we conceded")
@@ -670,6 +650,10 @@ impl App {
         }
     }
 
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one pass draws the backdrop, the ground, the tokens and the ball"
+    )]
     fn pitch(&mut self, ui: &mut egui::Ui) {
         let Some(pitch_cm) = self
             .game
@@ -725,6 +709,11 @@ impl App {
         for (g, radius) in &frame.shadows {
             painter.circle_filled(pos(g), *radius, t.ball_shadow);
         }
+        // The referee's beak follows the ball, wherever it is in the frame.
+        let ball_ground = frame.items.iter().find_map(|item| match item {
+            Item::Ball(b) => Some(pos(&b.ground)),
+            _ => None,
+        });
         let mut hovered = None;
         for item in &frame.items {
             match item {
@@ -740,7 +729,8 @@ impl App {
                             (false, false) => t.away,
                         }
                     };
-                    let (centre, radius) = self.draw_token(&painter, &geom, tk, fill, referee);
+                    let (centre, radius) =
+                        self.draw_token(&painter, &geom, tk, fill, referee, ball_ground);
                     if !referee
                         && response
                             .hover_pos()
@@ -935,6 +925,19 @@ impl App {
         }
     }
 
+    /// The direction of the mark on a token. Only the referee's is corrected:
+    /// he watches the ball, the players watch their own read.
+    fn beak_dir(ground: Pos2, facing: Pos2, ball: Option<Pos2>, referee: bool) -> egui::Vec2 {
+        let ahead = if referee {
+            ball.map(|b| b - ground)
+        } else {
+            Some(facing - ground)
+        };
+        ahead
+            .filter(|v| v.length() > 1e-3)
+            .map_or(egui::vec2(0.0, -1.0), egui::Vec2::normalized)
+    }
+
     /// One token (DESIGN.md, "Pallini nel 2.5D, omini nel 3D"): its shadow
     /// on the grass, the ring of the man on the ball, the disc of his side
     /// with its number and a thin darker edge, the mark of where he faces;
@@ -957,6 +960,7 @@ impl App {
         tk: &scene::Token,
         fill: egui::Color32,
         referee: bool,
+        ball: Option<Pos2>,
     ) -> (Pos2, f32) {
         use std::f32::consts::PI;
         let t = &self.theme;
@@ -964,13 +968,8 @@ impl App {
         let r = geom
             .len_at(scene::TOKEN_CM, (tk.at.0, tk.at.1, 0.0))
             .max(scene::MIN_TOKEN_PX);
-        // Where he faces, on the screen.
-        let ahead = egui::vec2(tk.facing.x - tk.ground.x, tk.facing.y - tk.ground.y);
-        let dir = if ahead.length() > 1e-3 {
-            ahead.normalized()
-        } else {
-            egui::vec2(0.0, -1.0)
-        };
+        // Where he faces, on the screen: the referee always faces the ball.
+        let dir = Self::beak_dir(ground, Pos2::new(tk.facing.x, tk.facing.y), ball, referee);
         let side = egui::vec2(-dir.y, dir.x);
         // The gesture: lift, stretch across and along, a shift, a lean.
         let (mut lift, mut wide, mut tall, mut shift, mut lean) =
@@ -1047,13 +1046,21 @@ impl App {
         let disc = ellipse(centre, r * wide, r * tall, lean);
         painter.add(Shape::convex_polygon(disc.clone(), fill, Stroke::NONE));
         painter.add(Shape::closed_line(disc, edge));
-        // The mark of his facing, on the edge.
-        let tip = centre + dir * (r * wide.max(tall) + r * 0.35);
-        let base = centre + dir * (r * wide.max(tall) * 0.8);
+        // The eyes, not the run (ADR-034): a small tip in the token's own
+        // colour, just outside the disc. Smaller than the ball, with the
+        // disc's edge as its outline, so it reads without taking over.
+        let edge_of = centre + dir * (r * wide.max(tall) * 0.92);
+        let tip = edge_of + dir * (r * 0.65);
+        let base = edge_of + dir * (r * 0.03);
+        let arrow = vec![tip, base + side * (r * 0.3), base - side * (r * 0.3)];
         painter.add(Shape::convex_polygon(
-            vec![tip, base + side * (r * 0.3), base - side * (r * 0.3)],
-            rim,
+            arrow.clone(),
+            fill.gamma_multiply(0.8),
             Stroke::NONE,
+        ));
+        painter.add(Shape::closed_line(
+            arrow,
+            Stroke::new((r * 0.12).max(1.2), rim),
         ));
         if !referee {
             let size = (r * 1.15).max(8.0);
@@ -1534,15 +1541,42 @@ impl eframe::App for App {
         });
         egui::TopBottomPanel::top("choices").show(ctx, |ui| self.choices_bar(ui));
         egui::TopBottomPanel::bottom("playback").show(ctx, |ui| self.playback_bar(ui));
-        egui::SidePanel::right("commentary")
-            .default_width(380.0)
-            .show(ctx, |ui| self.commentary(ui));
+        // A scomparsa: the right panel opens on hover at the edge and stays
+        // while the pointer is over it (or over a menu it opened).
+        let pointer = ctx.pointer_hover_pos();
+        let screen = ctx.screen_rect();
+        let at_edge =
+            pointer.is_some_and(|p| p.x >= screen.max.x - 28.0 && p.y > screen.min.y + 40.0);
+        let over_panel = pointer.is_some_and(|p| {
+            self.panel_rect.is_some_and(|r| {
+                p.x >= r.min.x - 260.0
+                    && p.x <= r.max.x + 8.0
+                    && p.y >= r.min.y - 8.0
+                    && p.y <= r.max.y + 8.0
+            })
+        });
+        let holding = ctx.input(|i| i.pointer.primary_down());
+        self.panel_open = at_edge || (self.panel_open && (over_panel || holding));
+        if self.panel_open {
+            let panel = egui::SidePanel::right("commentary")
+                .default_width(380.0)
+                .show(ctx, |ui| self.commentary(ui));
+            self.panel_rect = Some(panel.response.rect);
+        } else {
+            egui::SidePanel::right("commentary-handle")
+                .default_width(14.0)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.label("<");
+                    });
+                });
+            self.panel_rect = None;
+        }
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE.fill(self.theme.board))
             .show(ctx, |ui| self.pitch(ui));
         if self.record.is_none() {
-            self.bench_postit(ctx);
-            self.orders_bar(ctx);
             self.player_postit(ctx);
         }
         if self.record.is_some() {
@@ -1733,6 +1767,21 @@ mod tests {
         PRISTINE
             .get_or_init(|| App::new(Theme::all().expect("themes")))
             .clone()
+    }
+
+    #[test]
+    fn the_referee_keeps_his_beak_on_the_ball() {
+        let ground = egui::pos2(0.0, 0.0);
+        let facing = egui::pos2(10.0, 0.0);
+        let ball = egui::pos2(0.0, 10.0);
+        assert_eq!(
+            App::beak_dir(ground, facing, Some(ball), true),
+            egui::vec2(0.0, 1.0)
+        );
+        assert_eq!(
+            App::beak_dir(ground, facing, Some(ball), false),
+            egui::vec2(1.0, 0.0)
+        );
     }
 
     /// The 2.5D shows what the engine already knows: the same pass with the

@@ -38,7 +38,7 @@ use crate::spatial::BallState;
 /// The current version of the record format.
 ///
 /// v1 (2026-11-16, ADR-065): the fields of `TickRecord` at SIM 137.
-pub const RECORD_FORMAT_VERSION: u32 = 1;
+pub const RECORD_FORMAT_VERSION: u32 = 2;
 
 /// The physics a match was played with, for the views.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -346,12 +346,13 @@ fn pack_columns(ticks: &[TickRecord]) -> Vec<u8> {
     agent_column(&mut w, ticks, 2, |a| i64::from(a.position.0));
     agent_column(&mut w, ticks, 2, |a| i64::from(a.position.1));
     agent_column(&mut w, ticks, 1, |a| i64::from(a.heading));
+    agent_column(&mut w, ticks, 1, |a| i64::from(a.gaze));
     agent_column(&mut w, ticks, 1, |a| i64::from(a.fatigue_milli));
     w.0
 }
 
 #[allow(clippy::similar_names)] // the columns are named after their fields
-fn unpack_columns(bytes: &[u8], n: usize, _format: u32) -> Result<Vec<TickRecord>, RecordError> {
+fn unpack_columns(bytes: &[u8], n: usize, format: u32) -> Result<Vec<TickRecord>, RecordError> {
     let mut r = Reader { bytes, at: 0 };
     let tick = read_tick_column(&mut r, n, 2)?;
     let half = read_tick_column(&mut r, n, 1)?;
@@ -375,8 +376,15 @@ fn unpack_columns(bytes: &[u8], n: usize, _format: u32) -> Result<Vec<TickRecord
     let ax = read_agent_column(&mut r, &counts, 2)?;
     let ay = read_agent_column(&mut r, &counts, 2)?;
     let head = read_agent_column(&mut r, &counts, 1)?;
+    // A v1 record has no gaze: the body's direction is the only facing it
+    // kept, and remains the best guess for the head.
+    let gaze = if format >= 2 {
+        read_agent_column(&mut r, &counts, 1)?
+    } else {
+        head.clone()
+    };
     let fat = read_agent_column(&mut r, &counts, 1)?;
-    // Columns a later format appends would be read here, `if _format >= 2`;
+    // Columns a later format appends would be read here, `if format >= 3`;
     // an older record gives them their defaults.
     if r.at != bytes.len() {
         return Err(RecordError::Damaged);
@@ -389,6 +397,7 @@ fn unpack_columns(bytes: &[u8], n: usize, _format: u32) -> Result<Vec<TickRecord
                         id: id_of(aslot[k][i], agen[k][i])?.ok_or(RecordError::Damaged)?,
                         position: (narrow(ax[k][i])?, narrow(ay[k][i])?),
                         heading: narrow(head[k][i])?,
+                        gaze: narrow(gaze[k][i])?,
                         fatigue_milli: narrow(fat[k][i])?,
                     })
                 })

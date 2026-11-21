@@ -18,6 +18,10 @@ pub const fn distance_squared(a: (i32, i32), b: (i32, i32)) -> i64 {
     dx * dx + dy * dy
 }
 
+/// The ball's radius, cm (Law 2: a circumference of 68-70 cm). One value
+/// for the physics that reads the goal and the drawing that projects it.
+pub const BALL_RADIUS_CM: f64 = 11.0;
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -24,6 +24,31 @@ use crate::context::MatchConfig;
 use crate::engine::{MatchEngine, TextMatchEngine};
 use crate::result::MatchResult;
 
+/// The eleven midfielders the perception, spatial and state tests all read.
+pub fn make_squad(slot_base: u32) -> Squad {
+    let players: Vec<Player> = (0..11)
+        .map(|i| {
+            Player::try_new(
+                PlayerId::new(slot_base + i, 0),
+                format!("P{}", slot_base + i),
+                RoleId::new("midfielder").unwrap(),
+                180,
+                78,
+                PhysicalStateMinimal::default(),
+                PsychologicalStateMinimal::default(),
+            )
+            .unwrap()
+        })
+        .collect();
+    Squad::try_new(
+        SquadId::new(slot_base, 0),
+        players,
+        vec![],
+        FormationId::new("4-4-2").unwrap(),
+    )
+    .unwrap()
+}
+
 /// The twenty-two midfielders `engine.rs` and `save.rs` have always used for
 /// their seed-42 guards: no profile, no fixture, just a recognisable match
 /// with a fixed id.

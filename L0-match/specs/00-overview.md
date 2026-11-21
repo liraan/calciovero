@@ -93,13 +93,13 @@ If any of those seven fails, L0 is not done.
 | ID | Cell | Purpose | Status |
 |---|---|---|---|
 | L0.01 | [`01-rng.md`](01-rng.md) | RNG streams — retired, no random component at L0 (ADR-035) | ⛔ superseded |
-| L0.02 | [`02-event-bus.md`](02-event-bus.md) | Deterministic event dispatch | ✅ ratified |
+| L0.02 | [`02-event-bus.md`](02-event-bus.md) | Event dispatch — retired, no event bus (events live in `ds-stats`) | ⛔ superseded |
 | L0.03 | [`03-entities-minimal.md`](03-entities-minimal.md) | Minimal entities: Player, Squad, Pitch, Referee | ✅ ratified |
 | L0.04 | [`04-match-engine.md`](04-match-engine.md) | The `MatchEngine` trait and text implementation | ✅ ratified |
 | L0.05 | [`05-match-events.md`](05-match-events.md) | `MatchEvent`, append-only, the observation layer | ✅ ratified |
 | L0.06 | [`06-match-output.md`](06-match-output.md) | Result, ratings, statistics bundle, narrative | ✅ ratified |
 | L0.07 | [`07-save-minimal.md`](07-save-minimal.md) | Save/load a single match | ✅ ratified |
-| L0.08 | [`08-random-events.md`](08-random-events.md) | Discrete in-match events (injuries, cards, brawls) | ✅ ratified |
+| L0.08 | [`08-random-events.md`](08-random-events.md) | Random events — retired, no die at L0 (ADR-035) | ⛔ superseded |
 | L0.09 | [`09-context-modifiers.md`](09-context-modifiers.md) | How external state enters the engine | ✅ ratified |
 | L0.10 | [`10-ground-truth.md`](10-ground-truth.md) | Public API of `pcfm-hidden` (Plane A access) | ✅ ratified |
 
@@ -188,7 +188,7 @@ The specification half of the DoD is done. The implementation half begins with t
 | Random events feel "cheap" | High | Every event's cause is observable (`event_type` + `fields`); distribution tested |
 | `pcfm-hidden` leaks a latent getter | Critical | `10-ground-truth` API is the only surface; review + grep in CI |
 | Performance insufficient | Medium | Profiling, tick budget, benchmarks in CI |
-| Implementation drifts from spec | Medium | Every PR against L0.04, L0.08, L0.10 is checked against the cell spec; a drift is a bug in the code, not in the spec |
+| Implementation drifts from spec | Medium | Every PR against L0.04 and L0.10 is checked against the cell spec; a drift is a bug in the code, not in the spec |
 
 ---
 

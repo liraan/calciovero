@@ -379,8 +379,9 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 097 | Il tocco che non ha raggiunto torna sotto il piede (DD-39) | ✅ accepted (delegated, 2026-11-21) | DD-39: dopo due periodi di un tocco giocato avanti e mai raggiunto, lo stesso `under_foot` lo riporta sotto il piede; il portatore fermo 979 tick su seed 42 torna a muoversi. SIM 182. |
 
 | 098 | La squadra che ha segnato va alla porta (DD-40) | ✅ accepted (delegated, 2026-11-21) | DD-40: dopo il gol la squadra che ha segnato corre al punto del varco per metà della sosta dichiarata, poi rientra nel blocco; nessun numero nuovo, motore e SIM 183. |
+| 099 | Il riconoscimento chiude OI-96 (DD-41) | 🔧 proposed (delegated, 2026-11-21) | DD-41, forma B: la frase pensata diventa disponibile un tick dopo nella lettura del giocatore, prima dell'argmax (non un ritardo dopo la scelta); l'orchestratore possiede lo stato di riconoscimento. Da approvare prima del SIM bump. |
 
-**Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048, 081, 082, 083, 084, 085, 086, 087, 088, 089, 090, 095, 096, 097, 098 (56). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
+**Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 042, 043, 044, 045, 046, 047, 048, 081, 082, 083, 084, 085, 086, 087, 088, 089, 090, 095, 096, 097, 098 (57). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 099 (1, delegated DD-41).
 
 **ADR-012 and ADR-013 are two halves of one decision.** Read them together, in order: [`PLUGINS-WORLDS-READING-GUIDE.md`](PLUGINS-WORLDS-READING-GUIDE.md). ADR-013 depends on ADR-012.
 

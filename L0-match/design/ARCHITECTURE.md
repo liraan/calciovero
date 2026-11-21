@@ -2,7 +2,7 @@
 
 **Version:** 2.0
 **Status:** active
-**Last updated:** 2026-11-15 (rewritten against the code at `SIM_VERSION` 114, OI-49)
+**Last updated:** 2026-11-21 (crate map checked against the workspace; reading path in [`CODE_TOUR.md`](CODE_TOUR.md))
 
 How the crates of L0 work together, how a match flows through them, and the two patterns that hold (the simulation/rendering split, the testkit contract). The architectural counterpart of [`doctrine/STRUCTURE.md`](../../doctrine/STRUCTURE.md); the reading path is [`CODE_TOUR.md`](CODE_TOUR.md).
 

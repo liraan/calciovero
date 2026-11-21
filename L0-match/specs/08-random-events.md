@@ -4,8 +4,8 @@ level: 0
 cell: "L0-match"
 module_id: "L0.08"
 version: "1.2"
-status: "ratified"
-last_updated: "2026-10-25"
+status: "superseded"
+last_updated: "2026-11-21"
 supersedes: null
 depends_on: ["00-foundations", "L0.01", "L0.03", "L0.04", "L0.05", "L0.10"]
 referenced_by: ["L0.06", "L2-psyche"]

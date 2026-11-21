@@ -41,6 +41,10 @@ pub struct AgentFrame {
     pub position: (i32, i32),
     /// Body orientation in degrees, `0` = towards positive `y`, clockwise.
     pub heading: u16,
+    /// Where he is looking in degrees, the same convention (ADR-034). A
+    /// scan points him at a man or the ball; between scans he looks at the
+    /// ball. It is not `heading`: a man can run one way and look another.
+    pub gaze: u16,
     /// How tired he looks, thousandths (plan L0-CLOSE step 6: a state of
     /// the moment has a visible sign).
     pub fatigue_milli: u16,

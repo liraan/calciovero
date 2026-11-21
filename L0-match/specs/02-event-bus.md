@@ -4,13 +4,19 @@ level: 0
 cell: "L0-match"
 module_id: "L0.02"
 version: "1.0"
-status: "ratified"
-last_updated: "2026-10-25"
+status: "superseded"
+last_updated: "2026-11-21"
 supersedes: null
 depends_on: ["00-foundations"]
 referenced_by: ["L0.04", "L0.05", "L0.06", "L1-season", "L2-psyche"]
 conforms_to: "00-foundations (v2.0)"
 ---
+
+> **Retired at L0 (maintainer, 2026-11-20).** The engine has no event bus:
+> events are facts appended to `EventChain` in `ds-stats`, and the old
+> deterministic bus was part of the rejected prototype. Nothing here may be
+> implemented. This file stays only as the record of that design; read ADR-035
+> and `ds-stats` first.
 
 <!--
   MAINTAINER NOTE: the ordering guarantee ("insertion order") is what makes this
