@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `f3593f9` - "docs(capture): record the SIM 181 pause"
+**Last commit verified:** `1498b7a` - "docs(capture): fill the DD-37 commit hash"
 
 ## Mandato attivo (2026-11-16)
 
