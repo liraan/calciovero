@@ -29,6 +29,10 @@ pub struct FatigueBalance {
     pub half_time_recovery: f64,
     /// What full fatigue takes off his top speed, as a share (computed).
     pub v_max_coefficient: f64,
+    /// The fastest running in the real match, as a share of a full sprint:
+    /// the top bin of `match_profile` over `effort_ref` (SIM 175). In a real
+    /// match nobody keeps his top speed up: that bin is 2% of the time.
+    pub contest_pace_share: f64,
 }
 
 /// The file as written: the real match it is derived from.
@@ -83,12 +87,21 @@ impl FatigueBalance {
         // The first half tires him, the rest takes back a share, the second
         // half tires him again.
         let halves = raw.match_ticks / 2.0 * (2.0 - raw.half_time_recovery);
+        // The real match's fastest running, as a share of a full sprint: a
+        // man contesting a ball goes no faster than this (SIM 175). Derived
+        // from the same declared profile, never a new number.
+        let sprint_seen = raw
+            .match_profile
+            .iter()
+            .map(|[v, _]| *v)
+            .fold(0.0_f64, f64::max);
         Self {
             effort_ref_cm_per_tick: raw.effort_ref_cm_per_tick,
             gain_per_tick: end / (change * halves).max(1e-6),
             rest_effort: raw.rest_effort,
             half_time_recovery: raw.half_time_recovery,
             v_max_coefficient: raw.late_top_speed_decline / end.max(1e-6),
+            contest_pace_share: (sprint_seen / raw.effort_ref_cm_per_tick.max(1.0)).clamp(0.0, 1.0),
         }
     }
 
@@ -128,6 +141,16 @@ mod tests {
         let b = FatigueBalance::load();
         assert!(b.effort_ref_cm_per_tick > 0.0 && b.gain_per_tick > 0.0);
         assert!((0.0..=1.0).contains(&b.half_time_recovery));
+    }
+
+    /// The contest pace comes from the declared running profile, not a
+    /// number written in the engine (SIM 175): 75 cm/tick seen against a
+    /// 90 cm/tick reference sprint.
+    #[test]
+    fn the_contest_pace_is_the_real_match_sprint_share() {
+        let b = FatigueBalance::load();
+        assert!((0.0..1.0).contains(&b.contest_pace_share));
+        assert!((b.contest_pace_share - 75.0 / 90.0).abs() < 1e-9);
     }
 
     /// Twin test (ADR-051 §3): two players identical but for endurance,

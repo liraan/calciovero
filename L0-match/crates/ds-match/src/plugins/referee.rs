@@ -16,6 +16,8 @@
 //! same module, kept as a name for the code that reads it.
 
 use ds_match_api::{MatchPlugin, PluginCard};
+use ds_model::{MatchRules, Tosses};
+use ds_stats::{Half, MatchEvent};
 
 /// The referee: the Laws of the Game, applied.
 #[derive(Debug, Clone, Copy, Default)]
@@ -249,6 +251,137 @@ pub fn offside_position(
     in_their_half && depth(player_x) < depth(ball_x) && depth(player_x) < second_last
 }
 
+/// Laws 7 and 10: the periods of extra time.
+///
+/// The competition asks for a winner and the scores are level at ninety
+/// minutes. Empty otherwise; the engine applies the periods.
+#[must_use]
+pub const fn extra_time(rules: &MatchRules, level: bool) -> &'static [Half] {
+    if rules.extra_time && level {
+        &[Half::ExtraFirst, Half::ExtraSecond]
+    } else {
+        &[]
+    }
+}
+
+/// Law 10: whether a shoot-out follows, when the competition asks for one
+/// and the scores are still level after extra time.
+#[must_use]
+pub const fn shootout(rules: &MatchRules, level: bool) -> bool {
+    rules.penalty_shootout && level
+}
+
+/// Law 8: who takes the kick-off, from the toss and the period. The side
+/// that won the toss takes the first kick-off of its pair of periods.
+#[must_use]
+pub const fn kick_off_taker_side(tosses: &Tosses, half: Half) -> Side {
+    let winner = match half {
+        Half::First | Half::Second => tosses.kick_off_home,
+        Half::ExtraFirst | Half::ExtraSecond | Half::Shootout => tosses.extra_time_home,
+    };
+    let first = matches!(half, Half::First | Half::ExtraFirst);
+    if winner == first {
+        Side::Home
+    } else {
+        Side::Away
+    }
+}
+
+/// Law 1: whether a spot is in the penalty area.
+///
+/// `depth` and `lateral` are read from the caller's own geometry. The foul
+/// and the keeper's box use this one predicate; the dimensions stay in
+/// their balance files.
+#[must_use]
+pub const fn in_penalty_area(depth: i32, lateral: i32, depth_cm: i32, half_width_cm: i32) -> bool {
+    depth <= depth_cm && lateral <= half_width_cm
+}
+
+/// Law 10: the goal goes to the side that put the ball in; when the last
+/// man on it played for the defending side, it is an own goal.
+#[must_use]
+pub fn own_goal(last_is_home: Option<bool>, defending_home: bool) -> bool {
+    last_is_home == Some(defending_home)
+}
+
+/// Law 11: no offside from the first pass after a throw-in, goal kick or
+/// corner.
+#[must_use]
+pub const fn offside_exempt(restart: Option<RestartKind>) -> bool {
+    matches!(
+        restart,
+        Some(RestartKind::ThrowIn | RestartKind::GoalKick | RestartKind::Corner)
+    )
+}
+
+/// Law 12: a second yellow is a red.
+#[must_use]
+pub const fn card_after(already_cautioned: bool, card: Option<Card>) -> Option<Card> {
+    match card {
+        Some(Card::Yellow) if !already_cautioned => Some(Card::Red),
+        c => c,
+    }
+}
+
+/// Law 12: advantage when the fouled side keeps the ball in the
+/// opponents' half, outside the penalty area.
+#[must_use]
+pub const fn play_advantage(kept: bool, in_area: bool, depth: i32, half_length: i32) -> bool {
+    kept && !in_area && depth < half_length / 2
+}
+
+/// Law 3: the substitutions still available at a stoppage.
+#[must_use]
+pub const fn subs_remaining(allowed: usize, made: usize, pending: usize) -> usize {
+    allowed.saturating_sub(made + pending)
+}
+
+/// Competition rule (ADR-068): at the first stoppage at or after a break's
+/// minute the referee stops play. `None` when no such break is due.
+#[must_use]
+pub fn water_break_at(rules: &MatchRules, done: u8, minute: u64) -> Option<u16> {
+    let at = *rules.water_breaks.get(usize::from(done))?;
+    (at != 0 && minute >= u64::from(at)).then_some(at)
+}
+
+/// Law 10: the side that won the toss kicks first.
+#[must_use]
+pub const fn shootout_first_home(tosses: &Tosses) -> bool {
+    tosses.shootout_home
+}
+
+/// Law 10: within the first five kicks, a side that cannot be caught has
+/// won.
+#[must_use]
+pub fn shootout_unreachable(goals: [u8; 2], kicks: [usize; 2]) -> bool {
+    let reach = |s: usize| usize::from(goals[s]) + 5usize.saturating_sub(kicks[s]);
+    kicks[0] <= 5
+        && kicks[1] <= 5
+        && (usize::from(goals[0]) > reach(1) || usize::from(goals[1]) > reach(0))
+}
+
+/// Law 10: after five kicks each, unequal scores decide; level scores go
+/// to sudden death.
+#[must_use]
+pub const fn shootout_after_five(goals: [u8; 2], kicks: [usize; 2]) -> bool {
+    kicks[0] >= 5 && goals[0] != goals[1]
+}
+
+/// Law 10: a kick ends when the ball is saved, in, out, or played by
+/// someone else — not by another shot of the taker's.
+#[must_use]
+pub fn shootout_kick_event_done(e: &MatchEvent, kicker: PlayerId) -> bool {
+    matches!(
+        e.event_type,
+        EventType::Save
+            | EventType::Goal
+            | EventType::Corner
+            | EventType::GoalKick
+            | EventType::ThrowIn
+    ) || (e.event_type != EventType::Shot && e.actor != Some(ActorId::Player(kicker)))
+        && !matches!(e.event_type, EventType::Pressure | EventType::Woodwork)
+}
+
 /// The Laws applied to the match in progress: offside, the foul, the
 /// ball out of play (moved from `state.rs`, 2026-11-15).
 use crate::state::prelude::*;
@@ -294,14 +427,7 @@ impl MatchState {
     ) {
         self.offside_at_pass.clear();
         let restart = self.restart_pass.take();
-        if matches!(
-            restart,
-            Some(
-                crate::rules::RestartKind::ThrowIn
-                    | crate::rules::RestartKind::GoalKick
-                    | crate::rules::RestartKind::Corner
-            )
-        ) {
+        if crate::rules::offside_exempt(restart) {
             return;
         }
         let m = ctx.match_;
@@ -358,8 +484,12 @@ impl MatchState {
         let goal = (if fouled_home { length } else { 0 }, width / 2);
         let depth = |p: (i32, i32)| (goal.0 - p.0).abs();
         let laws = self.laws;
-        let in_area = depth(spot) <= laws.penalty_area_depth_cm
-            && (spot.1 - goal.1).abs() <= laws.penalty_area_half_width_cm;
+        let in_area = crate::rules::in_penalty_area(
+            depth(spot),
+            (spot.1 - goal.1).abs(),
+            laws.penalty_area_depth_cm,
+            laws.penalty_area_half_width_cm,
+        );
         // An obvious goal-scoring opportunity (Law 12: the distance to the
         // goal, the location and number of defenders): near the goal he
         // attacks, and no outfield defender but the offender nearer to it.
@@ -414,8 +544,8 @@ impl MatchState {
             laws.excessive_speed_milli,
         );
         let card = match card {
-            Some(crate::rules::Card::Yellow) if !self.cautioned.insert(offender) => {
-                Some(crate::rules::Card::Red)
+            Some(crate::rules::Card::Yellow) => {
+                crate::rules::card_after(self.cautioned.insert(offender), card)
             }
             c => c,
         };
@@ -435,7 +565,7 @@ impl MatchState {
         }
         // Advantage: the side that suffered it keeps the ball in the
         // opponents' half, outside the area; play goes on.
-        if kept && !in_area && depth(spot) < length / 2 {
+        if crate::rules::play_advantage(kept, in_area, depth(spot), length) {
             return;
         }
         let side = if fouled_home {
@@ -523,6 +653,71 @@ mod tests {
     use super::*;
 
     const PITCH: (i32, i32) = (10_500, 6_800);
+
+    /// The Laws of the game played are pure decisions in this module, not
+    /// branches scattered through the engine (OI, 2026-11-21).
+    #[test]
+    fn the_laws_of_the_game_played_are_decided_here() {
+        let mut tosses = Tosses::HOME;
+        assert_eq!(kick_off_taker_side(&tosses, Half::First), Side::Home);
+        assert_eq!(kick_off_taker_side(&tosses, Half::Second), Side::Away);
+        tosses.kick_off_home = false;
+        assert_eq!(kick_off_taker_side(&tosses, Half::First), Side::Away);
+        assert!(shootout_first_home(&Tosses::HOME));
+
+        assert!(in_penalty_area(1000, 600, 1650, 2016));
+        assert!(!in_penalty_area(2000, 600, 1650, 2016));
+        assert!(!in_penalty_area(1000, 2600, 1650, 2016));
+        assert!(in_penalty_area(-100, 600, 1650, 2016));
+        assert!(own_goal(Some(true), true));
+        assert!(!own_goal(Some(false), true));
+        assert!(!own_goal(None, true));
+
+        assert!(offside_exempt(Some(RestartKind::Corner)));
+        assert!(!offside_exempt(Some(RestartKind::FreeKick)));
+        assert!(!offside_exempt(None));
+        assert_eq!(card_after(false, Some(Card::Yellow)), Some(Card::Red));
+        assert_eq!(card_after(true, Some(Card::Yellow)), Some(Card::Yellow));
+        assert_eq!(card_after(false, Some(Card::Red)), Some(Card::Red));
+        assert!(play_advantage(true, false, 1000, 5250));
+        assert!(!play_advantage(true, false, 3000, 5250));
+        assert!(!play_advantage(true, true, 1000, 5250));
+
+        assert_eq!(subs_remaining(5, 3, 1), 1);
+        assert_eq!(subs_remaining(5, 5, 1), 0);
+        let rules = MatchRules {
+            water_breaks: [30, 75],
+            ..MatchRules::default()
+        };
+        assert_eq!(water_break_at(&rules, 0, 29), None);
+        assert_eq!(water_break_at(&rules, 0, 30), Some(30));
+        assert_eq!(water_break_at(&rules, 1, 74), None);
+        assert_eq!(water_break_at(&rules, 1, 75), Some(75));
+        assert_eq!(water_break_at(&rules, 2, 90), None);
+
+        assert!(shootout_unreachable([3, 0], [4, 3]));
+        assert!(!shootout_unreachable([2, 1], [3, 3]));
+        assert!(shootout_after_five([4, 3], [5, 5]));
+        assert!(!shootout_after_five([4, 4], [5, 5]));
+    }
+
+    /// Laws 7 and 10: the competition's request and the level score are
+    /// both needed; the two periods and the shoot-out come from here.
+    #[test]
+    fn extra_time_and_shootout_need_the_request_and_a_level_score() {
+        let mut rules = MatchRules::default();
+        assert_eq!(extra_time(&rules, true), []);
+        assert!(!shootout(&rules, true));
+        rules.extra_time = true;
+        rules.penalty_shootout = true;
+        assert_eq!(extra_time(&rules, false), []);
+        assert!(!shootout(&rules, false));
+        assert_eq!(
+            extra_time(&rules, true),
+            [Half::ExtraFirst, Half::ExtraSecond]
+        );
+        assert!(shootout(&rules, true));
+    }
 
     /// Law 12 (P1, `SIM_VERSION` 112): through on goal with only the keeper to
     /// beat, a foul denies an obvious chance; with an outfield defender

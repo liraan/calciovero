@@ -368,8 +368,10 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 086 | Il controllo sotto pressione (OI-132) | ✅ accepted (2026-11-20) | DD-26: il metodo del contrasto vale per ogni atto come criterio di analisi, non come architettura; la pressione rimette alla prova il controllo con `resolve_duel`. SIM 170. |
 | 087 | Il tiro non diventa preciso perché è vicino (OI-100) | ✅ accepted (2026-11-20) | DD-27: sotto gli 11 m lo scarto del tiro resta quello misurato a 11 m; la mira resta del calciatore, il contatto no. SIM 171. |
 | 088 | Chi corre a una ripresa si ferma sulla palla (DD-28) | ✅ accepted (2026-11-20) | DD-28: chi è mandato al punto di una ripresa frena per arrivarci, chi contesta un pallone vivo resta a tutta velocità; dal 173 il freno si esaurisce entro un raggio corpo (45 cm), non sul punto. SIM 172-173. |
+| 089 | Anche il portatore frena sul proprio pallone (DD-29) | ✅ accepted (2026-11-20) | DD-29: la frenata di 088 vale anche per il portatore che torna al pallone con il tocco scaduto, in gioco aperto; stessa formula, nessun numero nuovo. SIM 174. |
+| 090 | Chi contesta corre come nella partita vera (DD-30) | ✅ accepted (2026-11-21) | DD-30: il passo delle contese è il 75/90 del profilo dichiarato, derivato da `match_profile`/`effort_ref`; nessun numero nuovo, scelta e vincitore invariati. SIM 175. |
 
-**Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048, 081 (43). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
+**Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048, 081, 082, 083, 084, 085, 086, 087, 088, 089, 090 (52). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
 
 **ADR-012 and ADR-013 are two halves of one decision.** Read them together, in order: [`PLUGINS-WORLDS-READING-GUIDE.md`](PLUGINS-WORLDS-READING-GUIDE.md). ADR-013 depends on ADR-012.
 

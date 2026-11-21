@@ -8,6 +8,54 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 175 — Il passo della contesa è quello della partita vera (DD-30)
+
+Il maintainer, guardando il seed 42 in 2.5D: «i giocatori non corrono quasi mai
+alla loro massima velocità», «se ci sono statistiche in tal senso implementale».
+La statistica è dichiarata in `fatigue.json`: `match_profile` arriva a
+75 cm/tick per il 2% del tempo, contro un `effort_ref_cm_per_tick` di 90. Filtrando
+con LUNA: il dito è `top_s`, lo stride, la distanza dal pallone e il picco
+dichiarato; la luna è lo stesso giocatore, con la propria velocità e la propria
+lettura della scena, a cui si toglie solo il passo che in partita vera non tiene
+quasi mai. `contest_pace_share = 75/90` deriva dal dato, non è un numero nuovo.
+
+In `spatial::move_agents`, ramo `contests`, la velocità è `top_s *
+contest_pace_share`, anche per la frenata di SIM 172/173/174; `carrying` e
+`in_time` non cambiano, nessuna scelta e nessun vincitore del pallone cambiano.
+Il cap non vale per chi è `sent` al punto di una rimessa: si sta posizionando,
+non contendendo una palla; il freno di SIM 173 lo ferma da sé. Con il cap anche
+lì il battitore si fermava a 97 cm dal punto (fuori dai 90 cm di `at_ball`) e
+il pallone restava morto 1510 tick su seed 42, oltre la soglia di 1212 del test
+`no_restart_stops_the_match`. Guardiano:
+`a_contest_runs_at_the_real_match_sprint_share` (prima 95 cm/tick contro 80).
+Su partita vera seed 42: picco sopra palla ferma 90 → 74 cm/tick, campioni
+oltre 60 cm/tick 13 → 7. Golden SIM 175 rigenerati; seme di coppa 63 → 54,
+pareggio al 90' 63 → 46, shoot-out di soli tiri 63 → 54 (133 invariato).
+
+Le decisioni delle Leggi del gioco giocato (kick-off, area, goal, fallo,
+vantaggio, cambi, pause, shoot-out) sono ora tutte in `plugins/referee.rs`,
+con `simulate.rs` che le applica: refactoring bit-identico, golden invariati
+(DD-31).
+
+## 174 — Anche il portatore frena sul proprio pallone (DD-29)
+
+Il maintainer autorizza il fix del 12'30" e chiede il confronto sulla partita
+vera. Filtrando con LUNA: il dito è il `Touch` scaduto in open play, il target
+che torna al pallone e il portatore che arriva a 9 cm, lo supera di 255 cm e
+torna indietro; la luna è lo stesso giocatore, con la stessa velocità e lo
+stesso freno di ADR-088, che rilegge la scena dopo aver giocato il pallone. La
+frenata di SIM 172/173 era solo per `sent` (le riprese): ora vale anche per
+`overdue && carrier`, con la stessa formula e `BODY_RADIUS_CM = 45`, senza
+numeri nuovi e senza cambiare chi prende il pallone. Pressing e contrasti su
+palloni vivi restano a `top_s`. Il guardiano
+`the_carrier_brakes_when_his_touch_runs_out` superava il pallone di 122 cm al
+tick 18 prima del fix.
+
+Confronto su partite vere seed 42: il 12'28"-12'30" non mostra più l'andata e
+il ritorno; il golden cambia e i semi dei test vanno rifatti (65 primo pareggio
+al 90', 111 primo shoot-out con soli tiri; il 77 del golden ha un `Pass` del
+portiere, atto diverso lasciato aperto). Nessun dado, nessuna scelta cambiata.
+
 ## 173 — Il freno finisce prima dell'attesa
 
 Il maintainer, vista la 2.5D del 172: «mooooolto meglio», ma «succede ancora

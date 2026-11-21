@@ -1817,9 +1817,10 @@ impl SpatialState {
             // A body standing on his way he goes round (SIM 150, OI-122):
             // by the side that lengthens his way less.
             let round = self.way_round(entry.0, entry.1, target);
-            // His pace is his (2026-11-13): he runs flat out when he
-            // contests something; taking up his place he goes at the speed
-            // that gets him there in time.
+            // His pace is his (2026-11-13): he goes hard when he contests
+            // something, up to the real match's fastest running (SIM 175);
+            // taking up his place he goes at the speed that gets him there
+            // in time.
             let keeper = keeper_targets.iter().any(|(g, _)| *g == entry.0);
             let contests = sent.is_some_and(|(_, run)| run)
                 || Some(entry.0) == self.carrier
@@ -1901,17 +1902,31 @@ impl SpatialState {
                     .map_or_else(
                         || {
                             if contests {
-                                // A man sent to a restart spot runs there but
-                                // brakes to a stop at the ball (SIM 173):
-                                // "run" is how he goes, not a licence to
-                                // overshoot. He stops within the referee's
-                                // arrival reach (2 bodies), with no momentum
-                                // left to carry him past it.
-                                if sent.is_some() {
-                                    let arrive = f64::from(BODY_RADIUS_CM);
-                                    top_s.min((2.0 * decel_s * (dist - arrive).max(0.0)).sqrt())
-                                } else {
+                                // A man sent to a restart spot, or the carrier
+                                // going back to his own ball after his touch
+                                // ran out, runs there and brakes to a stop at
+                                // it (SIM 173/174): "run" is how he goes, not
+                                // a licence to sprint past the ball. He stops
+                                // within a body of it, with no momentum left
+                                // to carry him beyond it and back again.
+                                // SIM 175: even into a contest he runs no
+                                // faster than the fastest running seen in a
+                                // real match (75/90 of his sprint). A man sent
+                                // to a restart spot is placing himself, not
+                                // racing for a ball: the brake alone stops
+                                // him, and capping it left him short of the
+                                // spot with the ball dead.
+                                let contest_top = if sent.is_some() {
                                     top_s
+                                } else {
+                                    top_s * outcome.contest_pace_share
+                                };
+                                if sent.is_some() || (overdue && Some(entry.0) == self.carrier) {
+                                    let arrive = f64::from(BODY_RADIUS_CM);
+                                    contest_top
+                                        .min((2.0 * decel_s * (dist - arrive).max(0.0)).sqrt())
+                                } else {
+                                    contest_top
                                 }
                             } else {
                                 in_time.min(top_s).min((2.0 * decel_s * dist).sqrt())
@@ -2508,6 +2523,128 @@ mod tests {
         assert!(
             final_d <= i64::from(BODY_RADIUS_CM),
             "he stopped {final_d} cm short of the ball instead of on it"
+        );
+    }
+
+    #[test]
+    fn the_carrier_brakes_when_his_touch_runs_out() {
+        let mut s = make_state();
+        let carrier = PlayerId::new(10, 0);
+        let ball = (2000, 1_000);
+        let ids: Vec<PlayerId> = s.iter().map(|(id, _)| *id).collect();
+        for id in ids {
+            if id == carrier {
+                continue;
+            }
+            let at = s.agent(id).unwrap().position;
+            s.send(id, at, false);
+        }
+        s.set_position(carrier, (2600, 1_000));
+        s.carrier = Some(carrier);
+        s.ball_position = (ball.0, ball.1, 0);
+        // A touch whose period ran out: he goes back to the ball he played.
+        s.touch = Some(Touch {
+            from: (f64::from(ball.0), f64::from(ball.1)),
+            dir: (1.0, 0.0),
+            speed: 0.0,
+            at: 0,
+            period: 0.0,
+            held_cm: 0.0,
+        });
+        let bodies = make_bodies();
+        let mut hidden = ds_orchestrator::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
+        let mut arrived = None;
+        for tick in 1..200 {
+            s.move_agents(
+                10500,
+                6800,
+                &bodies,
+                &mut hidden,
+                tick,
+                &crate::balance::ScanningBalance::load(),
+                &crate::balance::KeeperBalance::load(),
+            );
+            let d = distance_squared(s.agent(carrier).unwrap().position, ball).isqrt();
+            if d <= i64::from(2 * BODY_RADIUS_CM) && arrived.is_none() {
+                arrived = Some(tick);
+            }
+            if arrived.is_some() {
+                assert!(
+                    d <= i64::from(2 * BODY_RADIUS_CM),
+                    "he ran past his own ball at tick {tick} ({d} cm)"
+                );
+            }
+        }
+        assert!(arrived.is_some(), "he never reached his own ball");
+        let final_d = distance_squared(s.agent(carrier).unwrap().position, ball).isqrt();
+        assert!(
+            final_d <= i64::from(BODY_RADIUS_CM),
+            "he stopped {final_d} cm short of his own ball"
+        );
+    }
+
+    /// SIM 175: a man going for a loose ball runs no faster than the
+    /// fastest running in the declared real-match profile, as a share of
+    /// his own top speed. Before, a contest ran flat out at `v_max`.
+    #[test]
+    fn a_contest_runs_at_the_real_match_sprint_share() {
+        let mut s = make_state();
+        let id = PlayerId::new(10, 0);
+        let ball = (6_000, 1_000);
+        let ids: Vec<PlayerId> = s.iter().map(|(id, _)| *id).collect();
+        for other in ids {
+            if other == id {
+                continue;
+            }
+            let at = s.agent(other).unwrap().position;
+            s.send(other, at, false);
+        }
+        s.set_position(id, (2_000, 1_000));
+        s.carrier = None;
+        s.ball = BallState::Loose;
+        s.ball_position = (ball.0, ball.1, 0);
+        s.touch = None;
+        s.set_act(id, ds_orchestrator::OffBallAct::GoToBall);
+        s.set_act_target(id, ball);
+
+        let bodies = make_bodies();
+        let body = &bodies[&id];
+        let mctx = ds_orchestrator::MovementContext {
+            player: id,
+            height_cm: body.height_cm,
+            weight_kg: body.weight_kg,
+            fatigue: body.fatigue,
+        };
+        let mut top_hidden =
+            ds_orchestrator::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
+        let outcome = top_hidden.resolve_movement(&mctx);
+        let limit = outcome.v_max * outcome.stride * outcome.contest_pace_share;
+
+        let mut hidden = ds_orchestrator::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
+        let mut max_speed = 0.0f64;
+        for tick in 1..200 {
+            let before = s.agent(id).unwrap().position;
+            s.move_agents(
+                10500,
+                6800,
+                &bodies,
+                &mut hidden,
+                tick,
+                &crate::balance::ScanningBalance::load(),
+                &crate::balance::KeeperBalance::load(),
+            );
+            let after = s.agent(id).unwrap().position;
+            let step =
+                ds_core::dmath::hypot(f64::from(after.0 - before.0), f64::from(after.1 - before.1));
+            max_speed = max_speed.max(step);
+        }
+        assert!(
+            max_speed > 10.0,
+            "he never went for the ball ({max_speed:.0} cm/tick)"
+        );
+        assert!(
+            max_speed <= limit + 1.0,
+            "contest at {max_speed:.0} cm/tick beats the declared share {limit:.0}"
         );
     }
 

@@ -10,17 +10,20 @@
 //! seed the test needs, so the matches after it are never played.
 
 use crate::ds_match::simulate_from_seed;
-use crate::support::CUP_SHOOTOUT_SEED;
 use ds_fixtures::match_fixture;
 use ds_match::{MatchConfig, MatchResult};
 use ds_model::Match;
 use ds_stats::{EventType, Half};
 
-/// The first level and the first decisive friendly of the range under SIM 173,
-/// found once by the scan that used to run on every test. Asserted below, so
-/// a change in the engine fails here instead of silently scanning again.
-const LEVEL_AT_90_SEED: u64 = 44;
-const DECIDED_AT_90_SEED: u64 = 42;
+/// A level and a decisive friendly of the range under SIM 175, found once by
+/// the scan that used to run on every test. Asserted below, so a change in the
+/// engine fails here instead of silently scanning again.
+const LEVEL_AT_90_SEED: u64 = 46;
+const DECIDED_AT_90_SEED: u64 = 133;
+
+/// A SIM 175 shoot-out whose kicks are all shots (Law 10/14), found on real
+/// matches: the golden's first shoot-out seed (54) may have a `Pass`.
+const SHOOTOUT_KICKS_SEED: u64 = 54;
 
 /// The same fixture, as a cup tie: extra time is asked for.
 fn cup(seed: u64) -> Match {
@@ -104,9 +107,9 @@ fn a_cup_match_won_at_ninety_ends_there() {
 /// a friendly never has one.
 #[test]
 fn a_cup_match_level_after_extra_time_goes_to_penalties() {
-    // The golden's first shoot-out seed, replayed directly to stay inside
-    // the 80 s budget. Its shoot-out is only kicks, no rebound play.
-    let seed = CUP_SHOOTOUT_SEED;
+    // Replayed directly to stay inside the 80 s budget: its shoot-out is
+    // only kicks, no pass after a save (unlike the golden's seed 54).
+    let seed = SHOOTOUT_KICKS_SEED;
     let r = play_cup_with_shootout(seed);
     let (h, a) = r.shootout.expect("level after extra time: penalties");
     // Every kick of the shoot-out is a shot (Law 10, Law 14).

@@ -144,37 +144,24 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
         rec,
     );
 
-    // --- Extra time (Laws 7 and 10): when the competition asks for a winner
-    // and the score is level, two periods of 15 minutes, each with its
-    // stoppage; the coin before them (`Match.tosses`). The same boundaries
-    // as the halves, told with the period they belong to.
+    // --- Extra time (Laws 7 and 10): the periods the referee's rule gives,
+    // each with its stoppage; the coin before them (`Match.tosses`). The
+    // same boundaries as the halves, told with the period they belong to.
+    let extra = crate::rules::extra_time(&ctx.match_.rules, state.score_is_level());
     let mut end = tick_after_second;
-    if ctx.match_.rules.extra_time && state.score_is_level() {
-        state.begin_half(Half::ExtraFirst, end);
-        state.kick_off(ctx, Half::ExtraFirst);
-        state.emit_boundary(ctx, end, EventType::KickOff);
-        let after = run_half(
-            &mut state,
-            (ctx, &mut live),
-            end,
-            Half::ExtraFirst,
-            tps,
-            &table,
-            rec,
-        );
-        state.emit_boundary(ctx, after, EventType::HalfTime);
-        state.begin_half(Half::ExtraSecond, after);
-        state.kick_off(ctx, Half::ExtraSecond);
-        state.emit_boundary(ctx, after, EventType::SecondHalf);
-        end = run_half(
-            &mut state,
-            (ctx, &mut live),
-            after,
-            Half::ExtraSecond,
-            tps,
-            &table,
-            rec,
-        );
+    for (i, half) in extra.iter().copied().enumerate() {
+        state.begin_half(half, end);
+        state.kick_off(ctx, half);
+        let start = if i == 0 {
+            EventType::KickOff
+        } else {
+            EventType::SecondHalf
+        };
+        state.emit_boundary(ctx, end, start);
+        end = run_half(&mut state, (ctx, &mut live), end, half, tps, &table, rec);
+        if i + 1 < extra.len() {
+            state.emit_boundary(ctx, end, EventType::HalfTime);
+        }
     }
 
     // --- Full-time ---
@@ -182,7 +169,7 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
 
     // --- Penalties (Law 10): after the match has ended, when the
     // competition asks for a winner and the score is still level.
-    if ctx.match_.rules.penalty_shootout && state.score_is_level() {
+    if crate::rules::shootout(&ctx.match_.rules, state.score_is_level()) {
         state.begin_half(Half::Shootout, end);
         let result = shootout(&mut state, (ctx, &mut live), end, rec);
         state.set_shootout(Some(result));
@@ -213,7 +200,7 @@ fn shootout(
     let n = state
         .on_pitch_count(ctx, true)
         .min(state.on_pitch_count(ctx, false));
-    let first_home = ctx.match_.tosses.shootout_home;
+    let first_home = crate::rules::shootout_first_home(&ctx.match_.tosses);
     let orders = [
         state.shootout_order(ctx, first_home, n),
         state.shootout_order(ctx, !first_home, n),
@@ -246,18 +233,9 @@ fn shootout(
                 t += 1;
                 struck |= state.ball_left(kicker);
                 // Completed (Law 10): saved, in, out, or played by another.
-                let ended = ctx.chain.events()[told..].iter().any(|e| {
-                    matches!(
-                        e.event_type,
-                        EventType::Save
-                            | EventType::Goal
-                            | EventType::Corner
-                            | EventType::GoalKick
-                            | EventType::ThrowIn
-                    ) || (e.event_type != EventType::Shot
-                        && e.actor != Some(ds_core::ids::ActorId::Player(kicker)))
-                        && !matches!(e.event_type, EventType::Pressure | EventType::Woodwork)
-                });
+                let ended = ctx.chain.events()[told..]
+                    .iter()
+                    .any(|e| crate::rules::shootout_kick_event_done(e, kicker));
                 if ended || state.tally().0 != before.0 || state.shootout_kick_done(kicker, struck)
                 {
                     break;
@@ -269,15 +247,11 @@ fn shootout(
             state.restore_tally(before);
             kicks[side] += 1;
             // Decided within the five: one side cannot be reached any more.
-            let reach = |s: usize| usize::from(goals[s]) + 5usize.saturating_sub(kicks[s]);
-            if kicks[0] <= 5
-                && kicks[1] <= 5
-                && (usize::from(goals[0]) > reach(1) || usize::from(goals[1]) > reach(0))
-            {
+            if crate::rules::shootout_unreachable(goals, kicks) {
                 return result(goals);
             }
         }
-        if kicks[0] >= 5 && goals[0] != goals[1] {
+        if crate::rules::shootout_after_five(goals, kicks) {
             return result(goals);
         }
     }

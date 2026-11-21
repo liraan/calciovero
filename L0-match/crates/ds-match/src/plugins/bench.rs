@@ -43,7 +43,7 @@ impl MatchPlugin for Bench {
             // carried off (Law 3).
             let mut due: Vec<(PlayerKey, PlayerKey)> = Vec::new();
             for hurt in world.knocked(home) {
-                let left = allowed.saturating_sub(made(world, home) + due.len());
+                let left = crate::rules::subs_remaining(allowed, made(world, home), due.len());
                 match replacement(world, home, hurt, &due) {
                     Some(on) if left > 0 => due.push((hurt, on)),
                     _ => world.carry_off(hurt),
@@ -60,7 +60,7 @@ impl MatchPlugin for Bench {
             );
             // Then those he ordered during the match (decision T), within
             // the substitutions the Laws allow (Law 3).
-            let left = allowed.saturating_sub(made(world, home) + due.len());
+            let left = crate::rules::subs_remaining(allowed, made(world, home), due.len());
             due.extend(
                 world
                     .ordered(home)
@@ -239,19 +239,14 @@ impl MatchState {
         if !self.stoppage {
             return;
         }
-        let k = usize::from(self.water_breaks_done);
-        let Some(&at) = ctx.match_.rules.water_breaks.get(k) else {
-            return;
-        };
-        if at == 0 {
-            return;
-        }
         let tps = u64::from(ctx.config.ticks_per_second).max(1);
         let in_half = tick.saturating_sub(self.half_start_tick) / tps / 60;
         let minute = in_half + u64::from(self.half.offset_minutes());
-        if minute < u64::from(at) {
+        let Some(at) =
+            crate::rules::water_break_at(&ctx.match_.rules, self.water_breaks_done, minute)
+        else {
             return;
-        }
+        };
         self.water_breaks_done += 1;
         self.pauses += 1;
         self.emit_event(

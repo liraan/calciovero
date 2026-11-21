@@ -276,7 +276,7 @@ impl MatchState {
             return;
         }
         let home = |p: PlayerId| ctx.match_.home.players.iter().any(|q| q.id == p);
-        let own_goal = last.is_some_and(|p| home(p) == (defending == Possession::Home));
+        let own_goal = crate::rules::own_goal(last.map(&home), defending == Possession::Home);
         self.pending = None;
         self.spatial.set_carrier(None);
         let fact = crate::fact::Fact::GoalLineCrossing {

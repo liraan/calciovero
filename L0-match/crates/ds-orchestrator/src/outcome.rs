@@ -110,6 +110,9 @@ pub struct MovementOutcome {
     pub with_ball_share: f64,
     /// The share of the needed pace he gives without the ball (work rate).
     pub work_share: f64,
+    /// The share of his top speed he keeps when he contests a ball: the
+    /// real match's fastest running (SIM 175, from `match_profile`).
+    pub contest_pace_share: f64,
     /// The stride ratio: how much ground one unit of leg speed covers,
     /// relative to the reference height.
     pub stride: f64,

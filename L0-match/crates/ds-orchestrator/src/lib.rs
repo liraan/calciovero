@@ -1081,6 +1081,7 @@ impl GroundTruth {
                 .mul_add(f64::from(dribbling), balance.with_ball_share_min),
             work_share: (1.0 - balance.work_rate_floor)
                 .mul_add(f64::from(work_rate), balance.work_rate_floor),
+            contest_pace_share: self.fatigue_balance.contest_pace_share,
             stride,
         }
     }

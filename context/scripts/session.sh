@@ -199,7 +199,7 @@ changed_test_functions() {
         ' "$f") ;;
       # Shared formulas have named guards in the integration suite; a whole
       # workspace run (over 80 s) is not needed to check a known shared file.
-      L0-match/crates/ds-core/src/lib.rs|L0-match/crates/ds-calculator/src/kick.rs|L0-match/crates/ds-calculator/src/duel.rs|L0-match/crates/ds-calculator/src/save.rs|L0-match/crates/ds-calculator/src/thought.rs|L0-match/crates/ds-calculator/tests/reach_has_one_value.rs|L0-match/crates/ds-orchestrator/src/lib.rs|L0-match/crates/ds-orchestrator/src/actor.rs|L0-match/crates/ds-orchestrator/src/read.rs|L0-match/crates/ds-orchestrator/src/offball.rs)
+      L0-match/crates/ds-core/src/lib.rs|L0-match/crates/ds-calculator/src/kick.rs|L0-match/crates/ds-calculator/src/duel.rs|L0-match/crates/ds-calculator/src/fatigue.rs|L0-match/crates/ds-calculator/src/save.rs|L0-match/crates/ds-calculator/src/thought.rs|L0-match/crates/ds-calculator/tests/reach_has_one_value.rs|L0-match/crates/ds-orchestrator/src/lib.rs|L0-match/crates/ds-orchestrator/src/actor.rs|L0-match/crates/ds-orchestrator/src/read.rs|L0-match/crates/ds-orchestrator/src/offball.rs|L0-match/crates/ds-orchestrator/src/outcome.rs)
         add_golden
         add_fn shot_forced::resolve_shot_pressure_widens_the_deviation ;;
       L0-match/crates/ds-core/src/rng.rs)

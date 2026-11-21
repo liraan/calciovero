@@ -403,13 +403,13 @@ pub(crate) const fn in_keeper_box(
     (length, width): (i32, i32),
     off: &ds_calculator::offball::OffBallBalance,
 ) -> bool {
-    let depth = off.keeper_box_depth_cm;
-    let in_depth = if home {
-        ball.0 <= depth
-    } else {
-        ball.0 >= length - depth
-    };
-    in_depth && (ball.1 - width / 2).abs() <= off.keeper_box_half_width_cm
+    let depth = if home { ball.0 } else { length - ball.0 };
+    crate::rules::in_penalty_area(
+        depth,
+        (ball.1 - width / 2).abs(),
+        off.keeper_box_depth_cm,
+        off.keeper_box_half_width_cm,
+    )
 }
 
 /// What a side sees of its opponents when it has the ball (ADR-051, the
@@ -1357,17 +1357,7 @@ impl MatchState {
         // the possession being worth more than an end on a neutral pitch;
         // the other team kicks off the next half (`Match.tosses`, an input
         // of the match, as the seed is: 2026-11-15).
-        let tosses = ctx.match_.tosses;
-        let winner = match half {
-            Half::First | Half::Second => tosses.kick_off_home,
-            Half::ExtraFirst | Half::ExtraSecond | Half::Shootout => tosses.extra_time_home,
-        };
-        let first = matches!(half, Half::First | Half::ExtraFirst);
-        let side = if winner == first {
-            crate::rules::Side::Home
-        } else {
-            crate::rules::Side::Away
-        };
+        let side = crate::rules::kick_off_taker_side(&ctx.match_.tosses, half);
         // A new half starts from its lines: a restart left waiting at the
         // whistle is gone (SIM 150).
         self.waiting = None;

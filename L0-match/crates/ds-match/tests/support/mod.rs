@@ -35,7 +35,7 @@ type Slot = Arc<OnceLock<Payload>>;
 /// the 42..142 scan (see `cases::golden_l0::cup_seed_scan`). The routine tests
 /// play this seed directly: the 75-match scan is a one-off, not a per-run cost
 /// (maintainer, 2026-11-20: 80 s total budget).
-pub const CUP_SHOOTOUT_SEED: u64 = 44;
+pub const CUP_SHOOTOUT_SEED: u64 = 54;
 
 static CACHE: LazyLock<Mutex<HashMap<Key, Slot>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
