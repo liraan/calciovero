@@ -127,7 +127,7 @@ of the classic Italian ones. The longer version is in
 
 ## Where we are, honestly
 
-**There is no playable game yet.** The match engine is close to complete and is being calibrated against real football, one verified step at a time, in the open. Engine version **179**; **575 tests** and a health check run on every commit.
+**There is no playable game yet.** The match engine is close to complete and is being calibrated against real football, one verified step at a time, in the open. Engine version **181**; **575 tests** and a health check run on every commit.
 
 ### The road, level by level
 

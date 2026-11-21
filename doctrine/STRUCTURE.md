@@ -374,8 +374,9 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | 092 | Il primo tocco è del ricevitore (DD-33) | ✅ accepted (delegated, 2026-11-21) | DD-33: il primo controllo segue la corsa del ricevitore quando corre contro il passaggio; nessun numero nuovo, ADR-058 §5 attuato. SIM 177. |
 | 093 | L'uomo più veloce della palla se la porta con sé (DD-34) | ✅ accepted (delegated, 2026-11-21) | DD-34: estende SIM 177 — il primo tocco segue la corsa anche se l'uomo è più veloce del residuo di rotolamento (`spill < pace`); confronto tra due velocità già lette, carrier-gap oltre 500 cm azzerato su seed 42. SIM 178. |
 | 094 | Il passaggio filtrante è una lettura, non una geometria (DD-35) | ✅ accepted (delegated, 2026-11-21) | DD-35: il punto d'incontro del filtrante usa il passo visto del compagno, pesato da intesa e lettura del portatore; ripristinato il rank 0 istintivo di `goes_for_loose_ball`. SIM 179. |
+| 095 | Il bersaglio della pressione è l'uomo, non il pallone (DD-36) | ✅ accepted (delegated, 2026-11-21) | DD-36: `Press` mira il portatore e il corpo prende la fascia goal-side con la `goal_side_of` e il `mark_gap_cm` già di `Mark`; nessun numero nuovo. SIM 181. |
 
-**Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048, 081, 082, 083, 084, 085, 086, 087, 088, 089, 090 (52). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
+**Accepted:** 001, 003, 004, 005, 006, 007, 008, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 024, 025, 026, 027, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041, 043, 044, 045, 046, 047, 048, 081, 082, 083, 084, 085, 086, 087, 088, 089, 090, 095 (53). **Superseded:** 002 (by ADR-027), 023 (by ADR-024). **Proposed:** 042 (1).
 
 **ADR-012 and ADR-013 are two halves of one decision.** Read them together, in order: [`PLUGINS-WORLDS-READING-GUIDE.md`](PLUGINS-WORLDS-READING-GUIDE.md). ADR-013 depends on ADR-012.
 

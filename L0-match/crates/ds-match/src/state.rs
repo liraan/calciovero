@@ -1008,19 +1008,29 @@ impl TeamView {
             ds_orchestrator::OffBallAct::Mark => self.man_to_mark(me).map(|m| {
                 // Goal-side of him: between him and the goal we defend.
                 let own_goal = (length - self.their_goal_x, width / 2);
-                let (dx, dy) = (f64::from(own_goal.0 - m.0), f64::from(own_goal.1 - m.1));
-                let len = dmath::hypot(dx, dy).max(1.0);
-                let gap = f64::from(off.mark_gap_cm);
-                #[allow(clippy::cast_possible_truncation)]
-                let t = (
-                    (m.0 + (dx / len * gap) as i32).clamp(0, length),
-                    (m.1 + (dy / len * gap) as i32).clamp(0, width),
-                );
-                t
+                goal_side_of(m, own_goal, off.mark_gap_cm, (length, width))
             }),
             _ => None,
         }
     }
+}
+
+/// The point goal-side of a man: the body between him and the goal we
+/// defend, at the gap a marker keeps (ADR-051; SIM 181 for the press).
+pub(crate) fn goal_side_of(
+    man: (i32, i32),
+    own_goal: (i32, i32),
+    gap: i32,
+    (length, width): (i32, i32),
+) -> (i32, i32) {
+    let (dx, dy) = (f64::from(own_goal.0 - man.0), f64::from(own_goal.1 - man.1));
+    let len = dmath::hypot(dx, dy).max(1.0);
+    let gap = f64::from(gap);
+    #[allow(clippy::cast_possible_truncation)]
+    (
+        (man.0 + (dx / len * gap) as i32).clamp(0, length),
+        (man.1 + (dy / len * gap) as i32).clamp(0, width),
+    )
 }
 
 /// Where a straight shot from `from` to `cross` (on the goal plane) passes

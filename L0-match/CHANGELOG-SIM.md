@@ -8,6 +8,34 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 181 — Il bersaglio della pressione è l'uomo, non il pallone (DD-36)
+
+Il maintainer, guardando seed 42 in GUI/TUI: al 3'13" l'11 rosso ha la palla
+e nessuno sembra contrastarlo; al 44' una palla nella metà campo resta ferma
+mentre i giocatori le gravittano intorno. Con LUNA: il dito è la posizione del
+pallone e del portatore, la distanza, il lato della propria porta; la luna è lo
+stesso difensore che sceglie di affrontare l'avversario dalla fascia goal-side.
+Cambia il come esegue la pressione, non il bersaglio (sempre l'uomo) e non la
+fisica. `EventType::Pressure` resta geometria, non `OffBallAct::Press`.
+
+Prima il pressore mirava `ball`: il pallone può giacere 188 cm davanti al piede
+del portatore fermo, e il difensore si piazzava 150 cm oltre il pallone, a 340 cm
+dall'uomo, senza entrare in duello. Ora `Press` resta in `to_the_ball` (stessa
+contesa e intercettazione) ma punta la posizione del portatore e, dopo
+l'intercettazione, il corpo prende la fascia goal-side con `goal_side_of`, la
+stessa funzione di `Mark` e lo stesso `mark_gap_cm` già dichiarato. Nessun numero,
+dado o latente nuovo; nessuna regola ridondante. Un portatore fermo per 17.347 tick
+su seed 42 torna a muoversi.
+
+Provare a usare il contatto (`2 * BODY_RADIUS_CM`) come gap faceva passare il
+guardiano del dribbling ma lasciava il pallone libero 14.771 tick su seed 44:
+scartato. Con il gap da marcatura il guardiano del dribbling passa da 5% a 6%
+(82/1517 tick, 5,4%): il pressore goal-side fa riparare palla e arretrare, il
+5% misurava una pressione da dietro. Gemello
+`the_presser_takes_the_goal_side_of_the_carrier`; golden e semi rigenerati
+(coppa 64 → 55, pareggio al 90' 49 → 46, decisivo 50 → 50, shoot-out di soli
+tiri 64 → 55).
+
 ## 179 — Il filtrante va dove il portatore crede che il compagno arrivi (DD-35)
 
 Il maintainer autorizza la sola modulazione del passaggio filtrante e il

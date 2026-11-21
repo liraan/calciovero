@@ -429,6 +429,9 @@ pub struct SpatialState {
     goal_half_width_cm: i32,
     /// Whether the home side has the ball (set by the match each tick).
     home_in_possession: bool,
+    /// The gap a marker keeps goal-side of his man, used by the press too
+    /// (SIM 181): the same declared distance, not a new number.
+    press_gap_cm: i32,
     /// Each player's off-ball act, as he chose it (ADR-049).
     acts: BTreeMap<PlayerId, ds_orchestrator::OffBallAct>,
     /// Where a player who chose to offer or to run is going (ADR-051).
@@ -543,6 +546,7 @@ impl SpatialState {
             ball_steps: [(length / 2, width / 2, 0); STEPS],
             body_steps: BTreeMap::new(),
             onside_margin_cm: ds_calculator::offball::OffBallBalance::load().onside_margin_cm,
+            press_gap_cm: ds_calculator::offball::OffBallBalance::load().mark_gap_cm,
             block: crate::balance::BlockBalance::load(),
             roles: crate::shape::slots(home, away),
             boards: (home.board, away.board),
@@ -1774,9 +1778,15 @@ impl SpatialState {
                 }
             } else if to_the_ball {
                 // A high ball is met where it comes down (head height),
-                // not chased where it is.
+                // not chased where it is. The press aims at the opposing
+                // player, not at the ball that can lie ahead of his foot:
+                // he is the target, the ball is only contested (SIM 181).
                 if act == Some(ds_orchestrator::OffBallAct::GoToBall) {
                     drop.unwrap_or(ball)
+                } else if act == Some(ds_orchestrator::OffBallAct::Press) {
+                    self.carrier
+                        .and_then(|c| self.agents.get(&c))
+                        .map_or(ball, |a| a.position)
                 } else {
                     ball
                 }
@@ -1847,7 +1857,10 @@ impl SpatialState {
             // run cross, not where it is (the maintainer, 2026-11-13: players
             // circled the ball instead of winning it; a keeper chasing a
             // back pass let it roll past him into his goal).
-            let target = if to_the_ball && Some(entry.0) != self.carrier {
+            let mut target = if to_the_ball
+                && act != Some(ds_orchestrator::OffBallAct::Press)
+                && Some(entry.0) != self.carrier
+            {
                 let speed = dmath::hypot(v_prev.0, v_prev.1);
                 let reach = f64::from(BODY_RADIUS_CM) * 2.0;
                 self.intercept(entry.1, (speed, accel, top), reach)
@@ -1855,6 +1868,14 @@ impl SpatialState {
             } else {
                 target
             };
+            // SIM 181: he still aims at the opponent, but takes the lane
+            // goal-side of him — the gap a marker keeps, not a new number.
+            if act == Some(ds_orchestrator::OffBallAct::Press) && sent.is_none() {
+                let home = crate::perception::team_of(entry.0) == 0;
+                let own_goal = (if home { 0 } else { self.pitch_cm.0 }, self.pitch_cm.1 / 2);
+                target =
+                    crate::state::goal_side_of(target, own_goal, self.press_gap_cm, self.pitch_cm);
+            }
             // A body standing on his way he goes round (SIM 150, OI-122):
             // by the side that lengthens his way less.
             let round = self.way_round(entry.0, entry.1, target);
@@ -2446,6 +2467,53 @@ mod tests {
         assert_eq!(s.hold_at.get(&id).copied(), Some((4000, 3400)));
         s.set_hold_at(id, Some((5000, 3400)));
         assert_eq!(s.hold_at.get(&id).copied(), Some((5000, 3400)));
+    }
+
+    /// SIM 181 (LUNA): the press keeps the opponent as its target; the body
+    /// takes the lane between him and the goal we defend. Before, the man
+    /// ran at the ball and arrived behind the carrier.
+    #[test]
+    fn the_presser_takes_the_goal_side_of_the_carrier() {
+        let mut s = make_state();
+        let carrier = PlayerId::new(10, 0);
+        let presser = PlayerId::new(105, 0);
+        let ids: Vec<PlayerId> = s.iter().map(|(id, _)| *id).collect();
+        for other in ids {
+            if other != carrier && other != presser {
+                let at = s.agent(other).unwrap().position;
+                s.send(other, at, false);
+            }
+        }
+        let spot = (7_800, 3_700);
+        s.set_position(carrier, spot);
+        s.set_position(presser, (7_500, 3_400));
+        s.ball_position = (spot.0, spot.1, 0);
+        s.set_carrier(Some(carrier));
+        s.set_act(presser, ds_orchestrator::OffBallAct::Press);
+        let bodies = make_bodies();
+        let mut hidden = ds_orchestrator::GroundTruth::new(42, ds_core::ids::MatchId::new(0, 0));
+        for tick in 1..120 {
+            s.move_agents(
+                10500,
+                6800,
+                &bodies,
+                &mut hidden,
+                tick,
+                &crate::balance::ScanningBalance::load(),
+                &crate::balance::KeeperBalance::load(),
+            );
+        }
+        let p = s.agent(presser).unwrap().position;
+        let c = s.agent(carrier).unwrap().position;
+        // Goal-side means the body is on the own-goal side of him, not just
+        // nearer the ball: the press keeps the man as its target (SIM 181).
+        let own = (10_500, 3_400); // the away side defends x=10500
+        let to_goal = (f64::from(own.0 - c.0), f64::from(own.1 - c.1));
+        let step = (f64::from(p.0 - c.0), f64::from(p.1 - c.1));
+        assert!(
+            step.0.mul_add(to_goal.0, step.1 * to_goal.1) > 0.0,
+            "the presser stayed behind: {p:?} vs {c:?}"
+        );
     }
 
     #[test]
