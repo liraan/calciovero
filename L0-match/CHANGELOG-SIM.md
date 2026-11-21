@@ -8,6 +8,41 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 182 — La porta si vede, il proprio pallone si riprende (DD-38, DD-39)
+
+Dopo SIM 181 il maintainer guarda la GUI e segnala due cose: «invece di tirare
+in porta passano ai compagni» e «alcuni behaviours veramente strani». Due fatti
+veri sul setup esatto della GUI (`friendly::apply`, seed 42).
+
+Con LUNA: il dito è l'apertura della porta, la copertura del portiere, il tocco
+giocato avanti, la distanza dal piede, il tick; la luna sono gli stessi uomi che
+leggono se la porta è lì e quanto vale ogni palo, e che, non avendo raggiunto il
+proprio tocco, se lo riprendono sotto la suola. Cambia il come leggono e
+eseguono, non il gesto già deciso, non l'etichetta dell'evento e non la fisica.
+
+**DD-38 (ADR-096).** `keeper_visibility` azzerava la visibilità del tiro coperto
+mentre la copertura era già nel suo valore (`chance`/`geometric`): lo stesso
+fatto contato due volte. Un attaccante a 314 cm dalla porta (tick 32760) passava
+perché il tiro migliore aveva visibilità 0.083 e i passaggi 0.333..1.0. Ora la
+visibilità di ogni tiro è `goal_cone(pos, goal)` e l'helper è cancellato: il
+portiere cambia il valore del tiro, non la vista della porta. Gemello
+`the_keeper_changes_the_shots_worth_not_his_sight_of_the_goal`.
+
+**DD-39 (ADR-097).** Un tocco giocato avanti (`held_cm = 0`, periodo 5.0 tick)
+che i corpi avversari impediscono di raggiungere restava `due` per sempre:
+pallone fermo 164 cm davanti al piede, `ball_at_feet = false`, nessuna nuova
+scelta, portatore fermo 979 tick (50689..51668 su seed 42). Dopo due periodi
+del proprio tocco, lo stesso `under_foot` di ogni pallone non raggiunto lo
+riporta sotto il piede. Nessun numero nuovo, nessuna finestra generica: il
+guardiano dei 979 tick e i due guardiani del primo tocco restano verdi.
+
+`ds-reference compare --seeds 42..51`: gol 9.20 → 11.90, tiri 35.80 → 49.30,
+tiri in porta 15.90 → 23.70, passaggi 1361 → 1374.70; la conversione resta
+dello stesso ordine, l'aumento è caotico e non tarato. Golden e semi rigenerati
+(coppa 55 → 81, pareggio al 90' 46 → 53, decisivo 50 → 42, shoot-out di soli
+tiri 55 → 81). TUI seed 42 frame 75/76/77: il pallone cambia portatore senza
+soste; frame GUI registrati al tick 50689.
+
 ## 181 — Il bersaglio della pressione è l'uomo, non il pallone (DD-36)
 
 Il maintainer, guardando seed 42 in GUI/TUI: al 3'13" l'11 rosso ha la palla

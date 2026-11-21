@@ -53,3 +53,6 @@ Earlier captures (until 2026-11-13) are in `git log -- process/captures/`.
 2026-11-21 12:09 | pause - | written | f6d03af | 0 | - | context/captures/2026-11.md
 2026-11-21 14:06 | pause - | written | 49a05ed | 1 | - | context/captures/2026-11.md
 2026-11-21 14:30 | pause - | written | f3593f9 | 0 | - | context/captures/2026-11.md
+2026-11-21 15:46 | pause - | written | 32cb3bb | 1 | - | context/captures/2026-11.md
+2026-11-21 15:55 | pause - | written | 32cb3bb | 1 | - | context/captures/2026-11.md
+2026-11-21 15:55 | pause - | written | 32cb3bb | 1 | ADR-096(exists); ADR-097(exists);  | context/captures/2026-11.md

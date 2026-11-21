@@ -392,43 +392,6 @@ pub fn point_to_segment_distance_cm(a: (i32, i32), b: (i32, i32), p: (i32, i32))
     ((dx * dx + dy * dy) as f64).sqrt()
 }
 
-/// The visibility of the shot from `pos` toward the post on
-/// `side_sign`'s side, with the keeper in the scene (ADR-047 §3, F4).
-///
-/// The keeper does not weigh the shot: he opens or closes a side. If his
-/// body is on the segment from the shooter to the post, that side is
-/// hard to notice; farther out, it becomes visible again. The form is a
-/// linear ramp: `d = reach` -> factor 0; `d = 2 * reach` -> factor 1.
-/// Declared, arbitrary until L3 (`_source`: geometry of the coverage).
-#[must_use]
-fn keeper_visibility(
-    scene: &PerceivedScene,
-    pos: (i32, i32),
-    goal: (i32, i32),
-    side_sign: f64,
-    base: f64,
-) -> f64 {
-    let Some(keeper) = scene.keeper else {
-        return base;
-    };
-    let Some(kpos) = scene.positions.get(&keeper).copied() else {
-        return base;
-    };
-    let reach = scene.keeper_reach_cm;
-    if reach <= 0.0 {
-        return base;
-    }
-    let half = i32::try_from(GOAL_WIDTH_CM / 2).unwrap_or(0);
-    let post_y = if side_sign > 0.0 {
-        goal.1 + half
-    } else {
-        goal.1 - half
-    };
-    let d = point_to_segment_distance_cm(pos, (goal.0, post_y), kpos);
-    let factor = ((d - reach) / reach).clamp(0.0, 1.0);
-    base * factor
-}
-
 /// The pressure on the carrier (ADR-050): 1 with an opponent at his feet,
 /// 0 beyond `pressure_radius_cm`.
 #[allow(clippy::cast_precision_loss)] // pitch distances are far below 2^52
@@ -917,8 +880,7 @@ fn shot_candidates(
                     &m.thought,
                 );
                 let geom = worth_of(chance);
-                let shot_visibility =
-                    keeper_visibility(scene, pos, goal, side, goal_cone(pos, goal));
+                let shot_visibility = goal_cone(pos, goal);
                 candidates.push(ChoiceCandidate {
                     kind: ChoiceKind::Shoot {
                         aim_y,
@@ -1728,7 +1690,6 @@ pub fn build_choice(
             visibility: 1.0,
         });
     }
-
     (
         ChoiceContext {
             actor: attacker,
@@ -1849,7 +1810,7 @@ mod lines_tests {
 }
 
 #[cfg(test)]
-mod keeper_visibility_tests {
+mod shot_perception_tests {
     use super::*;
 
     fn scene_with(keeper_y: Option<i32>) -> PerceivedScene {
@@ -1968,14 +1929,13 @@ mod keeper_visibility_tests {
         );
     }
 
-    fn shot_visibility(scene: &PerceivedScene) -> f64 {
+    fn shot_options(scene: &PerceivedScene) -> Vec<ChoiceCandidate> {
         let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
         let (ctx, _) = build_choice(scene, Side::Right, 0.5, 0.04, &balance);
         ctx.candidates
-            .iter()
-            .find(|c| matches!(c.kind, ChoiceKind::Shoot { .. }))
-            .map(|c| c.visibility)
-            .expect("a shoot candidate")
+            .into_iter()
+            .filter(|c| matches!(c.kind, ChoiceKind::Shoot { .. }))
+            .collect()
     }
 
     /// Twin test (ADR-031, the maintainer 2026-11-16: the foot is his
@@ -2157,20 +2117,39 @@ mod keeper_visibility_tests {
         assert!(aims.iter().any(|y| *y > 3400.0) && aims.iter().any(|y| *y < 3400.0));
     }
 
+    /// Twin test (SIM 182, DD-38): the same wide-angle shooter, only the
+    /// keeper moves. Before, a keeper on the sight line made the shot
+    /// invisible to the read filter, so an in-box striker passed instead of
+    /// shooting. The keeper changes what the shot is worth (the chance of
+    /// each post), not whether the goal is there to be seen.
     #[test]
-    fn the_keeper_hides_the_shot_he_covers_and_only_that_shot() {
-        let visible = shot_visibility(&scene_with(None));
-        // A right foot facing +x aims at -y (his right), since 55.
-        let covered = shot_visibility(&scene_with(Some(3400 - 300)));
-        let far = shot_visibility(&scene_with(Some(1000)));
+    fn the_keeper_changes_the_shots_worth_not_his_sight_of_the_goal() {
+        let mut covered = scene_with(Some(3400));
+        covered.positions.insert(PlayerId::new(1, 0), (9999, 4336));
+        let mut open = covered.clone();
+        open.positions.insert(PlayerId::new(100, 0), (10500, 1000));
+
+        let near = shot_options(&covered);
+        let far = shot_options(&open);
+        assert!(!near.is_empty() && near.len() == far.len());
+        let cone = goal_cone((9999, 4336), (10500, 3400));
+        assert!(cone > 0.3, "a goal 10 m away must be noticeable: {cone}");
+        for (a, b) in near.iter().zip(&far) {
+            assert!(
+                (a.visibility - cone).abs() < 1e-9 && (a.visibility - b.visibility).abs() < 1e-9,
+                "the keeper hid the sight of the goal: {:?} vs {:?}",
+                a.visibility,
+                b.visibility
+            );
+        }
+        let best = |v: &[ChoiceCandidate]| {
+            v.iter()
+                .map(|c| c.geometric)
+                .fold(f64::NEG_INFINITY, f64::max)
+        };
         assert!(
-            covered < 0.1,
-            "a keeper on the covered post must hide the shot: {covered}"
-        );
-        assert!(covered < visible, "covered={covered} vs visible={visible}");
-        assert!(
-            (far - visible).abs() < 1e-6,
-            "a keeper far from the line does not hide the shot: far={far} visible={visible}"
+            (best(&near) - best(&far)).abs() > 1e-6,
+            "the keeper must still change the worth of the shot"
         );
     }
 

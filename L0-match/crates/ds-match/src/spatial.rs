@@ -1480,6 +1480,22 @@ impl SpatialState {
                 f64::from(self.ball_position.1 - pos.1),
             );
             self.touch = Some(under_foot(off, tick, period_of(carrier, 0.0)));
+        } else if due
+            && !reached
+            && self
+                .touch
+                .as_ref()
+                .is_some_and(|tc| tc.period > 0.0 && since(tc) >= 2.0 * tc.period)
+        {
+            // SIM 182 (DD-39): a touch played ahead that he never reached
+            // (bodies held him) came to rest out of his reach; waiting for
+            // him to meet it froze the ball and left the carrier standing.
+            // After two of his own touch steps, bring it back under his foot.
+            let off = (
+                f64::from(self.ball_position.0 - pos.0),
+                f64::from(self.ball_position.1 - pos.1),
+            );
+            self.touch = Some(under_foot(off, tick, period_of(carrier, 0.0)));
         } else if due && (reached || self.touch.is_none()) {
             // He plays it where he chose to take it, at the pace he runs
             // that way; holding it, he keeps it at his feet.
@@ -2926,6 +2942,41 @@ mod tests {
         let (ball, at, mine) = at_feet(120);
         assert!(mine, "within his reach");
         assert_eq!(ball, at, "brought under his foot, not left behind");
+    }
+
+    /// SIM 182 (DD-39): the same ball, a reach too short to meet the touch.
+    /// Before, the touch stayed due but unreached forever: the ball rested
+    /// out of range, the carrier stood, and the match lost a minute and a
+    /// half on one man. The same `under_foot` as any ball he did not reach.
+    #[test]
+    fn an_unreached_touch_comes_back_under_his_foot() {
+        let id = PlayerId::new(1, 0);
+        let mut s = make_state();
+        let at = s.agent(id).map_or((0, 0), |a| a.position);
+        s.agent_mut(id).unwrap().velocity = (60, 0);
+        s.set_ball_in_flight((at.0 + 80, at.1, 0), (60, 0, 0));
+        s.set_carrier(Some(id));
+        // A touch played ahead at his running pace, not a ball brought under
+        // him: `held_cm` is 0 and the ball is 80 cm beyond his reach.
+        s.follow_carrier(1, false, |_, _| 2.5, |_, _| 10.0, 45);
+        // Bodies hold him where he is: he cannot run to the touch.
+        s.agent_mut(id).unwrap().velocity = (0, 0);
+        for tick in 2..=4 {
+            s.follow_carrier(tick, false, |_, _| 2.5, |_, _| 10.0, 45);
+        }
+        assert!(
+            !s.ball_at_feet(),
+            "the touch has not had time to fail yet: {:?}",
+            s.ball()
+        );
+        for tick in 5..=10 {
+            s.follow_carrier(tick, false, |_, _| 2.5, |_, _| 10.0, 45);
+        }
+        assert!(
+            s.ball_at_feet(),
+            "the ball is still out of reach: {:?}",
+            s.ball()
+        );
     }
 
     /// A ball in the air is read from the kick (P1, plan L0-CLOSE 11): just
