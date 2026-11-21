@@ -203,13 +203,34 @@ impl MatchState {
         // The teammates he sees attacking the depth, and where they run to
         // (plan L0-CLOSE 10a: the through ball).
         let seen = crate::perception::visible_to(&self.spatial, attacker);
-        scene.runs = scene
-            .teammates
-            .iter()
-            .filter(|id| seen.contains(id))
-            .filter(|id| self.spatial.act(**id) == Some(ds_orchestrator::OffBallAct::Run))
-            .filter_map(|id| self.spatial.act_target(*id).map(|t| (*id, t)))
-            .collect();
+        let reading = ctx
+            .hidden
+            .characteristic(attacker, "game_reading")
+            .unwrap_or(0.5);
+        let generic_pace =
+            ds_calculator::thought::ThoughtBalance::load().believed_speed_cm_per_tick;
+        for id in scene.teammates.iter().copied() {
+            if !seen.contains(&id) || self.spatial.act(id) != Some(ds_orchestrator::OffBallAct::Run)
+            {
+                continue;
+            }
+            let Some(target) = self.spatial.act_target(id) else {
+                continue;
+            };
+            scene.runs.insert(id, target);
+            // SIM 179 (ADR-094): the through ball goes where he believes
+            // this mate arrives. The dito is the run and the pace he sees;
+            // the luna is how far he trusts that glimpse, by their intesa
+            // and his game reading. A pair that knows each other leads the
+            // pass differently from one that does not.
+            let intesa = self.intesa.get(&(attacker, id)).copied().unwrap_or(0.0);
+            let seen_pace = scene.motion.get(&id).map_or(generic_pace, |(vx, vy)| {
+                #[allow(clippy::cast_precision_loss)] // cm/tick
+                dmath::hypot(f64::from(*vx), f64::from(*vy))
+            });
+            let believed = (intesa * reading).mul_add(seen_pace - generic_pace, generic_pace);
+            scene.run_pace.insert(id, believed);
+        }
         let (chosen_kind, _) =
             ds_orchestrator::Actor::new(attacker).decide(&scene, ctx.hidden, tick);
         let chosen = match chosen_kind {

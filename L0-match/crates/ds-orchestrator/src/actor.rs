@@ -249,6 +249,7 @@ mod tests {
             can_carry: false,
             penalty_kick: false,
             runs: BTreeMap::new(),
+            run_pace: BTreeMap::new(),
             horizon_cm: f64::MAX,
             strike_error_rad: 0.0,
             soon: BTreeMap::new(),

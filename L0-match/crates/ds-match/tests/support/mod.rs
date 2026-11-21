@@ -34,7 +34,7 @@ type Slot = Arc<OnceLock<Payload>>;
 /// The first cup tie that reaches the shoot-out under SIM 178, found once by
 /// the 42..142 scan (see `cases::golden_l0::cup_seed_scan`). The routine tests
 /// play this seed directly: the 75-match scan is a one-off, not a per-run cost.
-pub const CUP_SHOOTOUT_SEED: u64 = 48;
+pub const CUP_SHOOTOUT_SEED: u64 = 64;
 
 static CACHE: LazyLock<Mutex<HashMap<Key, Slot>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 

@@ -63,6 +63,10 @@ pub struct PerceivedScene {
     /// The teammates he sees attacking the depth, and where each is
     /// running to (the movement, Plane B): the through ball's runners.
     pub runs: BTreeMap<PlayerId, (i32, i32)>,
+    /// How far each runner covers in a tick, cm/tick, as the passer believes
+    /// (SIM 179): the pace he sees of him, trusted by their intesa and his
+    /// game reading. Absent: the generic belief.
+    pub run_pace: BTreeMap<PlayerId, f64>,
     /// How far ahead he imagines, cm (his anticipation, ADR-052 e): an
     /// option that ends farther he cannot see through.
     pub horizon_cm: f64,
@@ -1539,7 +1543,15 @@ fn through_candidates(
         let Some(at_now) = scene.positions.get(id).copied() else {
             continue;
         };
-        let pace = m.thought.believed_speed_cm_per_tick.max(1.0);
+        // SIM 179: the meeting point moves by the pace he believes of this
+        // runner, not the generic pace. Different pairs read one run to
+        // different points (ADR-094).
+        let pace = scene
+            .run_pace
+            .get(id)
+            .copied()
+            .unwrap_or(m.thought.believed_speed_cm_per_tick)
+            .max(1.0);
         let d = dmath::hypot(f64::from(run_to.0 - pos.0), f64::from(run_to.1 - pos.1));
         let v0 = d
             .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
@@ -1867,6 +1879,7 @@ mod keeper_visibility_tests {
             can_carry: true,
             penalty_kick: false,
             runs: BTreeMap::new(),
+            run_pace: BTreeMap::new(),
             horizon_cm: f64::MAX,
             strike_error_rad: 0.0,
             soon: BTreeMap::new(),
@@ -2050,6 +2063,35 @@ mod keeper_visibility_tests {
         });
         let at = through.expect("a through ball to the runner");
         assert!(at.0 >= 8000, "ahead of his run, not behind: {at:?}");
+    }
+
+    /// Twin (ADR-094, SIM 179): the same run, ball and scene; only the pace
+    /// the passer believes of this mate changes. Knowing a fast runner he
+    /// leads the pass further; thinking him slow he plays it shorter. The
+    /// dito is identical, the luna decides where the ball goes.
+    #[test]
+    fn the_pace_he_believes_of_the_runner_moves_the_through_ball() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let runner = PlayerId::new(2, 0);
+        let through_at = |believed: f64| {
+            let mut s = scene_with(Some(3400));
+            s.positions.insert(PlayerId::new(1, 0), (5000, 3400));
+            s.teammates.push(runner);
+            s.positions.insert(runner, (7000, 2500));
+            s.runs.insert(runner, (8000, 2500));
+            s.run_pace.insert(runner, believed);
+            let (ctx, _) = build_choice(&s, Side::Right, 0.5, 0.04, &balance);
+            ctx.candidates
+                .iter()
+                .find_map(|c| match c.kind {
+                    ChoiceKind::Through { to, at } if to == runner => Some(at),
+                    _ => None,
+                })
+                .expect("a through ball to the runner")
+        };
+        let (slow, fast) = (through_at(65.0), through_at(100.0));
+        assert!(fast.0 > slow.0, "fast {fast:?} slow {slow:?}");
+        assert!(slow.0 >= 8000, "both ahead of the run: {slow:?}");
     }
 
     /// The direction of the carry is his (P1, plan L0-CLOSE 10a): with a
@@ -2280,6 +2322,7 @@ mod keeper_visibility_tests {
                 can_carry: true,
                 penalty_kick: false,
                 runs: BTreeMap::new(),
+                run_pace: BTreeMap::new(),
                 horizon_cm: f64::MAX,
                 strike_error_rad: 0.0,
                 soon: BTreeMap::new(),

@@ -381,6 +381,7 @@ pub(crate) fn scene_from(
         can_carry,
         penalty_kick: false,
         runs: std::collections::BTreeMap::new(),
+        run_pace: std::collections::BTreeMap::new(),
         horizon_cm: f64::MAX,
         strike_error_rad: 0.0,
         soon: std::collections::BTreeMap::new(),

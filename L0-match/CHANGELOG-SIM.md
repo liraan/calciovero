@@ -8,6 +8,39 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 179 — Il filtrante va dove il portatore crede che il compagno arrivi (DD-35)
+
+Il maintainer autorizza la sola modulazione del passaggio filtrante e il
+ripristino dell'istinto di `goes_for_loose_ball`; gli altri quattro vincoli
+della bozza ADR-094 restano sospesi (ADR-094, DD-35). Prima il punto
+d'incontro del filtrante era spinto in avanti da un passo generico: due coppie
+con intesa diversa, due letture e due passi diversi mandavano il pallone nello
+stesso punto. Con LUNA: il dito è la corsa vista e il passo che se ne legge;
+la luna è lo stesso portatore che decide quanto fidarsi di quel passo, con
+l'intesa di coppia e la propria `game_reading`. Cambia il come esegue il
+passaggio, non chi prende il pallone né la fisica (ADR-083).
+
+`believed = (intesa * reading).mul_add(seen_pace - generic_pace, generic_pace)`
+usa solo numeri già dichiarati: il passo visto (`scene.motion`), il passo
+generico di `ThoughtBalance`, l'intesa e la lettura. Nessun dado (ADR-035),
+nessun latente nuovo (ADR-047), nessuna lettura del latente altrui. Il primo
+modello provato (`hidden.top_speed_now`) lanciava il pallone troppo lungo: su
+seed 50 il pallone restava morto 1213 tick contro la soglia 1212 di
+`no_restart_stops_the_match`; leggere il passo visto riporta il guardiano verde
+senza toccare la soglia. In `offball.rs` il rank 0 torna a essere istinto; il
+gate della vista resta.
+
+A/B su partita vera, stessi semi: seed 42 filtranti 20 → 22, passaggi 1255 →
+1195, gol 9 → 5, carrier oltre 90/200/500 cm 1398/160/0 → 1460/225/0, picco
+373 → 370 cm; seed 53 filtranti 20 → 24, passaggi 1205 → 1251, gol 3 → 18,
+carrier 1456/152/0 → 1393/173/0, picco 352 → 377 cm. La divergenza dei gol è
+caotica, non tarata; l'episodio di 1141 cm del seed 46 (tick 38857, primo
+tocco del ricevitore che corre via) resta aperto in OI-123, fuori da DD-35.
+Gemello `the_pace_he_believes_of_the_runner_moves_the_through_ball`: stessa
+corsa, cambia solo l'intesa/lettura e il passo visto. Golden e semi rigenerati
+(coppa 48 → 64, pareggio al 90' 44 → 49, decisivo 42 → 50, shoot-out di soli
+tiri 86 → 64).
+
 ## 178 — L'uomo più veloce della palla se la porta con sé (DD-34)
 
 Il maintainer, dopo SIM 177: «risolvi i problemi in partita se é possibile
