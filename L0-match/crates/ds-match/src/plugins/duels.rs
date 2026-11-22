@@ -163,6 +163,28 @@ impl MatchState {
             stakes,
             carrier_on_ball: self.spatial.ball_at_feet(),
         });
+        // OI-114 (ADR-102): the same band reads a near pressure, with a
+        // threshold of its own from the sourced 6.6% of pressures that end
+        // in a foul. The keeper still calls Law 12; the player only chose
+        // how to press.
+        if outcome.foul_committed.is_some() {
+            self.emit_contact(ctx, tick, carrier, challenger, &outcome);
+            let facts = crate::rules::FoulFacts {
+                slide: false,
+                from_behind,
+                approach_milli: approach * 1000 / duel.speed_ref_cm_per_tick.max(1),
+                denies_obvious_chance: false,
+            };
+            self.apply_foul(
+                ctx,
+                tick,
+                (carrier, challenger),
+                facts,
+                outcome.ball_retained,
+            );
+            self.challenges.insert(challenger, tick + duel.retry_ticks);
+            return;
+        }
         self.challenges
             .insert(challenger, tick + duel.retry_ticks / 2);
         if !outcome.ball_retained {

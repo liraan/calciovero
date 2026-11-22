@@ -89,6 +89,9 @@ pub struct DuelBalance {
     pub jockey_salience_milli: i32,
     /// A contact not won is a foul at this band, thousandths.
     pub foul_threshold_milli: i32,
+    /// A near pressure (a man who stays in front, no tackle) is a foul at
+    /// this band, thousandths (OI-114, from the sourced 6.6% of pressures).
+    pub foul_press_threshold_milli: i32,
     /// What a slide adds to the band, thousandths.
     pub foul_slide_milli: i32,
     /// What a challenge from behind adds, thousandths.
@@ -134,6 +137,9 @@ pub struct ChallengeFacts {
     pub from_behind: bool,
     /// His speed when he arrived, cm/tick.
     pub approach_cm_per_tick: i32,
+    /// He was pressing: no tackle, just a man in front of the carrier
+    /// (OI-114). Same roots, a threshold of his own.
+    pub pressing: bool,
 }
 
 impl DuelBalance {
@@ -326,7 +332,12 @@ impl DuelBalance {
         if facts.from_behind {
             band += milli(self.foul_behind_milli);
         }
-        band >= milli(self.foul_threshold_milli)
+        let threshold = if facts.pressing {
+            self.foul_press_threshold_milli
+        } else {
+            self.foul_threshold_milli
+        };
+        band >= milli(threshold)
     }
 
     /// How the defender goes in: the most salient of standing, slide and
@@ -526,6 +537,28 @@ mod tests {
         assert_eq!(b.contact(0.50, 0.49), None);
     }
 
+    /// Twin test (OI-114, ADR-102): the same won press by two defenders who
+    /// differ only in emotional control. The hothead fouls; the calm man
+    /// does not. Read as a contested tackle, the same band stays below the
+    /// contest threshold: only the press has its own, sourced threshold.
+    #[test]
+    fn a_press_that_wins_the_ball_can_still_foul() {
+        let b = DuelBalance::load();
+        let press = super::ChallengeFacts {
+            slide: false,
+            from_behind: false,
+            approach_cm_per_tick: 80,
+            pressing: true,
+        };
+        let tackle = super::ChallengeFacts {
+            pressing: false,
+            ..press
+        };
+        assert!(b.foul(&press, 0.9, 0.05, 0.5));
+        assert!(!b.foul(&press, 0.9, 0.9, 0.5));
+        assert!(!b.foul(&tackle, 0.9, 0.05, 0.5));
+    }
+
     /// Twin test (ADR-051 §3): the same slide from the side, by two
     /// defenders identical but for emotional control: the one who loses it
     /// fouls, the calm one does not.
@@ -536,6 +569,7 @@ mod tests {
             slide: true,
             from_behind: false,
             approach_cm_per_tick: 40,
+            pressing: false,
         };
         assert!(b.foul(&f, 0.8, 0.1, 0.5));
         assert!(!b.foul(&f, 0.8, 0.9, 0.5));
@@ -550,11 +584,13 @@ mod tests {
             slide: true,
             from_behind: true,
             approach_cm_per_tick: 60,
+            pressing: false,
         };
         let front = super::ChallengeFacts {
             slide: false,
             from_behind: false,
             approach_cm_per_tick: 30,
+            pressing: false,
         };
         assert!(b.foul(&behind, 0.3, 0.8, 0.8));
         assert!(!b.foul(&front, 0.3, 0.8, 0.8));

@@ -162,6 +162,41 @@ un gioco simulativo è proprio quello che non può succedere.
 
 **In banda (SIM 184): 5 metriche su 22 confrontabili** (rigori, duelli a terra, dribbling riusciti, gialli, rossi). **Fuori banda: 17**, ognuna con la sua causa o il suo OI aperto (OI-098, OI-100, OI-101, OI-102, OI-103, OI-104, OI-112, OI-114). La caduta da 6 a 5 rispetto al 171 non è un peggioramento dei comportamenti: il DD-41 ha tolto l'ultimo termine aperto della latenza e ha cambiato i tempi di lettura; la misura si rilegge dopo ogni SIM senza fittere numeri.
 
+## La misura del 186 (2026-11-22)
+
+Stesso comando, motore 186, stessa banda (media reale ± una deviazione standard). Le due voci non confrontabili (cross, intercetti) restano fuori. Nessun numero è stato adattato per rientrare in banda (A5-bis).
+
+| Metrica | Reale | Motore 186 | Banda | Dentro? | Causa o OI |
+|---|---|---|---|---|---|
+| gol | 2.68 | 9.53 | 1.0–4.3 | no | OI-100: catena dei troppi tiri e delle ripartenze |
+| autogol | 0.10 | 1.97 | 0–0.4 | no | OI-100: spazzata sotto pressione deviata |
+| tiri | 24.60 | 38.07 | 19.1–30.1 | no | OI-100: troppi tiri (34.10 con la sola OI-116) |
+| tiri in porta | 8.69 | 17.45 | 5.5–11.9 | no | OI-100; ADR-087 invariata per decisione del maintainer |
+| rigori | 0.33 | 0.30 | 0–0.9 | sì | — |
+| passaggi | 887.68 | 1753.28 | 765–1011 | no | OI-100: troppi passaggi; un passo di lettura in più non li riduce |
+| passaggi riusciti | 739.17 | 1444.53 | 614–864 | no | OI-100: troppi passaggi in tutto |
+| duelli aerei | 38.14 | 9.08 | 25.2–51.1 | no | OI-102: causa nota (ADR-081), divario aperto |
+| duelli a terra | 182.63 | 147.38 | 155–210 | no | OI-114: più contatti vinti, meno duelli contati; era 163.63 al 184 |
+| dribbling riusciti | 16.03 | 18.07 | 10.4–21.7 | sì | — |
+| falli | 26.00 | 23.93 | 19.3–32.7 | sì | OI-114 chiusa: soglia derivata 675, 11,37 → 23,93 |
+| gialli | 3.97 | 6.85 | 2.0–5.9 | no | Conseguenza dichiarata della nuova popolazione di falli; non tarata |
+| rossi | 0.24 | 0.43 | 0–0.73 | sì | — |
+| angoli | 10.30 | 23.40 | 6.7–13.9 | no | OI-100: catena dei troppi tiri |
+| rimesse laterali | 42.72 | 20.73 | 33.8–51.6 | no | OI-100: un duello manda poco spesso la palla fuori |
+| rinvii dal fondo | 17.15 | 17.65 | 13.0–21.4 | sì | — |
+| punizioni | 29.45 | 31.33 | 22.6–36.3 | sì | Effetto collaterale dei più falli: OI-112 non è stata toccata |
+| fuorigioco | 4.26 | 9.33 | 1.9–6.7 | no | OI-098 / OI-104: errore di percezione non costruito |
+| spazzate | 29.53 | 42.85 | 20.9–38.2 | no | OI-100: troppe spazzate, regola ADR-064 |
+| parate | 9.37 | 20.80 | 6.0–12.7 | no | OI-100: troppe parate seguono i troppi tiri in porta |
+| recupero, primo tempo (min) | 1.49 | 9.01 | 0.1–2.8 | no | OI-101: il motore addiziona tutto il tempo perso |
+| recupero, secondo tempo (min) | 4.08 | 8.50 | 2.5–5.7 | no | OI-101: stessa causa del primo tempo |
+
+**In banda (SIM 186): 6 metriche su 22 confrontabili** (rigori, dribbling riusciti, falli, rossi, rinvii dal fondo, punizioni). **Fuori banda: 16.** Rispetto al 184 entrano falli, rinvii e punizioni; escono duelli a terra e gialli. I gialli sono la conseguenza dichiarata della soglia OI-114: il maintainer li ha tenuti fuori dalla decisione e non vanno ritoccati per rientrare nella banda. **`STATE.md` e la decisione L (16/22) non sono soddisfatti: la taratura continua.** OI-112 resta aperta: le punizioni sono entrate in banda per effetto dei più falli, non perché il vantaggio sia stato corretto.
+
+**Decisione del maintainer (2026-11-22):** ADR-087 resta come è: lo scarto assoluto sotto gli 11 m è la forma corretta e l'errore residuo (54,6% contro 46% nello specchio) resta una causa documentata di OI-100, non un numero da ritoccare. Non si riaprono né `error_pressure_rad` né il tiro di prima di SIM 166.
+
+**Decisioni del maintainer (2026-11-22), attuate insieme al SIM 186:** OI-116 (A): il passaggio vale la migliore opzione che il ricevente avrà dove arriva, un solo passo in più dello stesso pensiero, nessun numero nuovo (DD-43/ADR-101). OI-114: via libera alla soglia derivata per il fallo da pressione, con le stesse radici del fallo di contrasto e la fonte StatsBomb del 6,6% delle pressioni che finiscono in fallo; i gialli restano fuori dalla decisione, da osservare come conseguenza e non da tarare (DD-44/ADR-102). La misura si rilegge senza adattare numeri (A5-bis).
+
 **Prova scartata (2026-11-21, DD-42 non aperto):** allineare la credenza del tiro al pavimento di ADR-087 — usare `kick.shot_error_distance_cm(meet)` invece di `meet` in `thought::chance_with` — con gemello rosso/verde in `ds-calculator`. Su 42..101 i gol scendono 13.20 → 11.37 e i tiri in porta 24.75 → 24.15, ma le metriche in banda restano **5**: tiri 52.45, passaggi 1532.10, parate 30.68, spazzate 70.75. La misura dell'ADR-052 è riservata al maintainer (OI-100), quindi la prova è stata riportata indietro senza SIM bump: il difetto di credenza sotto gli 11 m resta aperto, con la sua misura. **Prova scartata (stessa data):** togliere il clamp della destinazione della spazzata in `technique::play_clearance`, così il punto fuori campo scelto dal giocatore resta fuori. Le rimesse salgono solo 30.62 → 30.83 (banda 33.8–51.6) e le spazzate 73.37 → 73.80: il clamp non era la causa del divario, e la prova è stata riportata indietro.
 
 ### La tabella storica (SIM 171)

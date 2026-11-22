@@ -734,6 +734,20 @@ fn worth(
     // scene, so they are read once by the caller, not once per candidate.
     let gain = space_value(gain_at, scene.goal, scene.own_goal)
         * line_break(from, gain_at, &lines.0, lines.1);
+    worth_of(scene, confidence, gain_at, gain, loss_at, appetite)
+}
+
+/// The same weighing with the gain already known (OI-116, ADR-101): a pass
+/// may be worth the best option the receiver has where it arrives, not only
+/// the space of that point.
+fn worth_of(
+    scene: &PerceivedScene,
+    confidence: f64,
+    gain_at: (i32, i32),
+    gain: f64,
+    loss_at: (i32, i32),
+    appetite: f64,
+) -> f64 {
     let loss = space_value(loss_at, scene.own_goal, scene.goal);
     let confidence = foresee(scene, confidence, gain_at);
     ds_calculator::thought::ThoughtBalance::expected(confidence, gain, loss, appetite)
@@ -1278,6 +1292,44 @@ fn into_the_run(
     })
 }
 
+/// OI-116 (A): one more step of the same thought (ADR-052, ADR-101). The
+/// passer imagines the mate with the ball at his feet where it arrives, in
+/// the scene he already sees, and reads the best pass that mate would then
+/// have. No new number, no weight, no choice taken away: every option stays
+/// open to the receiver. Only one level is followed — a thought bounded to
+/// the next decision, as holding the ball is (ADR-052 §4).
+fn receiver_best_pass(
+    scene: &PerceivedScene,
+    id: PlayerId,
+    at: (i32, i32),
+    risk_appetite: f64,
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> f64 {
+    let mut later = scene.clone();
+    later.actor = id;
+    later.positions.insert(id, at);
+    later.ball_foot = None;
+    later.shift = None;
+    later.runs.remove(&id);
+    later.run_pace.remove(&id);
+    let opponent_positions: Vec<(i32, i32)> = later
+        .opponents
+        .iter()
+        .filter_map(|o| later.positions.get(o).copied())
+        .collect();
+    let pressure = pressure_on(at, &later, balance);
+    let (passes, _) = pass_candidates(
+        &later,
+        at,
+        &opponent_positions,
+        risk_appetite,
+        pressure,
+        balance,
+        false,
+    );
+    passes.iter().map(|c| c.geometric).fold(0.0, f64::max)
+}
+
 /// The pass candidates (ADR-040, ADR-050): every teammate free enough,
 /// read for his freedom, the lane, the distance and what the pass brings;
 /// and each receiver's freedom, carried to `resolve_pass`.
@@ -1290,6 +1342,7 @@ fn pass_candidates(
     risk_appetite: f64,
     pressure: f64,
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+    lookahead: bool,
 ) -> (Vec<ChoiceCandidate>, BTreeMap<PlayerId, i64>) {
     let attacker = scene.actor;
     let goal = scene.goal;
@@ -1348,14 +1401,22 @@ fn pass_candidates(
         // He imagines the touch too, where the ball reaches him (ADR-058).
         let clean =
             controls_ground(scene, players, *id, (tpos, d, v0)) && !offside_to(scene, pos, here);
-        let geom = worth(
+        let space = space_value(gain_at, scene.goal, scene.own_goal);
+        // OI-116 (A): a man who will have a good pass is worth more than a
+        // man marked in the same place. The first pass keeps its own line
+        // credit; the receiver's next pass is worth its own reading.
+        let gain = if lookahead && free && clean {
+            space.max(receiver_best_pass(scene, *id, tpos, risk_appetite, balance))
+        } else {
+            space
+        };
+        let geom = worth_of(
             scene,
-            pos,
             if clean { sure(players, &forecast) } else { 0.0 },
             gain_at,
+            gain * line_break(pos, gain_at, &opponent_lines.0, opponent_lines.1),
             loss_at,
             risk_appetite,
-            &opponent_lines,
         );
         let _ = (
             goal,
@@ -1627,6 +1688,7 @@ pub fn build_choice(
         risk_appetite,
         pressure,
         balance,
+        true,
     );
     candidates.extend(passes);
     freedoms.extend(pass_freedoms);
@@ -2316,6 +2378,36 @@ mod shot_perception_tests {
                 .iter()
                 .find(|c| matches!(c.kind, ChoiceKind::Pass(_)))
                 .map_or(0.0, |c| c.geometric)
+        }
+
+        /// Twin test (OI-116, ADR-101): the first pass is the same in both
+        /// scenes — same carrier, same receiver, same landing point, and a
+        /// marker far from all of it. Only the pass the receiver will have
+        /// changes: his own mate free, or the same mate marked. The passer
+        /// reads one more step; nothing is imposed on the receiver.
+        #[test]
+        fn a_pass_to_a_man_with_a_free_pass_is_worth_more() {
+            let mate = PlayerId::new(8, 0);
+            let marker = PlayerId::new(106, 0);
+            let deep_a = PlayerId::new(107, 0);
+            let deep_b = PlayerId::new(108, 0);
+            // Two men shallow and wide keep the receiver onside in both
+            // scenes, far from the ball's path and from his next pass.
+            let mut free = scene((7000, 3400), None);
+            free.opponents.extend([deep_a, deep_b]);
+            free.positions.insert(deep_a, (9000, 3400));
+            free.positions.insert(deep_b, (9200, 3400));
+            free.teammates.push(mate);
+            free.positions.insert(mate, (8500, 4800));
+
+            // Only the marker near the mate's next landing point changes.
+            let mut guarded = free.clone();
+            guarded.opponents.push(marker);
+            guarded.positions.insert(marker, (8560, 4800));
+
+            let wide = pass_salience(&free, 0.5);
+            let closed = pass_salience(&guarded, 0.5);
+            assert!(wide > closed, "free next pass {wide}, marked {closed}");
         }
 
         fn loft_salience(s: &PerceivedScene) -> f64 {

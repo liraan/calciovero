@@ -7,6 +7,8 @@
 //! through `ds_demo::friendly`, the same functions as the CLI.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::time::Duration;
 
 use ds_core::ids::PlayerId;
 use ds_demo::friendly::{self, Choices};
@@ -14,6 +16,7 @@ use ds_match::balance::LawsBalance;
 use ds_match::{Importance, MatchConfig, NarratedTick};
 use ds_model::{BlockHeight, Width};
 use eframe::egui::{self, Align2, FontId, Painter, Pos2, RichText, Sense, Shape, Stroke};
+use rodio::{OutputStream, OutputStreamBuilder, Sink, Source, source::SineWave};
 
 use crate::interp::Moment;
 use crate::scene::{self, Geometry, Item};
@@ -21,6 +24,9 @@ use crate::theme::Theme;
 
 /// Ticks a second of match time (MD-18).
 const TICKS_PER_SECOND: f64 = 10.0;
+/// Real seconds the stop whistle holds the picture (the maintainer asked
+/// for "qualche secondo"): a viewing choice, never a number in the match.
+const WHISTLE_PAUSE_S: f64 = 2.0;
 /// The playback speeds offered, times real time.
 const SPEEDS: [f64; 5] = [1.0, 4.0, 16.0, 64.0, 256.0];
 
@@ -46,6 +52,9 @@ struct Game {
     /// The record's header (ADR-065): the physics the match was played
     /// with, for the ball's flight between two ticks.
     header: ds_match::RecordHeader,
+    /// The referee's two whistles of a called foul, as facts: the tick,
+    /// then whether it is the restart. Law 6: stop, then play on.
+    whistles: Vec<(usize, bool)>,
 }
 
 /// What the command line asks of the window (`ds-gui --help`).
@@ -102,6 +111,13 @@ pub struct App {
     follow: bool,
     /// The slow motion is on.
     slow: bool,
+    /// The audio device, when the machine has one: a failed device only
+    /// mutes the whistle, it never stops the match.
+    audio: Option<Arc<(OutputStream, Sink)>>,
+    /// Real seconds still to wait at the whistle that stopped play.
+    whistle_pause: f64,
+    /// The last whistle handled, so one tick is never blown twice.
+    last_whistle: Option<usize>,
     /// Where the camera looks, cm.
     focus: (f32, f32),
     /// The time of the last frame, seconds (for the damped camera).
@@ -151,6 +167,14 @@ impl App {
             zoom: 0.0,
             follow: true,
             slow: false,
+            audio: OutputStreamBuilder::open_default_stream()
+                .ok()
+                .map(|stream| {
+                    let sink = Sink::connect_new(stream.mixer());
+                    Arc::new((stream, sink))
+                }),
+            whistle_pause: 0.0,
+            last_whistle: None,
             focus: (5_250.0, 3_400.0),
             last_dt: 0.0,
             record: None,
@@ -217,6 +241,7 @@ impl App {
                 let kept = records.clone();
                 let gestures = gestures(&records, result.events.events());
                 let cheers = cheers(&records, result.events.events());
+                let whistles = whistles(&records, result.events.events());
                 let ticks = ds_match::narrate_ticks(&m, &result.events, records);
                 let names = m
                     .home
@@ -242,6 +267,7 @@ impl App {
                 let backdrop = (crate::stadium::city(pitch), crate::stadium::stadium(pitch));
                 self.game = Some(Game {
                     cheers,
+                    whistles,
                     backdrop,
                     home,
                     header,
@@ -258,6 +284,8 @@ impl App {
                 self.error = None;
                 self.tick = 0;
                 self.carry = 0.0;
+                self.whistle_pause = 0.0;
+                self.last_whistle = None;
                 self.playing = true;
             }
             Err(e) => self.error = Some(e),
@@ -455,11 +483,24 @@ impl App {
 
     /// Moves the playback on by the time since the last frame.
     fn advance(&mut self, dt: f64) {
+        if self.whistle_pause > 0.0 {
+            self.whistle_pause = (self.whistle_pause - dt).max(0.0);
+            return;
+        }
         let Some(game) = &self.game else { return };
         if !self.playing || game.ticks.is_empty() {
             return;
         }
-        let speed = if self.slow {
+        let dead = game
+            .whistles
+            .iter()
+            .rfind(|(k, _)| *k <= self.tick)
+            .is_some_and(|(_, restart)| !restart);
+        // While the ball is dead the watch runs at real speed: the walk to
+        // the ball has to be seen, not swallowed by the default x16.
+        let speed = if dead {
+            1.0
+        } else if self.slow {
             self.speed * SLOW
         } else {
             self.speed
@@ -470,9 +511,20 @@ impl App {
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let step = whole as usize;
         let last = game.ticks.len() - 1;
+        let from = self.tick;
         self.tick = (self.tick + step).min(last);
         if self.tick == last {
             self.playing = false;
+        }
+        for &(k, restart) in &game.whistles {
+            if k > from && k <= self.tick && self.last_whistle.is_none_or(|last| k > last) {
+                self.last_whistle = Some(k);
+                blow(self.audio.as_ref(), restart);
+                if !restart {
+                    self.whistle_pause = WHISTLE_PAUSE_S;
+                }
+                break;
+            }
         }
     }
 
@@ -758,6 +810,37 @@ impl App {
                     );
                 }
             }
+        }
+        // Law 6 made visible: the stop whistle holds the picture, then the
+        // dead ball is played at real speed while the taker walks to it.
+        if game
+            .whistles
+            .iter()
+            .rfind(|(k, _)| *k <= self.tick)
+            .is_some_and(|(_, restart)| !restart)
+        {
+            let held = self.whistle_pause > 0.0;
+            let text = if held {
+                "WHISTLE — FREE KICK"
+            } else {
+                "FREE KICK — TAKING THEIR PLACES"
+            };
+            let size = if held { 30.0 } else { 20.0 };
+            #[allow(clippy::cast_precision_loss)]
+            let width = text.len() as f32 * size * 0.62;
+            let at = Pos2::new(r.center().x, r.min.y + size);
+            painter.rect_filled(
+                egui::Rect::from_center_size(at, egui::vec2(width, size * 1.8)),
+                6.0,
+                egui::Color32::from_rgba_unmultiplied(0, 0, 0, 170),
+            );
+            painter.text(
+                at,
+                Align2::CENTER_TOP,
+                text,
+                FontId::proportional(size),
+                self.theme.card_yellow,
+            );
         }
         let clicked = response.clicked();
         if let Some(id) = hovered {
@@ -1671,6 +1754,49 @@ fn order_menus(
     give
 }
 
+/// The referee's signal (Law 6), made of two sines so it trills: the stop
+/// is longer than the restart blip. No audio asset to ship, no match state.
+fn blow(audio: Option<&Arc<(OutputStream, Sink)>>, restart: bool) {
+    let Some(audio) = audio else { return };
+    let sink = &audio.1;
+    let hz = if restart { 2100.0 } else { 2600.0 };
+    let millis = if restart { 90 } else { 330 };
+    let trill = SineWave::new(hz)
+        .mix(SineWave::new(hz * 1.02_f32))
+        .amplify(0.25)
+        .take_duration(Duration::from_millis(millis))
+        .fade_in(Duration::from_millis(8))
+        .fade_out(Duration::from_millis(40));
+    sink.append(trill);
+}
+
+/// The two whistles of a called foul (Law 6), read from the facts of the
+/// match: the `Foul` event stops play, the ball back at a man's foot lets
+/// it restart. Partita vera + LUNA: the referee signals what the players
+/// did and chose; the view adds no rule and takes no choice away.
+fn whistles(
+    records: &[ds_match::TickRecord],
+    events: &[ds_stats::MatchEvent],
+) -> Vec<(usize, bool)> {
+    let mut out = Vec::new();
+    let mut waiting = false;
+    for (k, record) in records.iter().enumerate() {
+        let called = events
+            .get(record.events.clone())
+            .unwrap_or(&[])
+            .iter()
+            .any(|e| e.event_type == ds_stats::EventType::Foul);
+        if called {
+            out.push((k, false));
+            waiting = true;
+        } else if waiting && record.carrier.is_some() {
+            out.push((k, true));
+            waiting = false;
+        }
+    }
+    out
+}
+
 /// What moves the crowd (DESIGN.md: only from a fact of the match): a goal
 /// lifts the fans of the side that scored for six seconds, a shot those of
 /// the side that shot for a second. The side of a goal is read from the
@@ -2010,5 +2136,79 @@ mod tests {
             let (h, w) = crowd_mood(&game.cheers, tick as f32 + 1.0);
             assert!(if home { h > 0.9 } else { w > 0.9 });
         }
+    }
+
+    /// Law 6, from the facts: the first whistle follows the referee's
+    /// `Foul`, the second follows the ball coming back at a man's foot.
+    #[test]
+    fn the_two_whistles_follow_the_foul_and_the_restart() {
+        let a = app();
+        let game = a.game.as_ref().expect("game");
+        let stops: Vec<_> = game
+            .whistles
+            .iter()
+            .filter(|(_, restart)| !restart)
+            .collect();
+        assert!(!stops.is_empty(), "seed 42 has called fouls");
+        for &(k, _) in &stops {
+            assert!(
+                game.ticks[*k]
+                    .entries
+                    .iter()
+                    .any(|e| e.text.contains("Foul by")),
+                "the stop whistle follows a called foul"
+            );
+            let after = game
+                .whistles
+                .iter()
+                .find(|(j, restart)| *restart && *j > *k)
+                .expect("the restart whistle");
+            assert!(
+                game.records[after.0].carrier.is_some(),
+                "the restart follows the ball at a man's foot"
+            );
+        }
+    }
+
+    /// The whistle is seen as well as heard: the picture holds, then the
+    /// dead ball runs at real speed so the taker's walk is not swallowed.
+    #[test]
+    fn the_stop_whistle_holds_the_picture_and_the_taker_walks_to_the_ball() {
+        let mut a = app();
+        a.audio = None;
+        let game = a.game.as_ref().expect("game");
+        let (stop, restart) = game
+            .whistles
+            .iter()
+            .find_map(|(k, restart)| {
+                if *restart {
+                    return None;
+                }
+                let after = game.whistles.iter().find(|(j, r)| *r && *j > *k)?;
+                let taker = game.records[after.0].carrier?;
+                let place = |k: usize| {
+                    game.records[k]
+                        .agents
+                        .iter()
+                        .find(|x| x.id == taker)
+                        .map(|x| x.position)
+                };
+                let ball = game.records[*k].ball.position;
+                let away = |p: (i32, i32)| (p.0 - ball.0).abs() + (p.1 - ball.1).abs();
+                let (far, near) = (away(place(*k)?), away(place(after.0)?));
+                // More than two metres to walk, and inside a body's reach
+                // when the referee lets him kick (SIM 150, ADR-088).
+                (far > 200 && near < 90).then_some((*k, after.0))
+            })
+            .expect("a foul whose taker has to walk to the ball");
+
+        a.tick = stop - 1;
+        a.advance(1.0 / (TICKS_PER_SECOND * a.speed));
+        assert_eq!(a.tick, stop, "the whistle sounds at the foul");
+        assert!(a.whistle_pause > 0.0, "the picture holds at the whistle");
+        a.advance(WHISTLE_PAUSE_S + 0.01);
+        a.advance(0.1);
+        assert!(a.tick - stop <= 1, "at real speed the walk is seen");
+        assert!(a.tick < restart, "the restart comes after the walk");
     }
 }

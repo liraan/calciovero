@@ -9,7 +9,7 @@
 - **explained, no source**: the file explains what it does, without a source or a derivation.
 - **undocumented**: the file says nothing about this parameter. These come first in the work to do.
 
-**Today:** 210 parameters in 21 files: 24 sourced, 6 derived, 5 arbitrary and declared, 82 explained without a source, 93 undocumented (2026-11-15: the four parameters of the old choice formula removed, SIM 126, OI-85; the block's width measured on tracking data, SIM 127, OI-100; the bounce derived from FIFA's vertical rebound, SIM 128).
+**Today:** 211 parameters in 21 files: 24 sourced, 7 derived, 5 arbitrary and declared, 82 explained without a source, 93 undocumented (2026-11-15: the four parameters of the old choice formula removed, SIM 126, OI-85; the block's width measured on tracking data, SIM 127, OI-100; the bounce derived from FIFA's vertical rebound, SIM 128).
 
 **The rule from now on.** A change to a number in `balance/` updates its row here in the same commit, with the source (author, year, title, and the page or table) or the derivation, or the word *arbitrary*. A number chosen by looking at the statistic it produces is never a source. This file was generated from the JSON files on 2026-11-14 (the classification is read from their text and is a first pass: a row marked sourced still needs its full reference written here when the file gives only a name).
 
@@ -31,6 +31,7 @@ To be filled as each row is completed: full reference, what it measures, which p
 | Pappalardo, L., Cintia, P., Rossi, A. et al. (2019), *A public data set of spatio-temporal match events in soccer competitions*, Scientific Data 6, 236 (doi:10.1038/s41597-019-0247-7); data: Wyscout soccer-logs on figshare (doi:10.6084/m9.figshare.c.4415000), CC BY 4.0 | the real per-match reference the engine is measured against, Serie A 2017-18, 380 matches (`L0-match/reference/serie-a-2017-18.json`, made by `tools/ds-reference`); a measurement, not a parameter | none (step 11 reads it) |
 | Metrica Sports, *Sample Data* (github.com/metrica-sports/sample-data, read 2026-11-15), Sample Games 1 and 2: anonymised tracking, 25 frames a second, with synchronised events; the source asks to be acknowledged | the real width of a side with and without the ball, and how far it shifts to the ball's side | `block.json` `width_in_possession_cm`, `width_out_of_possession_cm`, `ball_side_shift_milli`; `duel.json` `loose_speed_cm_per_tick` |
 | FIFA, *Natural-Pitch Rating System* (Natural Playing Surfaces Quality Programme, May 2022, version 1.0; digitalhub.fifa.com, read 2026-11-15), the rating table: vertical ball rebound, 'excellent quality' 0.60-1.00 m; ball roll, 'excellent quality' 4.0-10.0 m. FIFA, *Quality Programme for Football Turf, Test Manual I: Test Methods* (2024), the vertical ball rebound (release from 2.00 +/- 0.01 m), the ball roll (a ramp 1,000 +/- 5 mm high at 45 degrees) and the angle ball rebound (30 +/- 2 degrees at 50 +/- 2 km/h; its requirement is in Test Manual II, not read) | how a ball bounces and rolls on a good pitch | `ball.json` `restitution_milli`; `ground_friction_milli` can be checked against the ball roll |
+| StatsBomb, open event data (Liga 2020/21, 20 matches, read 2026-11-16; 314 `Pressure` events and 20.6 fouls whose preceding event is a `Pressure` per match) | 6.6% of contact pressures end in a foul; a pressure is not an engine duel | `duel.json` `foul_press_threshold_milli` (SIM 186, ADR-102) |
 | [to complete] | | |
 
 ## The coach who reads the match (`coach.json`, decision Y)
@@ -130,6 +131,7 @@ The quick instructions move the block by a step that is the coach's choice shown
 | `slide_salience_milli` | 900 | undocumented | — |
 | `jockey_salience_milli` | 500 | undocumented | — |
 | `foul_threshold_milli` | 800 | undocumented | — |
+| `foul_press_threshold_milli` | 675 | derived (ADR-102, OI-114) | StatsBomb open data (Liga 2020/21, 20 matches: 20.6 fouls after a `Pressure` on 314 pressures a match, 6.6%) gives the share of contact pressures that end in a foul. Fixed before measuring on the first half of the seeds on the band of ground contacts the defender wins: about 173 contact-presses and 11 extra fouls a match; the 80th percentile of that band is 675 milli, the value that leaves out the other ~94%. Same roots as `foul_threshold_milli` (800, the contact the defender does not win), a threshold of its own because a won press is not a won tackle (SIM 186). |
 | `foul_slide_milli` | 300 | undocumented | — |
 | `foul_behind_milli` | 350 | undocumented | — |
 | `foul_temper_milli` | 500 | undocumented | — |

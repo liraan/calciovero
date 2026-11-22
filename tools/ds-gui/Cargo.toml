@@ -23,6 +23,8 @@ serde.workspace = true
 serde_json.workspace = true
 # ADR-055: pinned to the last version that keeps the workspace's Rust 1.85.
 eframe = "=0.32.3"
+# The referee's whistle (Law 6): a generated trill, no audio asset.
+rodio = { version = "=0.21.1", default-features = false, features = ["playback"] }
 
 [lints]
 workspace = true

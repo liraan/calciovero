@@ -258,20 +258,32 @@ impl GroundTruth {
 
         // The band (ADR-042 §4): a ground contact the defender did not win
         // is a foul when the way he went in, his speed, his temper and his
-        // technique reach the threshold. A won contact is clean: he played
-        // the ball.
-        let foul = ctx.duel_type == DuelType::Ground
-            && (attacker_wins || loose)
-            && self.duel_balance.foul(
-                &ds_calculator::duel::ChallengeFacts {
-                    slide: ctx.tackle == ds_calculator::duel::TackleKind::Slide,
-                    from_behind: ctx.from_behind,
-                    approach_cm_per_tick: ctx.approach_cm_per_tick,
-                },
+        // technique reach the threshold. Winning the ball does not make a
+        // press clean (OI-114): a man charging the carrier can foul while
+        // playing it. Same roots, a threshold of his own, derived from the
+        // sourced 6.6% of pressures that end in a foul.
+        let facts = |pressing| ds_calculator::duel::ChallengeFacts {
+            slide: ctx.tackle == ds_calculator::duel::TackleKind::Slide,
+            from_behind: ctx.from_behind,
+            approach_cm_per_tick: ctx.approach_cm_per_tick,
+            pressing,
+        };
+        let fouls = |pressing| {
+            self.duel_balance.foul(
+                &facts(pressing),
                 defender.psychological.aggressiveness,
                 defender.psychological.emotional_control,
                 defender.technical.tackling,
-            );
+            )
+        };
+        let contest_foul =
+            ctx.duel_type == DuelType::Ground && (attacker_wins || loose) && fouls(false);
+        // Every ground contact is a press by the defender: he chose how to
+        // go in. Winning the ball does not make the way he went in clean;
+        // the same band at the sourced press threshold grades that choice.
+        let press_foul =
+            ctx.duel_type == DuelType::Ground && !attacker_wins && !loose && fouls(true);
+        let foul = contest_foul || press_foul;
         let outcome = DuelOutcome {
             winner,
             ball_retained: attacker_wins && !loose,

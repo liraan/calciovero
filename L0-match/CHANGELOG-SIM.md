@@ -8,6 +8,33 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 186 — Il passo in più e la pressione che fa fallo (DD-43/ADR-101, DD-44/ADR-102)
+
+Due decisioni del maintainer del 2026-11-22 in un solo bump: il comportamento
+cambia per la stessa partita e i golden vanno rigenerati una volta sola.
+
+- **OI-116 (A, DD-43):** il valore di un passaggio è almeno la migliore scelta
+  che il ricevente avrà dove arriva, letta con lo stesso pensiero di chi passa,
+  un solo livello più in là. Nessun peso nuovo, nessuna scelta imposta: nelle
+  due scene del gemello `a_pass_to_a_man_with_a_free_pass_is_worth_more`
+  cambia solo l'opzione successiva del compagno.
+- **OI-114 (DD-44):** un contatto a terra vinto dal difensore può essere fallo
+  se la banda delle stesse radici dell'ADR-042 arriva alla soglia derivata
+  `foul_press_threshold_milli = 675` (StatsBomb, Liga 2020/21: il 6,6% delle
+  pressioni finisce in fallo; sul band dei contatti vinti dal difensore, quella
+  frazione dà circa 11 falli in più a partita). Gemello
+  `a_press_that_wins_the_ball_can_still_foul`: stesso contatto vinto, cambia
+  il controllo emotivo; letto come contrasto, lo stesso band resta sotto la
+  soglia del contrasto. I cartellini seguono la Legge 12 dai fatti del contatto:
+  i gialli salgono e restano una conseguenza dichiarata, non un numero tarato.
+
+Con LUNA: il dito è il punto d'arrivo del pallone e le posizioni lette, il
+contatto, la distanza, l'angolo, il tick; la luna è lo stesso passatore che
+immagina un passo della lettura del compagno e lo stesso difensore che sceglie
+come pressare, con l'arbitro che applica la Legge al contatto. Nessuna scelta
+imposta, nessuna geometria forzata, nessuna regola del gioco cambiata.
+Golden e semi rigenerati.
+
 ## 185 — Il pericolo è il valore dell'attore (DD-42, ADR-100)
 
 D5, la nota "da fare separatamente" di ADR-099: `TeamView::threats` e
