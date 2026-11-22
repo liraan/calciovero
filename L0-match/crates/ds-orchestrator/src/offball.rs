@@ -166,6 +166,97 @@ pub struct Threats {
     pub lane_cm: Option<i64>,
 }
 
+/// The facts the actor uses to weigh the dangers (ADR-100): the engine
+/// supplies where he stands and where he sees the others; the value he puts
+/// on each space is the actor's own, computed here.
+#[derive(Debug, Clone)]
+pub struct ThreatFacts {
+    /// Where the defender stands.
+    pub me: (i32, i32),
+    /// Where he sees the opposing carrier.
+    pub carrier: (i32, i32),
+    /// The man he would mark.
+    pub man: Option<(i32, i32)>,
+    /// The space he holds.
+    pub held: (i32, i32),
+    /// The nearest opponent to the space he holds.
+    pub held_marker: Option<(i32, i32)>,
+    /// The cover point, if a teammate presses the carrier.
+    pub cover: Option<(i32, i32)>,
+    /// The passing lane to the man he would mark.
+    pub lane: Option<(i32, i32)>,
+    /// Whether the defender plays for the home side.
+    pub home: bool,
+    /// Pitch length, cm.
+    pub length: i32,
+    /// Pitch width, cm.
+    pub width: i32,
+    /// Their men other than the carrier: the other side of the race.
+    pub opponents: Vec<(i32, i32)>,
+    /// Our men: this side of the race.
+    pub ours: Vec<(i32, i32)>,
+    /// How much speed the ground keeps from a rolling pass.
+    pub ground_keep: f64,
+}
+
+/// How sure a ground pass from `carrier` to `man` reaches one of theirs
+/// before one of ours (ADR-052, the same thought as the passer's). The man
+/// is a danger as much as a pass can reach him first (OI-117 (A), SIM 134),
+/// not as if he already had the ball.
+fn reaches(f: &ThreatFacts, carrier: (i32, i32), man: (i32, i32)) -> f64 {
+    let thought = ds_calculator::thought::ThoughtBalance::load();
+    let kick = ds_calculator::kick::KickBalance::load();
+    let imagined = |at: (i32, i32), mate: bool| ds_calculator::thought::Imagined {
+        at,
+        speed: thought.believed_speed_cm_per_tick,
+        reaction: thought.believed_reaction_ticks,
+        mate,
+    };
+    let players: Vec<_> = f
+        .opponents
+        .iter()
+        .filter(|p| **p != carrier)
+        .map(|p| imagined(*p, true))
+        .chain(f.ours.iter().map(|p| imagined(*p, false)))
+        .collect();
+    #[allow(clippy::cast_precision_loss)]
+    let dist = distance_squared(carrier, man).isqrt() as f64;
+    let v0 = dist
+        .mul_add(1.0 - f.ground_keep, kick.pass_arrive_cm_per_tick)
+        .min(kick.speed(1.0, 0.5));
+    let forecast = ds_calculator::thought::who_first(
+        carrier,
+        man,
+        (v0, f.ground_keep),
+        &players,
+        thought.forecast_step_cm,
+    );
+    match forecast.first {
+        Some(first) if players[first].mate => thought.confidence(forecast.margin),
+        Some(_) => thought.confidence(-forecast.margin),
+        None => 0.0,
+    }
+}
+
+/// The dangers a defender reads (ADR-052 §5, ADR-100): the value to them of
+/// the carrier's space, of the man he would mark, and of the space he guards,
+/// as much as an opponent can get into it soon.
+#[must_use]
+pub fn threats(f: &ThreatFacts) -> Threats {
+    let ours = (if f.home { 0 } else { f.length }, f.width / 2);
+    let theirs = (f.length - ours.0, ours.1);
+    let threat = |p: (i32, i32)| space_value(p, ours, theirs);
+    let into = f.held_marker.map_or(0.0, |o| soon(o, f.held));
+    let dist = |p: (i32, i32)| distance_squared(f.me, p).isqrt();
+    Threats {
+        carrier: threat(f.carrier),
+        man: f.man.map_or(0.0, |m| threat(m) * reaches(f, f.carrier, m)),
+        held: threat(f.held) * into,
+        cover: f.cover.map(|p| (threat(p), dist(p))),
+        lane_cm: f.lane.map(dist),
+    }
+}
+
 impl crate::GroundTruth {
     /// The defender's thought (ADR-052 §5): the act that takes away the
     /// most danger. Pressing takes away the carrier's, if he gets there in
@@ -541,6 +632,51 @@ mod tests {
     #[allow(clippy::unnecessary_wraps)] // the scene's fields are options
     const fn at(distance_cm: i64, rank: u32) -> Option<Target> {
         Some(Target { distance_cm, rank })
+    }
+
+    fn facts(ours: Vec<(i32, i32)>, man: Option<(i32, i32)>) -> ThreatFacts {
+        ThreatFacts {
+            opponents: vec![(5000, 3400), (6500, 3400)],
+            me: (4500, 3400),
+            carrier: (5000, 3400),
+            man,
+            held: (4200, 3400),
+            held_marker: Some((4600, 3400)),
+            cover: None,
+            lane: None,
+            home: true,
+            length: 10500,
+            width: 6800,
+            ours,
+            ground_keep: 0.957,
+        }
+    }
+
+    /// Twin test (OI-117 (A), SIM 134, moved here by ADR-100): the same man,
+    /// the same carrier; only a defender standing on the line between them
+    /// changes. With the line open a pass reaches him and he is a danger;
+    /// with the line shut he is far less of one.
+    #[test]
+    fn a_man_no_pass_can_reach_is_less_of_a_danger() {
+        let carrier = (5000, 3400);
+        let man = (6500, 3400);
+        let open = reaches(&facts(vec![(1000, 1000)], Some(man)), carrier, man);
+        let shut = reaches(&facts(vec![(5750, 3400)], Some(man)), carrier, man);
+        assert!(open > 0.5, "open {open}");
+        assert!(shut < open / 2.0, "shut {shut} open {open}");
+    }
+
+    /// ADR-100: the danger the actor weighs comes from what he sees of the
+    /// man, not from a value the engine supplies. Same scene, one man
+    /// perceived nearer, and the value changes; the same perception twice
+    /// gives the same value.
+    #[test]
+    fn the_danger_is_the_actors_own_reading() {
+        let near = threats(&facts(vec![(1000, 1000)], Some((6000, 3400))));
+        let far = threats(&facts(vec![(1000, 1000)], Some((6500, 3400))));
+        assert!(near.man > far.man, "near {} far {}", near.man, far.man);
+        let again = threats(&facts(vec![(1000, 1000)], Some((6500, 3400))));
+        assert_eq!(far.man, again.man);
     }
 
     fn choose(s: &OffBallScene) -> OffBallAct {

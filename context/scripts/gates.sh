@@ -28,8 +28,8 @@ echo "Gates mode: $MODE"
 # ---------- Gate A: documentation coherence ----------
 echo "Gate A - documentation coherence"
 
-a_structure=$(grep -cE '^\| 0[0-9][0-9] ' doctrine/STRUCTURE.md 2>/dev/null || echo 0)
-a_index=$(grep -cE '^\| \[0[0-9][0-9]\]' doctrine/_index.md 2>/dev/null || echo 0)
+a_structure=$(grep -cE '^\| [0-9][0-9][0-9] ' doctrine/STRUCTURE.md 2>/dev/null || echo 0)
+a_index=$(grep -cE '^\| \[[0-9][0-9][0-9]\]' doctrine/_index.md 2>/dev/null || echo 0)
 a_files=$(ls doctrine/adr/*.md 2>/dev/null | grep -v '000-template' | wc -l | tr -d ' ')
 if [ "$a_structure" = "$a_index" ] && [ "$a_index" = "$a_files" ]; then
   say_ok "A1 ADR counts: STRUCTURE=$a_structure, _index=$a_index, files=$a_files"

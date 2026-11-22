@@ -969,7 +969,25 @@ impl MatchState {
                         }
                     }),
                     threats: carrier_pos.map(|c| {
-                        view.threats(c, me, closed.unwrap_or(anchor), home, (length, width))
+                        let held = closed.unwrap_or(anchor);
+                        ds_orchestrator::threats(&ds_orchestrator::ThreatFacts {
+                            me,
+                            carrier: c,
+                            man: view.man_to_mark(me),
+                            held,
+                            held_marker: view.marker(held),
+                            cover: view
+                                .mate_pressing
+                                .then(|| view.cover_point(&off, (length, width)))
+                                .flatten(),
+                            lane: view.lane_point(me, &off, (length, width)),
+                            home,
+                            length,
+                            width,
+                            opponents: view.opponents.clone(),
+                            ours: view.ours.clone(),
+                            ground_keep: view.ground_keep,
+                        })
                     }),
                     partner_intesa,
                     // A restart is a phase every player recognises from the

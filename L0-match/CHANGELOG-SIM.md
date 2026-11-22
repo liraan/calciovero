@@ -8,6 +8,25 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 185 — Il pericolo è il valore dell'attore (DD-42, ADR-100)
+
+D5, la nota "da fare separatamente" di ADR-099: `TeamView::threats` e
+`TeamView::reaches` passano da `ds-match/src/state.rs` a
+`ds-orchestrator/src/offball.rs`. Il dito è la posizione del portatore e
+dell'uomo da marcare, il tick, la scena; la luna è lo stesso difensore che
+legge quelle posizioni e pesa il valore dei tre spazi prima di scegliere
+come chiuderli. Il motore fornisce i fatti (`ThreatFacts`), l'orchestratore
+possiede il valore e la scelta, come già possiede la disponibilità della
+frase dal SIM 184.
+
+L'aritmetica è identica: nessun numero nuovo, nessuna formula cambiata,
+nessun comportamento nuovo. Il gemello
+`a_man_no_pass_can_reach_is_less_of_a_danger` migra con la regola e il nuovo
+`the_danger_is_the_actors_own_reading` mostra che il valore dipende da ciò
+che l'attore legge ed è deterministico. Golden e semi restano identici;
+il bump segna il confine tra crate, non una taratura. `ds-reference 42..101`
+non è ripetuto perché la misura non cambia.
+
 ## 184 — Il riconoscimento chiude la catena (DD-41, ADR-099)
 
 Il maintainer, rilette le fasi in ordine reale con la luna del giocatore,

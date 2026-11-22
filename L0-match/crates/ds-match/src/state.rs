@@ -546,85 +546,6 @@ impl TeamView {
             .min_by_key(|o| distance_squared(*o, me))
     }
 
-    /// The dangers a defender at `me` reads (ADR-052 §5): the value to
-    /// them of the carrier's space, of the man he would mark, and of the
-    /// space he guards (`held`), as much as an opponent can get into it
-    /// soon. `home`: the defender's side.
-    pub(crate) fn threats(
-        &self,
-        carrier: (i32, i32),
-        me: (i32, i32),
-        held: (i32, i32),
-        home: bool,
-        (length, width): (i32, i32),
-    ) -> ds_orchestrator::Threats {
-        let ours = (if home { 0 } else { length }, width / 2);
-        let theirs = (length - ours.0, ours.1);
-        let threat = |p: (i32, i32)| ds_orchestrator::read::space_value(p, ours, theirs);
-        let into = self
-            .marker(held)
-            .map_or(0.0, |o| ds_orchestrator::read::soon(o, held));
-        let off = ds_calculator::offball::OffBallBalance::load();
-        let dist = |p: (i32, i32)| distance_squared(me, p).isqrt();
-        ds_orchestrator::Threats {
-            carrier: threat(carrier),
-            // The man is a danger as much as a pass can reach him first
-            // (OI-117 (A), SIM 134): the defender imagines the carrier's
-            // ground pass to him as a passer does (ADR-052, `who_first`),
-            // everyone at the pace and reaction he believes. Before, the man
-            // weighed his whole danger, as if he already had the ball, and
-            // beyond 6 m the defender nearest the carrier marked him.
-            man: self
-                .man_to_mark(me)
-                .map_or(0.0, |m| threat(m) * self.reaches(carrier, m)),
-            held: threat(held) * into,
-            cover: self
-                .mate_pressing
-                .then(|| self.cover_point(&off, (length, width)))
-                .flatten()
-                .map(|p| (threat(p), dist(p))),
-            lane_cm: self.lane_point(me, &off, (length, width)).map(dist),
-        }
-    }
-
-    /// How sure a ground pass from `carrier` to the man at `man` reaches
-    /// one of theirs before one of ours, `[0, 1]`, by the thought's own
-    /// forecast (ADR-052): the pass weighed as a passer weighs it.
-    pub(crate) fn reaches(&self, carrier: (i32, i32), man: (i32, i32)) -> f64 {
-        let thought = ds_calculator::thought::ThoughtBalance::load();
-        let kick = ds_calculator::kick::KickBalance::load();
-        let imagined = |at: (i32, i32), mate: bool| ds_calculator::thought::Imagined {
-            at,
-            speed: thought.believed_speed_cm_per_tick,
-            reaction: thought.believed_reaction_ticks,
-            mate,
-        };
-        let players: Vec<_> = self
-            .opponents
-            .iter()
-            .filter(|p| **p != carrier)
-            .map(|p| imagined(*p, true))
-            .chain(self.ours.iter().map(|p| imagined(*p, false)))
-            .collect();
-        #[allow(clippy::cast_precision_loss)]
-        let dist = distance_squared(carrier, man).isqrt() as f64;
-        let v0 = dist
-            .mul_add(1.0 - self.ground_keep, kick.pass_arrive_cm_per_tick)
-            .min(kick.speed(1.0, 0.5));
-        let forecast = ds_calculator::thought::who_first(
-            carrier,
-            man,
-            (v0, self.ground_keep),
-            &players,
-            thought.forecast_step_cm,
-        );
-        match forecast.first {
-            Some(first) if players[first].mate => thought.confidence(forecast.margin),
-            Some(_) => thought.confidence(-forecast.margin),
-            None => 0.0,
-        }
-    }
-
     /// The man a defender at `me` would mark: the nearest of their outfield
     /// players other than the carrier.
     pub(crate) fn man_to_mark(&self, me: (i32, i32)) -> Option<(i32, i32)> {
@@ -1978,36 +1899,6 @@ mod possession_is_movement_tests {
 #[cfg(test)]
 mod marking_tests {
     use super::*;
-
-    fn view(ours: Vec<(i32, i32)>) -> TeamView {
-        TeamView {
-            forward: 1,
-            their_goal_x: 0,
-            last_line: None,
-            lines: ds_orchestrator::read::Lines::default(),
-            opponents: vec![(5000, 3400), (6500, 3400)],
-            men: vec![(6500, 3400)],
-            carrier_at: Some((5000, 3400)),
-            mate_pressing: false,
-            mate_carrier: None,
-            ours,
-            ours_vel: Vec::new(),
-            ground_keep: 0.957,
-        }
-    }
-
-    /// Twin test (OI-117 (A), SIM 134): the same man, the same carrier;
-    /// only a defender standing on the line between them changes. With
-    /// the line open a pass reaches him and he is a danger; with the line
-    /// shut he is far less of one, so the defender nearest the carrier
-    /// goes to the carrier instead of marking him.
-    #[test]
-    fn a_man_no_pass_can_reach_is_less_of_a_danger() {
-        let open = view(vec![(1000, 1000)]).reaches((5000, 3400), (6500, 3400));
-        let shut = view(vec![(5750, 3400)]).reaches((5000, 3400), (6500, 3400));
-        assert!(open > 0.5, "open {open}");
-        assert!(shut < open / 2.0, "shut {shut} open {open}");
-    }
 
     /// The view of a home side defending `x = 0` and attacking `x = 10500`
     /// (the pitch 105 x 68 m): its own men at `ours`, the opponents at
