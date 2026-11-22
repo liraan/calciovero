@@ -1799,7 +1799,7 @@ fn order_menus(
 fn blow(audio: Option<&Arc<(OutputStream, Sink)>>, restart: bool) {
     let Some(audio) = audio else { return };
     let sink = &audio.1;
-    let hz = if restart { 2100.0 } else { 2600.0 };
+    let hz = if restart { 1400.0 } else { 1800.0 };
     let millis = if restart { 90 } else { 330 };
     let trill = SineWave::new(hz)
         .mix(SineWave::new(hz * 1.02_f32))
