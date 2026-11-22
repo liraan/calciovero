@@ -100,7 +100,9 @@ pub fn count(events: &[MatchEvent]) -> MatchCounts {
                 c.add(Metric::Interceptions, 1.0);
                 c.add(Metric::Passes, 1.0);
             }
-            EventType::Save => c.add(Metric::Saves, 1.0),
+            // A keeper who claims a cross has not saved a shot: counting him
+            // made saves outnumber shots on target (DD-46).
+            EventType::Save if !flag(e, "claim") => c.add(Metric::Saves, 1.0),
             EventType::Goal => {
                 if flag(e, "own_goal") {
                     c.add(Metric::OwnGoals, 1.0);
@@ -131,6 +133,27 @@ mod tests {
             .events()
             .to_vec()
     });
+
+    /// A claim is not a save (DD-46): the keeper taking a cross in the area
+    /// is still told as `Save`, but it follows no shot. The twin: the same
+    /// seed's events, with only the claim flag telling the two apart.
+    #[test]
+    fn a_keepers_claim_is_not_a_save() {
+        let ev = &*SEED42;
+        let saves = ev
+            .iter()
+            .filter(|e| e.event_type == EventType::Save)
+            .count();
+        let claims = ev
+            .iter()
+            .filter(|e| e.event_type == EventType::Save && flag(e, "claim"))
+            .count();
+        #[allow(clippy::cast_precision_loss)]
+        let (expected, total) = ((saves - claims) as f64, saves as f64);
+        assert!(claims > 0, "the seed has a claim to tell apart");
+        assert!((count(ev).get(Metric::Saves) - expected).abs() < 1e-9);
+        assert!(count(ev).get(Metric::Saves) < total);
+    }
 
     #[test]
     fn the_same_seed_gives_the_same_counts() {

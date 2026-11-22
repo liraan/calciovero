@@ -187,9 +187,19 @@ Stesso comando, motore 186, stessa banda (media reale ± una deviazione standard
 | punizioni | 29.45 | 31.33 | 22.6–36.3 | sì | Effetto collaterale dei più falli: OI-112 non è stata toccata |
 | fuorigioco | 4.26 | 9.33 | 1.9–6.7 | no | OI-098 / OI-104: errore di percezione non costruito |
 | spazzate | 29.53 | 42.85 | 20.9–38.2 | no | OI-100: troppe spazzate, regola ADR-064 |
-| parate | 9.37 | 20.80 | 6.0–12.7 | no | OI-100: troppe parate seguono i troppi tiri in porta |
+| parate | 9.37 | 20.80 | 6.0–12.7 | no | OI-100: troppe parate seguono i troppi tiri in porta; riletto dopo DD-46 (vedi sotto) |
 | recupero, primo tempo (min) | 1.49 | 9.01 | 0.1–2.8 | no | OI-101: il motore addiziona tutto il tempo perso |
 | recupero, secondo tempo (min) | 4.08 | 8.50 | 2.5–5.7 | no | OI-101: stessa causa del primo tempo |
+
+### La rilettura del 186 (2026-11-22, DD-46)
+
+Stesso motore, stessi 60 semi 42..101, stessa banda: cambia solo il conteggio delle parate in `ds-reference`. Il portiere che prende un cross emette `Save` con `claim: true`; quelle prese non sono parate di un tiro (ADR-104). Sul seed 42, 9 dei 21 `Save` sono prese.
+
+| Metrica | Reale | Motore 186 riletto | Banda | Dentro? |
+|---|---|---|---|---|
+| parate | 9.37 | 15.22 | 6.0–12.7 | no |
+
+Le parate scendono 20.80 → 15.22 e tornano sotto i 17,45 tiri in porta: l'impossibilità interna è rimossa senza toccare l'evento, i numeri o il SIM. La metrica resta **fuori banda** e il conteggio resta **6/22**: la causa aperta è ancora OI-100 (troppi tiri in porta), non il conteggio. Nessun numero è stato adattato per rientrare in banda (A5-bis). Gemello: `a_keepers_claim_is_not_a_save`.
 
 **In banda (SIM 186): 6 metriche su 22 confrontabili** (rigori, dribbling riusciti, falli, rossi, rinvii dal fondo, punizioni). **Fuori banda: 16.** Rispetto al 184 entrano falli, rinvii e punizioni; escono duelli a terra e gialli. I gialli sono la conseguenza dichiarata della soglia OI-114: il maintainer li ha tenuti fuori dalla decisione e non vanno ritoccati per rientrare nella banda. **`STATE.md` e la decisione L (16/22) non sono soddisfatti: la taratura continua.** OI-112 resta aperta: le punizioni sono entrate in banda per effetto dei più falli, non perché il vantaggio sia stato corretto.
 
