@@ -2264,17 +2264,8 @@ fn draw_card_ceremony(
     for (slot, from) in [(offender, place(offender)), (captain, place(captain))] {
         let Some(from) = from else { continue };
         let colour = if slot < 100 { theme.home } else { theme.away };
-        if let (Some(a), Some(b)) = (
-            geom.project((from.0, from.1, 0.0)),
-            geom.project((referee.0, referee.1, 0.0)),
-        ) {
-            let at = Pos2::new(a.x, a.y);
-            let to = Pos2::new(b.x, b.y);
-            let point = walked(from, referee, p);
-            let Some(on) = geom.project((point.0, point.1, 0.0)) else {
-                continue;
-            };
-            painter.line_segment([at, to], Stroke::new(1.0_f32, colour.gamma_multiply(0.4)));
+        let point = walked(from, referee, p);
+        if let Some(on) = geom.project((point.0, point.1, 0.0)) {
             painter.circle_filled(Pos2::new(on.x, on.y), 8.0, colour);
         }
     }
