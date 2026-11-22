@@ -7,6 +7,7 @@
 //! through `ds_demo::friendly`, the same functions as the CLI.
 
 use std::collections::BTreeMap;
+use std::io::Cursor;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -16,7 +17,7 @@ use ds_match::balance::LawsBalance;
 use ds_match::{Importance, MatchConfig, NarratedTick};
 use ds_model::{BlockHeight, Width};
 use eframe::egui::{self, Align2, FontId, Painter, Pos2, RichText, Sense, Shape, Stroke};
-use rodio::{OutputStream, OutputStreamBuilder, Sink, Source, source::SineWave};
+use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink, Source};
 
 use crate::interp::Moment;
 use crate::scene::{self, Geometry, Item};
@@ -1794,20 +1795,22 @@ fn order_menus(
     give
 }
 
-/// The referee's signal (Law 6), made of two sines so it trills: the stop
-/// is longer than the restart blip. No audio asset to ship, no match state.
+/// The referee's signal (Law 6): a real whistle, CC0, shipped with the GUI
+/// and faded in and out of the file. A restart takes only its first blip.
 fn blow(audio: Option<&Arc<(OutputStream, Sink)>>, restart: bool) {
     let Some(audio) = audio else { return };
-    let sink = &audio.1;
-    let hz = if restart { 1400.0 } else { 1800.0 };
-    let millis = if restart { 150 } else { 480 };
-    let trill = SineWave::new(hz)
-        .mix(SineWave::new(hz * 1.02_f32))
-        .amplify(0.35)
-        .take_duration(Duration::from_millis(millis))
-        .fade_in(Duration::from_millis(8))
-        .fade_out(Duration::from_millis(40));
-    sink.append(trill);
+    let source = Decoder::new(Cursor::new(include_bytes!("../assets/whistle.wav")))
+        .expect("the embedded referee whistle");
+    let whistle = source.amplify(0.7);
+    if restart {
+        audio.1.append(
+            whistle
+                .take_duration(Duration::from_millis(150))
+                .fade_out(Duration::from_millis(40)),
+        );
+    } else {
+        audio.1.append(whistle);
+    }
 }
 
 /// What stopped play (Law 6), read from the fact, not guessed from the ball.
