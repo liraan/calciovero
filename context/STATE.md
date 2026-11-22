@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `89b47bd` - "feat(gui): make the whistle in code, no audio file"
+**Last commit verified:** `cb672d3` - "feat(gui): review the offside from the pass, red attacker line"
 
 ## Mandato attivo (2026-11-16)
 
