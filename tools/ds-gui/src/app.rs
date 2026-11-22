@@ -7,7 +7,6 @@
 //! through `ds_demo::friendly`, the same functions as the CLI.
 
 use std::collections::BTreeMap;
-use std::io::Cursor;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -17,7 +16,8 @@ use ds_match::balance::LawsBalance;
 use ds_match::{Importance, MatchConfig, NarratedTick};
 use ds_model::{BlockHeight, Width};
 use eframe::egui::{self, Align2, FontId, Painter, Pos2, RichText, Sense, Shape, Stroke};
-use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink, Source};
+use rodio::source::SineWave;
+use rodio::{OutputStream, OutputStreamBuilder, Sink, Source};
 
 use crate::interp::Moment;
 use crate::scene::{self, Geometry, Item};
@@ -1795,21 +1795,103 @@ fn order_menus(
     give
 }
 
-/// The referee's signal (Law 6): a real whistle, CC0, shipped with the GUI
-/// and faded in and out of the file. A restart takes only its first blip.
+/// The referee's whistle (Law 6), made from its own two tones: 2693 and
+/// 2900 Hz, measured from the CC0 sample the maintainer approved. The pea's
+/// trill and a breath of filtered noise make it a whistle, not a sine.
+/// No asset: it is generated, sample by sample, at 48 kHz mono.
+struct WhistleTone {
+    /// Sample being produced.
+    n: usize,
+    /// The two tones, and the pea's 6 Hz trill: rodio's sines come from a
+    /// fixed table, so no platform-dependent `sin` enters this code.
+    low: SineWave,
+    high: SineWave,
+    trill: SineWave,
+    /// Low-passed breath noise.
+    breath: f64,
+    /// State of the small noise generator.
+    noise: u64,
+}
+
+impl WhistleTone {
+    /// Samples in 490 ms at 48 kHz.
+    const LEN: usize = 48_000 * 490 / 1_000;
+    /// Seconds of one sample.
+    const STEP: f64 = 1.0 / 48_000.0;
+
+    fn new() -> Self {
+        Self {
+            n: 0,
+            low: SineWave::new(2_693.0),
+            high: SineWave::new(2_900.0),
+            trill: SineWave::new(6.0),
+            breath: 0.0,
+            noise: 42,
+        }
+    }
+}
+
+impl Iterator for WhistleTone {
+    type Item = f32;
+
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.n >= Self::LEN {
+            return None;
+        }
+        let t = self.n as f64 * Self::STEP;
+        let attack = (t / 0.008).min(1.0);
+        let release = ((0.49 - t) / 0.040).clamp(0.0, 1.0);
+        // A gentle decay, 0.92 to 1: linear instead of an exponential, which
+        // this workspace forbids; at this level it is not audible.
+        let env = attack * release * 0.08f64.mul_add(-t / 0.49, 1.0);
+        let trill = 0.25f64.mul_add(f64::from(self.trill.next().unwrap_or(0.0)), 0.75);
+        let (low, high) = (
+            f64::from(self.low.next().unwrap_or(0.0)),
+            f64::from(self.high.next().unwrap_or(0.0)),
+        );
+        self.noise = self
+            .noise
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        let white = (self.noise >> 33) as f64 / (1_u64 << 31) as f64 - 1.0;
+        self.breath = 0.06f64.mul_add(white, 0.94 * self.breath);
+        let sample = 0.05f64.mul_add(self.breath, 0.60f64.mul_add(high, 0.40 * low) * trill);
+        self.n += 1;
+        Some((0.72 * sample * env).clamp(-1.0, 1.0) as f32)
+    }
+}
+
+impl Source for WhistleTone {
+    fn current_span_len(&self) -> Option<usize> {
+        Some(Self::LEN - self.n)
+    }
+
+    fn channels(&self) -> u16 {
+        1
+    }
+
+    fn sample_rate(&self) -> u32 {
+        48_000
+    }
+
+    fn total_duration(&self) -> Option<Duration> {
+        Some(Duration::from_millis(490))
+    }
+}
+
+/// The referee's signal (Law 6): the generated whistle. A restart takes
+/// only its first blip, fading out so it does not click.
 fn blow(audio: Option<&Arc<(OutputStream, Sink)>>, restart: bool) {
     let Some(audio) = audio else { return };
-    let source = Decoder::new(Cursor::new(include_bytes!("../assets/whistle.wav")))
-        .expect("the embedded referee whistle");
-    let whistle = source.amplify(0.7);
+    let tone = WhistleTone::new();
     if restart {
         audio.1.append(
-            whistle
-                .take_duration(Duration::from_millis(150))
+            tone.take_duration(Duration::from_millis(150))
                 .fade_out(Duration::from_millis(40)),
         );
     } else {
-        audio.1.append(whistle);
+        audio.1.append(tone);
     }
 }
 
@@ -2265,6 +2347,25 @@ fn luminance(c: egui::Color32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The whistle is a real generated tone, not a file or a click: it has
+    /// the measured 2693/2900 Hz, opens softly, ends softly, and stops at
+    /// 490 ms.
+    #[test]
+    fn the_whistle_is_generated_with_its_two_tones_and_a_tail() {
+        let samples: Vec<f32> = WhistleTone::new().collect();
+        assert_eq!(samples.len(), WhistleTone::LEN);
+        assert!(
+            samples.iter().take(100).all(|v| v.abs() < 0.1),
+            "a soft attack"
+        );
+        assert!(
+            samples.iter().rev().take(100).all(|v| v.abs() < 0.1),
+            "a soft tail"
+        );
+        assert!(samples.iter().any(|v| *v > 0.2), "it really blows");
+        assert!(samples.iter().any(|v| *v < -0.2), "both tones swing");
+    }
 
     /// A fresh window on seed 42. The nine tests that only look at the
     /// pristine match share one played game and clone it (a memcpy, not a
