@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `4757e9a` - "docs(bookmark): move the verified HEAD to f302a10"
+**Last commit verified:** `d9091b2` - "feat(sim185): the danger is the actor's own value (DD-42, ADR-100)"
 
 ## Mandato attivo (2026-11-16)
 
