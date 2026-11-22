@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `cb672d3` - "feat(gui): review the offside from the pass, red attacker line"
+**Last commit verified:** `a2bdbe1` - "fix(gui): drop the team-coloured guides from the card walk"
 
 ## Mandato attivo (2026-11-16)
 
