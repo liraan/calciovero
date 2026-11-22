@@ -318,7 +318,7 @@ pub const fn offside_exempt(restart: Option<RestartKind>) -> bool {
 #[must_use]
 pub const fn card_after(already_cautioned: bool, card: Option<Card>) -> Option<Card> {
     match card {
-        Some(Card::Yellow) if !already_cautioned => Some(Card::Red),
+        Some(Card::Yellow) if already_cautioned => Some(Card::Red),
         c => c,
     }
 }
@@ -546,7 +546,7 @@ impl MatchState {
         );
         let card = match card {
             Some(crate::rules::Card::Yellow) => {
-                crate::rules::card_after(self.cautioned.insert(offender), card)
+                crate::rules::card_after(!self.cautioned.insert(offender), card)
             }
             c => c,
         };
@@ -677,8 +677,8 @@ mod tests {
         assert!(offside_exempt(Some(RestartKind::Corner)));
         assert!(!offside_exempt(Some(RestartKind::FreeKick)));
         assert!(!offside_exempt(None));
-        assert_eq!(card_after(false, Some(Card::Yellow)), Some(Card::Red));
-        assert_eq!(card_after(true, Some(Card::Yellow)), Some(Card::Yellow));
+        assert_eq!(card_after(true, Some(Card::Yellow)), Some(Card::Red));
+        assert_eq!(card_after(false, Some(Card::Yellow)), Some(Card::Yellow));
         assert_eq!(card_after(false, Some(Card::Red)), Some(Card::Red));
         assert!(play_advantage(true, false, 1000, 5250));
         assert!(!play_advantage(true, false, 3000, 5250));
