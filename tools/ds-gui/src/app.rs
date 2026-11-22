@@ -27,6 +27,10 @@ const TICKS_PER_SECOND: f64 = 10.0;
 /// Real seconds the stop whistle holds the picture (the maintainer asked
 /// for "qualche secondo"): a viewing choice, never a number in the match.
 const WHISTLE_PAUSE_S: f64 = 2.0;
+/// Match ticks the held picture lasts: the celebration starts only after
+/// the VAR check has confirmed the goal (a viewing choice, not a rule).
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+const CEREMONY_TICKS: usize = (WHISTLE_PAUSE_S * TICKS_PER_SECOND) as usize;
 /// The playback speeds offered, times real time.
 const SPEEDS: [f64; 5] = [1.0, 4.0, 16.0, 64.0, 256.0];
 
@@ -52,9 +56,9 @@ struct Game {
     /// The record's header (ADR-065): the physics the match was played
     /// with, for the ball's flight between two ticks.
     header: ds_match::RecordHeader,
-    /// The referee's two whistles of a called foul, as facts: the tick,
-    /// then whether it is the restart. Law 6: stop, then play on.
-    whistles: Vec<(usize, bool)>,
+    /// The referee's whistles, read from the facts of the match: a stop
+    /// for every dead ball, then the restart. Law 6: stop, then play on.
+    whistles: Vec<Whistle>,
 }
 
 /// What the command line asks of the window (`ds-gui --help`).
@@ -241,7 +245,11 @@ impl App {
                 let kept = records.clone();
                 let gestures = gestures(&records, result.events.events());
                 let cheers = cheers(&records, result.events.events());
-                let whistles = whistles(&records, result.events.events());
+                let whistles = whistles(
+                    &records,
+                    result.events.events(),
+                    i32::from(m.pitch.length_m) * 100,
+                );
                 let ticks = ds_match::narrate_ticks(&m, &result.events, records);
                 let names = m
                     .home
@@ -494,8 +502,8 @@ impl App {
         let dead = game
             .whistles
             .iter()
-            .rfind(|(k, _)| *k <= self.tick)
-            .is_some_and(|(_, restart)| !restart);
+            .rfind(|w| w.tick <= self.tick)
+            .is_some_and(|w| !w.restart);
         // While the ball is dead the watch runs at real speed: the walk to
         // the ball has to be seen, not swallowed by the default x16.
         let speed = if dead {
@@ -516,11 +524,14 @@ impl App {
         if self.tick == last {
             self.playing = false;
         }
-        for &(k, restart) in &game.whistles {
-            if k > from && k <= self.tick && self.last_whistle.is_none_or(|last| k > last) {
-                self.last_whistle = Some(k);
-                blow(self.audio.as_ref(), restart);
-                if !restart {
+        for w in &game.whistles {
+            if w.tick > from
+                && w.tick <= self.tick
+                && self.last_whistle.is_none_or(|last| w.tick > last)
+            {
+                self.last_whistle = Some(w.tick);
+                blow(self.audio.as_ref(), w.restart);
+                if !w.restart {
                     self.whistle_pause = WHISTLE_PAUSE_S;
                 }
                 break;
@@ -558,6 +569,17 @@ impl App {
                     .show_ui(ui, |ui| {
                         for w in [Width::Narrow, Width::Normal, Width::Wide] {
                             ui.selectable_value(width, w, width_label(w));
+                        }
+                    });
+                // The coach names his captain as he names his block: a
+                // view-only choice for who steps up at a card.
+                let captain = self.choices.captain.get_or_insert('D');
+                ui.label("Captain");
+                egui::ComboBox::from_id_salt("captain")
+                    .selected_text(captain.to_string())
+                    .show_ui(ui, |ui| {
+                        for c in 'A'..='K' {
+                            ui.selectable_value(captain, c, c.to_string());
                         }
                     });
             }
@@ -813,18 +835,13 @@ impl App {
         }
         // Law 6 made visible: the stop whistle holds the picture, then the
         // dead ball is played at real speed while the taker walks to it.
-        if game
-            .whistles
-            .iter()
-            .rfind(|(k, _)| *k <= self.tick)
-            .is_some_and(|(_, restart)| !restart)
-        {
-            let held = self.whistle_pause > 0.0;
-            let text = if held {
-                "WHISTLE — FREE KICK"
-            } else {
-                "FREE KICK — TAKING THEIR PLACES"
-            };
+        let last = game.whistles.iter().rfind(|w| w.tick <= self.tick);
+        if let Some(stop) = last.filter(|w| !w.restart) {
+            // The check lasts the held picture, the same number of match
+            // ticks at 1x: the view in a recording reads the same lines as
+            // the one watching live.
+            let held = self.tick < stop.tick.saturating_add(CEREMONY_TICKS);
+            let text = banner(stop, held);
             let size = if held { 30.0 } else { 20.0 };
             #[allow(clippy::cast_precision_loss)]
             let width = text.len() as f32 * size * 0.62;
@@ -841,6 +858,41 @@ impl App {
                 FontId::proportional(size),
                 self.theme.card_yellow,
             );
+            // The broadcast lines of Law 11, from the pass and not from the
+            // whistle: the second-last opponent and the flagged attacker.
+            #[allow(clippy::cast_precision_loss)]
+            let width = game.pitch_cm.1 as f32;
+            if let Some((line, man, _)) = stop.offside_lines {
+                #[allow(clippy::cast_precision_loss, reason = "drawing only: cm fit the board")]
+                let draw = |x: i32, colour| {
+                    if let (Some(a), Some(b)) = (
+                        geom.project((x as f32, 0.0, 0.0)),
+                        geom.project((x as f32, width, 0.0)),
+                    ) {
+                        painter.line_segment(
+                            [Pos2::new(a.x, a.y), Pos2::new(b.x, b.y)],
+                            Stroke::new(3.0_f32, colour),
+                        );
+                    }
+                };
+                draw(line, self.theme.card_yellow);
+                draw(man, self.theme.critical);
+            }
+            #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+            let progress =
+                ((self.tick - stop.tick).min(CEREMONY_TICKS) as f32) / CEREMONY_TICKS as f32;
+            if let Some(record) = game.records.get(stop.call_tick) {
+                draw_card_ceremony(
+                    &painter,
+                    &geom,
+                    &self.theme,
+                    moment.referee,
+                    record,
+                    stop,
+                    self.choices.captain.unwrap_or('D'),
+                    progress,
+                );
+            }
         }
         let clicked = response.clicked();
         if let Some(id) = hovered {
@@ -1477,7 +1529,7 @@ fn gestures(
                     if (a.id.slot() < 100 && home) || (a.id.slot() >= 100 && away) {
                         out.entry(a.id)
                             .or_default()
-                            .push((k, scene::Gesture::Celebrate));
+                            .push((k + CEREMONY_TICKS, scene::Gesture::Celebrate));
                     }
                 }
                 continue;
@@ -1770,31 +1822,326 @@ fn blow(audio: Option<&Arc<(OutputStream, Sink)>>, restart: bool) {
     sink.append(trill);
 }
 
-/// The two whistles of a called foul (Law 6), read from the facts of the
-/// match: the `Foul` event stops play, the ball back at a man's foot lets
-/// it restart. Partita vera + LUNA: the referee signals what the players
-/// did and chose; the view adds no rule and takes no choice away.
-fn whistles(
+/// What stopped play (Law 6), read from the fact, not guessed from the ball.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum StopKind {
+    /// A foul that really stopped play (a foul with advantage goes on).
+    Foul,
+    /// Law 11, read from the free kick's reason.
+    Offside,
+    Goal,
+    ThrowIn,
+    GoalKick,
+    Corner,
+}
+
+impl StopKind {
+    /// The banner while the picture holds, then after it. The goal and the
+    /// card get a checking line before the confirmation (the maintainer's
+    /// touch of realism): only the view waits; the event stays append-only.
+    const fn texts(self) -> (&'static str, &'static str) {
+        match self {
+            Self::Foul => ("WHISTLE — FREE KICK", "FREE KICK — TAKING THEIR PLACES"),
+            Self::Offside => ("VAR — CHECKING OFFSIDE", "OFFSIDE — CONFIRMED"),
+            Self::Goal => ("VAR — CHECKING THE GOAL", "GOAL — CONFIRMED"),
+            Self::ThrowIn => ("WHISTLE — THROW-IN", "THROW-IN — TAKING THEIR PLACES"),
+            Self::GoalKick => ("WHISTLE — GOAL KICK", "GOAL KICK — TAKING THEIR PLACES"),
+            Self::Corner => ("WHISTLE — CORNER", "CORNER — TAKING THEIR PLACES"),
+        }
+    }
+}
+
+/// The banner at a stop: the check while the picture holds, the sentence
+/// after. A card owns the line even when it comes with a foul.
+#[allow(clippy::missing_const_for_fn)]
+fn banner(stop: &Whistle, held: bool) -> &'static str {
+    if let Some(card) = stop.card {
+        return match (held, card.red) {
+            (true, _) => "VAR — CHECKING THE CARD",
+            (false, true) => "RED CARD — CONFIRMED",
+            (false, false) => "YELLOW CARD — CONFIRMED",
+        };
+    }
+    let lines = stop.stop.map_or(("", ""), StopKind::texts);
+    if held { lines.0 } else { lines.1 }
+}
+
+/// A card at a stop: the man and the colour, both facts of the event.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CardShown {
+    player: PlayerId,
+    red: bool,
+}
+
+/// A whistle the view hears from the event chain (Law 6: stop, then play on).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Whistle {
+    /// When the view shows the whistle (for offside, after the action).
+    tick: usize,
+    /// When the fact happened: the lines are read from this tick.
+    call_tick: usize,
+    /// `None` on the restart whistle: nothing stopped then.
+    stop: Option<StopKind>,
+    card: Option<CardShown>,
+    /// The offender's slot at an offside (Law 11).
+    offside: Option<u32>,
+    /// The defensive line and the attacker at the pass, and the tick read.
+    offside_lines: Option<(i32, i32, usize)>,
+    /// Who was fouled: his captain speaks for him.
+    fouled: Option<u32>,
+    restart: bool,
+}
+
+/// The two lines of an offside, read from the tick of the pass that made
+/// the run (Law 11, `ds_match::rules::offside_position`): the second-last
+/// opponent, counting from the goal, and the flagged attacker.
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn offside_lines(
     records: &[ds_match::TickRecord],
     events: &[ds_stats::MatchEvent],
-) -> Vec<(usize, bool)> {
-    let mut out = Vec::new();
-    let mut waiting = false;
-    for (k, record) in records.iter().enumerate() {
-        let called = events
+    stop: &Whistle,
+    length: i32,
+) -> Option<(i32, i32, usize)> {
+    use ds_core::ids::ActorId;
+    use ds_stats::EventType;
+    let offender = stop.offside?;
+    let goal_x = if offender < 100 { length } else { 0 };
+    let depth = |x: i32| (goal_x - x).abs();
+    // The most recent pass by his side that left him offside is the one
+    // the engine flagged him on: the same Law 11 function, read from the
+    // facts. Other passes in the move did not make the run.
+    for (k, record) in records.iter().enumerate().take(stop.call_tick).rev() {
+        let passed = events
             .get(record.events.clone())
             .unwrap_or(&[])
             .iter()
-            .any(|e| e.event_type == ds_stats::EventType::Foul);
-        if called {
-            out.push((k, false));
+            .any(|e| {
+                let same_side = match e.actor {
+                    Some(ActorId::Player(p)) => p.slot() / 100 == offender / 100,
+                    _ => false,
+                };
+                same_side
+                    && matches!(
+                        e.event_type,
+                        EventType::Pass | EventType::Cross | EventType::KeyPass
+                    )
+            });
+        if !passed {
+            continue;
+        }
+        let mut opponents: Vec<i32> = record
+            .agents
+            .iter()
+            .filter(|a| (a.id.slot() < 100) != (offender < 100))
+            .map(|a| a.position.0)
+            .collect();
+        let man = record
+            .agents
+            .iter()
+            .find(|a| a.id.slot() == offender)
+            .map(|a| a.position.0)?;
+        if !ds_match::rules::offside_position(
+            man,
+            record.ball.position.0,
+            &opponents,
+            goal_x,
+            length,
+        ) {
+            continue;
+        }
+        opponents.sort_unstable_by_key(|x| depth(*x));
+        let line = *opponents.get(1)?;
+        return Some((line, man, k));
+    }
+    None
+}
+
+/// Every dead ball whistled from the facts. A foul with advantage has no
+/// `FreeKick`, so it never stops the match and is never whistled. Partita
+/// vera + LUNA: the referee signals what the players did and chose; the
+/// view adds no rule and takes no choice away.
+fn whistles(
+    records: &[ds_match::TickRecord],
+    events: &[ds_stats::MatchEvent],
+    length: i32,
+) -> Vec<Whistle> {
+    use ds_core::ids::ActorId;
+    use ds_stats::EventType;
+    let mut out = Vec::new();
+    let mut waiting = false;
+    // An offside is decided when the engine flags it, but announced once
+    // the attacking action is over: the view waits, the fact does not move.
+    let mut announce_after = 0usize;
+    for (k, record) in records.iter().enumerate() {
+        let born = events.get(record.events.clone()).unwrap_or(&[]);
+        let has = |t| born.iter().any(|e| e.event_type == t);
+        let free_kick = has(EventType::FreeKick) || has(EventType::Penalty);
+        let offside = born.iter().find(|e| {
+            e.event_type == EventType::FreeKick
+                && e.fields.get("reason").and_then(serde_json::Value::as_str) == Some("offside")
+        });
+        let offside_slot = offside.and_then(|e| {
+            e.fields
+                .get("offender")
+                .and_then(serde_json::Value::as_u64)
+                .and_then(|n| u32::try_from(n).ok())
+        });
+        let fouled = born
+            .iter()
+            .find(|e| e.event_type == EventType::Foul)
+            .and_then(|e| {
+                e.fields
+                    .get("against")
+                    .and_then(serde_json::Value::as_u64)
+                    .and_then(|n| u32::try_from(n).ok())
+            });
+        let card = born
+            .iter()
+            .find(|e| e.event_type == EventType::Card)
+            .and_then(|e| {
+                let ActorId::Player(player) = e.actor? else {
+                    return None;
+                };
+                Some(CardShown {
+                    player,
+                    red: e.fields.get("color").and_then(serde_json::Value::as_str) == Some("red"),
+                })
+            });
+        let stop = if has(EventType::Goal) {
+            Some(StopKind::Goal)
+        } else if has(EventType::Corner) {
+            Some(StopKind::Corner)
+        } else if has(EventType::ThrowIn) {
+            Some(StopKind::ThrowIn)
+        } else if has(EventType::GoalKick) {
+            Some(StopKind::GoalKick)
+        } else if offside.is_some() {
+            Some(StopKind::Offside)
+        } else if has(EventType::Foul) && free_kick {
+            Some(StopKind::Foul)
+        } else {
+            None
+        };
+        if let Some(kind) = stop {
+            let delayed = kind == StopKind::Offside;
+            let at = if delayed { k + CEREMONY_TICKS } else { k };
+            if delayed {
+                announce_after = at;
+            }
+            let mut whistle = Whistle {
+                tick: at,
+                call_tick: k,
+                stop: Some(kind),
+                card,
+                offside: offside_slot,
+                offside_lines: None,
+                fouled,
+                restart: false,
+            };
+            if kind == StopKind::Offside {
+                whistle.offside_lines = offside_lines(records, events, &whistle, length);
+            }
+            out.push(whistle);
             waiting = true;
-        } else if waiting && record.carrier.is_some() {
-            out.push((k, true));
+        } else if waiting && k >= announce_after && record.carrier.is_some() {
+            out.push(Whistle {
+                tick: k,
+                call_tick: k,
+                stop,
+                card: None,
+                offside: None,
+                offside_lines: None,
+                fouled: None,
+                restart: true,
+            });
             waiting = false;
         }
     }
     out
+}
+
+/// A point along the walk to the referee. The picture is held, so only the
+/// view moves the token: the record and the event stay as they were.
+fn walked(from: (f32, f32), to: (f32, f32), p: f32) -> (f32, f32) {
+    (
+        (to.0 - from.0).mul_add(p, from.0),
+        (to.1 - from.1).mul_add(p, from.1),
+    )
+}
+
+/// The captain who speaks for the side that suffered the foul. The home
+/// captain is the coach's choice; the opponents' is the same role in the
+/// formation, since the engine names no captain (a view-only convention).
+fn captain_slot(fouled: Option<u32>, chosen: char) -> u32 {
+    let role = u32::from(chosen.to_ascii_uppercase()) - u32::from('A');
+    if fouled.is_some_and(|s| s >= 100) {
+        100 + role
+    } else {
+        role
+    }
+}
+
+/// The referee waits for the offender and the captain before showing the
+/// card. Both walks are drawn from the tick's recorded positions; nothing
+/// here feeds the simulation.
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::too_many_arguments
+)]
+fn draw_card_ceremony(
+    painter: &Painter,
+    geom: &Geometry,
+    theme: &Theme,
+    referee: (f32, f32),
+    record: &ds_match::TickRecord,
+    stop: &Whistle,
+    captain: char,
+    progress: f32,
+) {
+    let Some(card) = stop.card else { return };
+    let p = progress.clamp(0.0, 1.0);
+    let place = |slot: u32| {
+        record
+            .agents
+            .iter()
+            .find(|a| a.id.slot() == slot)
+            .map(|a| (a.position.0 as f32, a.position.1 as f32))
+    };
+    let offender = card.player.slot();
+    let captain = captain_slot(stop.fouled, captain);
+    for (slot, from) in [(offender, place(offender)), (captain, place(captain))] {
+        let Some(from) = from else { continue };
+        let colour = if slot < 100 { theme.home } else { theme.away };
+        if let (Some(a), Some(b)) = (
+            geom.project((from.0, from.1, 0.0)),
+            geom.project((referee.0, referee.1, 0.0)),
+        ) {
+            let at = Pos2::new(a.x, a.y);
+            let to = Pos2::new(b.x, b.y);
+            let point = walked(from, referee, p);
+            let Some(on) = geom.project((point.0, point.1, 0.0)) else {
+                continue;
+            };
+            painter.line_segment([at, to], Stroke::new(1.0_f32, colour.gamma_multiply(0.4)));
+            painter.circle_filled(Pos2::new(on.x, on.y), 8.0, colour);
+        }
+    }
+    if p >= 1.0
+        && let Some(r) = geom.project((referee.0, referee.1, 0.0))
+    {
+        let colour = if card.red {
+            theme.card_red
+        } else {
+            theme.card_yellow
+        };
+        painter.rect_filled(
+            egui::Rect::from_center_size(Pos2::new(r.x, r.y - 22.0), egui::vec2(11.0, 15.0)),
+            2.0,
+            colour,
+        );
+    }
 }
 
 /// What moves the crowd (DESIGN.md: only from a fact of the match): a goal
@@ -1808,11 +2155,13 @@ fn cheers(
     let mut out = Vec::new();
     for (k, pair) in records.windows(2).enumerate() {
         let (a, b) = (&pair[0], &pair[1]);
+        // The crowd waits for the VAR check with the players: the goal is
+        // celebrated only once the view has confirmed it.
         if b.score.home > a.score.home {
-            out.push((k + 1, true, 1.0));
+            out.push((k + 1 + CEREMONY_TICKS, true, 1.0));
         }
         if b.score.away > a.score.away {
-            out.push((k + 1, false, 1.0));
+            out.push((k + 1 + CEREMONY_TICKS, false, 1.0));
         }
         for e in events.get(b.events.clone()).unwrap_or(&[]) {
             if e.event_type == ds_stats::EventType::Shot
@@ -2138,36 +2487,43 @@ mod tests {
         }
     }
 
-    /// Law 6, from the facts: the first whistle follows the referee's
-    /// `Foul`, the second follows the ball coming back at a man's foot.
+    /// Law 6, from the facts: every dead ball is whistled, then the ball
+    /// back at a man's foot lets play restart. A foul with advantage has
+    /// no free kick, so it is not a stop and is not whistled.
     #[test]
-    fn the_two_whistles_follow_the_foul_and_the_restart() {
+    fn the_whistles_follow_every_stop_and_the_restart() {
         let a = app();
         let game = a.game.as_ref().expect("game");
-        let stops: Vec<_> = game
-            .whistles
-            .iter()
-            .filter(|(_, restart)| !restart)
-            .collect();
+        let stops: Vec<_> = game.whistles.iter().filter(|w| !w.restart).collect();
         assert!(!stops.is_empty(), "seed 42 has called fouls");
-        for &(k, _) in &stops {
-            assert!(
-                game.ticks[*k]
-                    .entries
-                    .iter()
-                    .any(|e| e.text.contains("Foul by")),
-                "the stop whistle follows a called foul"
-            );
+        let mut kinds = BTreeMap::new();
+        for stop in stops {
+            *kinds.entry(stop.stop).or_insert(0usize) += 1;
+            let text = &game.ticks[stop.call_tick].entries;
+            let told = match stop.stop {
+                Some(StopKind::Foul) => text.iter().any(|e| e.text.contains("Foul by")),
+                Some(StopKind::Offside) => text.iter().any(|e| e.text.contains("Offside")),
+                Some(StopKind::Goal) => text.iter().any(|e| e.text.contains("GOAL")),
+                Some(StopKind::ThrowIn) => text.iter().any(|e| e.text.contains("Throw-in")),
+                Some(StopKind::GoalKick) => text.iter().any(|e| e.text.contains("Goal kick")),
+                Some(StopKind::Corner) => text.iter().any(|e| e.text.contains("Corner")),
+                None => false,
+            };
+            assert!(told, "the stop at tick {} is {:#?}", stop.tick, text);
             let after = game
                 .whistles
                 .iter()
-                .find(|(j, restart)| *restart && *j > *k)
+                .find(|w| w.restart && w.tick > stop.tick)
                 .expect("the restart whistle");
             assert!(
-                game.records[after.0].carrier.is_some(),
+                game.records[after.tick].carrier.is_some(),
                 "the restart follows the ball at a man's foot"
             );
         }
+        assert!(
+            kinds.contains_key(&Some(StopKind::Foul)),
+            "a foul stops play"
+        );
     }
 
     /// The whistle is seen as well as heard: the picture holds, then the
@@ -2180,12 +2536,15 @@ mod tests {
         let (stop, restart) = game
             .whistles
             .iter()
-            .find_map(|(k, restart)| {
-                if *restart {
+            .find_map(|w| {
+                if w.restart {
                     return None;
                 }
-                let after = game.whistles.iter().find(|(j, r)| *r && *j > *k)?;
-                let taker = game.records[after.0].carrier?;
+                let after = game
+                    .whistles
+                    .iter()
+                    .find(|j| j.restart && j.tick > w.tick)?;
+                let taker = game.records[after.tick].carrier?;
                 let place = |k: usize| {
                     game.records[k]
                         .agents
@@ -2193,12 +2552,12 @@ mod tests {
                         .find(|x| x.id == taker)
                         .map(|x| x.position)
                 };
-                let ball = game.records[*k].ball.position;
+                let ball = game.records[w.tick].ball.position;
                 let away = |p: (i32, i32)| (p.0 - ball.0).abs() + (p.1 - ball.1).abs();
-                let (far, near) = (away(place(*k)?), away(place(after.0)?));
+                let (far, near) = (away(place(w.tick)?), away(place(after.tick)?));
                 // More than two metres to walk, and inside a body's reach
                 // when the referee lets him kick (SIM 150, ADR-088).
-                (far > 200 && near < 90).then_some((*k, after.0))
+                (far > 200 && near < 90).then_some((w.tick, after.tick))
             })
             .expect("a foul whose taker has to walk to the ball");
 
@@ -2210,5 +2569,111 @@ mod tests {
         a.advance(0.1);
         assert!(a.tick - stop <= 1, "at real speed the walk is seen");
         assert!(a.tick < restart, "the restart comes after the walk");
+    }
+
+    /// The lines of an offside are read from the pass that made the run,
+    /// not from the later whistle; the flagged man is beyond the last line.
+    #[test]
+    fn the_offside_lines_come_from_the_pass() {
+        let game = app().game.expect("game");
+        let flagged: Vec<_> = game
+            .whistles
+            .iter()
+            .filter(|w| w.stop == Some(StopKind::Offside))
+            .collect();
+        assert!(!flagged.is_empty(), "seed 42 has offsides");
+        let mut from_pass = false;
+        for off in flagged {
+            let (line, man, at) = off.offside_lines.expect("the lines");
+            from_pass |= at < off.call_tick;
+            let goal = if off.offside.expect("the offender") < 100 {
+                game.pitch_cm.0
+            } else {
+                0
+            };
+            let depth = |x: i32| (goal - x).abs();
+            assert!(
+                depth(man) < depth(line),
+                "tick {at}: the man at {man} is beyond the line at {line}"
+            );
+        }
+        assert!(from_pass, "at least one line is read from the pass");
+        // The decision is announced after the action, not at the fact.
+        assert!(
+            game.whistles
+                .iter()
+                .any(|w| w.stop == Some(StopKind::Offside) && w.tick > w.call_tick),
+            "the offside whistle follows the action"
+        );
+    }
+
+    /// The two screens of the check: a line while the picture holds, the
+    /// sentence after. The card's screen owns the foul's.
+    #[test]
+    fn the_var_check_has_a_question_and_an_answer() {
+        let whistle = |card| Whistle {
+            tick: 0,
+            call_tick: 0,
+            stop: Some(StopKind::Goal),
+            card,
+            offside: None,
+            offside_lines: None,
+            fouled: None,
+            restart: false,
+        };
+        assert_eq!(banner(&whistle(None), true), "VAR — CHECKING THE GOAL");
+        assert_eq!(banner(&whistle(None), false), "GOAL — CONFIRMED");
+        let yellow = Some(CardShown {
+            player: PlayerId::new(3, 0),
+            red: false,
+        });
+        let red = Some(CardShown {
+            player: PlayerId::new(3, 0),
+            red: true,
+        });
+        assert_eq!(banner(&whistle(yellow), true), "VAR — CHECKING THE CARD");
+        assert_eq!(banner(&whistle(yellow), false), "YELLOW CARD — CONFIRMED");
+        assert_eq!(banner(&whistle(red), false), "RED CARD — CONFIRMED");
+    }
+
+    /// The man walks from where he stood to the referee; the home captain
+    /// is the coach's letter, the opponents' the same role in their shape.
+    #[test]
+    fn the_captain_who_speaks_is_the_coach_choice() {
+        assert_eq!(captain_slot(Some(4), 'D'), 3);
+        assert_eq!(captain_slot(Some(104), 'F'), 105);
+        assert_eq!(walked((0.0, 0.0), (100.0, 200.0), 0.0), (0.0, 0.0));
+        assert_eq!(walked((0.0, 0.0), (100.0, 200.0), 1.0), (100.0, 200.0));
+        assert_eq!(walked((0.0, 0.0), (100.0, 200.0), 0.5), (50.0, 100.0));
+    }
+
+    /// The players and the crowd wait for the sentence: no celebration at
+    /// the goal tick, only after the check has ended.
+    #[test]
+    fn the_celebration_waits_for_the_var_sentence() {
+        let game = app().game.expect("game");
+        let goal = game
+            .records
+            .windows(2)
+            .position(|p| p[1].score.home > p[0].score.home || p[1].score.away > p[0].score.away)
+            .expect("seed 42 has a goal")
+            + 1;
+        assert!(
+            game.cheers
+                .iter()
+                .any(|(k, _, _)| *k == goal + CEREMONY_TICKS),
+            "the crowd rises after the check"
+        );
+        assert!(
+            !game.cheers.iter().any(|(k, _, _)| *k == goal),
+            "the crowd is silent during the check"
+        );
+        assert!(
+            game.gestures
+                .values()
+                .flatten()
+                .any(|(k, g)| *k == goal + CEREMONY_TICKS && *g == scene::Gesture::Celebrate),
+            "the players celebrate after the check"
+        );
     }
 }

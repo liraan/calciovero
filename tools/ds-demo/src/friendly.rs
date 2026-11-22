@@ -26,6 +26,9 @@ pub struct Choices {
     pub home: Intention,
     /// The opponents' intention.
     pub away: Intention,
+    /// The captain he wants speaking for his side, by roster letter (GUI
+    /// only: the view shows the approach, the engine takes no order from it).
+    pub captain: Option<char>,
     /// His substitutions: from this minute, this roster letter off, that
     /// one on (plan L0-CLOSE 10f).
     pub subs: Vec<(u16, char, char)>,
