@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `08cb396` - "feat(gui): use the real referee whistle for every signal"
+**Last commit verified:** `89b47bd` - "feat(gui): make the whistle in code, no audio file"
 
 ## Mandato attivo (2026-11-16)
 
