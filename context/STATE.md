@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `f798c46` - "docs(bookmark): move the verified HEAD to e604034"
+**Last commit verified:** `8a42b12` - "feat(gui): every stop is whistled, the VAR speaks, the card waits for the men"
 
 ## Mandato attivo (2026-11-16)
 

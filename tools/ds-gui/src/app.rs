@@ -631,6 +631,9 @@ impl App {
                 }
                 self.playing = !self.playing;
             }
+            if ui.button("Whistle").clicked() {
+                blow(self.audio.as_ref(), false);
+            }
             ui.label(
                 RichText::new(format!("{min:>3}:{sec:02}"))
                     .monospace()
@@ -841,23 +844,8 @@ impl App {
             // ticks at 1x: the view in a recording reads the same lines as
             // the one watching live.
             let held = self.tick < stop.tick.saturating_add(CEREMONY_TICKS);
-            let text = banner(stop, held);
-            let size = if held { 30.0 } else { 20.0 };
-            #[allow(clippy::cast_precision_loss)]
-            let width = text.len() as f32 * size * 0.62;
-            let at = Pos2::new(r.center().x, r.min.y + size);
-            painter.rect_filled(
-                egui::Rect::from_center_size(at, egui::vec2(width, size * 1.8)),
-                6.0,
-                egui::Color32::from_rgba_unmultiplied(0, 0, 0, 170),
-            );
-            painter.text(
-                at,
-                Align2::CENTER_TOP,
-                text,
-                FontId::proportional(size),
-                self.theme.card_yellow,
-            );
+            let (chip, text) = banner(stop, held);
+            var_lower_third(&painter, r, &self.theme, chip, text);
             // The broadcast lines of Law 11, from the pass and not from the
             // whistle: the second-last opponent and the flagged attacker.
             #[allow(clippy::cast_precision_loss)]
@@ -1815,7 +1803,7 @@ fn blow(audio: Option<&Arc<(OutputStream, Sink)>>, restart: bool) {
     let millis = if restart { 90 } else { 330 };
     let trill = SineWave::new(hz)
         .mix(SineWave::new(hz * 1.02_f32))
-        .amplify(0.25)
+        .amplify(0.35)
         .take_duration(Duration::from_millis(millis))
         .fade_in(Duration::from_millis(8))
         .fade_out(Duration::from_millis(40));
@@ -1836,34 +1824,76 @@ enum StopKind {
 }
 
 impl StopKind {
-    /// The banner while the picture holds, then after it. The goal and the
-    /// card get a checking line before the confirmation (the maintainer's
-    /// touch of realism): only the view waits; the event stays append-only.
+    /// The sentence while the picture holds, then after it. The maintainer
+    /// asked for a broadcast lower third, not a caption across the pitch:
+    /// only the view waits; the event stays append-only.
     const fn texts(self) -> (&'static str, &'static str) {
         match self {
-            Self::Foul => ("WHISTLE — FREE KICK", "FREE KICK — TAKING THEIR PLACES"),
-            Self::Offside => ("VAR — CHECKING OFFSIDE", "OFFSIDE — CONFIRMED"),
-            Self::Goal => ("VAR — CHECKING THE GOAL", "GOAL — CONFIRMED"),
-            Self::ThrowIn => ("WHISTLE — THROW-IN", "THROW-IN — TAKING THEIR PLACES"),
-            Self::GoalKick => ("WHISTLE — GOAL KICK", "GOAL KICK — TAKING THEIR PLACES"),
-            Self::Corner => ("WHISTLE — CORNER", "CORNER — TAKING THEIR PLACES"),
+            Self::Foul => ("Free kick", "Taking their places"),
+            Self::Offside => ("Checking offside", "Offside confirmed"),
+            Self::Goal => ("Checking the goal", "Goal confirmed"),
+            Self::ThrowIn => ("Throw-in", "Taking their places"),
+            Self::GoalKick => ("Goal kick", "Taking their places"),
+            Self::Corner => ("Corner", "Taking their places"),
         }
     }
 }
 
-/// The banner at a stop: the check while the picture holds, the sentence
-/// after. A card owns the line even when it comes with a foul.
+/// The lower third at a stop: its chip and sentence. A card owns the line
+/// even when it comes with a foul; only a review gets the VAR chip.
 #[allow(clippy::missing_const_for_fn)]
-fn banner(stop: &Whistle, held: bool) -> &'static str {
+fn banner(stop: &Whistle, held: bool) -> (&'static str, &'static str) {
     if let Some(card) = stop.card {
         return match (held, card.red) {
-            (true, _) => "VAR — CHECKING THE CARD",
-            (false, true) => "RED CARD — CONFIRMED",
-            (false, false) => "YELLOW CARD — CONFIRMED",
+            (true, _) => ("VAR", "Checking the card"),
+            (false, true) => ("VAR", "Red card confirmed"),
+            (false, false) => ("VAR", "Yellow card confirmed"),
         };
     }
+    let chip = match stop.stop {
+        Some(StopKind::Offside | StopKind::Goal) => "VAR",
+        _ => "",
+    };
     let lines = stop.stop.map_or(("", ""), StopKind::texts);
-    if held { lines.0 } else { lines.1 }
+    (chip, if held { lines.0 } else { lines.1 })
+}
+
+/// A broadcast lower third at the bottom of the board: a small chip and the
+/// sentence beside it, instead of a band of text over the play.
+fn var_lower_third(painter: &Painter, r: egui::Rect, theme: &Theme, chip: &str, text: &str) {
+    let size = 15.0;
+    let chip_w = if chip.is_empty() { 0.0 } else { 34.0 };
+    #[allow(clippy::cast_precision_loss)]
+    let text_w = text.len() as f32 * size * 0.54;
+    let w = chip_w + text_w + 20.0;
+    let at = Pos2::new(r.center().x, r.max.y - 24.0);
+    let band = egui::Rect::from_center_size(at, egui::vec2(w, 26.0));
+    painter.rect_filled(
+        band,
+        4.0,
+        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 190),
+    );
+    let mut left = band.min.x + 9.0;
+    if !chip.is_empty() {
+        let tag =
+            egui::Rect::from_min_size(Pos2::new(left, band.min.y + 4.0), egui::vec2(chip_w, 18.0));
+        painter.rect_filled(tag, 3.0, theme.card_yellow);
+        painter.text(
+            tag.center(),
+            Align2::CENTER_CENTER,
+            chip,
+            FontId::proportional(11.0),
+            theme.number_dark,
+        );
+        left = tag.max.x + 8.0;
+    }
+    painter.text(
+        Pos2::new(left, band.center().y),
+        Align2::LEFT_CENTER,
+        text,
+        FontId::proportional(size),
+        theme.lines,
+    );
 }
 
 /// A card at a stop: the man and the colour, both facts of the event.
@@ -2621,8 +2651,8 @@ mod tests {
             fouled: None,
             restart: false,
         };
-        assert_eq!(banner(&whistle(None), true), "VAR — CHECKING THE GOAL");
-        assert_eq!(banner(&whistle(None), false), "GOAL — CONFIRMED");
+        assert_eq!(banner(&whistle(None), true), ("VAR", "Checking the goal"));
+        assert_eq!(banner(&whistle(None), false), ("VAR", "Goal confirmed"));
         let yellow = Some(CardShown {
             player: PlayerId::new(3, 0),
             red: false,
@@ -2631,9 +2661,12 @@ mod tests {
             player: PlayerId::new(3, 0),
             red: true,
         });
-        assert_eq!(banner(&whistle(yellow), true), "VAR — CHECKING THE CARD");
-        assert_eq!(banner(&whistle(yellow), false), "YELLOW CARD — CONFIRMED");
-        assert_eq!(banner(&whistle(red), false), "RED CARD — CONFIRMED");
+        assert_eq!(banner(&whistle(yellow), true), ("VAR", "Checking the card"));
+        assert_eq!(
+            banner(&whistle(yellow), false),
+            ("VAR", "Yellow card confirmed")
+        );
+        assert_eq!(banner(&whistle(red), false), ("VAR", "Red card confirmed"));
     }
 
     /// The man walks from where he stood to the referee; the home captain
