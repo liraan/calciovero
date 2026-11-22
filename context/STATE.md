@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `5892b67` - "feat: header in box reads like a shot (DD-48)"
+**Last commit verified:** `0cf1514` - "docs(adr): register ADR-106 in indexes"
 
 ## Mandato attivo (2026-11-16)
 
