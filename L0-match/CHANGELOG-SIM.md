@@ -8,6 +8,24 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 187 — Il tiratore legge il proprio nervosismo (DD-47/ADR-105)
+
+Il fattore con cui la compostezza modula la pressione di un calcio (ADR-057:
+`2 (1 - composure)`) era applicato dal motore solo al momento del tiro. Il
+portatore che sceglieva il tiro leggeva invece la pressione come se avesse
+compostezza media: la sua lettura e la sua esecuzione non erano dello stesso
+uomo. Ora lo stesso fattore passa nella scena percepita come `own_nerves` e
+modula il termine di pressione dell'errore atteso in `aim_inside` e
+`own_spread`. Nessun numero di `balance/`, nessun dado, nessuna scelta imposta:
+il tiratore ha le stesse opzioni, le valuta con la propria compostezza.
+
+Con LUNA: il dito è la pressione dell'avversario più vicino, la distanza,
+l'angolo, il piede, la potenza e il tick; la luna è lo stesso giocatore che sa
+quanto è calmo e sceglie con quella conoscenza di sé. Cambia il come legge e
+sceglie, non l'etichetta dell'atto, non la fisica del calcio e non la Legge.
+Gemello `the_nervous_shooter_reads_his_own_shot_worse_under_pressure`. Golden
+e semi rigenerati.
+
 ## 186 — Il passo in più e la pressione che fa fallo (DD-43/ADR-101, DD-44/ADR-102)
 
 Due decisioni del maintainer del 2026-11-22 in un solo bump: il comportamento

@@ -73,6 +73,10 @@ pub struct PerceivedScene {
     /// The miss he expects of his strike from how he is moving and how
     /// tired he is, radians, as well as he reads it (plan L0-CLOSE 11).
     pub strike_error_rad: f64,
+    /// How much pressure disturbs his kick, as he knows his own composure
+    /// (DD-47, ADR-057): the factor the engine applies when he strikes.
+    /// 1.0: an average composure, as before.
+    pub own_nerves: f64,
     /// The players he sees, where they will be by his next decision, going
     /// as they are going (plan L0-CLOSE 11, holding the ball up): a
     /// teammate running up, an opponent getting back. Empty: he does not
@@ -854,13 +858,20 @@ fn shot_candidates(
                     (own_error, hurry, scene.strike_error_rad),
                     power,
                     aim_edge_cm,
+                    scene.own_nerves,
                 );
                 let aim_y = side.mul_add(edge, f64::from(goal.1));
                 // How far the keeper leans towards this post, at his depth.
                 let shift = keeper_at.map_or(0.0, |k| side * f64::from(k.1 - goal.1));
                 // His own spread (ADR-052, ADR-031): the foot he strikes
                 // with, the power, the pressure he feels.
-                let spread = own_spread(own_error, power, hurry, scene.strike_error_rad);
+                let spread = own_spread(
+                    own_error,
+                    power,
+                    hurry,
+                    scene.strike_error_rad,
+                    scene.own_nerves,
+                );
                 let chance = ds_calculator::thought::chance_with(
                     (goal_dist as f64, off, shift),
                     goal_cone(pos, goal),
@@ -993,13 +1004,13 @@ fn shift_candidate(
 
 /// The angle of his own kick's miss as he reckons it (ADR-052, ADR-031):
 /// the same the engine gives the kick, his own error widened by the power,
-/// and the pressure he feels.
-fn own_spread(own_error: f64, power: f64, pressure: f64, strike: f64) -> f64 {
+/// and the pressure as his own composure lets it disturb him (DD-47).
+fn own_spread(own_error: f64, power: f64, pressure: f64, strike: f64, nerves: f64) -> f64 {
     let k = &mind().kick;
     (own_error * k.error_power_gain.mul_add(power, 0.5)).mul_add(
         1.0,
         k.error_pressure_rad
-            .mul_add(pressure.clamp(0.0, 1.0), strike),
+            .mul_add(pressure.clamp(0.0, 1.0) * nerves, strike),
     )
 }
 
@@ -1013,8 +1024,9 @@ fn aim_inside(
     (own_error, pressure, strike): (f64, f64, f64),
     power: f64,
     aim_edge_cm: f64,
+    nerves: f64,
 ) -> f64 {
-    let angle = own_spread(own_error, power, pressure, strike);
+    let angle = own_spread(own_error, power, pressure, strike, nerves);
     let expected_miss = goal_dist_cm * angle;
     #[allow(clippy::cast_precision_loss)] // 732 cm
     let half = GOAL_WIDTH_CM as f64 * 0.5;
@@ -1880,6 +1892,7 @@ mod shot_perception_tests {
             run_pace: BTreeMap::new(),
             horizon_cm: f64::MAX,
             strike_error_rad: 0.0,
+            own_nerves: 1.0,
             soon: BTreeMap::new(),
             shield_keep: 0.0,
             foresight: 1.0,
@@ -1973,6 +1986,36 @@ mod shot_perception_tests {
             .into_iter()
             .filter(|c| matches!(c.kind, ChoiceKind::Shoot { .. }))
             .collect()
+    }
+
+    /// Twin (DD-47, ADR-057): two identical shooters but for the nerves they
+    /// know they have. With a man on them the nervous one reads a wider miss
+    /// and a worse chance, so he values the same shot less; with nobody
+    /// near, pressure is zero and composure changes nothing.
+    #[test]
+    fn the_nervous_shooter_reads_his_own_shot_worse_under_pressure() {
+        let best = |nerves: f64, pressured: bool| {
+            let mut s = scene_with(Some(3400));
+            s.own_nerves = nerves;
+            if pressured {
+                let man = PlayerId::new(104, 0);
+                s.opponents.push(man);
+                s.positions.insert(man, (9200, 3400));
+            }
+            shot_options(&s)
+                .into_iter()
+                .map(|c| c.geometric)
+                .fold(f64::NEG_INFINITY, f64::max)
+        };
+        assert!(
+            best(1.6, true) < best(0.4, true),
+            "nerves must widen the miss he reads under pressure"
+        );
+        assert_eq!(
+            best(1.6, false).total_cmp(&best(0.4, false)),
+            std::cmp::Ordering::Equal,
+            "without pressure his composure changes no shot"
+        );
     }
 
     /// Twin test (ADR-031, the maintainer 2026-11-16: the foot is his
@@ -2341,6 +2384,7 @@ mod shot_perception_tests {
                 run_pace: BTreeMap::new(),
                 horizon_cm: f64::MAX,
                 strike_error_rad: 0.0,
+                own_nerves: 1.0,
                 soon: BTreeMap::new(),
                 shield_keep: 0.0,
                 foresight: 1.0,

@@ -176,6 +176,9 @@ impl MatchState {
             }),
             self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
         );
+        // He reads his own composure before he chooses the shot, not only
+        // when the engine applies it to the kick (DD-47, ADR-057).
+        scene.own_nerves = ctx.hidden.kicker_nerves(attacker);
         // What he sees coming (plan L0-CLOSE 11, holding the ball up; the
         // maintainer: "pensa a cosa pensa ed immagina un giocatore"): the
         // players he sees, where they will be by his next decision, going

@@ -964,6 +964,17 @@ impl GroundTruth {
         f64::from(l.cognitive.game_reading) * (on_the_run + tiredness)
     }
 
+    /// How much pressure disturbs this player's kick, as he knows himself
+    /// (DD-47): the same factor the engine applies when he strikes
+    /// (ADR-057). He reads his own composure when he chooses the shot, not
+    /// only when he takes it.
+    #[must_use]
+    pub fn kicker_nerves(&mut self, player: PlayerId) -> f64 {
+        ds_calculator::kick::KickBalance::pressure_nerves(
+            self.latents_for(player).psychological.composure,
+        )
+    }
+
     /// Fatigue's declared parameters (`balance/fatigue.json`).
     #[must_use]
     pub const fn fatigue_balance(&self) -> ds_calculator::fatigue::FatigueBalance {

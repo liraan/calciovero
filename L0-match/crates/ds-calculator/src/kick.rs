@@ -91,11 +91,19 @@ impl KickBalance {
             .mul_add(1.0, self.error_pressure_rad * pressure.clamp(0.0, 1.0))
     }
 
+    /// How much pressure disturbs this kicker (ADR-057, OI-109): a player of
+    /// middling composure (0.5) misses as before, a calm one less, a nervous
+    /// one up to twice as much. The one rule, read both when he kicks and
+    /// when he reckons his own kick (DD-47).
+    #[must_use]
+    pub fn pressure_nerves(composure: f32) -> f64 {
+        2.0 * (1.0 - f64::from(composure.clamp(0.0, 1.0)))
+    }
+
     /// The angular error of a kick under pressure as the kicker's composure
     /// lets it disturb him (ADR-057, OI-109): the pressure term of
-    /// `error_rad` is scaled by `2 (1 - composure)`, so that a player of
-    /// middling composure (0.5) misses as before, a calm one less, a
-    /// nervous one up to twice as much. No number of its own.
+    /// `error_rad` is scaled by [`Self::pressure_nerves`]. No number of its
+    /// own.
     #[must_use]
     pub fn error_rad_composed(
         &self,
@@ -105,10 +113,9 @@ impl KickBalance {
         pressure: f64,
         composure: f32,
     ) -> f64 {
-        let nerves = 2.0 * (1.0 - f64::from(composure.clamp(0.0, 1.0)));
         self.error_rad(shooting, foot, power, 0.0).mul_add(
             1.0,
-            self.error_pressure_rad * pressure.clamp(0.0, 1.0) * nerves,
+            self.error_pressure_rad * pressure.clamp(0.0, 1.0) * Self::pressure_nerves(composure),
         )
     }
 

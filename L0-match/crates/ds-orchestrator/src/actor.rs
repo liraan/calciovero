@@ -252,6 +252,7 @@ mod tests {
             run_pace: BTreeMap::new(),
             horizon_cm: f64::MAX,
             strike_error_rad: 0.0,
+            own_nerves: 1.0,
             soon: BTreeMap::new(),
             shield_keep: 0.0,
             foresight: 1.0,
