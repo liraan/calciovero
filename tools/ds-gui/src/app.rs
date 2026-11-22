@@ -749,26 +749,48 @@ impl App {
         // tick before and the tick after (the interpolation layer).
         #[allow(clippy::cast_precision_loss)]
         let instant = (self.tick as f64 + self.carry - 1.0).max(0.0);
-        let moment = Moment::at(&game.records, instant, &game.header.physics);
+        let live = Moment::at(&game.records, instant, &game.header.physics);
+        // During the whistle pause of an offside, the view freezes on the
+        // pass that created the run (Law 11): the lines are read from that
+        // frame, so the review shows that frame, full pitch.
+        let review = review_at(game, self.tick);
+        let moment = review.map_or_else(
+            || live.clone(),
+            |at| {
+                #[allow(clippy::cast_precision_loss)]
+                let t = at as f64;
+                Moment::at(&game.records, t, &game.header.physics)
+            },
+        );
         let (origin, size) = ((r.min.x, r.min.y), (r.width(), r.height()));
-        if self.follow && !self.placed {
-            // The camera starts on the ball.
-            self.focus = (moment.ball.0, moment.ball.1);
-            self.placed = true;
+        if review.is_none() {
+            if self.follow && !self.placed {
+                // The camera starts on the ball.
+                self.focus = (live.ball.0, live.ball.1);
+                self.placed = true;
+            }
+            if self.follow {
+                // The damped movement: the camera catches up with the ball.
+                let (fx, fy) = self.focus;
+                let k = (self.last_dt * FOLLOW_RATE).clamp(0.0, 1.0);
+                self.focus = (
+                    (live.ball.0 - fx).mul_add(k, fx),
+                    (live.ball.1 - fy).mul_add(k, fy),
+                );
+            }
         }
-        if self.follow {
-            // The damped movement: the camera catches up with the ball.
-            let (fx, fy) = self.focus;
-            let k = (self.last_dt * FOLLOW_RATE).clamp(0.0, 1.0);
-            self.focus = (
-                (moment.ball.0 - fx).mul_add(k, fx),
-                (moment.ball.1 - fy).mul_add(k, fy),
-            );
-        }
-        let span = self.span(game.pitch_cm);
-        let geom = Geometry::view(origin, size, game.pitch_cm, self.tilt, (self.focus, span));
+        let (focus, span) = if review.is_some() {
+            #[allow(clippy::cast_precision_loss)]
+            let centre = (game.pitch_cm.0 as f32 / 2.0, game.pitch_cm.1 as f32 / 2.0);
+            (centre, Geometry::whole_span(game.pitch_cm))
+        } else {
+            (self.focus, self.span(game.pitch_cm))
+        };
+        let geom = Geometry::view(origin, size, game.pitch_cm, self.tilt, (focus, span));
         // What the view could not reach stays where the view is.
-        self.focus = geom.looks_at();
+        if review.is_none() {
+            self.focus = geom.looks_at();
+        }
         let game = self.game.as_ref().expect("the game drawn");
         #[allow(clippy::cast_possible_truncation)]
         let now = instant as f32;
@@ -865,7 +887,9 @@ impl App {
                     }
                 };
                 draw(line, self.theme.card_yellow);
-                draw(man, self.theme.critical);
+                // The attacker's line is the only red mark: no player is
+                // picked out, the judgement is on the line (Law 11).
+                draw(man, self.theme.card_red);
             }
             #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
             let progress =
@@ -2071,6 +2095,17 @@ fn offside_lines(
     None
 }
 
+/// The tick the view freezes on during a stop's whistle pause. Only an
+/// offside has a review frame: the pass that made the run (Law 11), so the
+/// two lines are drawn on the very frame they were read from. Every other
+/// stop keeps the live picture.
+fn review_at(game: &Game, tick: usize) -> Option<usize> {
+    let w = game.whistles.iter().rfind(|w| w.tick <= tick)?;
+    let held = tick < w.tick.saturating_add(CEREMONY_TICKS);
+    let at = w.offside_lines?.2;
+    (held && w.stop == Some(StopKind::Offside)).then_some(at)
+}
+
 /// Every dead ball whistled from the facts. A foul with advantage has no
 /// `FreeKick`, so it never stops the match and is never whistled. Partita
 /// vera + LUNA: the referee signals what the players did and chose; the
@@ -2739,6 +2774,28 @@ mod tests {
                 .any(|w| w.stop == Some(StopKind::Offside) && w.tick > w.call_tick),
             "the offside whistle follows the action"
         );
+    }
+
+    /// The review holds the pass frame for the length of the whistle, then
+    /// hands the picture back to the live play; a goal has no review frame.
+    #[test]
+    fn the_offside_review_freezes_on_the_pass_frame() {
+        let game = app().game.expect("game");
+        let off = game
+            .whistles
+            .iter()
+            .find(|w| w.stop == Some(StopKind::Offside) && w.offside_lines.is_some())
+            .expect("an offside with lines");
+        let pass = off.offside_lines.expect("the lines").2;
+        assert!(pass < off.tick, "the pass precedes the whistle");
+        assert_eq!(review_at(&game, off.tick), Some(pass));
+        assert_eq!(review_at(&game, off.tick + CEREMONY_TICKS), None);
+        let goal = game
+            .whistles
+            .iter()
+            .find(|w| w.stop == Some(StopKind::Goal))
+            .expect("a goal whistle");
+        assert_eq!(review_at(&game, goal.tick), None);
     }
 
     /// The two screens of the check: a line while the picture holds, the
