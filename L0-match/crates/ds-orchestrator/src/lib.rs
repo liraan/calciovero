@@ -349,6 +349,7 @@ impl GroundTruth {
     /// inside the goal mouth. Without deviation every shot is central:
     /// that is the bug this fixes. The formulas are declared in
     /// `CHANGELOG-SIM` entry 27.
+    #[allow(clippy::too_many_lines)]
     pub fn resolve_shot(&mut self, ctx: &ShotContext) -> ShotOutcome {
         let shooter = self.latents_for(ctx.shooter);
 
@@ -358,48 +359,75 @@ impl GroundTruth {
         // kicks with (the side he aims at), the power and the pressure: the
         // same player misses by more from farther away. No die (ADR-035).
         let k = self.kick_balance;
-        // The foot the ball is on (ADR-031, the maintainer 2026-11-16: the
-        // foot is his choice, made before the kick by moving the ball onto
-        // it or not); in front of him, the better one.
-        let foot = match ctx.foot {
-            Some(Side::Left) => shooter.technical.left_foot,
-            Some(Side::Right) => shooter.technical.right_foot,
-            None => shooter
-                .technical
-                .left_foot
-                .max(shooter.technical.right_foot),
-        };
         let pressure = f64::from(ctx.difficulty.clamp(0, 100)) / 100.0;
-        // On the run (plan L0-CLOSE 11): the faster he runs when he strikes
-        // it, the less clean the contact, the less so the better his body
-        // control.
-        // Across his body (plan L0-CLOSE 11): striking it away from where he
-        // runs is harder, as much more as the angle (its sine) and his run.
-        // Fatigue dims his technique (VISION §3, the dimmer, by the same
-        // share it dims his acceleration, ADR-030).
-        let run = (ctx.run_cm_per_tick / k.run_speed_ref_cm_per_tick.max(1.0)).min(1.0);
         #[allow(clippy::cast_possible_truncation)]
         let tired = self
             .movement_balance
             .fatigue_coefficient
             .mul_add(-ctx.fatigue.clamp(0.0, 1.0), 1.0)
             .max(self.movement_balance.fatigue_floor) as f32;
-        let clean = k.error_rad_composed(
-            shooter.technical.finishing * tired,
-            foot * tired,
-            ctx.power,
-            pressure,
-            if self.psychology {
-                shooter.psychological.composure
+        let (clean, on_the_run, _contact, _drag) = if ctx.is_header {
+            let heading = shooter.technical.heading * tired;
+            let clean = k.error_rad_composed(
+                heading,
+                heading,
+                ctx.power,
+                pressure,
+                if self.psychology {
+                    shooter.psychological.composure
+                } else {
+                    0.5
+                },
+            );
+            (clean, 0.0, 0.0, 0.0)
+        } else {
+            // The foot the ball is on (ADR-031, the maintainer 2026-11-16: the
+            // foot is his choice, made before the kick by moving the ball onto
+            // it or not); in front of him, the better one.
+            let foot = match ctx.foot {
+                Some(Side::Left) => shooter.technical.left_foot,
+                Some(Side::Right) => shooter.technical.right_foot,
+                None => shooter
+                    .technical
+                    .left_foot
+                    .max(shooter.technical.right_foot),
+            };
+            // On the run (plan L0-CLOSE 11): the faster he runs when he strikes
+            // it, the less clean the contact, the less so the better his body
+            // control.
+            // Across his body (plan L0-CLOSE 11): striking it away from where he
+            // runs is harder, as much more as the angle (its sine) and his run.
+            // Fatigue dims his technique (VISION §3, the dimmer, by the same
+            // share it dims his acceleration, ADR-030).
+            let run = (ctx.run_cm_per_tick / k.run_speed_ref_cm_per_tick.max(1.0)).min(1.0);
+            let clean = k.error_rad_composed(
+                shooter.technical.finishing * tired,
+                foot * tired,
+                ctx.power,
+                pressure,
+                if self.psychology {
+                    shooter.psychological.composure
+                } else {
+                    0.5
+                },
+            );
+            let on_the_run = k.run_error_rad
+                * run
+                * (1.0 + ctx.across.clamp(0.0, 1.0))
+                * (1.0 - f64::from(shooter.physical.body_control));
+            let contact = ctx.gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
+            #[allow(clippy::cast_possible_truncation)]
+            let aimed: f64 = if (ctx.aim_y - f64::from(ctx.to.1)) as i32 >= 0 {
+                1.0
             } else {
-                // Off: the composure that leaves the pressure as it is.
-                0.5
-            },
-        );
-        let on_the_run = k.run_error_rad
-            * run
-            * (1.0 + ctx.across.clamp(0.0, 1.0))
-            * (1.0 - f64::from(shooter.physical.body_control));
+                -1.0
+            };
+            let drag: f64 = match ctx.momentum_y.signum() {
+                0 => aimed,
+                s => f64::from(s),
+            };
+            (clean, on_the_run, contact, drag)
+        };
         let error = clean + on_the_run;
         let distance = dmath::hypot(
             f64::from(ctx.to.0 - ctx.from.0),
@@ -423,21 +451,34 @@ impl GroundTruth {
         // the step (`gait` past one half) the foot opens and the ball runs
         // away from the post he chose, and rises; met early it is pulled
         // back across, and kept down. In the middle of the step, clean.
-        let contact = ctx.gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
-        let aimed: f64 = if base_dy >= 0 { 1.0 } else { -1.0 };
-        // The run drags the ball the way his body moves (standing, the way
-        // he aimed).
-        let drag: f64 = match ctx.momentum_y.signum() {
-            0 => aimed,
-            s => f64::from(s),
+        // A header has no stride/contact: its miss is a spread around the
+        // aim, biased by the incoming ball's side (kept by the caller).
+        let (contact, drag) = if ctx.is_header {
+            (0.0, 0.0)
+        } else {
+            let c = ctx.gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
+            let aimed: f64 = if base_dy >= 0 { 1.0 } else { -1.0 };
+            let d: f64 = match ctx.momentum_y.signum() {
+                0 => aimed,
+                s => f64::from(s),
+            };
+            (c, d)
         };
+        let aimed: f64 = if base_dy >= 0 { 1.0 } else { -1.0 };
         #[allow(clippy::cast_possible_truncation)]
-        let dy =
-            base_dy + (error_distance * (aimed * clean).mul_add(contact, drag * on_the_run)) as i32;
+        let dy = if ctx.is_header {
+            base_dy + (error_distance * aimed * error) as i32
+        } else {
+            base_dy + (error_distance * (aimed * clean).mul_add(contact, drag * on_the_run)) as i32
+        };
         // A miscued strike rises: the vertical share of the error lifts the
         // ball above the height he aimed at, the more the later he meets it.
         #[allow(clippy::cast_possible_truncation)]
-        let dz = (error_distance * error * k.vertical_share * 0.5 * (1.0 + contact)) as i32;
+        let dz = if ctx.is_header {
+            (error_distance * error * k.vertical_share) as i32
+        } else {
+            (error_distance * error * k.vertical_share * 0.5 * (1.0 + contact)) as i32
+        };
         let to = (
             ctx.to.0,
             ctx.to.1 + dy,
@@ -453,7 +494,9 @@ impl GroundTruth {
 
         // shot_type: geometric, derived from the shot position. Unchanged.
         let dist_cm = (ctx.to.0 - ctx.from.0).abs();
-        let shot_type = if ctx.contact_height >= 0.5 && ctx.power <= 0.3 {
+        let shot_type = if ctx.is_header {
+            ShotType::Header
+        } else if ctx.contact_height >= 0.5 && ctx.power <= 0.3 {
             // His choice: soft and high, over the keeper.
             ShotType::Lob
         } else if dist_cm > 2000 {
@@ -578,6 +621,12 @@ impl GroundTruth {
     #[must_use]
     pub const fn offball_balance(&self) -> ds_calculator::offball::OffBallBalance {
         self.offball_balance
+    }
+
+    /// The player's appetite for risk, 0..1 (ADR-050).
+    #[must_use]
+    pub fn risk_appetite(&mut self, player: PlayerId) -> f32 {
+        self.latents_for(player).cognitive.risk_management
     }
 
     /// The ground duel's declared parameters (`balance/duel.json`).
@@ -1202,7 +1251,9 @@ impl GroundTruth {
         self.top_speed_base(max_speed) * self.fatigue_balance.v_max_factor(fatigue)
     }
 
-    fn latents_for(&mut self, player: PlayerId) -> PlayerLatents {
+    /// The player's latent characteristics (Plane A). Read-only access for match plugins.
+    #[must_use]
+    pub fn latents_for(&mut self, player: PlayerId) -> PlayerLatents {
         self.vault.latents_for(player)
     }
 }

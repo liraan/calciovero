@@ -110,7 +110,8 @@ impl MatchState {
         contenders
     }
 
-    /// A header at goal (plan L0-CLOSE step 4): a shot, from the head.
+    /// A header at goal (plan L0-CLOSE step 4, DD-48): fallback when the
+    /// aerial shot read has no candidate.
     pub(crate) fn header_at_goal(
         &mut self,
         ctx: &mut MatchContext<'_>,
@@ -200,6 +201,135 @@ impl MatchState {
         }
     }
 
+    fn header_shot_choice(
+        &self,
+        ctx: &mut MatchContext<'_>,
+        winner: PlayerId,
+        (bx, by): (i32, i32),
+        goal: (i32, i32),
+    ) -> Option<(f64, f64, f64)> {
+        let (length, _) = pitch_cm(ctx);
+        let home = ctx.match_.home.players.iter().any(|p| p.id == winner);
+        let (my, their) = if home {
+            (&ctx.match_.home, &ctx.match_.away)
+        } else {
+            (&ctx.match_.away, &ctx.match_.home)
+        };
+        let own_goal = (length - goal.0, goal.1);
+        let gk = their.players.first().map(|p| p.id);
+        let keeper_reach_cm = gk.and_then(|g| self.bodies.get(&g)).map_or(0.0, |b| {
+            ctx.hidden.save_balance().standing_reach_cm(b.height_cm)
+        });
+        let teammates = my.players.iter().map(|p| p.id).collect();
+        let opponents: Vec<_> = their.players.iter().map(|p| p.id).collect();
+        let mut scene = crate::state::scene_from(
+            &self.spatial,
+            winner,
+            (goal, own_goal),
+            teammates,
+            opponents,
+            (gk, keeper_reach_cm),
+            false,
+        );
+        scene.ball_foot = None;
+        scene.strike_error_rad = 0.0;
+        let composure = ctx.hidden.latents_for(winner).psychological.composure;
+        scene.own_nerves = ds_calculator::kick::KickBalance::pressure_nerves(composure);
+        scene.reception.heights = scene
+            .positions
+            .keys()
+            .filter_map(|id| self.bodies.get(id).map(|b| (*id, b.height_cm)))
+            .collect();
+        let risk_appetite = f64::from(ctx.hidden.risk_appetite(winner));
+        let own_error = ctx.hidden.header_error_rad(winner, false);
+        let closing = i64::MAX;
+        ds_orchestrator::read::header_shot(
+            &scene,
+            (bx, by),
+            own_error,
+            (risk_appetite, closing),
+            ctx.hidden.shot_choice_balance(),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+    fn header_at_goal_aimed(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        winner: PlayerId,
+        (bx, by, bz): (i32, i32, i32),
+        goal: (i32, i32),
+        (aim_y, power, contact_height, _speed): (f64, f64, f64, f64),
+    ) {
+        let home = ctx.match_.home.players.iter().any(|p| p.id == winner);
+        let contested = self
+            .aerial_contenders(ctx, tick, (bx, by, bz), 0)
+            .iter()
+            .any(|(id, _, _)| *id != winner);
+        let difficulty = if contested { 100 } else { 0 };
+        let ctx_shot = ds_orchestrator::ShotContext {
+            shooter: winner,
+            foot: None,
+            from: (bx, by, bz),
+            to: (goal.0, goal.1, 100),
+            difficulty,
+            aim_y,
+            power,
+            contact_height,
+            momentum_y: 0,
+            gravity_cm_per_tick2: self.spatial.gravity_cm_per_tick2(),
+            gait: 0.5,
+            run_cm_per_tick: 0.0,
+            across: 0.0,
+            fatigue: self
+                .bodies
+                .get(&winner)
+                .map_or(0.0, crate::spatial::PlayerBody::mind_fatigue),
+            is_header: true,
+        };
+        let outcome = ctx.hidden.resolve_shot(&ctx_shot);
+        self.spatial
+            .deflect_ball((bx, by, bz), outcome.initial_velocity);
+        self.spatial.played_by(winner);
+        self.spatial.struck_shot();
+        self.pending = Some(Pending {
+            launched: tick,
+            due_tick: tick + FLIGHT_TICKS,
+            outcome: Self::other(self.possession),
+            interceptor: None,
+            passer: None,
+            receiver: None,
+            closest_cm: None,
+            through: false,
+            cross: false,
+            foot: None,
+            shot: Some(ShotPending {
+                attacker: winner,
+                struck: tick,
+                from: (bx, by, bz),
+            }),
+        });
+        if home {
+            self.shots.0 += 1;
+        } else {
+            self.shots.1 += 1;
+        }
+        let fact = crate::fact::Fact::Trajectory {
+            actor: winner,
+            kind: crate::fact::TrajectoryKind::Shot {
+                on_target: outcome.on_target,
+                from: (bx, by, bz),
+                to: outcome.to,
+                initial_velocity: outcome.initial_velocity,
+                shot_type: outcome.shot_type,
+            },
+        };
+        for c in crate::fact::classify(&fact) {
+            self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
+        }
+    }
+
     /// A ball in the air meets the players it passes within reach of (plan
     /// L0-CLOSE step 4, ADR-042): horizontally their reach for a passing
     /// ball, in height their height and jump (a keeper in his area adds his
@@ -207,6 +337,7 @@ impl MatchState {
     /// the opponents' area, away from his goal in his own half, down to his
     /// feet elsewhere; a keeper in his area catches it. A shot on its way
     /// is not met here (it is the keeper's, or a block).
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn meet_ball_in_air(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
         // A restart waiting: the ball is out of play (SIM 150).
         if self.waiting.is_some() {
@@ -281,14 +412,27 @@ impl MatchState {
                 serde_json::json!({ "x": bx, "y": by, "z": bz, "held": true, "claim": true }),
             );
         } else if in_their_area {
-            self.header_at_goal(
-                ctx,
-                tick,
-                winner,
-                (bx, by, bz),
-                goal,
-                (speed, contenders.len() > 1),
-            );
+            if let Some((aim_y, power, contact_height)) =
+                self.header_shot_choice(ctx, winner, (bx, by), goal)
+            {
+                self.header_at_goal_aimed(
+                    ctx,
+                    tick,
+                    winner,
+                    (bx, by, bz),
+                    goal,
+                    (aim_y, power, contact_height, speed),
+                );
+            } else {
+                self.header_at_goal(
+                    ctx,
+                    tick,
+                    winner,
+                    (bx, by, bz),
+                    goal,
+                    (speed, contenders.len() > 1),
+                );
+            }
         } else if depth(own) < length / 2 {
             // A header away from his goal: up and out. A header is a play
             // like any other: he needs the same moment before he can play

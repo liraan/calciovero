@@ -8,6 +8,18 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 188 — Il colpo di testa in area è letto come un tiro (DD-48/ADR-106)
+
+Quando il vincitore di un duello aereo colpiva di testa in area, mirava al
+centro con un errore fisso da `heading`, ignorando portiere, palo e propria
+composure. Ora legge la stessa scena del tiro (aim/power/contact) e il colpo
+viene risolto da `resolve_shot` con `is_header=true`: errore da heading, senza
+piede/corsa/stride/attraversamento; stesse opzioni, nessun numero nuovo.
+
+Con LUNA: dito = palla alta, contatto, portiere, distanza, tick; luna = lo
+stesso giocatore che legge la porta e sceglie come colpire di testa. Gemello
+`a_header_in_front_of_goal_is_a_shot_choice`. Golden e semi rigenerati.
+
 ## 187 — Il tiratore legge il proprio nervosismo (DD-47/ADR-105)
 
 Il fattore con cui la compostezza modula la pressione di un calcio (ADR-057:

@@ -930,6 +930,38 @@ fn shot_candidates(
     candidates
 }
 
+/// The best header at goal the player reads (phase 2: header as a shot).
+/// Uses heading as the strike skill, no foot/run/stride, same aim/keeper read.
+#[must_use]
+pub fn header_shot(
+    scene: &PerceivedScene,
+    pos: (i32, i32),
+    own_error: f64,
+    (risk_appetite, closing_cm): (f64, i64),
+    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
+) -> Option<(f64, f64, f64)> {
+    let mut s = scene.clone();
+    s.strike_error_rad = 0.0;
+    let best = shot_candidates(
+        &s,
+        pos,
+        (Side::Right, own_error),
+        (risk_appetite, closing_cm),
+        balance,
+    )
+    .into_iter()
+    .filter_map(|c| match c.kind {
+        ChoiceKind::Shoot {
+            aim_y,
+            power,
+            contact_height,
+        } => Some((c.geometric, aim_y, power, contact_height)),
+        _ => None,
+    })
+    .max_by(|a, b| a.0.total_cmp(&b.0))?;
+    Some((best.1, best.2, best.3))
+}
+
 /// The touch onto the better foot (ADR-031, the maintainer 2026-11-16):
 /// with the ball on his weaker foot he also imagines moving it onto the
 /// better one, and the shot that follows, with the opponents nearer by the
@@ -2325,6 +2357,21 @@ mod shot_perception_tests {
             let far = lead_point((2000, 3400), at, (0, 60), physics);
             assert!(near.1 > at.1 && near.0 == at.0, "{near:?}");
             assert!(far.1 > near.1, "{far:?} {near:?}");
+        }
+
+        /// A header in front of goal is read as an aimed shot (phase 2).
+        #[test]
+        fn a_header_in_front_of_goal_is_a_shot_choice() {
+            let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let mut s = scene((3000, 3400), Some((9800, 3400)));
+            s.keeper = Some(PlayerId::new(101, 0));
+            s.positions.insert(PlayerId::new(101, 0), (10450, 3400));
+            let h = header_shot(&s, (9800, 3400), 0.04, (0.5, 500), &balance);
+            assert!(h.is_some(), "header in front of goal must be readable");
+            let (aim_y, power, contact) = h.expect("some");
+            assert!(power > 0.0 && power <= 1.0, "power {power}");
+            assert!((0.0..=1.0).contains(&contact), "contact {contact}");
+            assert!(aim_y > 3000.0 && aim_y < 3800.0, "aim {aim_y}");
         }
 
         /// Waiting for the moment (P1, plan L0-CLOSE 11, ADR-056): with his

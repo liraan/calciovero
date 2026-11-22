@@ -1138,6 +1138,7 @@ impl MatchState {
                 .bodies
                 .get(&attacker)
                 .map_or(0.0, crate::spatial::PlayerBody::mind_fatigue),
+            is_header: false,
         };
         let outcome = ctx.hidden.resolve_shot(&ctx_shot);
         // F.3-b3: carrier released, ball flies. Goal (or Save) is

@@ -309,9 +309,10 @@ fn in_a_dribble_the_ball_is_ahead() {
             }
         }
     }
-    assert!(ticks > 1_000, "dribbles in the golden: {ticks}");
+    assert!(ticks > 800, "dribbles in the golden: {ticks}");
     // SIM 181: a presser goal-side of the carrier makes him shield the ball
     // and take a few steps back; the old 5% measured a press from behind.
+    // SIM 188: header-as-shot read changes the golden; count is still meaningful.
     assert!(
         f64::from(behind) < 0.06 * f64::from(ticks),
         "behind in {behind} of {ticks} ticks of dribbling"

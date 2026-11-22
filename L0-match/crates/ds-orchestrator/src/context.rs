@@ -86,6 +86,8 @@ pub struct ShotContext {
     /// Where his stride is when his foot meets the ball, in `[0, 1)` of a
     /// step (plan L0-CLOSE 11): the contact he cannot see as he decides.
     pub gait: f64,
+    /// A header at goal: error comes from heading, no foot/run/across/gait.
+    pub is_header: bool,
 }
 
 /// The context of a pass resolution.
