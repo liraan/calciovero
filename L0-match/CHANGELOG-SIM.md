@@ -8,6 +8,21 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 190 — Il compagno è conosciuto quanto ci si fida di lui (DD-50/ADR-108)
+
+Il passatore leggeva il primo controllo e il valore aereo dei compagni dalla
+verità (i latenti): un piccolo oracolo, contro i tre piani di ogni attore. Ora
+crede a ciò che ha visto di loro: `0.5 + intesa × lettura × (vero − 0.5)`,
+la stessa fiducia del passo creduto del SIM 179, lo stesso uomo medio con cui
+vede gli avversari. Nessun numero nuovo.
+
+Con LUNA: dito = primo controllo e gioco aereo del compagno; luna = ognuno
+conosce gli altri per ciò che ha visto di loro. Gemello
+`a_mate_is_known_as_far_as_he_is_trusted`. Golden rigenerati; semi coppa 49,
+supplementari 49/42, rigori 49. `ds-reference 42..101`: 6 su 22, come il 188
+rimisurato (il "9 su 22" del 188 era un conteggio sbagliato). Il 189 (DD-49) è
+accantonato sul branch `sim-189-first-time`.
+
 ## 188 — Il colpo di testa in area è letto come un tiro (DD-48/ADR-106)
 
 Quando il vincitore di un duello aereo colpiva di testa in area, mirava al

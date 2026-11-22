@@ -253,6 +253,12 @@ impl MatchState {
             let believed = (intesa * reading).mul_add(seen_pace - generic_pace, generic_pace);
             scene.run_pace.insert(id, believed);
         }
+        // SIM 190: how well he knows each mate, for what he believes of
+        // their touch and their worth in the air.
+        for id in scene.teammates.iter().copied() {
+            let intesa = self.intesa.get(&(attacker, id)).copied().unwrap_or(0.0);
+            scene.reception.intesa.insert(id, intesa);
+        }
         let (chosen_kind, _) =
             ds_orchestrator::Actor::new(attacker).decide(&scene, ctx.hidden, tick);
         let chosen = match chosen_kind {

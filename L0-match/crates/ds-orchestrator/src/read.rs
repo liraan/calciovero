@@ -130,6 +130,11 @@ pub struct ReceptionReckoning {
     /// him; an opponent's from his size only, the rest as an average man
     /// (OI-102, SIM 149).
     pub aerial: BTreeMap<PlayerId, f64>,
+    /// How well he knows each teammate (the match's intesa, `[0, 1]`):
+    /// with his game reading, how far he trusts what he knows of a mate's
+    /// touch and of his worth in the air (SIM 190, the same trust as the
+    /// runner's pace of SIM 179). Absent: a stranger, an average man.
+    pub intesa: BTreeMap<PlayerId, f64>,
 }
 
 /// A ground pass weighed to arrive rolling (`kick.json`), struck at `v0`

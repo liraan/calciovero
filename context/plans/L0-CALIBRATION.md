@@ -10,7 +10,7 @@
   ```
   Finestra di taratura 42..101 (60 partite), squadre di prova, blocco medio e ampiezza normale. Non è un numero statistico: la banda è già la dispersione della partita vera (decisione Y), la finestra serve solo a rileggere la stessa partita più volte e a confrontare misure diverse. **Non fa parte dei controlli di chiusura** (RULES C2, 2026-11-20): si esegue quando serve una decisione sulle metriche, non a ogni intervento.
 - **Riferimento:** Serie A 2017-18, 380 partite, Wyscout (Pappalardo et al. 2019, *Scientific Data* 6, 236; CC BY 4.0), per partita ed entrambe le squadre.
-- **Motore:** `SIM_VERSION` 188 (in codice). L'ultima misura, del 2026-11-22 su 60 partite 42..101, è del **188** (dopo DD-48/ADR-106): gol 10.10, tiri 36.16, tiri in porta 19.87, parate 13.34, passaggi 1758.55; **10 su 22**, ed è nella sezione "La misura del 188" qui sotto. Il 187 (DD-47) era 6/22 con parate 14.65. Il 185 ha spostato i `Threats` da `ds-match` all'orchestratore con aritmetica identica e nessuna misura nuova. La tabella storica sotto è l'ultima misura riga per riga del **171** (6 su 22), lasciata come confronto: le sue cause e i suoi OI valgono ancora dove non sono stati chiusi. SIM 167 (il possesso è il movimento) e SIM 168 (solo osservatori, golden identico) non cambiano il conteggio. Storia delle misure: al 168, dopo ADR-084 e ADR-085 (gol 4.80, passaggi 1237, duelli aerei 10.82, rimesse 17.87, 6 su 22); al 166, la palla libera conserva la velocità e continua a rotolare (gol 5.22, passaggi 1254, duelli aerei 10.62, rimesse 18.08, 6 su 22); al 165, l'emendamento ADR-071 sul posto senza palla letto dal giocatore (gol 5.22, duelli aerei 10.85, rimesse 18.27, 6 su 22); al 164, la scelta C di OI-102 (ADR-081): gol 5.25, duelli aerei 11.02, 6 su 22; al 163, i calci morti e il battitore scelto per ruolo (DD-21, ADR-080): gol 5.20, duelli aerei 10.82, 6 su 22; al 154, la posizione senza palla (ADR-071): 9 su 22; al 151, 11 su 22; al 147, i passi piccoli (ADR-069): gol 2.95, rimesse 25.9, 11 su 22; al 141, il colpo che costringe al cambio (ADR-066): 12 su 22. La taratura è ferma finché i comportamenti non sono giusti (decisione BK). La misura del 116, del 117 e del 118 è identica riga per riga: il 117 e il 118 cambiano solo le partite di coppa e le squadre con l'allenatore che reagisce. **SIM 170** (la pressione rimette alla prova il controllo del portatore, ADR-086) non è stato misurato separatamente: la misura 42..101 è stata fatta al 171, quando il difetto angolare di OI-100 chiedeva una decisione sulle metriche, non un rito di chiusura (RULES C2).
+- **Motore:** `SIM_VERSION` 190 (in codice, DD-50/ADR-108). L'ultima misura, del 2026-11-22 su 60 partite 42..101, è del **190** con il 188 rimisurato accanto: **6 su 22** entrambi, nella sezione "La misura del 188 rifatta e del 190" qui sotto. Il conteggio "10 su 22" / "9 su 22" scritto prima per il 188 era sbagliato (tre righe segnate in banda fuori banda). Il SIM 189 (DD-49) è accantonato sul branch `sim-189-first-time`. Il 187 (DD-47) era 6/22 con parate 14.65. Il 185 ha spostato i `Threats` da `ds-match` all'orchestratore con aritmetica identica e nessuna misura nuova. La tabella storica sotto è l'ultima misura riga per riga del **171** (6 su 22), lasciata come confronto: le sue cause e i suoi OI valgono ancora dove non sono stati chiusi. SIM 167 (il possesso è il movimento) e SIM 168 (solo osservatori, golden identico) non cambiano il conteggio. Storia delle misure: al 168, dopo ADR-084 e ADR-085 (gol 4.80, passaggi 1237, duelli aerei 10.82, rimesse 17.87, 6 su 22); al 166, la palla libera conserva la velocità e continua a rotolare (gol 5.22, passaggi 1254, duelli aerei 10.62, rimesse 18.08, 6 su 22); al 165, l'emendamento ADR-071 sul posto senza palla letto dal giocatore (gol 5.22, duelli aerei 10.85, rimesse 18.27, 6 su 22); al 164, la scelta C di OI-102 (ADR-081): gol 5.25, duelli aerei 11.02, 6 su 22; al 163, i calci morti e il battitore scelto per ruolo (DD-21, ADR-080): gol 5.20, duelli aerei 10.82, 6 su 22; al 154, la posizione senza palla (ADR-071): 9 su 22; al 151, 11 su 22; al 147, i passi piccoli (ADR-069): gol 2.95, rimesse 25.9, 11 su 22; al 141, il colpo che costringe al cambio (ADR-066): 12 su 22. La taratura è ferma finché i comportamenti non sono giusti (decisione BK). La misura del 116, del 117 e del 118 è identica riga per riga: il 117 e il 118 cambiano solo le partite di coppa e le squadre con l'allenatore che reagisce. **SIM 170** (la pressione rimette alla prova il controllo del portatore, ADR-086) non è stato misurato separatamente: la misura 42..101 è stata fatta al 171, quando il difetto angolare di OI-100 chiedeva una decisione sulle metriche, non un rito di chiusura (RULES C2).
 - **La banda:** media reale ± una deviazione standard delle 380 partite reali. **Il suo significato (decisione Y, maintainer, 2026-11-16):** L0 si chiude sulla credibilità della singola partita: una partita vera può finire 0-0 o 4-3, e la dispersione delle partite vere dice cosa è credibile. L1 si chiuderà sulle medie del campionato, con la banda sull'errore della media su una stagione intera, perché i totali di stagione (gol, capocannoniere) mostrano ogni scarto nelle medie. La fonte è lo stesso riferimento. È una regola sola per tutte le metriche, presa dalla dispersione del calcio vero e non dai valori del motore. Il caos del motore (circa 1.5 gol fra due esecuzioni che differiscono di un bit, SIM 101) sta dentro questa larghezza.
 - **Non confrontabili:** cross e intercetti. Le definizioni Wyscout e del motore differiscono (`ds-reference`, nota della tabella).
 
@@ -131,6 +131,37 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 1.35 | 5.54 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 4.51 | 2.5–5.7 | sì | — |
 
+## La misura del 188 rifatta e del 190 (2026-11-22, DD-50/ADR-108)
+
+Stesso comando, tre tranche 42..61, 62..81, 82..101 (60 partite), aggregate con media semplice; banda = media reale ± una deviazione standard (decisione Y). **Correzione:** la tabella "La misura del 188" qui sotto segnava "in banda" tiri (36.16, banda 19.1–30.1), duelli a terra (147.53, banda 155–210) e rimesse (22.66, banda 33.8–51.6), che non lo sono: il 188 era **6 su 22**, non 9 (né 10). Rimisurato qui con lo stesso metodo del 190. Nessun numero adattato (A5-bis).
+
+| Metrica | Reale | Motore 188 | Dentro? | Motore 190 | Dentro? |
+|---|---|---|---|---|---|
+| goals | 2.68 | 10.18 | no | 10.98 | no |
+| own_goals | 0.1 | 1.95 | no | 2.32 | no |
+| shots | 24.6 | 36.5 | no | 37.02 | no |
+| shots_on_target | 8.69 | 20.02 | no | 19.6 | no |
+| penalties | 0.33 | 0.22 | sì | 0.42 | sì |
+| passes | 887.68 | 1758.52 | no | 1743.95 | no |
+| passes_accurate | 739.17 | 1447.9 | no | 1437.62 | no |
+| aerial_duels | 38.14 | 8.97 | no | 7.9 | no |
+| ground_duels | 182.63 | 147.82 | no | 146.42 | no |
+| take_ons_won | 16.03 | 18.83 | sì | 18.7 | sì |
+| fouls | 26 | 24.3 | sì | 24.47 | sì |
+| yellow_cards | 3.97 | 6.87 | no | 7.27 | no |
+| red_cards | 0.24 | 0.5 | sì | 0.67 | sì |
+| corners | 10.3 | 22.12 | no | 21.5 | no |
+| throw_ins | 42.72 | 22.55 | no | 23.5 | no |
+| goal_kicks | 17.15 | 16.93 | sì | 17.27 | sì |
+| free_kicks | 29.45 | 32.13 | sì | 32.72 | sì |
+| offsides | 4.26 | 9.47 | no | 10.27 | no |
+| clearances | 29.53 | 41.55 | no | 42.27 | no |
+| saves | 9.37 | 13.42 | no | 13.05 | no |
+| stoppage_first_half_min | 1.49 | 9.5 | no | 10.01 | no |
+| stoppage_second_half_min | 4.08 | 8.78 | no | 9.13 | no |
+
+**In banda: 188 → 6 su 22; 190 → 6 su 22** (rigori, dribbling riusciti, falli, rossi, rinvii dal fondo, punizioni). Il 190 non cambia banda a nessuna metrica: cambia chi sa che cosa (la lettura dei compagni), non la radice di OI-100. Il SIM 189 (DD-49, il gioco di prima) misurava 5 su 22, e 4 su 22 con la sua correzione: è accantonato sul branch `sim-189-first-time`, non è su main.
+
 ## La misura del 188 (2026-11-22, DD-48/ADR-106)
 
 `cargo run --release -p ds-reference -- compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..101` spezzato in tre tranche (42..62, 62..81, 81..101; 62 partite), motore 188, aggregato manualmente. La banda è la stessa (media reale ± una deviazione standard); le due voci non confrontabili (cross, intercetti) restano fuori. Nessun numero è stato adattato per rientrare in banda (A5-bis).
@@ -160,7 +191,7 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 9.42 | 0.1–2.8 | no | OI-101: il motore addiziona tutto il tempo perso |
 | recupero, secondo tempo (min) | 4.08 | 8.73 | 2.5–5.7 | no | OI-101: stessa causa del primo tempo |
 
-**In banda (SIM 188): 9 su 22** (tiri, rigori, duelli a terra, dribbling riusciti, falli, rossi, rimesse, rinvii dal fondo, punizioni). DD-48 fa entrare tiri, duelli a terra e rimesse; parate restano fuori per 0.64 (13.34, banda 6.0–12.7). Nessun numero adattato (A5-bis).
+**In banda (SIM 188): 9 su 22 — conteggio sbagliato, in realtà 6 su 22 (vedi "La misura del 188 rifatta e del 190")** (tiri, rigori, duelli a terra, dribbling riusciti, falli, rossi, rimesse, rinvii dal fondo, punizioni). DD-48 fa entrare tiri, duelli a terra e rimesse; parate restano fuori per 0.64 (13.34, banda 6.0–12.7). Nessun numero adattato (A5-bis).
 
 ## La misura del 184 (2026-11-21)
 

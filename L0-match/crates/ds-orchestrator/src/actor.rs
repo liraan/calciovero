@@ -122,8 +122,24 @@ impl Actor {
         #[allow(clippy::cast_precision_loss)] // cm on a pitch: far below 2^52
         let reach_cm = duel.slide_reach_cm() as f64;
         scene.reception.reach_cm = reach_cm;
+        // What he knows of a teammate is what he has seen of him (the
+        // three planes of every actor, foundations §3): a mate he knows
+        // well and a good reader of the game see him nearly as he is; a
+        // stranger, or a poor reader, as an average man. The same trust
+        // as the runner's pace (SIM 179): intesa times game reading.
+        let reading = scene.reception.reading;
+        let trust = |id: &PlayerId| {
+            scene
+                .reception
+                .intesa
+                .get(id)
+                .copied()
+                .unwrap_or(0.0)
+                .clamp(0.0, 1.0)
+                * reading
+        };
         for id in &scene.teammates {
-            let touch = f64::from(hidden.latents_for(*id).technical.first_touch);
+            let touch = believed_of_mate(trust(id), hidden.latents_for(*id).technical.first_touch);
             scene.reception.first_touch.insert(*id, touch);
         }
         // What he believes each man is worth in the air (OI-102, SIM 149):
@@ -135,10 +151,13 @@ impl Actor {
             };
             let force = if scene.teammates.contains(id) {
                 let l = hidden.latents_for(*id);
+                let t = trust(id);
+                #[allow(clippy::cast_possible_truncation)] // a belief in [0, 1]
+                let b = |v: f32| believed_of_mate(t, v) as f32;
                 duel.aerial_force(
-                    l.technical.heading,
-                    l.physical.explosive_force,
-                    l.physical.maximal_force,
+                    b(l.technical.heading),
+                    b(l.physical.explosive_force),
+                    b(l.physical.maximal_force),
                     height,
                 )
             } else {
@@ -203,9 +222,35 @@ impl Actor {
     }
 }
 
+/// What a player believes of a teammate's latent (SIM 190): the truth as
+/// far as he trusts what he has seen of him (`trust`: their intesa times
+/// his game reading, the same trust as the runner's pace, SIM 179), the
+/// rest an average man (0.5, as he sees every opponent). No number of its
+/// own: the scale's middle and the two characteristics already there.
+#[must_use]
+pub fn believed_of_mate(trust: f64, truth: f32) -> f64 {
+    trust.clamp(0.0, 1.0).mul_add(f64::from(truth) - 0.5, 0.5)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Twin test (SIM 190): the same mate with a fine first touch; only
+    /// how far the passer trusts what he knows of him changes. A stranger,
+    /// or a passer who cannot read the game, sees an average man; a mate
+    /// he knows, read well, he sees as he is; between them, in order.
+    #[test]
+    fn a_mate_is_known_as_far_as_he_is_trusted() {
+        let fine = 0.9_f32;
+        assert!((believed_of_mate(0.0, fine) - 0.5).abs() < 1e-12);
+        assert!((believed_of_mate(1.0, fine) - f64::from(fine)).abs() < 1e-6);
+        let some = believed_of_mate(0.25, fine);
+        assert!(some > 0.5 && some < f64::from(fine), "some {some}");
+        // The same for a poor touch: trusted less, he is thought better.
+        let poor = 0.1_f32;
+        assert!(believed_of_mate(0.25, poor) > f64::from(poor));
+    }
 
     #[test]
     fn actor_is_a_player() {
