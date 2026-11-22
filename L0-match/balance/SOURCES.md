@@ -9,7 +9,7 @@
 - **explained, no source**: the file explains what it does, without a source or a derivation.
 - **undocumented**: the file says nothing about this parameter. These come first in the work to do.
 
-**Today:** 211 parameters in 21 files: 24 sourced, 7 derived, 5 arbitrary and declared, 82 explained without a source, 93 undocumented (2026-11-15: the four parameters of the old choice formula removed, SIM 126, OI-85; the block's width measured on tracking data, SIM 127, OI-100; the bounce derived from FIFA's vertical rebound, SIM 128).
+**Today:** 217 parameters in 21 files: 27 sourced, 17 derived, 80 arbitrary and declared (grade 3), 93 explained without a source, 0 undocumented (2026-11-22: the 92 undocumented rows classified from the code and each file's `_source`; no source invented, no value changed). Earlier: 2026-11-15, the four parameters of the old choice formula removed, SIM 126, OI-85; the block's width measured on tracking data, SIM 127, OI-100; the bounce derived from FIFA's vertical rebound, SIM 128.
 
 **The rule from now on.** A change to a number in `balance/` updates its row here in the same commit, with the source (author, year, title, and the page or table) or the derivation, or the word *arbitrary*. A number chosen by looking at the statistic it produces is never a source. This file was generated from the JSON files on 2026-11-14 (the classification is read from their text and is a first pass: a row marked sourced still needs its full reference written here when the file gives only a name).
 
@@ -66,25 +66,25 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `gravity_cm_per_tick2` | 10 | undocumented | — |
-| `air_friction_milli` | 990 | undocumented | — |
-| `ground_friction_milli` | 957 | undocumented | — |
-| `stop_threshold_cm_per_tick` | 1 | undocumented | — |
+| `gravity_cm_per_tick2` | 10 | derived | g = 9.8 m/s² at 10 ticks/s is 9.8 cm/tick², rounded to 10 (MD-18; the file: "derived, not arbitrary") |
+| `air_friction_milli` | 990 | arbitrary (grade 3) | Each tick in the air the horizontal velocity is multiplied by this/1000; the file calls it a prototype value (MD-18), arbitrary. Higher = less drag, longer flights. |
+| `ground_friction_milli` | 957 | explained, no source | Each tick on the ground the horizontal velocity is multiplied by this/1000; chosen so that v0 / (1 - k) is about 35 m for a 15 m/s pass (150 / 0.043 = 3488 cm), the order of magnitude of a ground pass on grass, unsourced; arbitrary until L3. Higher = longer rolls. |
+| `stop_threshold_cm_per_tick` | 1 | arbitrary (grade 3) | A grounded ball slower than this comes to rest; prototype (MD-18). Higher = rolling balls stop sooner. |
 | `restitution_milli` | 632 | derived | FIFA Natural-Pitch Rating System, vertical ball rebound, 'excellent' band 0.60-1.00 m from a 2.00 m drop: sqrt(0.80 / 2.00) = 0.632 (SIM 128, OI-100); the horizontal loss at the bounce waits for FIFA Test Manual II |
 
 ### `block.json`
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `depth_in_possession_cm` | 4500 | undocumented | — |
-| `depth_out_of_possession_cm` | 3200 | undocumented | — |
+| `depth_in_possession_cm` | 4500 | arbitrary (grade 3) | Depth of the block from defensive to forward line with the ball (the side stretches); the file declares it arbitrary until L3. Higher = a longer team in possession. |
+| `depth_out_of_possession_cm` | 3200 | explained, no source | Depth of the block without the ball; the file: a compact block out of possession is about 30-35 m deep, an order of magnitude without a source. Higher = a less compact team without the ball. |
 | `width_in_possession_cm` | 4730 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean 47.3 m with the ball in play (SIM 129; 42.2 at SIM 127 counted the dead-ball frames) |
 | `width_out_of_possession_cm` | 3700 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean 37.0 m without it, with the ball in play |
-| `line_behind_ball_in_possession_cm` | 3000 | undocumented | — |
-| `line_behind_ball_out_of_possession_cm` | 1500 | undocumented | — |
-| `line_min_cm` | 1000 | undocumented | — |
-| `line_max_in_possession_cm` | 5800 | undocumented | — |
-| `line_max_out_of_possession_cm` | 4500 | undocumented | — |
+| `line_behind_ball_in_possession_cm` | 3000 | arbitrary (grade 3) | How far the defensive line sits behind the ball when the side has it; declared arbitrary until L3. Higher = a deeper line in possession. |
+| `line_behind_ball_out_of_possession_cm` | 1500 | arbitrary (grade 3) | How far the defensive line sits behind the ball without it; declared arbitrary until L3. Higher = a deeper line out of possession. |
+| `line_min_cm` | 1000 | arbitrary (grade 3) | The closest the defensive line comes to its own goal line; declared arbitrary until L3. Higher = the line never drops as deep. |
+| `line_max_in_possession_cm` | 5800 | arbitrary (grade 3) | The farthest the defensive line goes from its own goal with the ball; declared arbitrary until L3. Higher = a higher line in possession. |
+| `line_max_out_of_possession_cm` | 4500 | arbitrary (grade 3) | The farthest the defensive line goes from its own goal without the ball; declared arbitrary until L3. Higher = a higher line out of possession. |
 | `ball_side_shift_milli` | 270 | sourced | measured, Metrica Sports sample tracking, games 1 and 2: the distance between a side's widest outfield players, and the slope of its centre on the ball's side (SIM 127, OI-100); mean slope 0.27 |
 | `high_block_line_cm` | 1200 | explained, no source | A high block pushes the line high_block_line_cm up and closer to the ball out of possession (the line behind the ball shrinks by half as much); a low block drops it low_block_line_cm and sits further behind the ball; a wide team stretches its width with the ball by width_change_milli, a narrow one shrinks it. |
 | `low_block_line_cm` | 1500 | explained, no source | A high block pushes the line high_block_line_cm up and closer to the ball out of possession (the line behind the ball shrinks by half as much); a low block drops it low_block_line_cm and sits further behind the ball; a wide team stretches its width with the ball by width_change_milli, a narrow one shrinks it. |
@@ -94,7 +94,7 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `carry_distance_cm` | 1000 | undocumented | — |
+| `carry_distance_cm` | 1000 | arbitrary (grade 3) | How far a carrier runs with the ball towards the opponent goal before his next decision; declared arbitrary (OI-97), about the distance covered in the 1-3 s of a decision. Higher = longer carries. |
 | `carry_stop_from_goal_cm` | 1650 | sourced | To be calibrated at L3. carry_stop_from_goal_cm 1650: the edge of the penalty area (Law 1, 16.5 m); a carrier stops there and chooses, he does not dribble onto the goal line. |
 
 ### `choice.json`
@@ -109,57 +109,57 @@ The quick instructions move the block by a step that is the coach's choice shown
 |---|---|---|---|
 | `reach_cm` | 120 | explained, no source | An opponent within reach_cm of the ball challenges the carrier, at most once every retry_ticks (his own pace); the contact is deterministic: the defender's force is a weighted sum of his tackling and explosive force, the carrier's of his first touch (keeping the ball, a proxy until dribbling exists) and explosive force; the stronger contact wins, ties to the carrier. In the air (2026-11-13, plan L0-CLOSE step 4): a b |
 | `retry_ticks` | 50 | explained, no source | An opponent within reach_cm of the ball challenges the carrier, at most once every retry_ticks (his own pace); the contact is deterministic: the defender's force is a weighted sum of his tackling and explosive force, the carrier's of his first touch (keeping the ball, a proxy until dribbling exists) and explosive force; the stronger contact wins, ties to the carrier. |
-| `defender_tackling_milli` | 450 | undocumented | — |
-| `defender_explosive_milli` | 200 | undocumented | — |
-| `defender_force_milli` | 200 | undocumented | — |
-| `defender_body_milli` | 100 | undocumented | — |
-| `carrier_first_touch_milli` | 450 | undocumented | — |
-| `carrier_explosive_milli` | 200 | undocumented | — |
-| `carrier_force_milli` | 200 | undocumented | — |
-| `carrier_body_milli` | 200 | undocumented | — |
-| `loose_margin_milli` | 40 | undocumented | — |
+| `defender_tackling_milli` | 450 | arbitrary (grade 3) | Weight of the defender's tackling in his contact force. Higher = tackling decides more of the duel. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `defender_explosive_milli` | 200 | arbitrary (grade 3) | Weight of the defender's explosive force in his contact force. Higher = explosiveness decides more of the defender's side. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `defender_force_milli` | 200 | arbitrary (grade 3) | Weight of the defender's maximal_force in his contact force. Higher = strength decides more of the defender's side. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `defender_body_milli` | 100 | arbitrary (grade 3) | Weight of the defender's body_control in his contact force. Higher = balance decides more of the defender's side. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `carrier_first_touch_milli` | 450 | arbitrary (grade 3) | Weight of the carrier's first touch in his keeping force. Higher = first touch decides more of the carrier's side. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `carrier_explosive_milli` | 200 | arbitrary (grade 3) | Weight of the carrier's explosive force in his keeping force. Higher = explosiveness decides more of the carrier's side. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `carrier_force_milli` | 200 | arbitrary (grade 3) | Weight of the carrier's maximal_force in his keeping force. Higher = strength decides more of the carrier's side. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `carrier_body_milli` | 200 | arbitrary (grade 3) | Weight of the carrier's body_control in his keeping force. Higher = balance decides more of the carrier's side. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `loose_margin_milli` | 40 | arbitrary (grade 3) | The force margin within which a ground duel leaves the ball loose. Higher = more loose balls, fewer clean wins. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
 | `loose_speed_cm_per_tick` | 50 | sourced | checked on Metrica Sports sample tracking, games 1 and 2: the ball after 228 ground challenges, median 4.6 m/s (quartiles 2.8-6.8) |
 | `slide_reach_milli` | 1400 | explained, no source | Standing (standing_salience x (0.5 + 0.5 x tackling)), slide (slide_salience x aggressiveness; it reaches slide_reach_milli of the standing reach and adds slide_bonus to his force, but if he does not win the ball he is on the ground for slide_recovery_ticks), or jockey (jockey_salience x (1 - aggressiveness) x (0.5 + 0.5 x game_reading): he stays in front and waits, no contact). |
-| `slide_bonus_milli` | 80 | undocumented | — |
+| `slide_bonus_milli` | 80 | arbitrary (grade 3) | What a slide adds to the defender's force. Higher = slides win the ball more often. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
 | `slide_recovery_ticks` | 60 | explained, no source | Standing (standing_salience x (0.5 + 0.5 x tackling)), slide (slide_salience x aggressiveness; it reaches slide_reach_milli of the standing reach and adds slide_bonus to his force, but if he does not win the ball he is on the ground for slide_recovery_ticks), or jockey (jockey_salience x (1 - aggressiveness) x (0.5 + 0.5 x game_reading): he stays in front and waits, no contact). |
-| `shield_force_milli` | 150 | undocumented | — |
-| `shield_body_milli` | 100 | undocumented | — |
-| `dribble_dribbling_milli` | 500 | undocumented | — |
-| `dribble_explosive_milli` | 250 | undocumented | — |
-| `dribble_body_milli` | 200 | undocumented | — |
+| `shield_force_milli` | 150 | arbitrary (grade 3) | Weight of maximal_force in the carrier's shielding. Higher = strong carriers shield better. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `shield_body_milli` | 100 | arbitrary (grade 3) | Weight of body_control in the carrier's shielding. Higher = balanced carriers shield better. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `dribble_dribbling_milli` | 500 | arbitrary (grade 3) | Weight of dribbling when the carrier takes the man on. Higher = dribbling decides more of a take-on. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `dribble_explosive_milli` | 250 | arbitrary (grade 3) | Weight of explosive force when the carrier takes the man on. Higher = explosiveness decides more of a take-on. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `dribble_body_milli` | 200 | arbitrary (grade 3) | Weight of body_control when the carrier takes the man on. Higher = balance decides more of a take-on. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
 | `beaten_ticks` | 80 | explained, no source | A man beaten by a dribble is out of the play for beaten_ticks. |
 | `answer_trust_milli` | 250 | explained, no source | The carrier answers (2026-11-13, plan L0-CLOSE step 5, ADR-042 step c): when a defender goes in, the carrier shields or takes him on, by what he imagines (ADR-052): how sure he is to keep the ball (his own force for that answer against an average defender, answer_trust_milli the margin that makes him sure), what the space he keeps is worth, what the space past the man is worth, and what the opponents would have if he |
-| `standing_salience_milli` | 600 | undocumented | — |
-| `slide_salience_milli` | 900 | undocumented | — |
-| `jockey_salience_milli` | 500 | undocumented | — |
-| `foul_threshold_milli` | 800 | undocumented | — |
+| `standing_salience_milli` | 600 | arbitrary (grade 3) | Salience of a standing challenge, x (0.5 + 0.5 x tackling). Higher = more standing tackles. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `slide_salience_milli` | 900 | arbitrary (grade 3) | Salience of a slide, x aggressiveness. Higher = more slides. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `jockey_salience_milli` | 500 | arbitrary (grade 3) | Salience of jockeying, x (1 - aggressiveness) x (0.5 + 0.5 x game_reading). Higher = more jockeying, fewer contacts. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `foul_threshold_milli` | 800 | arbitrary (grade 3) | The band at which a contact the defender does not win is a foul (Law 12). Higher = fewer fouls. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
 | `foul_press_threshold_milli` | 675 | derived (ADR-102, OI-114) | StatsBomb open data (Liga 2020/21, 20 matches: 20.6 fouls after a `Pressure` on 314 pressures a match, 6.6%) gives the share of contact pressures that end in a foul. Fixed before measuring on the first half of the seeds on the band of ground contacts the defender wins: about 173 contact-presses and 11 extra fouls a match; the 80th percentile of that band is 675 milli, the value that leaves out the other ~94%. Same roots as `foul_threshold_milli` (800, the contact the defender does not win), a threshold of its own because a won press is not a won tackle (SIM 186). |
-| `foul_slide_milli` | 300 | undocumented | — |
-| `foul_behind_milli` | 350 | undocumented | — |
-| `foul_temper_milli` | 500 | undocumented | — |
-| `foul_speed_milli` | 200 | undocumented | — |
-| `foul_technique_milli` | 200 | undocumented | — |
-| `speed_ref_cm_per_tick` | 90 | undocumented | — |
+| `foul_slide_milli` | 300 | arbitrary (grade 3) | What a slide adds to the foul band. Higher = more fouls from slides. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `foul_behind_milli` | 350 | arbitrary (grade 3) | What a challenge from behind adds to the foul band. Higher = more fouls from behind. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `foul_temper_milli` | 500 | arbitrary (grade 3) | What aggressiveness without emotional control adds to the foul band. Higher = more fouls by hot-headed players. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `foul_speed_milli` | 200 | arbitrary (grade 3) | What the approach speed (at speed_ref) adds to the foul band. Higher = more fouls at speed. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `foul_technique_milli` | 200 | arbitrary (grade 3) | What a poor tackling technique, (1 - tackling), adds to the foul band. Higher = more fouls by poor tacklers. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `speed_ref_cm_per_tick` | 90 | arbitrary (grade 3) | The approach speed of reference for the foul band (9 m/s). Higher = speed adds less to the band, fewer fouls. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
 | `area_slide_caution_milli` | 250 | explained, no source | In his own penalty area a defender is careful: the slide's salience is multiplied by area_slide_caution_milli (a foul there is a penalty). |
 | `booked_slide_caution_milli` | 150 | explained, no source | A player already cautioned is careful too: the slide's salience is multiplied by booked_slide_caution_milli (another yellow is a red). |
 | `jump_ref_cm` | 55 | explained, no source | In the air (2026-11-13, plan L0-CLOSE step 4): a ball in the air is met by the players it passes within reach of, horizontally (their reach for a passing ball) and in height (their height plus their jump, explosive_force x jump_ref_cm; a keeper in his area adds his arms, hands_reach_cm). |
 | `hands_reach_cm` | 70 | explained, no source | In the air (2026-11-13, plan L0-CLOSE step 4): a ball in the air is met by the players it passes within reach of, horizontally (their reach for a passing ball) and in height (their height plus their jump, explosive_force x jump_ref_cm; a keeper in his area adds his arms, hands_reach_cm). |
-| `header_speed_cm_per_tick` | 130 | undocumented | — |
-| `aerial_heading_milli` | 400 | undocumented | — |
-| `aerial_jump_milli` | 300 | undocumented | — |
-| `aerial_force_milli` | 150 | undocumented | — |
-| `aerial_height_milli` | 150 | undocumented | — |
-| `keeper_hands_bonus_milli` | 300 | undocumented | — |
+| `header_speed_cm_per_tick` | 130 | arbitrary (grade 3) | The speed a header leaves at (13 m/s). Higher = harder, farther headers. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `aerial_heading_milli` | 400 | arbitrary (grade 3) | Weight of heading in an aerial duel. Higher = heading technique decides more of the air. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `aerial_jump_milli` | 300 | arbitrary (grade 3) | Weight of the jump in an aerial duel. Higher = the jump decides more of the air. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `aerial_force_milli` | 150 | arbitrary (grade 3) | Weight of maximal_force in an aerial duel. Higher = strength decides more of the air. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `aerial_height_milli` | 150 | arbitrary (grade 3) | Weight of height in an aerial duel (190 cm is full). Higher = tall players win more in the air. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
+| `keeper_hands_bonus_milli` | 300 | arbitrary (grade 3) | What a keeper's hands add in an aerial duel in his area. Higher = keepers win more balls in the air. The file: "the new weights and the three saliences: arbitrary, declared, to be calibrated at L3". |
 
 ### `fatigue.json`
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `effort_ref_cm_per_tick` | 90.0 | undocumented | — |
+| `effort_ref_cm_per_tick` | 90.0 | arbitrary (grade 3) | The reference sprint (9 m/s): a tick's effort is (speed / effort_ref)^2. Its scale cancels in the fatigue rate (gain_per_tick is computed with it) but it sets contest_pace_share = the fastest bin of match_profile / effort_ref (75 / 90). Higher = players contest at a smaller share of their top speed. |
 | `rest_effort` | 0.02 | explained, no source | Each tick a player's fatigue (0 to 1) changes by gain_per_tick x ((1.5 - endurance) x effort - (0.5 + endurance) x rest_effort), where effort = (his speed / effort_ref)^2: a sprint costs about nine times a jog, and a slow tick lets him recover, the more the higher his endurance. Whatever the engine's players then run, more or less than real ones, shows in their fatigue: it is a finding, not a number to tune. match_pr |
 | `half_time_recovery` | 0.3 | sourced | At half-time he recovers half_time_recovery of it. Whatever the engine's players then run, more or less than real ones, shows in their fatigue: it is a finding, not a number to tune. match_profile: a professional match's activity, about 60% of the time walking or standing (1.5 m/s), 25% jogging (3.5 m/s), 13% running (5 m/s), 2% sprinting (7.5 m/s), about 10-11 km in all (Bangsbo, Mohr and Krustrup 2006, J Sports Sci |
 | `match_profile` | … | derived | Derived, not adjusted (2026-11-13, the maintainer: the statistics are derived from the players, never fixed): gain_per_tick and v_max_coefficient are not in this file; they are computed (FatigueBalance::load) so that an average player who runs a real match (match_profile) ends it with the fatigue that dims his high-intensity running by late_high_intensity_decline and his top speed by late_top_speed_decline. Whatever  |
-| `match_ticks` | 54000.0 | undocumented | — |
+| `match_ticks` | 54000.0 | derived | 90 minutes (Law 7) x 60 s x 10 ticks/s = 54000 ticks |
 | `late_high_intensity_decline` | 0.3 | derived | Derived, not adjusted (2026-11-13, the maintainer: the statistics are derived from the players, never fixed): gain_per_tick and v_max_coefficient are not in this file; they are computed (FatigueBalance::load) so that an average player who runs a real match (match_profile) ends it with the fatigue that dims his high-intensity running by late_high_intensity_decline and his top speed by late_top_speed_decline. Whatever  |
 | `late_top_speed_decline` | 0.04 | derived | Derived, not adjusted (2026-11-13, the maintainer: the statistics are derived from the players, never fixed): gain_per_tick and v_max_coefficient are not in this file; they are computed (FatigueBalance::load) so that an average player who runs a real match (match_profile) ends it with the fatigue that dims his high-intensity running by late_high_intensity_decline and his top speed by late_top_speed_decline. Whatever  |
 
@@ -167,10 +167,10 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `w_space` | 100 | undocumented | — |
-| `w_skill` | 40 | undocumented | — |
-| `w_cost` | 20 | undocumented | — |
-| `w_red` | 50 | undocumented | — |
+| `w_space` | 100 | arbitrary (grade 3) | Weight of the space term in the influence formula; the file: prototype, not calibrated. Higher = space counts more. |
+| `w_skill` | 40 | arbitrary (grade 3) | Weight of the skill term in the influence formula; prototype, not calibrated. Higher = the player's skill counts more. |
+| `w_cost` | 20 | arbitrary (grade 3) | Weight of the fatigue (cost) term in the influence formula; prototype, not calibrated. Higher = fatigue weighs more against an influence. |
+| `w_red` | 50 | arbitrary (grade 3) | Weight of the redundancy term in the influence formula; prototype, not calibrated. Higher = a teammate already covering weighs more against it. |
 | `space_threshold_cm` | 2000 | explained, no source | Before, the radius was space_threshold_cm (20 m) and there was no hysteresis: a match had 2,000-9,000 Pressure events (a real one has a few hundred), an opponent oscillating on the radius 'entered' again every tick. |
 | `pressure_radius_cm` | 500 | explained, no source | See L0-match/specs/03-entities-minimal.md §2.9. pressure_radius_cm and pressure_exit_milli (2026-11-12): an opponent puts the carrier under pressure when he comes within 5 m of the ball, and stays so until he is 30% farther (hysteresis). |
 | `pressure_exit_milli` | 1300 | explained, no source | See L0-match/specs/03-entities-minimal.md §2.9. pressure_radius_cm and pressure_exit_milli (2026-11-12): an opponent puts the carrier under pressure when he comes within 5 m of the ball, and stays so until he is 30% farther (hysteresis). |
@@ -179,8 +179,8 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `positioning_range_cm` | 3000 | undocumented | — |
-| `advance_cm` | 400 | undocumented | — |
+| `positioning_range_cm` | 3000 | arbitrary (grade 3) | Beyond this ball-goal distance the keeper stays on his line; the file: arbitrary until L3, no cited figure. Higher = the keeper starts leaving his line with the ball farther away. |
+| `advance_cm` | 400 | arbitrary (grade 3) | How far the keeper advances off his line when the ball is on the goal line; arbitrary until L3, no cited figure. Higher = a keeper who comes out more. |
 | `support_gap_cm` | 2500 | explained, no source | Support (2026-11-12, maintainer: the keeper steps up and is an outlet when his side has the ball): with the ball, the keeper follows his defensive line at support_gap_cm behind it, never farther than support_max_cm from his goal line; he is then a teammate the carrier can pass back to. No cited figure for the two values. support_gap_cm 2500 and support_max_cm 2200: order of magnitude of a modern keeper's position whe |
 | `support_max_cm` | 2200 | explained, no source | Support (2026-11-12, maintainer: the keeper steps up and is an outlet when his side has the ball): with the ball, the keeper follows his defensive line at support_gap_cm behind it, never farther than support_max_cm from his goal line; he is then a teammate the carrier can pass back to. No cited figure for the two values. support_gap_cm 2500 and support_max_cm 2200: order of magnitude of a modern keeper's position whe |
 | `depth_share_milli` | 500 | explained, no source | Without the ball the rule above applies. depth_share_milli (2026-11-12, ADR-051): without the ball the keeper is never deeper than this share of the ball's distance from his goal line, so he is always between the ball and the goal; before, with the ball close to the line at a side he advanced 4 m and stood behind the shooter, who scored from beside the post. |
@@ -189,18 +189,18 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `speed_ref_cm_per_tick` | 340.0 | undocumented | — |
-| `speed_power_base` | 0.5 | undocumented | — |
-| `speed_explosive_base` | 0.6 | undocumented | — |
+| `speed_ref_cm_per_tick` | 340.0 | arbitrary (grade 3) | Scale of the kick speed, speed_ref x (base + (1 - base) x power) x (explosive_base + (1 - explosive_base) x explosive_force); the file gives an order of magnitude of shot speeds (15-30 m/s) without a source and declares it arbitrary until L3. Higher = faster kicks. |
+| `speed_power_base` | 0.5 | arbitrary (grade 3) | Share of the kick speed a zero-power kick keeps; declared arbitrary until L3. Higher = less difference between a placed and a strong kick. |
+| `speed_explosive_base` | 0.6 | arbitrary (grade 3) | Share of the kick speed a player with no explosive force keeps; declared arbitrary until L3. Higher = explosive force matters less to kick speed. |
 | `error_ref_rad` | 0.062 | sourced | The base of the kick's error angle, derived at SIM_VERSION 91 (ADR-054) from Shimotashiro and Shinya 2024 (11 m instep kicks, ball at rest, no defender, the 95% ellipse 6.17 m²): the row said "arbitrary" by a fault of its generation, corrected 2026-11-15. |
 | `shot_error_min_distance_cm` | 1100 | sourced (ADR-087) | The 11 m distance of the same Shimotashiro and Shinya 2024 sample that gives `error_ref_rad`: below it the shot keeps the absolute spread it had at the measurement instead of shrinking towards zero. Not a tuned precision number; SIM 171. Passes and the shooter's aim are unchanged. |
 | `pass_error_ref_rad` | 0.08 | derived | 2026-11-13 (plan L0-CLOSE step 8): the pass has its own reference error, pass_error_ref_rad (a pass is aimed at a man who comes to meet it), today equal to the shot's. Before, 0.08, arbitrary. pass_error_ref_rad stays declared at 0.08 (the source is for the instep shot). vertical_share (2026-11-13, SIM_VERSION 91): derived from the same source, whose ellipse spreads about as much up and down as across (its area is re |
 | `throw_speed_cm_per_tick` | 180.0 | explained, no source | The keeper's throw (2026-11-13, plan L0-CLOSE 10d): from his hands, to a teammate within throw_max_cm, at most throw_speed_cm_per_tick, its precision his hands' (goalkeeping) with both hands; farther he kicks it. |
 | `throw_max_cm` | 3500 | explained, no source | The keeper's throw (2026-11-13, plan L0-CLOSE 10d): from his hands, to a teammate within throw_max_cm, at most throw_speed_cm_per_tick, its precision his hands' (goalkeeping) with both hands; farther he kicks it. |
-| `error_power_gain` | 1.0 | undocumented | — |
+| `error_power_gain` | 1.0 | arbitrary (grade 3) | How much power widens the error angle, error_ref x (1 - skill) x (0.5 + power_gain x power); declared arbitrary until L3. Higher = strong shots are less precise. |
 | `error_pressure_rad` | 0.08 | sourced | checked against StatsBomb open data (Liga 2020/21): foot shots on a controlled ball from 11-18 m on target 46%, the engine 48% (SIM 137); 18-25 m 30% against 26%. **Failure criterion (maintainer, 2026-11-16):** if, after any calibration, the band under 11 m (real 46%) or the band beyond 25 m (real 26%) stays out of its interval, the angular form of the error is wrong: no other number is sought, a delegated ADR is opened on a shot error that depends on the time available and the body's set-up as well as the pressure. At SIM 137 the band under 11 m is 96%: the criterion fired; ADR-087 (DD-27) changed the angular form at SIM 171, bringing it to 54.6% over 42..101. `error_pressure_rad` stays 0.08. |
 | `run_error_rad` | 0.15 | arbitrary, declared | On the run (2026-11-13, plan L0-CLOSE 11): a shot struck running adds run_error_rad x (his speed / run_speed_ref, at most 1) x (1 - body_control) to the error: the contact is less clean the faster he runs, the less so the better his balance. Arbitrary, declared, to be calibrated at L3 against real shot speed, placement and on-target distributions. throw_speed (18 m/s) and throw_max (35 m): order of magnitude of a kee |
-| `run_speed_ref_cm_per_tick` | 80.0 | undocumented | — |
+| `run_speed_ref_cm_per_tick` | 80.0 | arbitrary (grade 3) | The running speed (8 m/s) at which run_error_rad applies in full; the file: arbitrary, declared, set once and not tuned. Higher = running costs less precision. |
 | `vertical_share` | 2.0 | explained, no source | Precision is an angle: error = error_ref x (1 - skill) x (0.5 + power_gain x power) + error_pressure x pressure, in radians, with skill = shooting x (0.5 + 0.5 x the quality of the foot he kicks with); the miss is the distance times the angle, so the same player misses by more from farther away, and a strong shot is less precise than a placed one. vertical_share is the share of the error that goes up (a miscued strik |
 | `aim_low_cm` | 40 | explained, no source | Precision is an angle: error = error_ref x (1 - skill) x (0.5 + power_gain x power) + error_pressure x pressure, in radians, with skill = shooting x (0.5 + 0.5 x the quality of the foot he kicks with); the miss is the distance times the angle, so the same player misses by more from farther away, and a strong shot is less precise than a placed one. vertical_share is the share of the error that goes up (a miscued strik |
 | `aim_high_cm` | 200 | explained, no source | Precision is an angle: error = error_ref x (1 - skill) x (0.5 + power_gain x power) + error_pressure x pressure, in radians, with skill = shooting x (0.5 + 0.5 x the quality of the foot he kicks with); the miss is the distance times the angle, so the same player misses by more from farther away, and a strong shot is less precise than a placed one. vertical_share is the share of the error that goes up (a miscued strik |
@@ -226,8 +226,8 @@ The quick instructions move the block by a step that is the coach's choice shown
 | `excessive_speed_milli` | 1150 | explained, no source | A foul is the fact of a contact (the duel's band); its sanction is read from the facts: a slide from behind at an approach speed of at least reckless_speed_milli of the reference speed is reckless (yellow card); a challenge on his feet is careless (no card); a slide from behind at excessive_speed_milli or more is excessive force (red card); a foul that denies an obvious goal-scoring opportunity (the carrier within do |
 | `dogso_distance_cm` | 2500 | explained, no source | A foul is the fact of a contact (the duel's band); its sanction is read from the facts: a slide from behind at an approach speed of at least reckless_speed_milli of the reference speed is reckless (yellow card); a challenge on his feet is careless (no card); a slide from behind at excessive_speed_milli or more is excessive force (red card); a foul that denies an obvious goal-scoring opportunity (the carrier within do |
 | `penalty_spot_cm` | 1100 | explained, no source | Inside the penalty area the free kick is a penalty, taken from penalty_spot_cm off the goal line. |
-| `penalty_area_depth_cm` | 1650 | undocumented | — |
-| `penalty_area_half_width_cm` | 2016 | undocumented | — |
+| `penalty_area_depth_cm` | 1650 | derived | IFAB Law 1: the penalty area is 16.5 m deep = 1650 cm |
+| `penalty_area_half_width_cm` | 2016 | derived | IFAB Law 1: the penalty area is 40.32 m wide (16.5 m each side of the 7.32 m goal), half = 2016 cm |
 | `goal_area_depth_cm` | 550 | sourced | The speed thresholds and dogso_distance_cm are arbitrary, declared, to be calibrated at L3 against real foul and card counts (about 20 fouls, 4 yellow cards and 0.1-0.2 red cards a match). goal_area_depth_cm, goal_area_half_width_cm, centre_circle_radius_cm, goal_half_width_cm (2026-11-13, ADR-055, read by the GUI to draw the pitch): Law 1, the goal area 5.5 m deep and 18.32 m wide, the centre circle 9.15 m, the goal |
 | `goal_area_half_width_cm` | 916 | sourced | The speed thresholds and dogso_distance_cm are arbitrary, declared, to be calibrated at L3 against real foul and card counts (about 20 fouls, 4 yellow cards and 0.1-0.2 red cards a match). goal_area_depth_cm, goal_area_half_width_cm, centre_circle_radius_cm, goal_half_width_cm (2026-11-13, ADR-055, read by the GUI to draw the pitch): Law 1, the goal area 5.5 m deep and 18.32 m wide, the centre circle 9.15 m, the goal |
 | `centre_circle_radius_cm` | 915 | sourced | The speed thresholds and dogso_distance_cm are arbitrary, declared, to be calibrated at L3 against real foul and card counts (about 20 fouls, 4 yellow cards and 0.1-0.2 red cards a match). goal_area_depth_cm, goal_area_half_width_cm, centre_circle_radius_cm, goal_half_width_cm (2026-11-13, ADR-055, read by the GUI to draw the pitch): Law 1, the goal area 5.5 m deep and 18.32 m wide, the centre circle 9.15 m, the goal |
@@ -237,12 +237,12 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `accel_min_cm_per_tick2` | 2.5 | undocumented | — |
-| `accel_max_cm_per_tick2` | 5.0 | undocumented | — |
-| `top_speed_min_cm_per_tick` | 75.0 | undocumented | — |
-| `top_speed_max_cm_per_tick` | 100.0 | undocumented | — |
-| `decel_min_cm_per_tick2` | 3.5 | undocumented | — |
-| `decel_max_cm_per_tick2` | 6.0 | undocumented | — |
+| `accel_min_cm_per_tick2` | 2.5 | explained, no source | Acceleration of a player with no explosive force (2.5 m/s², 1 cm/tick² = 1 m/s²); the file cites Harper, Carling and Kiely 2019 (Sports Medicine 49:1923-1947) for the 2.5-5 m/s² accelerations and decelerations up to 5-6 m/s², not yet written as a reference here (to be checked before it is marked sourced). Higher = slow starters accelerate faster. |
+| `accel_max_cm_per_tick2` | 5.0 | explained, no source | Acceleration of the most explosive player (5 m/s²); the file cites Harper, Carling and Kiely 2019 (Sports Medicine 49:1923-1947) for the 2.5-5 m/s² accelerations and decelerations up to 5-6 m/s², not yet written as a reference here (to be checked before it is marked sourced). Higher = explosive players accelerate faster. |
+| `top_speed_min_cm_per_tick` | 75.0 | explained, no source | Top speed of a player with max_speed 0 (7.5 m/s); the file: peak sprint speeds of about 7.5-10 m/s from top-league tracking data, no named source. Higher = faster slow players. |
+| `top_speed_max_cm_per_tick` | 100.0 | explained, no source | Top speed of a player with max_speed 1 (10 m/s); the file: peak sprint speeds of about 7.5-10 m/s from top-league tracking data, no named source. Higher = faster fast players. |
+| `decel_min_cm_per_tick2` | 3.5 | explained, no source | Braking of a player with body_control 0 (3.5 m/s²); the file cites Harper, Carling and Kiely 2019 (Sports Medicine 49:1923-1947) for the 2.5-5 m/s² accelerations and decelerations up to 5-6 m/s², not yet written as a reference here (to be checked before it is marked sourced). Higher = quicker stops and turns. |
+| `decel_max_cm_per_tick2` | 6.0 | explained, no source | Braking of a player with body_control 1 (6 m/s²); the file cites Harper, Carling and Kiely 2019 (Sports Medicine 49:1923-1947) for the 2.5-5 m/s² accelerations and decelerations up to 5-6 m/s², not yet written as a reference here (to be checked before it is marked sourced). Higher = quicker stops and turns for balanced players. |
 | `turn_share_min` | 0.6 | explained, no source | Turning (2026-11-13, plan L0-CLOSE 10e): changing direction by more than 60 degrees he brakes and turns with turn_share_min + (turn_share_max - turn_share_min) x joint_mobility of his braking: the stiff player needs longer to turn. Professional footballers' peak sprint speeds of about 7.5-10 m/s (27-36 km/h, top-league tracking data); maximal accelerations of about 2.5-5 m/s2 and decelerations larger than acceleratio |
 | `turn_share_max` | 1.0 | explained, no source | Turning (2026-11-13, plan L0-CLOSE 10e): changing direction by more than 60 degrees he brakes and turns with turn_share_min + (turn_share_max - turn_share_min) x joint_mobility of his braking: the stiff player needs longer to turn. |
 | `with_ball_share_min` | 0.75 | explained, no source | With the ball (2026-11-13, plan L0-CLOSE 10a): his top speed is with_ball_share_min + (with_ball_share_max - with_ball_share_min) x dribbling of his sprint: the good dribbler runs almost as fast with it. Professional footballers' peak sprint speeds of about 7.5-10 m/s (27-36 km/h, top-league tracking data); maximal accelerations of about 2.5-5 m/s2 and decelerations larger than accelerations, up to 5-6 m/s2 and more  |
@@ -251,8 +251,8 @@ The quick instructions move the block by a step that is the coach's choice shown
 | `step_hz` | 4.0 | explained, no source | He touches it every 1 + (touch_steps_max - 1) x (his speed / top_speed_max) x (1 - dribbling) steps, at step_hz steps a second: walking, or the best dribbler, every step; the worst dribbler at full speed every touch_steps_max. Professional footballers' peak sprint speeds of about 7.5-10 m/s (27-36 km/h, top-league tracking data); maximal accelerations of about 2.5-5 m/s2 and decelerations larger than accelerations, u |
 | `reposition_ticks` | 30.0 | explained, no source | His pace is his: when he contests something (pressing, going in, going for the ball, running in behind, carrying it) he runs as fast as he can; when he takes up his place he goes at the speed that gets him there in about reposition_ticks. Professional footballers' peak sprint speeds of about 7.5-10 m/s (27-36 km/h, top-league tracking data); maximal accelerations of about 2.5-5 m/s2 and decelerations larger than acce |
 | `work_rate_floor` | 0.6 | sourced | Work rate (2026-11-13, plan L0-CLOSE 10c): without the ball, out of a contest, he gives work_rate_floor + (1 - work_rate_floor) x work_rate of the pace his side needs. Professional footballers' peak sprint speeds of about 7.5-10 m/s (27-36 km/h, top-league tracking data); maximal accelerations of about 2.5-5 m/s2 and decelerations larger than accelerations, up to 5-6 m/s2 and more (Harper, Carling and Kiely 2019, Spo |
-| `weight_ref_kg` | 78 | undocumented | — |
-| `height_ref_cm` | 180 | undocumented | — |
+| `weight_ref_kg` | 78 | explained, no source | Acceleration is scaled by weight_ref / weight; the file: the median professional, 78 kg, without a source. Higher = everyone accelerates faster relative to his weight. |
+| `height_ref_cm` | 180 | explained, no source | The reference height; the file: the median professional, 180 cm, without a source. |
 | `fatigue_coefficient` | 0.5 | sourced | Acceleration: (accel_min + (accel_max - accel_min) x explosive_force) x weight_ref / weight, dimmed by fatigue (ADR-030: 1 - fatigue_coefficient x fatigue, floored). Professional footballers' peak sprint speeds of about 7.5-10 m/s (27-36 km/h, top-league tracking data); maximal accelerations of about 2.5-5 m/s2 and decelerations larger than accelerations, up to 5-6 m/s2 and more (Harper, Carling and Kiely 2019, Sport |
 | `fatigue_floor` | 0.5 | sourced | Professional footballers' peak sprint speeds of about 7.5-10 m/s (27-36 km/h, top-league tracking data); maximal accelerations of about 2.5-5 m/s2 and decelerations larger than accelerations, up to 5-6 m/s2 and more (Harper, Carling and Kiely 2019, Sports Medicine 49:1923-1947). weight_ref and height_ref: median professional (78 kg, 180 cm). reposition_ticks (3 s), fatigue_coefficient and fatigue_floor: arbitrary, de |
 
@@ -260,34 +260,34 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `goal_half_width_cm` | 366 | undocumented | — |
-| `goal_height_cm` | 244 | undocumented | — |
-| `post_radius_cm` | 6 | undocumented | — |
-| `crossbar_thickness_cm` | 6 | undocumented | — |
-| `elasticity_num` | 8 | undocumented | — |
-| `elasticity_den` | 10 | undocumented | — |
+| `goal_half_width_cm` | 366 | derived | IFAB Law 1: 7.32 m between the posts, half = 366 cm |
+| `goal_height_cm` | 244 | derived | IFAB Law 1: the crossbar is 2.44 m high = 244 cm |
+| `post_radius_cm` | 6 | arbitrary (grade 3) | Radius of a post for the ball's reflection; Law 1 gives only a maximum width of 12 cm, the file takes 6 cm as a prototype until a cited source. Higher = more balls hit the post. |
+| `crossbar_thickness_cm` | 6 | arbitrary (grade 3) | Half-thickness of the crossbar for the reflection; Law 1 gives only a maximum of 12 cm, prototype 6 cm. Higher = more balls hit the bar. |
+| `elasticity_num` | 8 | arbitrary (grade 3) | Numerator of the post/crossbar elasticity (8/10 = 0.8, the share of the normal velocity returned); declared arbitrary, prototype. Higher = livelier rebounds off the woodwork. |
+| `elasticity_den` | 10 | arbitrary (grade 3) | Denominator of the post/crossbar elasticity (8/10 = 0.8); declared arbitrary, prototype. Higher = deader rebounds off the woodwork. |
 
 ### `offball.json`
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `hold_salience_milli` | 300 | undocumented | Hold his place, the base the other acts are weighed against (ADR-049). Since SIM_VERSION 103 no longer against a loose ball, which the nearest always goes for (ADR-052 note, 2026-11-14). |
-| `proximity_ref_cm` | 1500 | undocumented | — |
-| `second_reader_milli` | 600 | undocumented | The rank factor of the second nearest for pressing and marking (ADR-049). Since SIM_VERSION 103 not for a loose ball: the second goes if his game_reading is above the middle of its scale and he wins the race to it (ADR-052 note, 2026-11-14; derived from the scale, no number). |
-| `challenge_salience_milli` | 1300 | undocumented | — |
+| `hold_salience_milli` | 300 | arbitrary (grade 3) | Hold his place, the base the other acts are weighed against (ADR-049). Since SIM_VERSION 103 no longer against a loose ball, which the nearest always goes for (ADR-052 note, 2026-11-14). Grade 3; the file: arbitrary, declared, to be calibrated at L3. Higher = players hold their place more and press or mark less. |
+| `proximity_ref_cm` | 1500 | arbitrary (grade 3) | The distance at which proximity, 1 / (1 + d / proximity_ref), halves for pressing and marking. The file: arbitrary, declared, to be calibrated at L3. Higher = players press from farther away. |
+| `second_reader_milli` | 600 | arbitrary (grade 3) | The rank factor of the second nearest for pressing and marking (ADR-049). Since SIM_VERSION 103 not for a loose ball: the second goes if his game_reading is above the middle of its scale and he wins the race to it (ADR-052 note, 2026-11-14; derived from the scale, no number). Grade 3; the file: arbitrary, declared, to be calibrated at L3. Higher = the second nearest presses and marks more often. |
+| `challenge_salience_milli` | 1300 | arbitrary (grade 3) | Salience of going in on the carrier within the duel's reach, x (0.5 + 0.5 x tackling, or goalkeeping). The file: arbitrary, declared, to be calibrated at L3. Higher = more challenges, less jockeying. |
 | `keeper_box_depth_cm` | 1650 | sourced | Arbitrary, declared, to be calibrated at L3, except keeper_box_depth_cm (16.5 m) and keeper_box_half_width_cm (20.16 m), Law 1. cover_depth_cm (7 m) and lane_step_cm (3 m): arbitrary, declared, coaching order of magnitude, to be sourced at L3. |
 | `keeper_box_half_width_cm` | 2016 | sourced | Arbitrary, declared, to be calibrated at L3, except keeper_box_depth_cm (16.5 m) and keeper_box_half_width_cm (20.16 m), Law 1. cover_depth_cm (7 m) and lane_step_cm (3 m): arbitrary, declared, coaching order of magnitude, to be sourced at L3. |
 | `mark_radius_cm` | 300 | explained, no source | With a teammate on the ball (2026-11-13, ADR-051, the family "without the ball"): offer for a pass = offer_salience x proximity to the carrier x (0.5 + 0.5 x game_reading), only when an opponent is within mark_radius_cm of him; he moves offer_step_cm away from that opponent. |
 | `offer_step_cm` | 600 | explained, no source | With a teammate on the ball (2026-11-13, ADR-051, the family "without the ball"): offer for a pass = offer_salience x proximity to the carrier x (0.5 + 0.5 x game_reading), only when an opponent is within mark_radius_cm of him; he moves offer_step_cm away from that opponent. The offer and run weights are removed; offer_step_cm and onside_margin_cm remain (where he goes). |
 | `onside_margin_cm` | 50 | explained, no source | How far short of the last defender's line (Law 11) a player stops: the run in behind since 53, and since SIM_VERSION 107 the offer for a pass too (the same margin, no number of its own for the offer). Arbitrary, declared, to be calibrated at L3. |
-| `mark_salience_milli` | 800 | undocumented | — |
+| `mark_salience_milli` | 800 | arbitrary (grade 3) | Salience of marking the nearest opponent, x proximity x rank factor x (0.5 + 0.5 x game_reading). The file: arbitrary, declared, to be calibrated at L3. Higher = more marking. |
 | `mark_zone_cm` | 1200 | explained, no source | Marking (2026-11-13, ADR-051): when the opponents have the ball, an outfield player sees the nearest opponent other than the carrier and how many teammates are closer to him; mark = mark_salience x 1 / (1 + d / mark_zone_cm) x the rank factor x (0.5 + 0.5 x game_reading): the nearest defender who reads the game marks him, standing mark_gap_cm goal-side of him (between him and the goal). |
 | `mark_gap_cm` | 150 | explained, no source | Marking (2026-11-13, ADR-051): when the opponents have the ball, an outfield player sees the nearest opponent other than the carrier and how many teammates are closer to him; mark = mark_salience x 1 / (1 + d / mark_zone_cm) x the rank factor x (0.5 + 0.5 x game_reading): the nearest defender who reads the game marks him, standing mark_gap_cm goal-side of him (between him and the goal). |
 | `cover_depth_cm` | 700 | explained, no source | Cover and intercept (2026-11-13, plan L0-CLOSE 10c): with a teammate pressing the carrier, a defender may cover the space cover_depth_cm behind him on the carrier's line to our goal, worth half its danger (if the presser is beaten: he cannot know, half), if he gets there in time; or step into the passing lane lane_step_cm in front of his man, towards the carrier, worth half the man's danger (it cuts out the ground pa |
 | `lane_step_cm` | 300 | explained, no source | Cover and intercept (2026-11-13, plan L0-CLOSE 10c): with a teammate pressing the carrier, a defender may cover the space cover_depth_cm behind him on the carrier's line to our goal, worth half its danger (if the presser is beaten: he cannot know, half), if he gets there in time; or step into the passing lane lane_step_cm in front of his man, towards the carrier, worth half the man's danger (it cuts out the ground pa |
 | `discipline_floor_milli` | 500 | explained, no source | Discipline (plan L0-CLOSE 10c): the place he holds in the team's shape weighs discipline_floor_milli of its danger for the least disciplined player, all of it for the most. |
-| `ball_reach_base_milli` | 600 | undocumented | — |
-| `ball_reach_gain_milli` | 800 | undocumented | — |
+| `ball_reach_base_milli` | 600 | arbitrary (grade 3) | Share of the control radius a player with no reactivity reaches for a passing ball. The file: arbitrary, declared, to be calibrated at L3. Higher = more interceptions and blocks for everyone. |
+| `ball_reach_gain_milli` | 800 | arbitrary (grade 3) | What reactivity adds to that share. The file: arbitrary, declared, to be calibrated at L3. Higher = reactive players intercept more. |
 | `block_height_cm` | 180 | explained, no source | Block (2026-11-13, ADR-051): a shot that passes within an outfield defender's reach for a passing ball (his reactivity) and below block_height_cm is blocked: it comes back at block_rebound_milli of its speed, loose; out over the goal line it is a corner. 2026-11-13 (ADR-052, plan L0-CLOSE step 2): offering and attacking the depth are no longer weighted: the attacker without the ball occupies the space that gives his  |
 | `block_rebound_milli` | 300 | explained, no source | Block (2026-11-13, ADR-051): a shot that passes within an outfield defender's reach for a passing ball (his reactivity) and below block_height_cm is blocked: it comes back at block_rebound_milli of its speed, loose; out over the goal line it is a corner. 2026-11-13 (ADR-052, plan L0-CLOSE step 2): offering and attacking the depth are no longer weighted: the attacker without the ball occupies the space that gives his  |
 
@@ -298,7 +298,7 @@ The quick instructions move the block by a step that is the coach's choice shown
 | `left_footed_share` | 0.25 | explained, no source | The strong foot follows the passing profile; the weak foot is a fraction of it (weak_foot_ratio); left_footed_share of the players are left-footed. |
 | `weak_foot_ratio` | [0.6, 0.15] | explained, no source | The strong foot follows the passing profile; the weak foot is a fraction of it (weak_foot_ratio); left_footed_share of the players are left-footed. |
 | `family_weight` | 0.4 | derived | A characteristic is derived by key, so the same world gives the same player: value = mean + spread * z, clamped to [0.02, 0.98], with z in [-1, 1] mixing the player's own key (1 - family_weight) and a key shared by his family of characteristics (family_weight), so that what goes together goes together (an explosive player is usually fast). |
-| `roles` | … | undocumented | — (2026-11-15: `courage` and `composure` added, [0.5, 0.15] for every role, grade 3 declared, OI-109 option A) |
+| `roles` | … | explained, no source | — (2026-11-15: `courage` and `composure` added, [0.5, 0.15] for every role, grade 3 declared, OI-109 option A) The file: orders of magnitude of real football (keepers and centre backs tallest, wide players lightest and fastest, ...), not calibrated on data, a declared prototype of the generator (L3). |
 
 ### `reception.json`
 
@@ -313,12 +313,12 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `reaction_fast_ticks` | 3.0 | undocumented | — |
-| `reaction_slow_ticks` | 6.0 | undocumented | — |
-| `dive_speed_cm_per_tick` | 35.0 | undocumented | — |
-| `dive_max_cm` | 220.0 | undocumented | — |
+| `reaction_fast_ticks` | 3.0 | arbitrary (grade 3) | Reaction of the most reactive keeper (0.3 s) before he dives. The file gives orders of magnitude from observation (reaction 0.2-0.5 s, a dive of 4-5 m/s reaching about 2 m) without a source, and declares them arbitrary until L3. Higher = slower keepers, fewer saves. |
+| `reaction_slow_ticks` | 6.0 | arbitrary (grade 3) | Reaction of the least reactive keeper (0.6 s). The file gives orders of magnitude from observation (reaction 0.2-0.5 s, a dive of 4-5 m/s reaching about 2 m) without a source, and declares them arbitrary until L3. Higher = slow keepers save less. |
+| `dive_speed_cm_per_tick` | 35.0 | arbitrary (grade 3) | Lateral dive speed, x (0.5 + 0.5 x explosive_force). The file gives orders of magnitude from observation (reaction 0.2-0.5 s, a dive of 4-5 m/s reaching about 2 m) without a source, and declares them arbitrary until L3. Higher = more saves. |
+| `dive_max_cm` | 220.0 | arbitrary (grade 3) | Longest dive, x (0.5 + 0.5 x explosive_force). The file gives orders of magnitude from observation (reaction 0.2-0.5 s, a dive of 4-5 m/s reaching about 2 m) without a source, and declares them arbitrary until L3. Higher = more saves at the corners. |
 | `body_centre_cm` | 100.0 | explained, no source | His reach is his standing reach (half his height) plus the dive, measured from the centre of his body (body_centre_cm above the ground) to the point where the ball crosses the plane. |
-| `catch_speed_ref_cm_per_tick` | 250.0 | undocumented | — |
+| `catch_speed_ref_cm_per_tick` | 250.0 | arbitrary (grade 3) | The ball speed at which a ball at the edge of his reach needs perfect hands (the form is derived from its definition, the value is not). The file gives orders of magnitude from observation (reaction 0.2-0.5 s, a dive of 4-5 m/s reaching about 2 m) without a source, and declares them arbitrary until L3. Higher = more balls held, fewer parried. |
 | `parry_rebound_milli` | 300 | arbitrary, declared | If the ball is within reach he stops it; he holds it if his hands (goalkeeping, the prototype of handling, OI-92) are at least the difficulty (offset / reach) x (ball speed / catch_speed_ref), otherwise he parries it: the ball comes back at parry_rebound_milli of its speed, pushed away from the centre of the goal. |
 | `tip_share_milli` | 750 | explained, no source | A ball he reaches only at the edge of his reach (offset beyond tip_share_milli of it) is tipped: his touch turns it but does not stop it, and it goes on past the post (a corner when it crosses the goal line); nearer, a parry pushes it back into play (2026-11-13). |
 | `standing_reach_share` | 0.75 | explained, no source | Standing reach (2026-11-13, plan L0-CLOSE): his reach before any dive is standing_reach_share of his height from the centre of his body (his arm span is about his height, plus a step): it was half his height, a keeper with his arms down. |
@@ -330,11 +330,11 @@ The quick instructions move the block by a step that is the coach's choice shown
 |---|---|---|---|
 | `scan_rate_min_per_s` | 0.2 | explained, no source | How often a player looks around (2026-11-13, plan L0-CLOSE 10b, ADR-052 e): his vision places him between scan_rate_min_per_s and scan_rate_max_per_s glances a second, staggered by player; between glances the gaze is on the ball. |
 | `scan_rate_max_per_s` | 0.8 | explained, no source | How often a player looks around (2026-11-13, plan L0-CLOSE 10b, ADR-052 e): his vision places him between scan_rate_min_per_s and scan_rate_max_per_s glances a second, staggered by player; between glances the gaze is on the ball. |
-| `scan_reach_cm` | 3000 | undocumented | — |
+| `scan_reach_cm` | 3000 | arbitrary (grade 3) | Radius within which an opponent counts as "on the ball" for the scan; the file: arbitrary and declared until calibration. Higher = more opponents seen as on the ball. |
 | `mark_radius_cm` | 800 | explained, no source | Marking beats the ball when the mark is within `mark_radius_cm` (ADR-034 cascade, not a weight). |
-| `weight_ball` | 100 | undocumented | — |
-| `weight_opponent_on_ball` | 80 | undocumented | — |
-| `weight_mark` | 60 | undocumented | — |
+| `weight_ball` | 100 | arbitrary (grade 3) | Relative salience of the ball as the gaze target; the file: relative salience, not calibrated. Higher = the gaze stays on the ball more. |
+| `weight_opponent_on_ball` | 80 | arbitrary (grade 3) | Relative salience of an opponent on the ball; not calibrated. Higher = the gaze goes to him more. |
+| `weight_mark` | 60 | arbitrary (grade 3) | Relative salience of the man he marks; not calibrated. Higher = the gaze goes to his mark more. |
 | `level_threshold_mrad` | 8 | sourced (derived) | Two men nearer than this angle across his line of sight look level (ADR-062 (b), `SIM_VERSION` 114). Wühr, Fasold and Memmert 2015, PLoS ONE 10, e0133687: one step 10 cm seen from about 50 m, about 60% right bias-free at one step, about 90% far from the line; read as one spread, about 40 cm at 50 m, 8 mrad. The same for every observer (Put et al. 2013). |
 
 ### `shot_choice.json`
@@ -361,7 +361,7 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `base` | 0 | undocumented | — |
+| `base` | 0 | arbitrary (grade 3) | Seconds of stoppage added once to every half, whatever happened (ADR-026). Higher = longer stoppage time. |
 | `goal` | 60 | sourced | Seconds of stoppage for a goal (ADR-026). FiveThirtyEight, "World Cup stoppage time is wildly inaccurate" (2018): goal celebrations cost 2'55" a match at the 2018 World Cup, which had 169 goals in 64 matches (2.64 a match): about 66 s a goal. The same count found that referees added 6'59" a match against 13'10" lost: the engine's referee is the Laws applied objectively (ADR-021 note) and allows for all of it, a real one for about half. |
 | `foul` | 20 | explained, no source | Seconds of stoppage for a foul (ADR-026). FiveThirtyEight (2018 World Cup) counts 10'29" a match lost to free kicks; the number of free kicks of those matches is not in the source, so the seconds a free kick are not derived from it yet. |
 | `duel` | 0 | explained, no source | Seconds of stoppage per event (ADR-026). duel 10 -> 0 (2026-11-12): a clean duel does not stop play; the time is lost to fouls, goals, injuries. With the duel in the match (SIM_VERSION 47) thousands of duels made a 328-minute match. |
@@ -374,8 +374,8 @@ The quick instructions move the block by a step that is the coach's choice shown
 | `goal_width_cm` | 732 | sourced | Two of football's own values and one resolution, nothing per kind of option. goal_width_cm is Law 1. possession_value is what keeping the ball is worth against a goal (1.0): a side with the ball has a chance to score that a side without it has not; declared, to be derived at L3 from the engine's own matches. |
 | `possession_value` | 0.02 | sourced | Two of football's own values and one resolution, nothing per kind of option. goal_width_cm is Law 1. possession_value is what keeping the ball is worth against a goal (1.0): a side with the ball has a chance to score that a side without it has not; declared, to be derived at L3 from the engine's own matches. The value of a space, in units of keeping the ball: (1 + how near the goal it is, as a share of the pitch) + i |
 | `forecast_step_cm` | 100 | sourced | The forecast of who reaches a ball first samples its path every forecast_step_cm. Law 1 for the goal width. possession_value and forecast_step_cm: declared, arbitrary until L3; the chance a position gives is not a number of this file: it is computed from the shot and the save. horizon_min_cm and horizon_max_cm: arbitrary, declared, to be sourced at L3. |
-| `believed_speed_cm_per_tick` | 65.0 | undocumented | — |
-| `believed_reaction_ticks` | 3.0 | undocumented | — |
+| `believed_speed_cm_per_tick` | 65.0 | arbitrary (grade 3) | The speed (6.5 m/s) a player imagines the others run at, since he does not know their characteristics (Plane B); no reason given for the value. Higher = he believes opponents arrive sooner, fewer risky options. |
+| `believed_reaction_ticks` | 3.0 | arbitrary (grade 3) | The time (0.3 s) he imagines the others take to move (Plane B); no reason given for the value. Higher = he believes he has more time, more risky options. |
 | `trust_ticks` | 10.0 | explained, no source | A forecast with trust_ticks (1 s) to spare is sure; one with none is a coin he does not toss but weighs as half. |
 | `horizon_min_cm` | 1500.0 | sourced | Anticipation (2026-11-13, plan L0-CLOSE 10b): how far ahead he imagines, between horizon_min_cm and horizon_max_cm; an option that ends farther than his horizon he cannot see through, and his confidence in it falls towards a coin he does not toss (half), the more the farther. Law 1 for the goal width. possession_value and forecast_step_cm: declared, arbitrary until L3; the chance a position gives is not a number of t |
 | `horizon_max_cm` | 4500.0 | sourced | Anticipation (2026-11-13, plan L0-CLOSE 10b): how far ahead he imagines, between horizon_min_cm and horizon_max_cm; an option that ends farther than his horizon he cannot see through, and his confidence in it falls towards a coin he does not toss (half), the more the farther. Law 1 for the goal width. possession_value and forecast_step_cm: declared, arbitrary until L3; the chance a position gives is not a number of t |
