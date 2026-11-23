@@ -5,7 +5,7 @@
 //! # Plane separation
 //!
 //! `Player` contains **no latent attributes**. Latent attributes live in
-//! `pcfm-hidden`, indexed by `PlayerId`, and are accessed only via
+//! `ds-db` and `ds-orchestrator`, indexed by `PlayerId`, and are accessed only via
 //! `GroundTruth::resolve_*`. This is the whole point of ADR-003 (option B):
 //! the match engine calls `resolve_*` and receives an outcome; it never
 //! reads a latent number.

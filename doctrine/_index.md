@@ -22,7 +22,7 @@ Dependencies flow **inward**: L2 may depend on L1 and L0, never on L3. L0 depend
 
 1. [`00-foundations.md`](00-foundations.md) — the doctrine *(v2.0, pillar 1 revised by ADR-013)*
 2. The level that matches your task (L0 → L3)
-3. [`../STRUCTURE.md`](STRUCTURE.md) — the rules of the repo (see §3 for the terminology: **module** = specification directory, **plugin** = Rust crate with a `sheet.toml`, **cell** is deprecated)
+3. [`../STRUCTURE.md`](STRUCTURE.md) — the rules of the repo (see §3 for the terminology: **module** = specification directory, **plugin** = a module of `ds-match/src/plugins/` with its card, behind `ds_match_api::MatchPlugin` (ADR-063), **cell** is deprecated)
 4. [`../docs/adr/`](adr/) — the decisions
 
 ---
@@ -68,7 +68,7 @@ Modules marked *(planned)* below do not have a file yet. Their links are intenti
 | L0.10 | [`L0-match/10-ground-truth.md`](../L0-match/specs/10-ground-truth.md) | ✅ ratified | 00, L0.01, L0.03 |
 | L0.11 | [`L0-match/11-player-characteristics.md`](../L0-match/specs/11-player-characteristics.md) | 🟡 draft | 00, L0.03, L0.10, ADR-003, ADR-028 |
 
-**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (15 crates, 589 tests). See `doctrine/STRUCTURE.md` §3.
+**L0 is done when:** a friendly match is playable, savable, reloadable, deterministic, and every event's cause is observable (`event_type` + `fields`; no `CauseTrace`, ADR-024). The **specification** is complete; the **code** is complete (15 crates, 607 tests). See `doctrine/STRUCTURE.md` §3.
 
 ---
 
@@ -221,10 +221,12 @@ These are the `ds-*` crates that provide infrastructure to multiple modules. The
 
 | Component | Currently defined in | Dedicated module (planned) | Notes |
 |---|---|---|---|
-| `ds-core` | L0.01 §2.2 (RNG), L0.02 §2.1 (event bus), L0.03 §3.1 (IDs), `00-foundations` §4 (fixed-point) | — | The core crate. Used by every other crate. |
+| `ds-core` | L0.02 §2.1 (event bus), L0.03 §3.1 (IDs), `00-foundations` §4 (fixed-point) | — | The core crate. Used by every other crate. |
 | `ds-stats` | L0.05 §2.4 (`EventChain`), L0.06 (consumer) | `L3-statistics` | Storage of `MatchEvent`, query engine. |
-| `ds-metrics` | L0.04 §2.4 (sub-models), L0.06 §2.3 (`MatchStatistics`) | `L3-statistics` | PPDA, progressive actions. xG removed from L0 on 2026-10-31 (latent-derived at L0, no observable features). |
-| `ds-data` | L0.07 §2.3 (migration scripts) | `L3-quality` | Loader, validator, migrations. |
+| `ds-calculator` | ADR-041 §2, `L0-match/balance/*.json` | — | The formulas of the balance; Law 1 from `laws.json` (`laws`). |
+| `ds-db` | ADR-003, ADR-112 | — | The vault of Plane A: the latents, behind `ds-orchestrator`. |
+| `ds-match-api` | ADR-063 | — | The plugins' contract (`MatchPlugin`, `World`, cards), with no `ds-*` dependency. |
+| `ds-narrative` | ADR-063 | — | The commentary, a reader of the events. |
 | `ds-gui` | `doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md` | `L3-ui` | The desktop GUI (egui). The only crate that knows egui. Replaces the planned Qt FFI shim `ds-bridge` (ADR-005, superseded). |
 
 **Rule:** when a new module needs `ds-core` (or any other infrastructure crate), it does not re-specify the crate. It links to the existing definition. The dedicated module, when written, will be the single source of truth; until then, the "Currently defined in" column is the map.
@@ -236,8 +238,8 @@ These are components that are referenced across modules but are not crates. They
 | Component | Referenced in | Destination |
 |---|---|---|
 | `ds-orchestrator` / `GroundTruth` | L0.03, L0.04, L0.07, L0.08, ADR-003 | **L0.10** (documented here) ✅ |
-| `ds-gen` | ADR-003, L0.07, L0.10 | L3-generator *(planned)* |
-| `L0-match/balance/*.toml` | L0.04, L0.06, L0.08 | L3-quality *(planned)* |
+| `ds-gen` *(not a crate yet)* | ADR-003, L0.07, L0.10 | L3-generator *(planned)* |
+| `L0-match/balance/*.json` | L0.04, L0.06, L0.08 | L3-quality *(planned)* |
 | `registry/*.yaml` | L0.03, L0.05 | L3-registry *(planned)* |
 | `locales/*` | L0.06 | L3-assets *(planned)*; translations at `locales/it/` *(planned)* |
 

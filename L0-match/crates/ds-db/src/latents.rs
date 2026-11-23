@@ -1,6 +1,6 @@
 //! Latent attributes (Plane A), derived by key, grouped by family.
 //!
-//! These are the values that must **never** leave `pcfm-hidden`.
+//! These are the values that must **never** leave `ds-db` (and the orchestrator that reads them, ADR-112).
 //!
 //! **Keyed derivation (ADR-029, OI-53).** A latent is derived from the
 //! player and the characteristic, not from a sequence:

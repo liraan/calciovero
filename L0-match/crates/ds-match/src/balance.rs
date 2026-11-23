@@ -96,7 +96,7 @@ const INFLUENCE_JSON: &str = include_str!("../../../balance/influence.json");
 
 /// Influence weights as they appear in `L0-match/balance/influence.json`.
 ///
-/// Converted to [`ds_orchestrator::InfluenceWeights`] at load time: `pcfm-hidden`
+/// Converted to [`ds_orchestrator::InfluenceWeights`] at load time: `ds-db` and `ds-orchestrator`
 /// does not depend on `serde`, so the JSON shape lives here.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct InfluenceWeightsJson {
@@ -130,7 +130,7 @@ impl InfluenceWeightsJson {
         Self::default()
     }
 
-    /// Converts to the `pcfm-hidden` type used by `resolve_influence`.
+    /// Converts to the `ds-db` and `ds-orchestrator` type used by `resolve_influence`.
     #[must_use]
     pub const fn to_weights(self) -> ds_orchestrator::InfluenceWeights {
         ds_orchestrator::InfluenceWeights {
@@ -275,7 +275,7 @@ const RECEPTION_JSON: &str = include_str!("../../../balance/reception.json");
 
 /// Reception parameters as they appear in `L0-match/balance/reception.json`.
 ///
-/// Converted to [`ds_orchestrator::ReceptionParams`] at load time: `pcfm-hidden`
+/// Converted to [`ds_orchestrator::ReceptionParams`] at load time: `ds-db` and `ds-orchestrator`
 /// does not depend on `serde`, so the JSON shape lives here.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct ReceptionBalance {

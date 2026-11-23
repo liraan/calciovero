@@ -2,7 +2,7 @@
 //! the orchestrator need, and neither owns.
 //!
 //! **Why this type exists (ADR-041 §3, 2026-11-10).** `world_seed` and
-//! `match_id` were two fields of `GroundTruth` inside `pcfm-hidden`, a
+//! `match_id` were two fields of `GroundTruth` inside `ds-db` and `ds-orchestrator`, a
 //! crate that held both the vault and the orchestrator. When the two are
 //! split, each needs the identity: the vault to derive latents by key
 //! (`PlayerLatents::from_key`), the orchestrator to derive the match's

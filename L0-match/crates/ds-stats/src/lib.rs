@@ -10,7 +10,7 @@
 //!
 //! # Plane separation
 //!
-//! This crate is **Plane B**. It does **not** depend on `pcfm-hidden`
+//! This crate is **Plane B**. It does **not** depend on `ds-db` and `ds-orchestrator`
 //! (Plane A). It receives `MatchEvent`s from the engine (which is the only
 //! component that talks to both planes).
 //!

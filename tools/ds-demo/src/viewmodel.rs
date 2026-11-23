@@ -242,8 +242,11 @@ mod tests {
     #[test]
     fn viewmodel_does_not_reference_forbidden_types() {
         let source = include_str!("viewmodel.rs");
+        // The vault and the actor (2026-11-23: the guard looked for
+        // `pcfm_hidden`, a crate that no longer exists).
         let forbidden = [
-            concat!("pcfm", "_hidden"),
+            concat!("ds_", "orchestrator"),
+            concat!("ds_", "db"),
             concat!("Match", "State"),
             concat!("ds_model", "::pitch"),
         ];

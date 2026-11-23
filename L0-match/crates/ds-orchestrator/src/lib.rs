@@ -152,7 +152,7 @@ impl GroundTruth {
     /// reads through it, the orchestrator (a `resolve_*` on
     /// `GroundTruth`) builds it. The boundary is the module, not the
     /// signature: `custodian` is a private module, so the item is `pub`
-    /// inside `pcfm-hidden` only and `ds-match` cannot name it. The
+    /// inside `ds-db` and `ds-orchestrator` only and `ds-match` cannot name it. The
     /// engine never sees a `CustodianView`: the compile-time boundary of
     /// ADR-028 section 5 is this visibility.
     pub(crate) fn custodian(&mut self, player: PlayerId) -> ds_db::CustodianView {

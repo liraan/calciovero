@@ -25,7 +25,7 @@ Doctrine  →  Modules (L0–L3)  →  ADRs  →  Code
 | **Doctrine** | `doctrine/00-foundations.md` | Why the project exists, the Three Planes, the banned things, the concentric model | Rarely. Only through a doctrine ADR. |
 | **Modules** | `L0-match/specs/`, then `L1-*/specs/`, `L2-*/specs/`, `L3-*/specs/` | How one subsystem works, at one level | Often. Each has its own revision history. |
 | **ADRs** | `doctrine/adr/NNN-*.md` | Why one architectural decision was made | Never edited after acceptance. Superseded by a new ADR. |
-| **Plugins** | a crate with a `sheet.toml`, in the ring it extends | A piece of code that extends the engine | Continuously, once the plugin system exists |
+| **Plugins** | a module of `ds-match/src/plugins/` with its card (`registry.rs`), behind `ds_match_api::MatchPlugin` (ADR-063) | A piece of code that extends the engine | Continuously, once the plugin system exists |
 | **Code** | `L0-match/crates/`, `tools/` | The implementation | Continuously, once it exists. |
 
 **Rule:** a module may *reference* the doctrine but may not *restate* it. If a module contradicts the doctrine, the module is wrong, not the doctrine.
@@ -284,7 +284,7 @@ If an ADR is `proposed` and touches an area, **no code may be written in that ar
 | ADR | Title | Status | Blocks |
 |---|---|---|---|
 | 001 | Language: Rust | ✅ accepted | — |
-| 002 | Project name and scope | ✅ accepted | — |
+| 002 | Project name and scope | ⛔ superseded (by ADR-027) | — |
 | 003 | Plane A enforcement | ✅ accepted | — (unblocked L0.04, L0.08, L0.10) |
 | 004 | Panic strategy at FFI | ✅ accepted | — |
 | 005 | Qt binding | ⛔ superseded by ADR-055 (amended by ADR-022) | — (unblocked L3-ui, pcfm-bridge; presentation primacy amended by ADR-022) |
@@ -448,7 +448,7 @@ The distinction is between **content** and **structure**.
 | The **registry** (roles, formations, instructions, attributes, metrics, index models) — see `L3-registry` *(planned)* | The **modules** of the specification (L0–L3) |
 | **Assets** (logos, kits, stadium images, audio) — see `L3-assets` *(planned)* | The **levels** of the concentric structure (L0, L1, L2, L3) |
 | **Data** (squads, players, competitions, nations) — as provided or generated data | The **doctrine** (`00-foundations.md`) |
-| **Configuration** (`L0-match/balance/*.toml`, `theme/*.toml`) | The **frontmatter schema** of a module |
+| **Configuration** (`L0-match/balance/*.json`, `tools/ds-gui/theme.json`) | The **frontmatter schema** of a module |
 | **Scripts** in the sandboxed DSL (see `L3-packs` *(planned)*) | The **dependency rules** between levels |
 
 **Rule:** a pack that needs a new module is a pack that is trying to be a different game. A new module is an **architectural decision**, not a content extension. It requires:

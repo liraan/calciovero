@@ -22,7 +22,7 @@ pub enum Feature {
     L0Match,
     /// Save/load (`MatchSave`).
     L0Save,
-    /// Ground truth generation (`pcfm-hidden`).
+    /// Ground truth generation (`ds-db`, behind `ds-orchestrator`).
     L0GroundTruth,
 
     // ── L1 — Season / World / Roster ────────────────────────────────

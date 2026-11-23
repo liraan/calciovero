@@ -53,7 +53,7 @@ you start, so that two people do not take the same task.
 | [#10](https://github.com/liraan/calciovero/issues/10) Give `profiles.json` sourced values: heights and weights by position from public aggregate statistics | football | `L0-match/balance/profiles.json` | no |
 | [#11](https://github.com/liraan/calciovero/issues/11) Compare `block.json` with real team shapes (depth and width of a block, in and out of possession) and propose values with a source | football | `L0-match/balance/block.json` | no |
 | [#12](https://github.com/liraan/calciovero/issues/12) Add a 4-3-3 next to the 4-4-2 (the grid and the roles) | tactics | `shape.rs` | a little |
-| [#13](https://github.com/liraan/calciovero/issues/13) Write offside as a pure function: given the positions at a pass, is the receiver offside? | the Laws | `rules.rs` | a little |
+| [#13](https://github.com/liraan/calciovero/issues/13) Write offside as a pure function: given the positions at a pass, is the receiver offside? | the Laws | `ds-match/src/plugins/referee.rs` (`ds_match::rules`) | a little |
 | [#14](https://github.com/liraan/calciovero/issues/14) A test scenario: "a pass to a free teammate a few metres away is completed" | testing | `tools/ds-testkit`, `tools/ds-test-runner` | yes |
 | [#15](https://github.com/liraan/calciovero/issues/15) Show each player's choice in the 2D view (who presses, who holds) with a different marker | tools | `tools/ds-demo/src/pitchview.rs` | yes |
 | [#16](https://github.com/liraan/calciovero/issues/16) An Italian (or other) translation of the README, as `README.<lang>.md` | writing | root | no |

@@ -14,7 +14,7 @@
 //! 4. `resolve_choice` with 1 and with 10 candidates: the cost per
 //!    candidate (the maintainer's "passare uno per volta").
 //!
-//! Run with: `cargo run --release --example bench_resolve -p pcfm-hidden`
+//! Run with: `cargo run --release --example bench_resolve -p ds-orchestrator`
 
 #![allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 
@@ -190,7 +190,7 @@ fn main() {
     std::hint::black_box(acc3);
     std::hint::black_box(acc5);
 
-    println!("== bench_resolve (pcfm-hidden) ==");
+    println!("== bench_resolve (ds-orchestrator) ==");
     println!("calls:            {N_RESOLVE} / {N_FORMULA} / {N_CHOICE}");
     println!();
     println!("1. resolve_movement (full):          {t_resolve:?}");

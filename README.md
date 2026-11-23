@@ -11,7 +11,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-589_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-607_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -145,7 +145,7 @@ classic Italian ones. The longer version is in
 **There is no full game yet.** What you can watch today is a friendly: the
 engine is close to complete and is being measured against real football,
 one verified step at a time, in the open. Engine version **184**;
-**589 tests** and a health check run on every commit.
+**607 tests** and a health check run on every commit.
 
 ### The road, level by level
 

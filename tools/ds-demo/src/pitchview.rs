@@ -378,7 +378,6 @@ mod tests {
     fn pitchview_does_not_reference_forbidden_types() {
         let source = include_str!("pitchview.rs");
         for needle in [
-            concat!("pcfm", "_hidden"),
             concat!("Match", "State"),
             concat!("Spatial", "State"),
             concat!("ds_", "orchestrator"),

@@ -3,9 +3,9 @@
 //! ADR-028 section 5 gives the custodian one responsibility: hold the
 //! hidden performances and answer one characteristic at a time. The
 //! calculator is the only consumer. The engine never sees this type:
-//! the module `custodian` is private (`mod custodian;`), so the item is `pub`
-//! inside `pcfm-hidden` only: a caller in `ds-match` cannot reach it, and
-//! the type has no public API.
+//! `ds-match` does not depend on `ds-db`, and only `ds-orchestrator`
+//! builds a view (2026-11-23: the doc said the module was private; it is
+//! `pub`, and the boundary is the dependency graph, ADR-112).
 //!
 //! The view holds the player's latents by value (`PlayerLatents` is
 //! `Copy`): no borrow of `GroundTruth` crosses a `resolve_*` call, and
@@ -25,8 +25,7 @@ pub struct CustodianView {
 impl CustodianView {
     /// Builds the view from the player's latents.
     ///
-    /// `pub` in a private module: the orchestrator inside `pcfm-hidden` is
-    /// the only caller.
+    /// The orchestrator (`ds-orchestrator`) is the only caller.
     #[must_use]
     pub const fn new(latents: PlayerLatents) -> Self {
         Self { latents }

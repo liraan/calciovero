@@ -23,7 +23,7 @@ pub struct ShotOutcome {
     /// crossing from this point.
     pub to: (i32, i32, i32),
     /// Whether the shot was on target (the deviation stayed within the
-    /// goal mouth). Derived geometrically inside `pcfm-hidden`, not a
+    /// goal mouth). Derived geometrically inside `ds-db` and `ds-orchestrator`, not a
     /// separate field of the die.
     pub on_target: bool,
     /// The ball's initial velocity, in centimetres per tick, 3D (MD-19:

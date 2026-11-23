@@ -12,7 +12,7 @@
 //!
 //! Every entity in this crate is **Plane B/C data**: it can be serialised,
 //! logged, and displayed. Latent attributes (Plane A) do **not** appear in
-//! any struct here. They live in `pcfm-hidden`, indexed by `PlayerId`, and
+//! any struct here. They live in `ds-db` and `ds-orchestrator`, indexed by `PlayerId`, and
 //! are accessed only via `GroundTruth::resolve_*` (see ADR-003 and
 //! `L0-match/specs/10-ground-truth.md`).
 

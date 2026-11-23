@@ -28,7 +28,7 @@ its code, together. It depends only on `doctrine/`.
 
 - **No code:** the numbers in [`balance/`](balance/README.md), and reports
   of what does not look like football (seed and minute).
-- **A little Rust:** a law in `rules.rs`, a formation or the block in
+- **A little Rust:** a law in `plugins/referee.rs` (`ds_match::rules`), a formation or the block in
   `shape.rs`. Pure functions with their own tests: you can work on them
   without reading the rest of the engine.
 - **The engine:** perception, choice, movement. A change in how something

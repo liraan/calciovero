@@ -1,7 +1,7 @@
 //! Inputs to the `resolve_*` functions (Plane B).
 //!
 //! These structs are constructed by the engine and passed to
-//! `pcfm-hidden`. They carry only Plane B data (positions, ids); latents
+//! `ds-db` and `ds-orchestrator`. They carry only Plane B data (positions, ids); latents
 //! are read inside the crate.
 
 use ds_core::ids::PlayerId;

@@ -13,7 +13,7 @@ goalkeeper can perform, the quantities of the act, and the roots of each
 quantity (the abilities of
 [`CHARACTERISTICS-AND-ABILITIES.md`](CHARACTERISTICS-AND-ABILITIES.md)
 and their characteristics). The last column is the honest state of the
-engine (updated at `SIM_VERSION` 76; the repertoire test, `ds-match/tests/repertoire.rs`, checks that every act shows).
+engine (the header was last revised at `SIM_VERSION` 76; each row names the SIM of its last change, up to 171; the repertoire test, `ds-match/tests/cases/repertoire.rs`, checks that every act it has a detector for shows).
 
 **How to read the state.**
 
@@ -83,13 +83,13 @@ with their first consumer (ADR-051 §4).
 
 ### 4.1 The duel: the target form (maintainer, 2026-11-12)
 
-Today the duel is an instant comparison of two weighted sums (`balance/duel.json`): the same two players give the same result in every scene, the carrier chooses nothing, and the outcome is only "kept" or "won". The target form:
+*(History, superseded by ADR-042, accepted, SIM 63: the duel is now a choice of the defender, standing, slide or jockey, with the carrier's answer; the outcome won, kept or loose. The rest of this paragraph describes the model before it.)* Before, the duel was an instant comparison of two weighted sums (`balance/duel.json`): the same two players give the same result in every scene, the carrier chooses nothing, and the outcome is only "kept" or "won". The target form:
 
 - **two choices that meet.** The defender chooses how to go in (standing tackle, slide, jockey, wait for the mistake), each with its risk: a slide wins more often, and if it misses he is out of the play and may foul. The carrier chooses how to answer (shield with the body, take him on, release the ball first);
 - **the contact is decided by the bodies in the scene**: approach speed and angle, who is between the ball and the opponent, *maximal force*, *body control*, weight, the fatigue of the moment;
 - **four outcomes**: ball kept, ball won, ball loose, foul.
 
-The variation comes from the situation, never from a die. Twin tests: the better shielder keeps the ball more, the better tackler wins it more, and it shows in the 2D. Where this differs from ADR-042 (proposed), ADR-042 is amended first.
+The variation comes from the situation, never from a die. Twin tests: the better shielder keeps the ball more, the better tackler wins it more, and it shows in the 2D. Where this differs from ADR-042 (accepted), ADR-042 is amended first.
 
 ## 5. In goal
 
@@ -118,7 +118,7 @@ The variation comes from the situation, never from a die. Twin tests: the better
 
 | Law | Engine today |
 |---|---|
-| Kick-off, throw-in, goal kick, corner (Laws 8, 15-17) | ✓ `rules.rs`, exact |
+| Kick-off, throw-in, goal kick, corner (Laws 8, 15-17) | ✓ `plugins/referee.rs` (`ds_match::rules`), exact |
 | Goal (Law 10) | ✓ the ball over the line between the posts |
 | Offside (Law 11) | ✓ since 62, exact: `rules::offside_position` at the pass, the offence when he plays the ball, a free kick |
 | Fouls (Law 12) | ✓ since 64: the contact's band (slide, from behind, speed, temper, technique); free kick, or a penalty in the area |
