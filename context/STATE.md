@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `1500d7b` - "docs: the docs say what the code is (code audit F, first pass)"
+**Last commit verified:** `21d7d2e` - "docs: crosses counted, balance notes and record doc true (code audit F, second pass)"
 
 ## Mandato attivo (2026-11-16)
 
