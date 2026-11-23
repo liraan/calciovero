@@ -43,16 +43,14 @@ impl Custodian for CustodianView {
             Characteristic::Finishing => f64::from(self.latents.technical.finishing),
             Characteristic::LeftFoot => f64::from(self.latents.technical.left_foot),
             Characteristic::RightFoot => f64::from(self.latents.technical.right_foot),
-            // The catalogue declares three more physical characteristics
-            // (`MaximalForce`, `Acceleration`, `MaxSpeed`) that no
-            // formula reads yet. The calculator asks only for declared
-            // terms (ADR-028 section 5): this branch is reached only if
-            // a future formula declares one of them before the
-            // corresponding performance is in `PlayerLatents`. It is
-            // `0.0` until Plan H materialises them.
-            Characteristic::MaximalForce
-            | Characteristic::Acceleration
-            | Characteristic::MaxSpeed => 0.0,
+            // The two that are in `PlayerLatents` (code audit C7: they
+            // gave 0.0, as if they were not).
+            Characteristic::MaximalForce => f64::from(self.latents.physical.maximal_force),
+            Characteristic::MaxSpeed => f64::from(self.latents.physical.max_speed),
+            // Not a root of its own: a player's acceleration derives from
+            // his explosive force and his weight (`movement.json`). No
+            // formula declares it; `0.0` until one does and it has a root.
+            Characteristic::Acceleration => 0.0,
         }
     }
 }

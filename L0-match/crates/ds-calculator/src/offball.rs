@@ -73,6 +73,14 @@ impl OffBallBalance {
     /// catches it at test time.
     #[must_use]
     pub fn load() -> Self {
+        // Parsed once (code audit C8: it was parsed again at every call, in
+        // loops over the players at every tick).
+        static CACHE: std::sync::LazyLock<OffBallBalance> =
+            std::sync::LazyLock::new(OffBallBalance::parse);
+        *CACHE
+    }
+
+    fn parse() -> Self {
         let mut b: Self =
             serde_json::from_str(OFFBALL_JSON).expect("embedded offball file is valid JSON");
         let law = crate::laws::law1();

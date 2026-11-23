@@ -652,6 +652,14 @@ impl BlockBalance {
     /// catches it at test time.
     #[must_use]
     pub fn load() -> Self {
+        // Parsed once (code audit C8: it was parsed again at every call, in
+        // loops over the players at every tick).
+        static CACHE: std::sync::LazyLock<BlockBalance> =
+            std::sync::LazyLock::new(BlockBalance::parse);
+        *CACHE
+    }
+
+    fn parse() -> Self {
         Self::default()
     }
 }
@@ -770,6 +778,14 @@ impl KnockBalance {
     /// If the embedded JSON is invalid; the tests catch it.
     #[must_use]
     pub fn load() -> Self {
+        // Parsed once (code audit C8: it was parsed again at every call, in
+        // loops over the players at every tick).
+        static CACHE: std::sync::LazyLock<KnockBalance> =
+            std::sync::LazyLock::new(KnockBalance::parse);
+        *CACHE
+    }
+
+    fn parse() -> Self {
         Self::default()
     }
 

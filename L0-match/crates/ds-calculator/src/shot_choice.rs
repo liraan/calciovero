@@ -25,10 +25,6 @@ pub struct ShotChoiceBalance {
     pub power_placed: f64,
     /// How near the post the aim sits (1.0 = the post).
     pub aim_edge_fraction: f64,
-    /// Weight of `game_reading` in the salience of a complete action.
-    pub reading_weight: f64,
-    /// Weight of `risk_management` in the salience of a complete action.
-    pub risk_weight: f64,
     /// The shot is an option within this distance of the goal, cm (ADR-050).
     pub shot_range_cm: i64,
     /// How much a pass's progression counts, for a full appetite (ADR-050).
@@ -45,9 +41,6 @@ pub struct ShotChoiceBalance {
     /// The room in front (to the nearest opponent ahead) that is full room
     /// for a carry, cm.
     pub carry_room_ref_cm: i64,
-    /// The salience of clearing the ball at full pressure on his own goal
-    /// line (ADR-051).
-    pub clear_salience: f64,
     /// Within this distance of his own goal a defender may clear, cm.
     pub clear_zone_cm: i64,
     /// The power of a lob, 0..1 (soft and high, ADR-052).
@@ -65,6 +58,14 @@ impl ShotChoiceBalance {
     /// `embedded_shot_choice_balance_is_valid` catches this at test time.
     #[must_use]
     pub fn load() -> Self {
+        // Parsed once (code audit C8: it was parsed again at every call, in
+        // loops over the players at every tick).
+        static CACHE: std::sync::LazyLock<ShotChoiceBalance> =
+            std::sync::LazyLock::new(ShotChoiceBalance::parse);
+        CACHE.clone()
+    }
+
+    fn parse() -> Self {
         serde_json::from_str(SHOT_CHOICE_JSON).expect("embedded shot_choice balance is valid JSON")
     }
 }
@@ -80,7 +81,5 @@ mod tests {
         assert!((0.0..=1.0).contains(&b.power_placed));
         assert!(b.power_strong > b.power_placed);
         assert!((0.0..=1.0).contains(&b.aim_edge_fraction));
-        assert!((0.0..=1.0).contains(&b.reading_weight));
-        assert!((0.0..=1.0).contains(&b.risk_weight));
     }
 }

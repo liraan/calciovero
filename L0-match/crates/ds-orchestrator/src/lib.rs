@@ -1395,7 +1395,6 @@ mod no_room_tests {
         ChoiceCandidate {
             kind,
             geometric,
-            risk: 0.1,
             visibility: 1.0,
         }
     }
@@ -1807,13 +1806,11 @@ mod choice_filter_tests {
                 ChoiceCandidate {
                     kind: ChoiceKind::Advance,
                     geometric: 0.5,
-                    risk: 0.5,
                     visibility: 1.0,
                 },
                 ChoiceCandidate {
                     kind: ChoiceKind::Pass(PlayerId::new(200, 0)),
                     geometric: 0.9,
-                    risk: 0.5,
                     visibility: 0.2,
                 },
             ],
@@ -1959,7 +1956,6 @@ mod choice_filter_tests {
                     ChoiceCandidate {
                         kind: ChoiceKind::Pass(PlayerId::new(300, 0)),
                         geometric: 0.5,
-                        risk: 0.0,
                         visibility: 1.0,
                     },
                     ChoiceCandidate {
@@ -1968,7 +1964,6 @@ mod choice_filter_tests {
                             at: (9000, 3400),
                         },
                         geometric: 0.9,
-                        risk: 0.0,
                         visibility: 1.0,
                     },
                 ],

@@ -91,9 +91,6 @@ pub struct ChoiceCandidate {
     /// The geometric score (Plane B): how favourable the option looks
     /// from the scene (distance, freedom, angle). >= 0.
     pub geometric: f64,
-    /// The risk of the option (Plane B): how exposed the pass is, how
-    /// far the shot. 0.0 = no risk, 1.0 = maximum risk.
-    pub risk: f64,
     /// How easy it is to notice the option, 0..=1 (ADR-039 §2: a high
     /// `game_reading` sees more options). Distinct from `geometric`
     /// (how good the option is): a good option can be hard to see.

@@ -905,7 +905,6 @@ fn shot_candidates(
                         contact_height: 0.0,
                     },
                     geometric: geom,
-                    risk: 0.0,
                     visibility: shot_visibility,
                 });
                 // OI-100: the shot's height is also a choice. A high shot
@@ -919,7 +918,6 @@ fn shot_candidates(
                         contact_height: 1.0,
                     },
                     geometric: geom * 0.85,
-                    risk: 0.1,
                     visibility: shot_visibility,
                 });
             }
@@ -939,7 +937,6 @@ fn shot_candidates(
                     contact_height: 1.0,
                 },
                 geometric: worth_of(lob),
-                risk: 0.0,
                 visibility: 1.0,
             });
         }
@@ -1046,7 +1043,6 @@ fn shift_candidate(
             lost,
             risk_appetite,
         ),
-        risk: 0.0,
         visibility: best.visibility,
     })
 }
@@ -1112,7 +1108,9 @@ fn carry_candidates(
     scene: &PerceivedScene,
     pos: (i32, i32),
     opponent_positions: &[(i32, i32)],
-    (risk_appetite, pressure): (f64, f64),
+    // The pressure fed only the candidate's `risk`, which nothing read
+    // (code audit C3).
+    (risk_appetite, _pressure): (f64, f64),
     balance: &ds_calculator::shot_choice::ShotChoiceBalance,
 ) -> Vec<ChoiceCandidate> {
     let mut out = Vec::new();
@@ -1136,7 +1134,6 @@ fn carry_candidates(
                         ChoiceKind::Carry { to: carry.1 }
                     },
                     geometric: carry.0,
-                    risk: pressure,
                     visibility: 1.0,
                 });
             }
@@ -1193,7 +1190,6 @@ fn hold_candidate(
     (best > 0.0).then_some(ChoiceCandidate {
         kind: ChoiceKind::Hold,
         geometric: keep * trust * best,
-        risk: pressure,
         visibility: seen,
     })
 }
@@ -1217,7 +1213,6 @@ fn clear_candidate(
     if own_dist >= balance.clear_zone_cm || pressure <= 0.0 {
         return None;
     }
-    let _ = balance.clear_salience;
     let m = mind();
     let forward = if own_goal.0 == 0 { 1 } else { -1 };
     let width = own_goal.1 * 2;
@@ -1280,7 +1275,6 @@ fn clear_candidate(
         .map(|(geometric, to)| ChoiceCandidate {
             kind: ChoiceKind::Clear { to },
             geometric,
-            risk: 0.0,
             visibility: 1.0,
         })
 }
@@ -1531,12 +1525,10 @@ fn pass_candidates(
             balance,
             brings(pos, tpos, goal, risk_appetite, pressure, balance),
         );
-        let risk = 0.0;
         if free {
             candidates.push(ChoiceCandidate {
                 kind: ChoiceKind::Pass(*id),
                 geometric: geom,
-                risk,
                 visibility: lq,
             });
         }
@@ -1620,7 +1612,6 @@ fn pass_candidates(
             candidates.push(ChoiceCandidate {
                 kind: ChoiceKind::Loft(*id),
                 geometric: geom,
-                risk,
                 visibility: 1.0,
             });
         }
@@ -1705,7 +1696,6 @@ fn through_candidates(
         out.push(ChoiceCandidate {
             kind: ChoiceKind::Through { to: *id, at },
             geometric: geom,
-            risk: 0.0,
             visibility: 1.0,
         });
     }
@@ -1757,7 +1747,6 @@ pub fn build_choice(
                 candidates: vec![ChoiceCandidate {
                     kind: ChoiceKind::Advance,
                     geometric: 1.0,
-                    risk: 0.5,
                     visibility: 1.0,
                 }],
             },
@@ -1837,7 +1826,6 @@ pub fn build_choice(
         candidates.push(ChoiceCandidate {
             kind: ChoiceKind::Advance,
             geometric: 0.0,
-            risk: 0.5,
             visibility: 1.0,
         });
     }

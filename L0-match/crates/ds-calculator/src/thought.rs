@@ -100,6 +100,14 @@ impl ThoughtBalance {
     /// catches it at test time.
     #[must_use]
     pub fn load() -> Self {
+        // Parsed once (code audit C8: it was parsed again at every call, in
+        // loops over the players at every tick).
+        static CACHE: std::sync::LazyLock<ThoughtBalance> =
+            std::sync::LazyLock::new(ThoughtBalance::parse);
+        *CACHE
+    }
+
+    fn parse() -> Self {
         #[derive(Deserialize)]
         struct Ball {
             gravity_cm_per_tick2: f64,

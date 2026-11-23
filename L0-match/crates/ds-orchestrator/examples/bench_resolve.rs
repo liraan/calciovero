@@ -132,7 +132,6 @@ fn main() {
         candidates: vec![ds_orchestrator::ChoiceCandidate {
             kind: ds_orchestrator::ChoiceKind::Advance,
             geometric: 0.3,
-            risk: 0.5,
             visibility: 1.0,
         }],
     };
@@ -147,7 +146,6 @@ fn main() {
         many.candidates.push(ds_orchestrator::ChoiceCandidate {
             kind: ds_orchestrator::ChoiceKind::Pass(PlayerId::new(i + 2, 0)),
             geometric: 0.2,
-            risk: 0.4,
             visibility: 1.0,
         });
     }
