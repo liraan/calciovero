@@ -168,9 +168,12 @@ impl MatchState {
         // the nearest of his side takes it, and runs to the ball.
         if self.spatial.agent(w.taker).is_none() {
             let side = crate::perception::team_of(w.taker);
+            // On the pitch only (SIM 196): `iter()` also holds the men sent
+            // or carried off by the bench, who can never reach the ball, and
+            // the restart then waited for ever.
             let Some(next) = self
                 .spatial
-                .iter()
+                .on_pitch()
                 .filter(|(id, _)| crate::perception::team_of(**id) == side)
                 .min_by_key(|(id, a)| (distance_squared(a.position, w.spot), id.slot()))
                 .map(|(id, _)| *id)

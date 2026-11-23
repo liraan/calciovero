@@ -89,9 +89,29 @@ impl EventChain {
     /// This is the check performed when a save is reloaded: recompute the
     /// chain hash from the events, compare it with the one stored in the
     /// save. If they differ, the chain has been tampered with.
+    ///
+    /// The chain is recomputed event by event (2026-11-23): before, only the
+    /// stored `current` was compared, so a save whose events had been
+    /// changed and whose hashes had been kept passed the check.
     #[must_use]
     pub fn verify(&self, expected: Hash) -> bool {
-        self.current == expected
+        if self.hashes.len() != self.events.len() {
+            return false;
+        }
+        let mut h = Hash::ZERO;
+        for (event, stored) in self.events.iter().zip(&self.hashes) {
+            let Ok(ev_bytes) = serde_json::to_vec(event) else {
+                return false;
+            };
+            let mut bytes = Vec::with_capacity(32 + ev_bytes.len());
+            bytes.extend_from_slice(h.as_bytes());
+            bytes.extend_from_slice(&ev_bytes);
+            h = Hash::of_bytes(&bytes);
+            if h != *stored {
+                return false;
+            }
+        }
+        h == self.current && h == expected
     }
 }
 
@@ -121,6 +141,20 @@ mod tests {
             fields: serde_json::json!({}),
             created_at: GameInstant::from_raw(u64::from(minute)),
         }
+    }
+
+    #[test]
+    fn a_changed_event_fails_the_check() {
+        let mut c = EventChain::new();
+        c.try_append(make_event(1, 10)).unwrap();
+        c.try_append(make_event(2, 20)).unwrap();
+        let h = c.chain_hash();
+        assert!(c.verify(h), "the untouched chain verifies");
+        // A save edited by hand: the event changed, the hashes kept.
+        let mut json = serde_json::to_value(&c).unwrap();
+        json["events"][0]["timestamp_minute"] = serde_json::json!(11);
+        let tampered: EventChain = serde_json::from_value(json).unwrap();
+        assert!(!tampered.verify(h), "a changed event must fail");
     }
 
     #[test]

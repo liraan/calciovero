@@ -845,11 +845,10 @@ impl GroundTruth {
         // aimed it.
         let (dx, dy) = (f64::from(to.0 - from.0), f64::from(to.1 - from.1));
         let distance = dmath::hypot(dx, dy);
-        let foot = if dy >= 0.0 {
-            l.technical.left_foot
-        } else {
-            l.technical.right_foot
-        };
+        // His strongest foot (SIM 196): before, the foot of the absolute
+        // side of the pitch, which gave the two teams different feet for
+        // the same clearance (the defect SIM 55 removed from the pass).
+        let foot = l.technical.left_foot.max(l.technical.right_foot);
         // Under pressure, as the pass (SIM 132, OI-100).
         let composure = if self.psychology {
             l.psychological.composure
@@ -1019,9 +1018,15 @@ impl GroundTruth {
     /// only when he takes it.
     #[must_use]
     pub fn kicker_nerves(&mut self, player: PlayerId) -> f64 {
-        ds_calculator::kick::KickBalance::pressure_nerves(
-            self.latents_for(player).psychological.composure,
-        )
+        // As the strike reads it (SIM 196): with the psychology switched
+        // off, an average composure; before, his own, so what he foresaw
+        // was not what happened.
+        let composure = if self.psychology {
+            self.latents_for(player).psychological.composure
+        } else {
+            0.5
+        };
+        ds_calculator::kick::KickBalance::pressure_nerves(composure)
     }
 
     /// Fatigue's declared parameters (`balance/fatigue.json`).

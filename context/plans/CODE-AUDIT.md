@@ -6,6 +6,8 @@ Analisi in sola lettura di ~44.000 righe Rust (15 crate) da 8 analisti paralleli
 
 ## A. Difetti che cambiano la partita (bug)
 
+**Stato (2026-11-23):** chiusi nel SIM 196 (DD-55) A1-A7 e A9-A19; A8 spostato a B (è la scelta dell'attore, insieme al branch accantonato `sim-189-first-time`). Il test GUI delle linee del fuorigioco ha rivelato un difetto in più: le linee erano ricostruite dall'ultimo passaggio *ricevuto*; ora la chiamata dice il tick in cui il pallone è stato giocato (`played_tick`).
+
 | # | Rilievo | Dove | Verifica |
 |---|---|---|---|
 | A1 | `ball_at_line`: con la palla verso x=0 `dx` è negativo e `.max(1)` lo trasforma in 1 → y/z all'incrocio estrapolati con segno sbagliato. Sbaglia la parata deviata sul palo e il "colpo di testa nello specchio" verso la porta di casa | spatial.rs:1287-1290; usato da keeper.rs:122, technique.rs:162 | ✔ |

@@ -1,6 +1,7 @@
 //! The old integration files, unchanged, now modules of one binary.
 
 mod anti_leak;
+mod audit_fixes;
 mod channels;
 mod coach;
 mod extra_time;

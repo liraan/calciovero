@@ -106,6 +106,19 @@ fn step(
     rec.capture(state, &now, t);
 }
 
+/// The context with the squads as they are now (SIM 196): the kick-off and
+/// the shoot-out read who is on the pitch after the substitutions, not the
+/// starting squads. Before, a man who came on could not kick a penalty of
+/// the shoot-out and the count of the kickers fell with every change.
+const fn on_live<'a>(ctx: &'a mut MatchContext<'_>, live: &'a ds_model::Match) -> MatchContext<'a> {
+    MatchContext {
+        match_: live,
+        hidden: &mut *ctx.hidden,
+        chain: &mut *ctx.chain,
+        config: ctx.config,
+    }
+}
+
 fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
     let tps = u64::from(ctx.config.ticks_per_second).max(1);
     let table = StoppageTime::load();
@@ -132,7 +145,7 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
 
     // --- Second half ---
     state.begin_half(Half::Second, tick_after_first);
-    state.kick_off(ctx, Half::Second);
+    state.kick_off(&mut on_live(ctx, &live), Half::Second);
     state.emit_boundary(ctx, tick_after_first, EventType::SecondHalf);
     let tick_after_second = run_half(
         &mut state,
@@ -151,7 +164,7 @@ fn run(ctx: &mut MatchContext<'_>, rec: &mut Recorder<'_>) -> MatchResult {
     let mut end = tick_after_second;
     for (i, half) in extra.iter().copied().enumerate() {
         state.begin_half(half, end);
-        state.kick_off(ctx, half);
+        state.kick_off(&mut on_live(ctx, &live), half);
         let start = if i == 0 {
             EventType::KickOff
         } else {
@@ -197,14 +210,18 @@ fn shootout(
     start: u64,
     rec: &mut Recorder<'_>,
 ) -> (u8, u8) {
-    let n = state
-        .on_pitch_count(ctx, true)
-        .min(state.on_pitch_count(ctx, false));
-    let first_home = crate::rules::shootout_first_home(&ctx.match_.tosses);
-    let orders = [
-        state.shootout_order(ctx, first_home, n),
-        state.shootout_order(ctx, !first_home, n),
-    ];
+    let (first_home, orders) = {
+        let mut now = on_live(ctx, live);
+        let n = state
+            .on_pitch_count(&now, true)
+            .min(state.on_pitch_count(&now, false));
+        let first_home = crate::rules::shootout_first_home(&now.match_.tosses);
+        let orders = [
+            state.shootout_order(&mut now, first_home, n),
+            state.shootout_order(&mut now, !first_home, n),
+        ];
+        (first_home, orders)
+    };
     // Index 0 kicks first, 1 second.
     let mut goals = [0u8, 0u8];
     let mut kicks = [0usize, 0usize];
@@ -225,7 +242,7 @@ fn shootout(
                 return result(goals);
             };
             let before = state.tally();
-            state.place_shootout_kick(ctx, home, kicker);
+            state.place_shootout_kick(&mut on_live(ctx, live), home, kicker);
             let mut struck = false;
             let told = ctx.chain.events().len();
             for _ in 0..KICK_TICKS {

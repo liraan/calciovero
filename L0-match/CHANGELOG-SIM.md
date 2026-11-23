@@ -8,7 +8,27 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
-## 195 — La frenata con la sua fonte (DD-54)
+## 196 — I difetti dell'audit del codice (DD-55)
+
+I bug della sezione A di `context/plans/CODE-AUDIT.md`, ognuno con il suo guardiano:
+- la palla prevista verso la porta di casa (`ball_at_line`: lo spostamento negativo reso 1 da `.max(1)`) — gemello `the_line_at_the_home_goal_is_foreseen_like_the_other`, fallisce sul codice vecchio;
+- il portiere che para è il primo della rosa viva, non l'id del titolare — `the_keeper_who_came_on_meets_the_shots`;
+- Legge 11: il fuorigioco su una palla vinta di testa è fischiato; la chiamata dice il tick in cui il pallone è stato giocato (`played_tick`) e la GUI legge le linee lì — `a_header_from_offside_is_called`;
+- la ripresa: il sostituto del battitore solo fra chi è in campo;
+- calcio d'inizio e rigori sulla rosa viva (i subentrati calciano);
+- Legge 10: nessun cambio durante la serie dei rigori — `no_substitution_during_the_shootout`;
+- Legge 3: i cambi pianificati contano nel limite — `the_planned_substitutions_count_against_the_limit`;
+- la palla non è "ferma" al rimbalzo mentre risale (le previsioni finivano lì);
+- Legge 10: anche il tiro entra solo con la palla intera oltre la linea;
+- Legge 5: con un uomo a terra niente vantaggio; `play_advantage` con il nome e il test giusti;
+- il rigore della serie non si chiude su un evento senza attore;
+- il rinvio con il piede più forte, non con quello del lato del campo;
+- `kicker_nerves` rispetta l'interruttore della psicologia, e il colpo di testa lo legge invece delle latenti grezze;
+- la separazione dei corpi lungo la linea fra i due (prima per assi, a 45°).
+Fuori dal motore, senza effetto sull'hash: la cronaca "shoots wide" legge `on_target`; `EventChain::verify` ricalcola la catena; ds-demo conta i subentrati di casa come di casa.
+
+Con LUNA: dito = id, segni, liste; luna = la regola o la fisica che valgono uguali per tutti e in ogni momento della partita. Golden rigenerati; semi coppa 50, pari al 90' 42, decisa 43, colpo 46. ds-reference 42..101: **6 su 22** (rigori, duelli a terra, dribbling, falli 30.1, rossi 0.73, rinvii); gol 7.65, autogol 0.95, fuorigioco 12.0.
+
 
 La frenata da una fonte: Harper, Morin, Carling e Kiely 2020 (Sports Biomechanics, radar, Tabella 1), decelerazione media sull'arresto dopo uno sprint di 20 m 4.45 ± 0.61 m/s²; il motore frena a ritmo costante, quindi la media dell'arresto ± due deviazioni: 3.2-5.7 m/s² (prima 3.5-6.0, spiegati senza fonte). Atleti universitari, non professionisti: dichiarato. Con la nuova frenata, al seme 42 un portatore che aveva vinto la palla lontano dai piedi, senza un tocco in corso, restava fermo 39 minuti (decide solo con la palla al piede): ora va sulla palla, come chi l'ha giocata avanti e non l'ha raggiunta; lo ha trovato il guardiano `a_carrier_with_nothing_on_does_not_stand_still`. Il colpo che costringe al cambio (`knock.json`, grado 2): dal 194 i falli arrivano più lenti e 850 non toccava nessuno in 200 partite; rifissato con lo stesso metodo, 630: semi pari 42-281 0.183 colpi nel primo tempo a partita, dispari tenuti da parte 0.150, reale 0.25. Dichiarato: i falli del motore (36) sono sopra i reali (26), la soglia si sposterà quando scendono.
 

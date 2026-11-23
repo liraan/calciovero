@@ -221,6 +221,16 @@ fn instruction_text(ev: &MatchEvent, minute: u8) -> String {
 /// Renders the text in English (the default language).
 ///
 /// The text is derived from the event type, the player name and the minute.
+/// A shot that is not on target, as the engine tells it (`on_target`);
+/// before, a `goal` field the shot never has was read, and no shot was
+/// ever told wide (2026-11-23).
+fn shot_wide(ev: &MatchEvent) -> bool {
+    ev.fields
+        .get("on_target")
+        .and_then(serde_json::Value::as_bool)
+        == Some(false)
+}
+
 fn render_text(
     ev: &MatchEvent,
     player: &str,
@@ -229,7 +239,7 @@ fn render_text(
 ) -> String {
     match ev.event_type {
         EventType::Shot => {
-            let wide = ev.fields.get("goal").and_then(serde_json::Value::as_bool) == Some(false);
+            let wide = shot_wide(ev);
             if wide {
                 format!("{player} shoots wide in the {minute}'")
             } else {

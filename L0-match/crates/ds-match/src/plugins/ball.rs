@@ -109,9 +109,14 @@ impl MatchState {
         let pitch_length = i32::from(ctx.match_.pitch.length_m) * 100;
         let width = i32::from(ctx.match_.pitch.width_m) * 100;
 
-        let (plane_x, defending) = if prev.0 < pitch_length && curr.0 >= pitch_length {
+        // The whole ball over the line (Law 10), as for every other ball
+        // (`check_goal_line`): beyond it by its radius (SIM 196). Before, a
+        // shot crossed with its centre on the line, any other ball whole.
+        #[allow(clippy::cast_possible_truncation)]
+        let r = ds_orchestrator::read::BALL_RADIUS_CM as i32;
+        let (plane_x, defending) = if prev.0 <= pitch_length && curr.0 > pitch_length + r {
             (pitch_length, Possession::Away)
-        } else if prev.0 > 0 && curr.0 <= 0 {
+        } else if prev.0 >= 0 && curr.0 < -r {
             (0, Possession::Home)
         } else {
             return;
@@ -167,9 +172,16 @@ impl MatchState {
             return;
         }
 
-        let gk = match defending {
-            Possession::Home => PlayerId::new(0, 0),
-            Possession::Away => PlayerId::new(100, 0),
+        // The keeper on the pitch now (SIM 196): the first of the live
+        // squad, the man who came on for him after a substitution. Before,
+        // the ids of the starting keepers: after a change of keeper nobody
+        // met a shot and every one on target was a goal.
+        let keeper_of = match defending {
+            Possession::Home => &ctx.match_.home,
+            Possession::Away => &ctx.match_.away,
+        };
+        let Some(gk) = keeper_of.players.first().map(|p| p.id) else {
+            return;
         };
         if self.keeper_meets_the_shot(
             ctx,

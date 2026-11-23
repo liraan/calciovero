@@ -233,8 +233,9 @@ impl MatchState {
         );
         scene.ball_foot = None;
         scene.strike_error_rad = 0.0;
-        let composure = ctx.hidden.latents_for(winner).psychological.composure;
-        scene.own_nerves = ds_calculator::kick::KickBalance::pressure_nerves(composure);
+        // Through the actor's own reading (SIM 196): before, the engine read
+        // the raw composure (Plane A) and ignored the psychology switch.
+        scene.own_nerves = ctx.hidden.kicker_nerves(winner);
         scene.reception.heights = scene
             .positions
             .keys()
@@ -383,6 +384,21 @@ impl MatchState {
                 EventType::Duel,
                 serde_json::json!({ "winner_slot": winner.slot(), "aerial": true, "against": against }),
             );
+        }
+        // Law 11 (SIM 196): a teammate of the passer who was in an offside
+        // position when the ball was played and wins it in the air is
+        // penalised as one who receives it on the ground. Before, the air
+        // cleared the marks unread: a header from offside was never called.
+        let passer_home = self
+            .pending
+            .as_ref()
+            .filter(|p| p.shot.is_none())
+            .and_then(|p| p.passer)
+            .map(|p| ctx.match_.home.players.iter().any(|q| q.id == p));
+        if passer_home == Some(home) && self.offside_at_pass.contains(&winner) {
+            let played = self.pending.take().map(|p| p.launched);
+            self.call_offside(ctx, tick, winner, home, ((bx, by), played));
+            return;
         }
         self.tell_pass_met_in_air(ctx, tick, home);
         self.pending = None;
@@ -1057,13 +1073,13 @@ impl MatchState {
         if let Some((Some(by), through)) = pass {
             // Before the pass is over: whether he had reacted to it (OI-119).
             let struck = self.unready(ctx, tick, Some(by), id);
-            let (cross, foot) = self
+            let (cross, foot, played) = self
                 .pending
                 .as_ref()
-                .map_or((false, None), |p| (p.cross, p.foot));
+                .map_or((false, None, None), |p| (p.cross, p.foot, Some(p.launched)));
             self.pending = None;
             if home(by) == home(id) && self.offside_at_pass.contains(&id) {
-                self.call_offside(ctx, tick, id, home(id), ball);
+                self.call_offside(ctx, tick, id, home(id), (ball, played));
                 return;
             }
             self.offside_at_pass.clear();

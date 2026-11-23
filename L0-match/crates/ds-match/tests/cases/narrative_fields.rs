@@ -60,18 +60,28 @@ fn tackle_text_uses_from_field_and_event_keeps_it() {
 }
 
 #[test]
-fn shot_wide_when_goal_false() {
+fn shot_wide_when_not_on_target() {
     let m = match_fixture(42).expect("fixture");
     let mut chain = EventChain::new();
     chain
         .try_append(ev(
             Some(5),
             EventType::Shot,
-            serde_json::json!({ "goal": false }),
+            serde_json::json!({ "on_target": false }),
         ))
         .expect("append");
     let e = &narrate(&m, &chain)[0];
     assert!(e.text.contains("wide"), "text: {}", e.text);
+    // The twin: the same shot on target is not wide.
+    let mut on = EventChain::new();
+    on.try_append(ev(
+        Some(5),
+        EventType::Shot,
+        serde_json::json!({ "on_target": true }),
+    ))
+    .expect("append");
+    let e = &narrate(&m, &on)[0];
+    assert!(!e.text.contains("wide"), "text: {}", e.text);
 }
 
 #[test]

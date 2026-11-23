@@ -49,6 +49,9 @@ impl MatchPlugin for Bench {
                     _ => world.carry_off(hurt),
                 }
             }
+            // The planned ones within the Law 3 limit too (SIM 196): before,
+            // only those ordered during the match were counted against it.
+            let left = crate::rules::subs_remaining(allowed, made(world, home), due.len());
             due.extend(
                 world
                     .planned(home)
@@ -56,7 +59,8 @@ impl MatchPlugin for Bench {
                     .filter(|(m, off, _)| u64::from(*m) <= minute && !world.substituted(*off))
                     // Not the taker of the restart: he is on the ball.
                     .filter(|(_, off, _)| Some(*off) != carrier)
-                    .map(|(_, off, on)| (off, on)),
+                    .map(|(_, off, on)| (off, on))
+                    .take(left),
             );
             // Then those he ordered during the match (decision T), within
             // the substitutions the Laws allow (Law 3).
@@ -216,6 +220,12 @@ impl MatchState {
     ) {
         use ds_match_api::MatchPlugin as _;
         if !std::mem::take(&mut self.stoppage) {
+            return;
+        }
+        // Law 10 (SIM 196): no substitution once the shoot-out has begun;
+        // each kick is a stoppage, and before the bench changed men between
+        // kicks, a kicker of the order included.
+        if self.half == ds_stats::Half::Shootout {
             return;
         }
         let tps = u64::from(ticks_per_second).max(1);

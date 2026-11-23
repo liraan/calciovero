@@ -341,10 +341,11 @@ pub const fn card_after(already_cautioned: bool, card: Option<Card>) -> Option<C
 }
 
 /// Law 12: advantage when the fouled side keeps the ball in the
-/// opponents' half, outside the penalty area.
+/// opponents' half, outside the penalty area. `depth` is from the goal
+/// they attack, `length` the pitch's.
 #[must_use]
-pub const fn play_advantage(kept: bool, in_area: bool, depth: i32, half_length: i32) -> bool {
-    kept && !in_area && depth < half_length / 2
+pub const fn play_advantage(kept: bool, in_area: bool, depth: i32, length: i32) -> bool {
+    kept && !in_area && depth < length / 2
 }
 
 /// Law 3: the substitutions still available at a stoppage.
@@ -395,7 +396,11 @@ pub fn shootout_kick_event_done(e: &MatchEvent, kicker: PlayerId) -> bool {
             | EventType::Corner
             | EventType::GoalKick
             | EventType::ThrowIn
-    ) || (e.event_type != EventType::Shot && e.actor != Some(ActorId::Player(kicker)))
+    ) || (e.event_type != EventType::Shot
+        // Played by another man: an event with nobody behind it (a board,
+        // a pause) does not end the kick (2026-11-23).
+        && e.actor.is_some()
+        && e.actor != Some(ActorId::Player(kicker)))
         && !matches!(e.event_type, EventType::Pressure | EventType::Woodwork)
 }
 
@@ -407,13 +412,17 @@ impl MatchState {
     /// Law 11: `offender` was in an offside position when the ball was
     /// played, and now he plays it. A free kick to the defenders where he
     /// is.
+    ///
+    /// `played` is the tick the ball was played, told with the call (SIM
+    /// 196): the position is judged then, and a reader of the facts (the
+    /// view's lines) needs that moment, not the last pass received.
     pub(crate) fn call_offside(
         &mut self,
         ctx: &mut MatchContext<'_>,
         tick: u64,
         offender: PlayerId,
         offender_home: bool,
-        ball: (i32, i32),
+        (ball, played): ((i32, i32), Option<u64>),
     ) {
         self.offside_at_pass.clear();
         let spot = self.spatial.agent(offender).map_or(ball, |a| a.position);
@@ -429,7 +438,7 @@ impl MatchState {
                 tick,
                 Some(ActorId::Player(taker)),
                 EventType::FreeKick,
-                serde_json::json!({ "reason": "offside", "offender": offender.slot(), "x": spot.0, "y": spot.1 }),
+                serde_json::json!({ "reason": "offside", "offender": offender.slot(), "x": spot.0, "y": spot.1, "played_tick": played }),
             );
         }
     }
@@ -562,9 +571,9 @@ impl MatchState {
             .hidden
             .characteristic(fouled, "injury_proneness")
             .unwrap_or(0.0);
-        if crate::balance::KnockBalance::load().knocks(facts.approach_milli, proneness)
-            && self.knocked.insert(fouled)
-        {
+        let knocked = crate::balance::KnockBalance::load().knocks(facts.approach_milli, proneness)
+            && self.knocked.insert(fouled);
+        if knocked {
             // The man down stops play: a pause for the bench (ADR-068).
             self.pauses += 1;
             self.emit_event(
@@ -601,8 +610,10 @@ impl MatchState {
             }
         }
         // Advantage: the side that suffered it keeps the ball in the
-        // opponents' half, outside the area; play goes on.
-        if crate::rules::play_advantage(kept, in_area, depth(spot), length) {
+        // opponents' half, outside the area; play goes on. Not with a man
+        // down (Law 5, SIM 196): the referee stops play for him; before, the
+        // pause was counted and play went on.
+        if !knocked && crate::rules::play_advantage(kept, in_area, depth(spot), length) {
             return;
         }
         let side = if fouled_home {
@@ -716,9 +727,12 @@ mod tests {
         assert_eq!(card_after(true, Some(Card::Yellow)), Some(Card::Red));
         assert_eq!(card_after(false, Some(Card::Yellow)), Some(Card::Yellow));
         assert_eq!(card_after(false, Some(Card::Red)), Some(Card::Red));
-        assert!(play_advantage(true, false, 1000, 5250));
-        assert!(!play_advantage(true, false, 3000, 5250));
-        assert!(!play_advantage(true, true, 1000, 5250));
+        // The length of the pitch, as the engine passes it: the advantage
+        // is in the opponents' half (before, the test passed half of it and
+        // guarded a quarter).
+        assert!(play_advantage(true, false, 5000, 10_500));
+        assert!(!play_advantage(true, false, 5500, 10_500));
+        assert!(!play_advantage(true, true, 1000, 10_500));
 
         assert_eq!(subs_remaining(5, 3, 1), 1);
         assert_eq!(subs_remaining(5, 5, 1), 0);

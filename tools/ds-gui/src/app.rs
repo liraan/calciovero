@@ -2039,13 +2039,44 @@ fn offside_lines(
     records: &[ds_match::TickRecord],
     events: &[ds_stats::MatchEvent],
     stop: &Whistle,
-    length: i32,
+    (length, played): (i32, Option<usize>),
 ) -> Option<(i32, i32, usize)> {
     use ds_core::ids::ActorId;
     use ds_stats::EventType;
     let offender = stop.offside?;
     let goal_x = if offender < 100 { length } else { 0 };
     let depth = |x: i32| (goal_x - x).abs();
+    // The engine tells the tick the ball was played (SIM 196): the lines
+    // are read there, at the start of that tick (the positions the engine
+    // judged), else at its end.
+    let read = |at: &ds_match::TickRecord| -> Option<(i32, i32)> {
+        let mut opponents: Vec<i32> = at
+            .agents
+            .iter()
+            .filter(|a| (a.id.slot() < 100) != (offender < 100))
+            .map(|a| a.position.0)
+            .collect();
+        let man = at
+            .agents
+            .iter()
+            .find(|a| a.id.slot() == offender)?
+            .position
+            .0;
+        if !ds_match::rules::offside_position(man, at.ball.position.0, &opponents, goal_x, length) {
+            return None;
+        }
+        opponents.sort_unstable_by_key(|x| depth(*x));
+        Some((*opponents.get(1)?, man))
+    };
+    if let Some(k) = played {
+        let start = k.checked_sub(1).and_then(|j| records.get(j));
+        if let Some((line, man)) = start
+            .and_then(&read)
+            .or_else(|| records.get(k).and_then(&read))
+        {
+            return Some((line, man, k));
+        }
+    }
     // The most recent pass by his side that left him offside is the one
     // the engine flagged him on: the same Law 11 function, read from the
     // facts. Other passes in the move did not make the run.
@@ -2068,29 +2099,12 @@ fn offside_lines(
         if !passed {
             continue;
         }
-        let mut opponents: Vec<i32> = record
-            .agents
-            .iter()
-            .filter(|a| (a.id.slot() < 100) != (offender < 100))
-            .map(|a| a.position.0)
-            .collect();
-        let man = record
-            .agents
-            .iter()
-            .find(|a| a.id.slot() == offender)
-            .map(|a| a.position.0)?;
-        if !ds_match::rules::offside_position(
-            man,
-            record.ball.position.0,
-            &opponents,
-            goal_x,
-            length,
-        ) {
-            continue;
+        // At the start of the tick (the positions the engine judged), then
+        // at its end.
+        let start = k.checked_sub(1).and_then(|j| records.get(j));
+        if let Some((line, man)) = start.and_then(&read).or_else(|| read(record)) {
+            return Some((line, man, k));
         }
-        opponents.sort_unstable_by_key(|x| depth(*x));
-        let line = *opponents.get(1)?;
-        return Some((line, man, k));
     }
     None
 }
@@ -2189,7 +2203,11 @@ fn whistles(
                 restart: false,
             };
             if kind == StopKind::Offside {
-                whistle.offside_lines = offside_lines(records, events, &whistle, length);
+                let played = offside
+                    .and_then(|e| e.fields.get("played_tick"))
+                    .and_then(serde_json::Value::as_u64)
+                    .and_then(|t| usize::try_from(t).ok());
+                whistle.offside_lines = offside_lines(records, events, &whistle, (length, played));
             }
             out.push(whistle);
             waiting = true;

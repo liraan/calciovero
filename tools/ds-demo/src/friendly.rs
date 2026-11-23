@@ -240,8 +240,14 @@ const fn player(e: &MatchEvent) -> Option<PlayerId> {
     }
 }
 
+/// Of the home side: the eleven or the bench (2026-11-23): before, only the
+/// eleven, and a home substitute who came on was told as an opponent.
 fn is_home(m: &Match, id: PlayerId) -> bool {
-    m.home.players.iter().any(|p| p.id == id)
+    m.home
+        .players
+        .iter()
+        .chain(m.home.bench.iter())
+        .any(|p| p.id == id)
 }
 
 /// The slot a field names, as a player of the match.
@@ -250,7 +256,9 @@ fn slot_player(m: &Match, e: &MatchEvent, key: &str) -> Option<PlayerId> {
     m.home
         .players
         .iter()
+        .chain(m.home.bench.iter())
         .chain(m.away.players.iter())
+        .chain(m.away.bench.iter())
         .map(|p| p.id)
         .find(|id| id.slot() == slot)
 }

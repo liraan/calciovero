@@ -327,7 +327,15 @@ impl FineBall {
                 self.v.2 = if up > k.gravity { up } else { 0 };
             }
             path[s] = (cm(self.at.0), cm(self.at.1), cm(self.at.2));
-            if self.at.2 == 0 && self.v.0.abs() <= k.stop && self.v.1.abs() <= k.stop {
+            // Stopped only on the ground and not rising (SIM 196): a ball
+            // falling almost straight bounces up again, and before it was
+            // declared stopped at the bounce, so the forecasts ended there
+            // while the ball went on.
+            if self.at.2 == 0
+                && self.v.2 == 0
+                && self.v.0.abs() <= k.stop
+                && self.v.1.abs() <= k.stop
+            {
                 let here = path[s];
                 for rest in path.iter_mut().skip(s + 1) {
                     *rest = here;
@@ -1284,7 +1292,13 @@ impl SpatialState {
             let stopped = fine.tick(&k);
             let (next, _) = fine.to_cm();
             if (line_x - next.0).signum() != towards {
-                let dx = i64::from(next.0 - pos.0).max(1);
+                // Signed (SIM 196): towards x = 0 the step is negative, and
+                // `.max(1)` made it 1, extrapolating the crossing by the
+                // whole step with the wrong sign at the home goal.
+                let dx = i64::from(next.0 - pos.0);
+                if dx == 0 {
+                    return Some((pos.1, pos.2));
+                }
                 let t = i64::from(line_x - pos.0);
                 let at = |a: i32, b: i32| a + i32::try_from(i64::from(b - a) * t / dx).unwrap_or(0);
                 return Some((at(pos.1, next.1), at(pos.2, next.2)));
@@ -2320,12 +2334,24 @@ fn separate(at: &[(i32, i32)], (length, width): (i32, i32)) -> Vec<(i32, i32)> {
             let ddx = i64::from(bx - ax);
             let ddy = i64::from(by - ay);
             let d2 = ddx * ddx + ddy * ddy;
-            if d2 > 0 && d2 < min_d * min_d {
-                let push = i32::try_from(((min_d - d2.isqrt()) / 2).max(1)).unwrap_or(1);
-                let nx = i32::try_from(ddx.signum()).unwrap_or(0);
-                let ny = i32::try_from(ddy.signum()).unwrap_or(0);
-                shift[i] = (shift[i].0 - nx * push, shift[i].1 - ny * push);
-                shift[j] = (shift[j].0 + nx * push, shift[j].1 + ny * push);
+            if d2 < min_d * min_d {
+                // Along the line between the two (SIM 196): before, the push
+                // went by axis, 45 degrees and `sqrt 2` too far for two men
+                // almost in line, and two men on the same spot were never
+                // parted. On the same spot, the first goes towards x = 0.
+                let d = d2.isqrt();
+                let push = ((min_d - d) / 2).max(1);
+                let (px, py) = if d == 0 {
+                    (push, 0)
+                } else {
+                    (push * ddx / d, push * ddy / d)
+                };
+                let (px, py) = (
+                    i32::try_from(px).unwrap_or(0),
+                    i32::try_from(py).unwrap_or(0),
+                );
+                shift[i] = (shift[i].0 - px, shift[i].1 - py);
+                shift[j] = (shift[j].0 + px, shift[j].1 + py);
             }
         }
     }
@@ -3072,6 +3098,25 @@ mod tests {
     }
 
     #[test]
+    fn the_line_at_the_home_goal_is_foreseen_like_the_other() {
+        // SIM 196 (audit A1): towards x = 0 the step is negative; before,
+        // `.max(1)` turned it into 1 and the crossing was extrapolated by
+        // the whole step with the wrong sign. The mirror of the test below.
+        let mut s = make_state();
+        let (from, v, line) = ((410, 3660, 170), (-46_i16, 12_i16, 5_i16), 0);
+        let foreseen = s.ball_at_line(from, v, line).expect("it reaches the line");
+        s.set_ball_in_flight(from, v);
+        let mut prev = s.ball_3d();
+        while s.ball_3d().0 > line {
+            prev = s.ball_3d();
+            s.advance_ball();
+        }
+        let now = s.ball_3d();
+        let y = prev.1 + (now.1 - prev.1) * (line - prev.0) / (now.0 - prev.0);
+        assert_eq!(foreseen.0, y, "foreseen {foreseen:?}, happened y = {y}");
+    }
+
+    #[test]
     fn what_is_foreseen_of_the_ball_is_what_happens() {
         // OI-98 (P1): `ball_at_line` imagines the path with the same step
         // `advance_ball` applies, so the keeper turning a ball round the post
@@ -3202,14 +3247,19 @@ mod tests {
         let top_after = |p: &crate::balance::BallBalance| {
             let k = FineKick::of(p);
             let mut b = FineBall::from_cm((0, 0, 200), (0, 0, 0));
-            let (mut landed, mut top) = (false, 0);
+            let (mut landed, mut top, mut last) = (false, 0, 200);
             for _ in 0..30 {
                 b.tick(&k);
                 let (at, _) = b.to_cm();
-                landed |= at.2 == 0;
+                // Landed once it has stopped falling: it bounces within a
+                // tick, so it is seldom on the grass at a tick's end (SIM
+                // 196; before, the bounce was taken for a stop and the ball
+                // was frozen on the grass for the rest of the tick).
+                landed |= at.2 == 0 || at.2 > last;
                 if landed {
                     top = top.max(at.2);
                 }
+                last = at.2;
             }
             top
         };
