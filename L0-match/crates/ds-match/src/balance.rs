@@ -84,11 +84,8 @@ impl StoppageTime {
 /// when the contribution is zero (ADR-026 §2).
 #[must_use]
 pub fn stoppage_for(events: &[ds_stats::MatchEvent], table: &StoppageTime) -> u32 {
-    let mut total = table.base;
-    for event in events {
-        total = total.saturating_add(table.contribution(event.event_type));
-    }
-    total
+    // One sum (code audit D: it was written here and in `total`).
+    table.total(events.iter().map(|e| e.event_type))
 }
 
 /// The embedded influence weights file (`03-entities-minimal` §2.9).

@@ -68,14 +68,7 @@ fn format_narrative(entry: &NarrativeEntry) -> String {
     format!("[{:>3}'] {}", entry.minute, entry.text)
 }
 
-/// Returns the lowercase hex representation of `bytes`.
-fn hex(bytes: &[u8]) -> String {
-    let mut s = String::with_capacity(bytes.len() * 2);
-    for b in bytes {
-        let _ = write!(s, "{b:02x}");
-    }
-    s
-}
+use crate::viewmodel::{hex, importance_kind};
 
 /// Writes a self-contained HTML page to `path`.
 ///
@@ -174,12 +167,7 @@ pub fn write_html(result: &MatchResult, path: &str) -> std::io::Result<()> {
     html.push_str("</table>");
     html.push_str("<h2>Narrative</h2><ul class=\"narrative\">");
     for entry in &result.narrative {
-        let cls = match entry.importance {
-            ds_match::Importance::Critical => "critical",
-            ds_match::Importance::High => "high",
-            ds_match::Importance::Medium => "medium",
-            ds_match::Importance::Low => "low",
-        };
+        let cls = importance_kind(entry.importance);
         let _ = write!(
             html,
             "<li class=\"{cls}\"><span class=\"minute\">{}'</span> {}</li>",

@@ -208,7 +208,7 @@ const fn event_kind(kind: EventType) -> &'static str {
 }
 
 /// A stable display string for every `Importance`.
-const fn importance_kind(importance: Importance) -> &'static str {
+pub const fn importance_kind(importance: Importance) -> &'static str {
     match importance {
         Importance::Low => "low",
         Importance::Medium => "medium",
@@ -217,8 +217,9 @@ const fn importance_kind(importance: Importance) -> &'static str {
     }
 }
 
-/// Lowercase hex of a byte slice.
-fn hex(bytes: &[u8]) -> String {
+/// Lowercase hex of a byte slice (the one helper of the crate; code audit D:
+/// `render.rs` had its own copy).
+pub fn hex(bytes: &[u8]) -> String {
     use std::fmt::Write as _;
     let mut s = String::with_capacity(bytes.len() * 2);
     for b in bytes {

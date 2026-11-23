@@ -366,7 +366,7 @@ impl GroundTruth {
             .fatigue_coefficient
             .mul_add(-ctx.fatigue.clamp(0.0, 1.0), 1.0)
             .max(self.movement_balance.fatigue_floor) as f32;
-        let (clean, on_the_run, _contact, _drag) = if ctx.is_header {
+        let (clean, on_the_run) = if ctx.is_header {
             let heading = shooter.technical.heading * tired;
             let clean = k.error_rad_composed(
                 heading,
@@ -379,7 +379,7 @@ impl GroundTruth {
                     0.5
                 },
             );
-            (clean, 0.0, 0.0, 0.0)
+            (clean, 0.0)
         } else {
             // The foot the ball is on (ADR-031, the maintainer 2026-11-16: the
             // foot is his choice, made before the kick by moving the ball onto
@@ -415,18 +415,9 @@ impl GroundTruth {
                 * run
                 * (1.0 + ctx.across.clamp(0.0, 1.0))
                 * (1.0 - f64::from(shooter.physical.body_control));
-            let contact = ctx.gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
-            #[allow(clippy::cast_possible_truncation)]
-            let aimed: f64 = if (ctx.aim_y - f64::from(ctx.to.1)) as i32 >= 0 {
-                1.0
-            } else {
-                -1.0
-            };
-            let drag: f64 = match ctx.momentum_y.signum() {
-                0 => aimed,
-                s => f64::from(s),
-            };
-            (clean, on_the_run, contact, drag)
+            // The contact and the drag are read once, below (code audit D:
+            // they were computed here too, and thrown away).
+            (clean, on_the_run)
         };
         let error = clean + on_the_run;
         let distance = dmath::hypot(

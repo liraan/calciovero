@@ -66,6 +66,8 @@ Tabella dei crate (dall'analista): rispettano la responsabilità ds-core, ds-mod
 
 ## D. Logica duplicata (ridondanze)
 
+**Stato (2026-11-23), primo passaggio, golden identici:** `contact`/`drag` calcolati una volta in `resolve_shot`; `stoppage_for` usa `StoppageTime::total`; `goal_side_of` usa `step_towards`; `flip_possession` usa `other`; il blocco doppio di `tick()` è `move_bodies` + `count_possession`; `visible_to` usa `in_cone`; ds-demo ha un solo `hex` e un solo `importance_kind`; il board formatta il recupero con la durata del periodo (prima `> 45`, sbagliato al 45° e nei supplementari).
+
 Cono visivo scritto 3 volte (perception.rs); `kick_pressure` e `difficulty` con lo stesso calcolo su due punti diversi; formula del tiro che ricopia `ThoughtBalance::expected` senza il clamp; fisica del pallone immaginato copiata in 4-5 punti di read.rs/offball.rs/lib.rs; "ci arriva in tempo" con tre formule (con e senza tempo di reazione); `choose_closed_place` (orchestratore) e `choose_place` (motore) quasi identici e già divergenti; due implementazioni di `World` (EngineWorld/StateWorld) con comportamenti diversi su fatica e id; blocco duplicato in `tick()`; `apply_restart`/`call_restart` e `header_at_goal`/`header_at_goal_aimed` copiati; `contact`/`drag` calcolati due volte in `resolve_shot`; verso d'attacco ricavato in 4 modi; tre convenzioni per la "panchina"; `MatchSave` serializza gli eventi due volte; helper duplicati negli strumenti (hex, importanza, recupero formattato con un off-by-one fra board e friendly).
 
 ## E. Test che non possono fallire

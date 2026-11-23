@@ -108,25 +108,12 @@ pub fn visible_to(spatial: &SpatialState, from: PlayerId) -> Vec<PlayerId> {
         return Vec::new();
     };
     let origin = observer.position;
-    let (hx, hy) = heading_vector(observer.gaze);
     spatial
         .iter()
         .filter_map(|(id, other)| {
-            if *id == from {
-                return None;
-            }
-            let dx = other.position.0 - origin.0;
-            let dy = other.position.1 - origin.1;
-            if dx == 0 && dy == 0 {
-                return None;
-            }
-            let dot = i64::from(dx) * i64::from(hx) + i64::from(dy) * i64::from(hy);
-            let dist = (i64::from(dx) * i64::from(dx) + i64::from(dy) * i64::from(dy)).isqrt();
-            if dot > dist * COS_HALF_ANGLE_MILLI {
-                Some(*id)
-            } else {
-                None
-            }
+            // One cone test for the eye (code audit D: written here and in
+            // `in_cone`).
+            (*id != from && in_cone(origin, observer.gaze, other.position)).then_some(*id)
         })
         .collect()
 }

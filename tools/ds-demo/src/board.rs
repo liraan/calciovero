@@ -125,8 +125,14 @@ fn format_time(event: &EventRow) -> String {
         ds_stats::Half::ExtraSecond => "2TS",
         ds_stats::Half::Shootout => "R",
     };
-    if event.minute > 45 {
-        format!("{label} 45'+{}'", event.minute - 45)
+    // The period's own length (45, or 15 in extra time), and its last
+    // minute counted in stoppage (code audit D: `> 45` counted the 45th
+    // minute as regulation and ignored the 15 of extra time). Elapsed
+    // time, as the rest of the board.
+    let base = u32::from(event.half.regulation_minutes());
+    let minute = u32::from(event.minute);
+    if minute >= base {
+        format!("{label} {base}'+{}'{:02}\"", minute - base, event.second)
     } else {
         format!("{label} {}'{:02}\"", event.minute, event.second)
     }

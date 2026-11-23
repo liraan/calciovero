@@ -876,14 +876,8 @@ pub(crate) fn goal_side_of(
     gap: i32,
     (length, width): (i32, i32),
 ) -> (i32, i32) {
-    let (dx, dy) = (f64::from(own_goal.0 - man.0), f64::from(own_goal.1 - man.1));
-    let len = dmath::hypot(dx, dy).max(1.0);
-    let gap = f64::from(gap);
-    #[allow(clippy::cast_possible_truncation)]
-    (
-        (man.0 + (dx / len * gap) as i32).clamp(0, length),
-        (man.1 + (dy / len * gap) as i32).clamp(0, width),
-    )
+    // The same step as any other (code audit D: the arithmetic was copied).
+    step_towards(man, own_goal, gap, (length, width))
 }
 
 /// Where a straight shot from `from` to `cross` (on the goal plane) passes
@@ -1095,25 +1089,10 @@ impl MatchState {
         // A restart called and not yet taken (SIM 150): the ball is out of
         // play; the men go to their places, the clock runs, nobody plays.
         if self.waiting.is_some() {
-            let window = u64::from(ds_model::TeamOrders::TRANSITION_S)
-                * u64::from(ctx.config.ticks_per_second.max(1));
-            self.spatial
-                .set_home_in_possession(self.possession == Possession::Home, tick, window);
-            self.spatial.move_agents(
-                i32::from(ctx.match_.pitch.length_m) * 100,
-                i32::from(ctx.match_.pitch.width_m) * 100,
-                &self.bodies,
-                ctx.hidden,
-                tick,
-                &self.scan_balance,
-                &self.keeper_balance,
-            );
+            self.move_bodies(ctx, tick);
             self.tire_players(ctx);
             self.resume_restart(tick);
-            match self.possession {
-                Possession::Home => self.home_possession_ticks += 1,
-                Possession::Away => self.away_possession_ticks += 1,
-            }
+            self.count_possession();
             return;
         }
         let prev_ball = self.spatial.ball_3d();
@@ -1130,29 +1109,14 @@ impl MatchState {
             self.check_goal_line(ctx, tick, prev_ball, curr_ball);
         }
         self.restart_if_out(ctx, tick);
-        let window = u64::from(ds_model::TeamOrders::TRANSITION_S)
-            * u64::from(ctx.config.ticks_per_second.max(1));
-        self.spatial
-            .set_home_in_possession(self.possession == Possession::Home, tick, window);
-        self.spatial.move_agents(
-            i32::from(ctx.match_.pitch.length_m) * 100,
-            i32::from(ctx.match_.pitch.width_m) * 100,
-            &self.bodies,
-            ctx.hidden,
-            tick,
-            &self.scan_balance,
-            &self.keeper_balance,
-        );
+        self.move_bodies(ctx, tick);
         self.carry_the_ball(ctx, tick);
         self.tire_players(ctx);
         self.meet_ball_in_air(ctx, tick);
         self.control_loose_ball(ctx, tick);
         self.challenge_carrier(ctx, tick);
         self.update_coverage(ctx, tick);
-        match self.possession {
-            Possession::Home => self.home_possession_ticks += 1,
-            Possession::Away => self.away_possession_ticks += 1,
-        }
+        self.count_possession();
     }
 
     /// Every player remembers where he saw each man in his cone, as he is
@@ -1355,6 +1319,34 @@ impl MatchState {
     /// The opposite possession, without mutating `self`. The expected
     /// possession is computed at launch and applied only when the pending
     /// resolves (MD-37): the ball in flight belongs to nobody (MD-25).
+    /// The bodies move one tick: the side in possession, the transition
+    /// window, `move_agents` (one place for both branches of `tick`; code
+    /// audit D: the block was written twice).
+    fn move_bodies(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        let window = u64::from(ds_model::TeamOrders::TRANSITION_S)
+            * u64::from(ctx.config.ticks_per_second.max(1));
+        self.spatial
+            .set_home_in_possession(self.possession == Possession::Home, tick, window);
+        let (length, width) = pitch_cm(ctx);
+        self.spatial.move_agents(
+            length,
+            width,
+            &self.bodies,
+            ctx.hidden,
+            tick,
+            &self.scan_balance,
+            &self.keeper_balance,
+        );
+    }
+
+    /// A tick of possession to the side that has the ball.
+    const fn count_possession(&mut self) {
+        match self.possession {
+            Possession::Home => self.home_possession_ticks += 1,
+            Possession::Away => self.away_possession_ticks += 1,
+        }
+    }
+
     pub(crate) const fn other(p: Possession) -> Possession {
         match p {
             Possession::Home => Possession::Away,
@@ -1362,10 +1354,7 @@ impl MatchState {
         }
     }
     pub(crate) const fn flip_possession(&mut self) {
-        self.possession = match self.possession {
-            Possession::Home => Possession::Away,
-            Possession::Away => Possession::Home,
-        };
+        self.possession = Self::other(self.possession);
     }
 
     pub(crate) const fn squads<'a>(&self, ctx: &'a MatchContext<'_>) -> (&'a Squad, &'a Squad) {
