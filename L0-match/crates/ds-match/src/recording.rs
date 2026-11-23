@@ -38,6 +38,8 @@ use crate::spatial::BallState;
 /// The current version of the record format.
 ///
 /// v1 (2026-11-16, ADR-065): the fields of `TickRecord` at SIM 137.
+/// v2: each agent's `gaze` (ADR-034), packed after his heading; a v1 record
+/// is read with the gaze at the heading.
 pub const RECORD_FORMAT_VERSION: u32 = 2;
 
 /// The physics a match was played with, for the views.

@@ -472,9 +472,15 @@ fn in_between(m: &Match, between: &[MatchEvent]) -> String {
         .filter(|x| x.event_type == EventType::Pass)
         .filter(theirs)
         .count();
+    // Theirs, as a Pass with the cross qualifier (ADR-072; before, the
+    // dead `EventType::Cross`, never told since SIM 153).
     let crosses = between
         .iter()
-        .filter(|x| x.event_type == EventType::Cross)
+        .filter(|x| {
+            x.event_type == EventType::Pass
+                && x.fields.get("cross").and_then(serde_json::Value::as_bool) == Some(true)
+        })
+        .filter(theirs)
         .count();
     let mut parts = vec![format!(
         "{passes} pass{} of theirs",

@@ -67,7 +67,7 @@ TUI OPTIONS (with --tui):
     --cols <N>      Pitch width in characters (default: 70)
 
 EXAMPLES:
-    ds-demo --seed 42 --html /tmp/match.html
+    ds-demo --seed 42 --html match.html
     ds-demo --seed 42 --tui --speed 60
     ds-demo --seed 42 --tui --frame 12
     ds-demo --seed 42 --block high --width wide --why --save /tmp/f.json

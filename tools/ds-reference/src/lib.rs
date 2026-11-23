@@ -147,7 +147,7 @@ impl Metric {
                 "Wyscout tags 'interception' on many events (any pass read and cut); the engine counts each interception as a choice. Not comparable."
             }
             Self::Crosses => {
-                "Wyscout counts open-play crosses only; the engine marks every kick that is a cross by its geometry, corners included. Not comparable as they stand."
+                "Wyscout counts open-play crosses only; the engine marks every pass that is a cross by its geometry (the `cross` qualifier of a Pass, ADR-072), corners included. Not comparable as they stand."
             }
             Self::StoppageFirstHalf | Self::StoppageSecondHalf => {
                 "Wyscout: the last recorded event of the half, so a lower bound of the time played after the 45th."

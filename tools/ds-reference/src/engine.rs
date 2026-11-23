@@ -65,8 +65,12 @@ pub fn count(events: &[MatchEvent]) -> MatchCounts {
                 if flag(e, "complete") {
                     c.add(Metric::PassesAccurate, 1.0);
                 }
+                // A cross is a pass with its qualifier (ADR-072): before,
+                // the dead `EventType::Cross` was counted, always 0.
+                if flag(e, "cross") {
+                    c.add(Metric::Crosses, 1.0);
+                }
             }
-            EventType::Cross => c.add(Metric::Crosses, 1.0),
             EventType::Duel => {
                 if flag(e, "aerial") {
                     c.add(Metric::AerialDuels, 1.0);
