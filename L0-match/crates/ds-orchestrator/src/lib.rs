@@ -486,7 +486,7 @@ impl GroundTruth {
         );
 
         // on_target: geometric, arrival inside the goal mouth. Derived,
-        // not a field of the die (unchanged).
+        // not a field of the strike (unchanged).
         let law = ds_calculator::laws::law1();
         let (goal_half_width_cm, goal_height_cm) = (law.goal_half_width_cm, law.goal_height_cm);
         let on_target =
@@ -775,14 +775,6 @@ impl GroundTruth {
         ReceptionOutcome { controlled }
     }
 
-    /// Resolves a save.
-    ///
-    /// The reach check (is the goalkeeper close enough to the crossing
-    /// point?) is geometric and lives in the engine (`state.rs`): the die
-    /// answers "how well did the dive go", not "was the goalkeeper there".
-    /// `ctx.point` carries the crossing point so the engine can build the
-    /// `Save` event with the right position, and so a future model can use
-    /// it (F.5, L2) without changing the signature.
     /// Resolves a save (ADR-051, the family "in goal").
     ///
     /// No die (ADR-035): the keeper reacts after his reaction time (his
@@ -820,7 +812,6 @@ impl GroundTruth {
             goalkeeper: ctx.goalkeeper,
             saved,
         });
-        let _ = ctx.point;
         outcome
     }
 

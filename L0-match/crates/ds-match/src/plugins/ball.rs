@@ -78,16 +78,20 @@ impl MatchState {
     }
 
     /// Checks whether the in-flight ball crossed a goal plane this tick
-    /// (F.3-b3). The goal is born from the geometric crossing, not from
-    /// the die's outcome: `on_target` is the die's intent, the crossing
-    /// is what happens.
+    /// (F.3-b3). The goal is born from the geometric crossing, the whole
+    /// ball over the line (Law 10): `on_target` is where the strike was
+    /// meant to go, the crossing is what happens.
     ///
     /// If a shot is pending and the ball crossed a goal plane:
-    /// - outside the goal mouth: possession to the defending team
-    ///   (declared derogation MD-38, ball out stops the match);
-    /// - inside, goalkeeper reaches (`reach_cm = height_cm / 2`): save via
-    ///   `resolve_save`, possession to the defender;
+    /// - outside the goal mouth: nothing here; the ball is out, and the
+    ///   restart is the Laws' (`check_goal_line`);
+    /// - inside, the keeper on the pitch meets it with his reach
+    ///   (`save.json`, `standing_reach_share` of his height plus the dive):
+    ///   save via `resolve_save`;
     /// - inside, no save: `Goal` emitted, score updated.
+    ///
+    /// (2026-11-23, code audit F: the doc said the possession went to the
+    /// defenders on a wide shot and the reach was half the height.)
     ///
     /// The pending is cleared in all three cases. Pure geometry plus one
     /// `resolve_save`; no other RNG.

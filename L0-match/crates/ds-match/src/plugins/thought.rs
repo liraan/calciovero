@@ -1204,7 +1204,7 @@ impl MatchState {
         let outcome = ctx.hidden.resolve_shot(&ctx_shot);
         // F.3-b3: carrier released, ball flies. Goal (or Save) is
         // emitted at the crossing tick by `check_shot_crossing`, not
-        // at launch: the goal is geometric, not the die's outcome.
+        // at launch: the goal is geometric, the crossing, not the strike's intent.
         self.spatial.set_carrier(None);
         self.spatial
             .set_ball_in_flight(from, outcome.initial_velocity);

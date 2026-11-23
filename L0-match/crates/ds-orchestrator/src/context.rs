@@ -56,7 +56,7 @@ pub struct ShotContext {
     pub to: (i32, i32, i32),
     /// A `0..=100` value the caller computes from the situation
     /// (opponents near the shooter, distance to goal). Declared model
-    /// choice: the die widens its deviation under pressure. Not a latent.
+    /// choice: pressure widens his miss (ADR-057). Not a latent.
     pub difficulty: i32,
     /// The lateral component of the aim on the goal plane, cm (ADR-046 §1,
     /// ADR-047): the actor's choice, not the engine's optimum. The engine

@@ -1600,25 +1600,23 @@ impl SpatialState {
 
     /// Moves every agent one tick toward its target (MD-09, MD-10, MD-12).
     ///
-    /// Target: the formation slot, translated by a declared fraction of the
-    /// ball's displacement from the pitch centre. One agent (the one nearest
-    /// the ball, per team) is deviated toward the ball (placeholder, MD-09).
-    /// Displacement (F.7 step 7b): each agent accelerates via
-    /// `resolve_movement` (the movement formula), capped by
-    /// `v_max * stride` and the remaining distance (no overshoot).
-    /// `velocity` stores the previous displacement; its L-infinity
-    /// norm is the accumulated speed (no reader today; the tick
-    /// record will read displacement, IDEA-INFRA-018).
-    /// After the step, a minimal separation
-    /// (`BODY_RADIUS_CM`) pushes overlapping agents apart (MD-12).
-    /// **OI-81-step-move:** the goalkeeper is no longer anchored. He moves
-    /// with the same formula as every agent; only his target differs:
-    /// a point on the ball-goal segment, advanced by a fraction that
-    /// depends on the ball's distance from the goal (`L0-match/balance/keeper.json`).
-    /// At `t = 0` (ball far) he rests at `GK_LINE_OFFSET_CM` from the line;
-    /// at `t = 1` (ball on the line) he advances by `ADVANCE_CM` more.
-    /// The keeper is not a chaser: he is excluded from the `nearest`
-    /// computation (a keeper who runs after the ball is not a keeper).
+    /// Target: the place each man chose (his act: the place he holds, the
+    /// man he presses, the ball he goes to, the run he makes), else the
+    /// place the shape gives him; the carrier goes where he carries the
+    /// ball. Nobody is picked by the engine to chase the ball (ADR-049).
+    /// Displacement: each agent accelerates with his own body
+    /// (`resolve_movement`, the acceleration-speed profile, SIM 194) and
+    /// brakes to arrive (his deceleration), in small steps (ADR-069);
+    /// speeds are Euclidean. After each step a minimal separation
+    /// (`BODY_RADIUS_CM`) parts overlapping bodies along the line between
+    /// them (MD-12, SIM 196).
+    /// The keeper moves with the same body; only his target differs: across,
+    /// on the bisector of the angle the ball makes with the posts
+    /// (`keeper_across`, SIM 124); in depth, his read of the line
+    /// (`line_depth_cm`) plus `GK_LINE_OFFSET_CM` (`keeper.json`).
+    /// (2026-11-23, code audit F: this doc described the slot moved with the
+    /// ball, the nearest man sent to it, L-infinity speeds and the anchored
+    /// keeper, all gone.)
     ///
     /// Deterministic: no RNG (S1). The variation comes from the inputs
     /// (positions, ball, the block), not from a die.

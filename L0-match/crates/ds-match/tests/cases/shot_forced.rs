@@ -65,7 +65,7 @@ fn resolve_shot_returns_new_payload() {
     let outcome = gt.resolve_shot(&ctx_at(3400, 0));
     // `to` exists, is 3D, and the height is non-negative.
     assert!(outcome.to.2 >= 0, "to.z must be >= 0: {outcome:?}");
-    // `on_target` is geometric, not a field of the die.
+    // `on_target` is geometric: where the strike was meant to go.
     assert_eq!(outcome.on_target, {
         let half_w = 366;
         let h = 244;

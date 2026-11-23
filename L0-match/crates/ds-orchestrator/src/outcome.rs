@@ -18,20 +18,20 @@ pub struct DuelOutcome {
 /// The outcome of a shot.
 #[derive(Debug, Clone, Copy)]
 pub struct ShotOutcome {
-    /// The point of arrival on the goal plane, after the die's deviation,
+    /// The point of arrival on the goal plane, after the miss of his strike (his error, ADR-054),
     /// in centimetres, 3D. The engine derives the trajectory and the
     /// crossing from this point.
     pub to: (i32, i32, i32),
     /// Whether the shot was on target (the deviation stayed within the
     /// goal mouth). Derived geometrically inside `ds-db` and `ds-orchestrator`, not a
-    /// separate field of the die.
+    /// separate field of the outcome.
     pub on_target: bool,
     /// The ball's initial velocity, in centimetres per tick, 3D (MD-19:
-    /// initial velocity is the outcome of the die, not a field of intent;
-    /// the direction is geometry, the speed is the die).
+    /// initial velocity is the outcome of the strike, not a field of intent;
+    /// the direction is geometry, the speed is the strike's).
     pub initial_velocity: (i16, i16, i16),
     /// The shot type (choice, not outcome): derived geometrically from the
-    /// shot position by the engine, not by the die. Lives here so the
+    /// shot position by the engine, not by the strike. Lives here so the
     /// event can carry it (report `match-stats-and-traits` §3).
     pub shot_type: ShotType,
 }
