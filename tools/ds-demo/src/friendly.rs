@@ -207,7 +207,7 @@ pub fn apply(mut m: Match, c: &Choices) -> Result<Match, String> {
             .instructions
             .iter()
             .map(|(minute, intention)| ds_model::Instruction {
-                tick: u64::from(*minute) * 600,
+                tick: u64::from(*minute) * 60 * u64::from(ds_match::context::TICKS_PER_SECOND),
                 channel: None,
                 order: ds_model::Order::Intention(*intention),
             })

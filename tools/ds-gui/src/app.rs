@@ -24,7 +24,9 @@ use crate::scene::{self, Geometry, Item};
 use crate::theme::Theme;
 
 /// Ticks a second of match time (MD-18).
-const TICKS_PER_SECOND: f64 = 10.0;
+/// The engine's clock (`ds_match::context::TICKS_PER_SECOND`; code audit C6:
+/// it was written here as 10).
+const TICKS_PER_SECOND: f64 = ds_match::context::TICKS_PER_SECOND as f64;
 /// Real seconds the stop whistle holds the picture (the maintainer asked
 /// for "qualche secondo"): a viewing choice, never a number in the match.
 const WHISTLE_PAUSE_S: f64 = 2.0;
@@ -394,7 +396,7 @@ impl App {
             *inn = None;
         }
         for (tick, o, i, made) in &orders {
-            let min = tick / 600;
+            let min = tick / (60 * u64::from(ds_match::context::TICKS_PER_SECOND));
             let state = if *made { "made" } else { "waiting" };
             ui.small(format!("{min}' {} → {}: {state}", name(*o), name(*i)));
         }

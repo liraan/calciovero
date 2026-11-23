@@ -22,8 +22,18 @@ use crate::result::MatchResult;
 ///
 /// Uses `TextMatchEngine` (the only engine today). When a second engine
 /// exists, a `simulate_with` variant takes the engine as a parameter.
+///
+/// # Panics
+///
+/// If `config.ticks_per_second` is not `TICKS_PER_SECOND`: the balance is
+/// written per tick at ten a second (code audit C6).
 #[must_use]
 pub fn simulate_from_seed(match_: &Match, seed: u64, config: MatchConfig) -> MatchResult {
+    assert_eq!(
+        config.ticks_per_second,
+        crate::context::TICKS_PER_SECOND,
+        "the balance is written per tick at ten ticks a second (ADR-069)"
+    );
     let mut hidden = GroundTruth::for_match(seed, match_);
     let mut chain = EventChain::new();
     let ctx = MatchContext {
@@ -41,12 +51,21 @@ pub fn simulate_from_seed(match_: &Match, seed: u64, config: MatchConfig) -> Mat
 /// One [`crate::TickRecord`] per tick (IDEA-INFRA-018). The result is the same
 /// as [`simulate_from_seed`]'s, narrative included: recording observes, it
 /// does not act. The record is regenerated, never saved.
+///
+/// # Panics
+///
+/// As [`simulate_from_seed`]: another tick rate than `TICKS_PER_SECOND`.
 #[must_use]
 pub fn simulate_from_seed_recorded(
     match_: &Match,
     seed: u64,
     config: MatchConfig,
 ) -> (MatchResult, Vec<crate::record::TickRecord>) {
+    assert_eq!(
+        config.ticks_per_second,
+        crate::context::TICKS_PER_SECOND,
+        "the balance is written per tick at ten ticks a second (ADR-069)"
+    );
     let mut hidden = GroundTruth::for_match(seed, match_);
     let mut chain = EventChain::new();
     let mut ctx = MatchContext {

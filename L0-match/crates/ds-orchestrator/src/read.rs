@@ -414,7 +414,7 @@ pub fn point_to_segment_distance_cm(a: (i32, i32), b: (i32, i32), p: (i32, i32))
 }
 
 /// The pressure on the carrier (ADR-050): 1 with an opponent at his feet,
-/// 0 beyond `pressure_radius_cm`.
+/// 0 beyond `choice_pressure_radius_cm`.
 #[allow(clippy::cast_precision_loss)] // pitch distances are far below 2^52
 fn pressure_on(
     pos: (i32, i32),
@@ -428,7 +428,7 @@ fn pressure_on(
         .map(|opos| distance_squared(pos, opos).isqrt())
         .min()
         .map_or(0.0, |d| {
-            let r = balance.pressure_radius_cm.max(1);
+            let r = balance.choice_pressure_radius_cm.max(1);
             (1.0 - (d as f64) / (r as f64)).clamp(0.0, 1.0)
         })
 }

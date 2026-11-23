@@ -250,7 +250,7 @@ pub fn perceived_ball(
 /// receiving space, (5) the line. Candidates 4 and 5 are **not**
 /// implemented: the per-agent state they need does not exist yet
 /// (`Removed-by: OI-71`). The declared cascade: if the mark is within
-/// `mark_radius_cm`, the mark beats every other candidate; otherwise the
+/// `watch_mark_radius_cm`, the mark beats every other candidate; otherwise the
 /// salience is `weight * 1_000_000 / (dist_sq + 1)`, highest wins.
 #[must_use]
 pub fn scan(
@@ -283,7 +283,8 @@ pub fn scan(
         }
     }
 
-    let mark_radius_sq = i64::from(balance.mark_radius_cm) * i64::from(balance.mark_radius_cm);
+    let mark_radius_sq =
+        i64::from(balance.watch_mark_radius_cm) * i64::from(balance.watch_mark_radius_cm);
     let target = match mark {
         Some((d, _, pos)) if d <= mark_radius_sq => pos,
         _ => {

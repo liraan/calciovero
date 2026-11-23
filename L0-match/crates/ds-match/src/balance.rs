@@ -166,7 +166,7 @@ pub struct ScanningBalance {
     /// Salience weight of the opponent nearest the player (the mark).
     pub weight_mark: i32,
     /// Radius within which the mark beats the ball, in cm.
-    pub mark_radius_cm: i32,
+    pub watch_mark_radius_cm: i32,
     /// Two men nearer than this angle across his line of sight look level
     /// to him, in milliradians (ADR-062 (b); Wühr et al. 2015, derived).
     pub level_threshold_mrad: i32,
@@ -409,7 +409,7 @@ mod tests {
         assert_eq!(b.weight_ball, 100);
         assert_eq!(b.weight_opponent_on_ball, 80);
         assert_eq!(b.weight_mark, 60);
-        assert_eq!(b.mark_radius_cm, 800);
+        assert_eq!(b.watch_mark_radius_cm, 800);
     }
     fn make_event(kind: EventType) -> ds_stats::MatchEvent {
         ds_stats::MatchEvent {

@@ -35,8 +35,10 @@ pub struct ShotChoiceBalance {
     pub progression_gain: f64,
     /// The least a backward pass's salience is multiplied by (ADR-050).
     pub progression_floor: f64,
-    /// An opponent within this distance presses the carrier, cm (ADR-050).
-    pub pressure_radius_cm: i64,
+    /// How pressed he feels when he chooses: full on him, nothing from this
+    /// distance, cm (ADR-050). Not `influence.json`'s `pressure_radius_cm`
+    /// (code audit C2).
+    pub choice_pressure_radius_cm: i64,
     /// An outfield opponent within this distance hurries the kick, less the
     /// farther he is, cm: the same in the engine and in the shooter's mind.
     pub kick_pressure_radius_cm: i64,

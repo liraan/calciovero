@@ -1,29 +1,31 @@
 //! Match context and configuration.
 //!
-//! The `MatchContext` carries the inputs to the engine. The `MatchConfig`
-//! carries the tuneable parameters (loaded from `L0-match/balance/match_engine.toml`
-//! in a future step; for now, defaults are enough).
+//! The `MatchContext` carries the inputs to the engine; the `MatchConfig`
+//! the engine's configuration.
 
 use ds_model::Match;
 use ds_orchestrator::GroundTruth;
 use ds_stats::EventChain;
 
-/// Configuration of the match engine.
+/// The engine's clock: ten ticks a simulated second (ADR-069).
 ///
-/// All tuneable parameters live here. Nothing in the engine is hardcoded.
+/// Every `*_per_tick` and `*_ticks` value of `balance/` is written for it, so it
+/// is a constant, not a setting (code audit C6: `ticks_per_second` looked
+/// configurable, and any other value scaled the physics in silence).
+pub const TICKS_PER_SECOND: u8 = 10;
+
+/// Configuration of the match engine.
 #[derive(Debug, Clone, Copy)]
 pub struct MatchConfig {
-    /// Total duration in minutes (default 90).
-    pub duration_minutes: u16,
-    /// Ticks per simulated second (default 10).
+    /// Ticks per simulated second: `TICKS_PER_SECOND`, the only value the
+    /// engine accepts (`simulate_from_seed` refuses another).
     pub ticks_per_second: u8,
 }
 
 impl Default for MatchConfig {
     fn default() -> Self {
         Self {
-            duration_minutes: 90,
-            ticks_per_second: 10,
+            ticks_per_second: TICKS_PER_SECOND,
         }
     }
 }

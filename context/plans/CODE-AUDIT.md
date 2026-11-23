@@ -51,7 +51,7 @@ Tabella dei crate (dall'analista): rispettano la responsabilità ds-core, ds-mod
 
 ## C. Dati e balance: stessi numeri in più posti, numeri senza fonte
 
-**Stato (2026-11-23):** C1 chiuso: la Legge 1 ha una sola fonte (`laws.json` → `ds_calculator::laws`); tolti i doppioni in obstacles.json, thought.json, offball.json e i 366/244/732/3400 nel codice; golden identico. **Aperti:** C2 (`pressure_radius_cm` 500/300, `mark_radius_cm` 800/300: cambia la partita, SIM 197), C3-C8.
+**Stato (2026-11-23):** C1 chiuso: la Legge 1 ha una sola fonte (`laws.json` → `ds_calculator::laws`); tolti i doppioni in obstacles.json, thought.json, offball.json e i 366/244/732/3400 nel codice; golden identico. **C2 chiuso** con nomi distinti, senza cambiare la partita: `choice_pressure_radius_cm` (300, quanto si sente pressato chi sceglie) e `pressure_radius_cm` (500, l'evento Pressure e la ricezione); `watch_mark_radius_cm` (800, chi marca guarda il suo uomo) e `mark_radius_cm` (300, chi si smarca). Unificarli a 5 m è stato provato (SIM 197, non committato): rompeva due guardiani di comportamento (la squadra più larga su richiesta, il pallone avanti nel dribbling); entrambi i valori sono senza fonte, restano distinti fino alla taratura. **C6 chiuso**: `TICKS_PER_SECOND` costante, il motore rifiuta un altro valore, gli strumenti la leggono; tolto `MatchConfig.duration_minutes` (mai letto). **Aperti:** C3-C5, C7-C8.
 
 | # | Rilievo |
 |---|---|
