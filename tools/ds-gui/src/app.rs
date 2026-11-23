@@ -2670,11 +2670,20 @@ mod tests {
                 None => false,
             };
             assert!(told, "the stop at tick {} is {:#?}", stop.tick, text);
-            let after = game
+            // The final whistle can come before the restart (Law 7: the
+            // time is up, a throw-in seconds from the end is never taken).
+            // Only the match's last stop may go without one.
+            let Some(after) = game
                 .whistles
                 .iter()
                 .find(|w| w.restart && w.tick > stop.tick)
-                .expect("the restart whistle");
+            else {
+                assert!(
+                    game.whistles.iter().all(|w| w.tick <= stop.tick),
+                    "the restart whistle"
+                );
+                continue;
+            };
             assert!(
                 game.records[after.tick].carrier.is_some(),
                 "the restart follows the ball at a man's foot"

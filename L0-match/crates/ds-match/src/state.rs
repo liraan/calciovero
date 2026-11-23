@@ -1856,6 +1856,7 @@ mod possession_is_movement_tests {
             loose_ball: Some(Target {
                 distance_cm: 500,
                 rank,
+                left: if rank == 0 { 1.0 } else { 0.0 },
             }),
             loose_rival_cm: None,
             carrier: None,

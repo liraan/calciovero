@@ -64,6 +64,29 @@ pub struct Target {
     pub distance_cm: i64,
     /// How many teammates he sees closer.
     pub rank: u32,
+    /// The share of it his nearer teammates leave him, as he believes
+    /// (SIM 191, [`left_by_nearer`]): `1` with none nearer.
+    pub left: f64,
+}
+
+/// The share of a danger his nearer teammates leave him (SIM 191).
+///
+/// ADR-052 §5: for each teammate he sees nearer to it, the chance that one does not
+/// get there in time, read with the same trust and the same believed pace as
+/// his own run (`ThoughtBalance::confidence`); the product over them, since
+/// any one of them can take it. No rank cut: a third man closes a danger
+/// the first two will not reach, and leaves one they will.
+#[must_use]
+pub fn left_by_nearer(nearer_cm: &[i64]) -> f64 {
+    let t = ds_calculator::thought::ThoughtBalance::load();
+    nearer_cm
+        .iter()
+        .map(|d| {
+            #[allow(clippy::cast_precision_loss)] // cm on a pitch
+            let run = (*d).max(0) as f64 / t.believed_speed_cm_per_tick.max(1.0);
+            1.0 - t.confidence(t.trust_ticks - run)
+        })
+        .product()
 }
 
 /// What a player sees when a teammate has the ball.
@@ -264,18 +287,13 @@ impl crate::GroundTruth {
     /// away the man's; holding keeps the space he guards closed. Another
     /// teammate nearer to a danger takes it: the second reads whether to
     /// double up.
-    fn defend(&mut self, s: &OffBallScene, th: &Threats, c: Target, reading: f64) -> OffBallAct {
+    fn defend(&mut self, s: &OffBallScene, th: &Threats, c: Target) -> OffBallAct {
         let l = self.latents_for(s.actor);
         let t = ds_calculator::thought::ThoughtBalance::load();
         let keeper = matches!(s.place, Place::Keeper { .. });
         let may_leave = match s.place {
             Place::Outfield => true,
             Place::Keeper { ball_in_area } => ball_in_area,
-        };
-        let rank = |r: u32| match r {
-            0 => 1.0,
-            1 => reading * 0.5,
-            _ => 0.0,
         };
         #[allow(clippy::cast_precision_loss)]
         let in_time = |d: i64| {
@@ -295,16 +313,13 @@ impl crate::GroundTruth {
         // kick is unchallenged until it is taken (Laws 13-17).
         if !s.dead_ball && !keeper && !s.carrier_in_reach {
             offer(
-                th.carrier * in_time(c.distance_cm) * rank(c.rank),
+                th.carrier * in_time(c.distance_cm) * c.left,
                 OffBallAct::Press,
             );
         }
         if !keeper {
             if let Some(m) = s.to_mark {
-                offer(
-                    th.man * in_time(m.distance_cm) * rank(m.rank),
-                    OffBallAct::Mark,
-                );
+                offer(th.man * in_time(m.distance_cm) * m.left, OffBallAct::Mark);
             }
         }
         if !keeper {
@@ -386,7 +401,7 @@ impl crate::GroundTruth {
             Place::Keeper { ball_in_area } => ball_in_area,
         };
         if let (Some(th), Some(c)) = (s.threats, s.carrier) {
-            return self.defend(s, &th, c, reading);
+            return self.defend(s, &th, c);
         }
         let mut best = (milli(b.hold_salience_milli), OffBallAct::Hold);
         let mut offer = |score: f64, act: OffBallAct| {
@@ -631,7 +646,12 @@ mod tests {
 
     #[allow(clippy::unnecessary_wraps)] // the scene's fields are options
     const fn at(distance_cm: i64, rank: u32) -> Option<Target> {
-        Some(Target { distance_cm, rank })
+        Some(Target {
+            distance_cm,
+            rank,
+            // Teammates nearer and already on it: nothing left to him.
+            left: if rank == 0 { 1.0 } else { 0.0 },
+        })
     }
 
     fn facts(ours: Vec<(i32, i32)>, man: Option<(i32, i32)>) -> ThreatFacts {
@@ -1011,6 +1031,31 @@ mod tests {
         });
         assert_eq!(choose(&cover), OffBallAct::Cover);
         assert_ne!(choose(&defending(QUIET)), OffBallAct::Cover);
+    }
+
+    /// Twin test (SIM 191): the same second man, the same carrier 6 m from
+    /// him, the same danger; only where the first teammate is changes. When
+    /// the first is on the carrier, he leaves it to him and holds; when the
+    /// first is barely nearer and may not get there in time, the danger is
+    /// still his too and he doubles up. Before, the second weighed it by a
+    /// flat half of his reading and the third not at all.
+    #[test]
+    fn the_second_man_doubles_up_only_when_the_first_may_not_get_there() {
+        let second = |first_cm: i64| OffBallScene {
+            carrier: Some(Target {
+                distance_cm: 600,
+                rank: 1,
+                left: left_by_nearer(&[first_cm]),
+            }),
+            threats: Some(QUIET),
+            ..scene()
+        };
+        assert_eq!(choose(&second(100)), OffBallAct::Hold);
+        assert_eq!(choose(&second(550)), OffBallAct::Press);
+        // What his mates leave him falls with each one nearer and in time.
+        assert!((left_by_nearer(&[]) - 1.0).abs() < 1e-12);
+        assert!(left_by_nearer(&[1000]) > left_by_nearer(&[1000, 1000]));
+        assert!(left_by_nearer(&[100]) < left_by_nearer(&[1500]));
     }
 
     /// Near the passing lane to a dangerous man and far from his back, he

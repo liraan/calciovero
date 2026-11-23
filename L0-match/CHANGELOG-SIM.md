@@ -8,6 +8,20 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 191 — Il pericolo che lasciano i compagni più vicini (DD-51/ADR-109)
+
+In difesa pressare e marcare erano moltiplicati per un rango (1 al più vicino,
+`lettura × 0,5` al secondo, 0 dal terzo): dal terzo uomo quelle azioni non
+esistevano. Ora valgono la parte di pericolo che i compagni più vicini lasciano,
+`Π(1 − in_time(d_k))`, con la fiducia e il passo creduto della sua corsa.
+Nessun numero nuovo.
+
+Con LUNA: dito = chi è più vicino; luna = ognuno legge quanto pericolo gli altri
+lasciano davvero. Gemello
+`the_second_man_doubles_up_only_when_the_first_may_not_get_there`. Golden
+rigenerati; semi coppa 83, supplementari 54/42, rigori 83. `ds-reference
+42..101`: 6 su 22, gol 10.98 → 9.78; pressing +7% (sonda, 10 partite).
+
 ## 190 — Il compagno è conosciuto quanto ci si fida di lui (DD-50/ADR-108)
 
 Il passatore leggeva il primo controllo e il valore aereo dei compagni dalla

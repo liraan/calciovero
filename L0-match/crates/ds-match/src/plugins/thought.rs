@@ -818,6 +818,21 @@ impl MatchState {
                     )
                     .unwrap_or(u32::MAX)
                 };
+                // SIM 191: the share of a target his nearer teammates leave
+                // him, from where he sees them (the same men `rank` counts).
+                let left = |target: (i32, i32)| {
+                    let mine = distance_squared(me, target);
+                    let nearer: Vec<i64> = squad
+                        .players
+                        .iter()
+                        .filter(|q| q.id != id && Some(q.id) != keeper_id && Some(q.id) != pass_by)
+                        .filter_map(|q| self.perceived(id, q.id))
+                        .map(|at| distance_squared(at, target))
+                        .filter(|d| *d < mine)
+                        .map(i64::isqrt)
+                        .collect();
+                    ds_orchestrator::offball::left_by_nearer(&nearer)
+                };
                 let to_carrier = carrier_pos.map(|c| distance_squared(me, c).isqrt());
                 let ball_in_own_box = in_keeper_box(ball, home, (length, width), &off);
                 let sees_ball =
@@ -890,6 +905,7 @@ impl MatchState {
                                 ds_orchestrator::Target {
                                     distance_cm: distance_squared(me, at).isqrt(),
                                     rank: ahead,
+                                    left: left(at),
                                 }
                             });
                             cut.or_else(|| {
@@ -904,6 +920,7 @@ impl MatchState {
                                         // ranked behind them held his place
                                         // and the back pass ran past him).
                                         rank: rank_to_meet(meets_pass == Some(id), rank(ball)),
+                                        left: left(ball),
                                     })
                             })
                         },
@@ -918,6 +935,7 @@ impl MatchState {
                             contests(rank(d) <= 1).then(|| ds_orchestrator::Target {
                                 distance_cm: distance_squared(me, d).isqrt(),
                                 rank: if keeper { 0 } else { rank(d) },
+                                left: if keeper { 1.0 } else { left(d) },
                             })
                         },
                     ),
@@ -932,6 +950,7 @@ impl MatchState {
                         .map(|(c, d)| ds_orchestrator::Target {
                             distance_cm: d,
                             rank: rank(c),
+                            left: left(c),
                         }),
                     carrier_in_reach: to_carrier.is_some_and(|d| d <= slide_reach),
                     with_mate: carrier_mate.map(|c| {
@@ -975,6 +994,7 @@ impl MatchState {
                         ds_orchestrator::Target {
                             distance_cm: distance_squared(me, m).isqrt(),
                             rank: rank(m),
+                            left: left(m),
                         }
                     }),
                     threats: carrier_pos.map(|c| {
