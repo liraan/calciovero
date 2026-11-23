@@ -487,8 +487,8 @@ impl GroundTruth {
 
         // on_target: geometric, arrival inside the goal mouth. Derived,
         // not a field of the die (unchanged).
-        let goal_half_width_cm: i32 = 366;
-        let goal_height_cm: i32 = 244;
+        let law = ds_calculator::laws::law1();
+        let (goal_half_width_cm, goal_height_cm) = (law.goal_half_width_cm, law.goal_height_cm);
         let on_target =
             (to.1 - ctx.to.1).abs() < goal_half_width_cm && to.2 < goal_height_cm && to.2 >= 0;
 

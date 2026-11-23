@@ -433,9 +433,12 @@ const OBSTACLES_JSON: &str = include_str!("../../../balance/obstacles.json");
 /// Goal geometry and obstacle reflection parameters (ADR-048 §1).
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct ObstacleBalance {
-    /// Half the distance between the posts, in cm (Law 1: 366).
+    /// Half the distance between the posts, in cm: Law 1, from `laws.json`
+    /// (`ds_calculator::laws`).
+    #[serde(skip)]
     pub goal_half_width_cm: i32,
-    /// Crossbar height, in cm (Law 1: 244).
+    /// Crossbar height, in cm (Law 1, as above).
+    #[serde(skip)]
     pub goal_height_cm: i32,
     /// Post radius, in cm (prototype).
     pub post_radius_cm: i32,
@@ -449,7 +452,12 @@ pub struct ObstacleBalance {
 
 impl Default for ObstacleBalance {
     fn default() -> Self {
-        serde_json::from_str(OBSTACLES_JSON).expect("embedded obstacles file is valid JSON")
+        let mut b: Self =
+            serde_json::from_str(OBSTACLES_JSON).expect("embedded obstacles file is valid JSON");
+        let law = ds_calculator::laws::law1();
+        b.goal_half_width_cm = law.goal_half_width_cm;
+        b.goal_height_cm = law.goal_height_cm;
+        b
     }
 }
 

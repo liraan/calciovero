@@ -19,7 +19,8 @@ const BALL_JSON: &str = include_str!("../../../balance/ball.json");
 /// The thought's declared values (`balance/thought.json`).
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct ThoughtBalance {
-    /// The goal's width, cm (Law 1).
+    /// The goal's width, cm: Law 1, from `laws.json` (`crate::laws`).
+    #[serde(skip)]
     pub goal_width_cm: i32,
     /// What keeping the ball is worth, against a goal (1.0).
     pub possession_value: f64,
@@ -107,6 +108,7 @@ impl ThoughtBalance {
             serde_json::from_str(THOUGHT_JSON).expect("embedded thought file is valid JSON");
         let ball: Ball = serde_json::from_str(BALL_JSON).expect("embedded ball file is valid JSON");
         t.gravity_cm_per_tick2 = ball.gravity_cm_per_tick2;
+        t.goal_width_cm = 2 * crate::laws::law1().goal_half_width_cm;
         t
     }
 }

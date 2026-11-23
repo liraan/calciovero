@@ -36,6 +36,7 @@ pub mod fatigue;
 pub mod keeper;
 pub mod kick;
 pub mod latency;
+pub mod laws;
 pub mod movement;
 pub mod obstacle;
 pub mod offball;

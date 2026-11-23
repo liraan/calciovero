@@ -18,9 +18,12 @@ pub struct OffBallBalance {
     pub second_reader_milli: i32,
     /// The salience of a challenge in reach, thousandths.
     pub challenge_salience_milli: i32,
-    /// The goalkeeper's area: depth from the goal line, cm.
+    /// The goalkeeper's area: depth from the goal line, cm. Law 1's penalty
+    /// area, from `laws.json` (`crate::laws`).
+    #[serde(skip)]
     pub keeper_box_depth_cm: i32,
-    /// The goalkeeper's area: half its width, cm.
+    /// The goalkeeper's area: half its width, cm (Law 1, as above).
+    #[serde(skip)]
     pub keeper_box_half_width_cm: i32,
     /// An opponent this close marks him, cm.
     pub mark_radius_cm: i32,
@@ -70,7 +73,12 @@ impl OffBallBalance {
     /// catches it at test time.
     #[must_use]
     pub fn load() -> Self {
-        serde_json::from_str(OFFBALL_JSON).expect("embedded offball file is valid JSON")
+        let mut b: Self =
+            serde_json::from_str(OFFBALL_JSON).expect("embedded offball file is valid JSON");
+        let law = crate::laws::law1();
+        b.keeper_box_depth_cm = law.penalty_area_depth_cm;
+        b.keeper_box_half_width_cm = law.penalty_area_half_width_cm;
+        b
     }
 
     /// How far from his feet a player reaches a ball passing by, cm, from

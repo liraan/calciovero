@@ -51,6 +51,8 @@ Tabella dei crate (dall'analista): rispettano la responsabilità ds-core, ds-mod
 
 ## C. Dati e balance: stessi numeri in più posti, numeri senza fonte
 
+**Stato (2026-11-23):** C1 chiuso: la Legge 1 ha una sola fonte (`laws.json` → `ds_calculator::laws`); tolti i doppioni in obstacles.json, thought.json, offball.json e i 366/244/732/3400 nel codice; golden identico. **Aperti:** C2 (`pressure_radius_cm` 500/300, `mark_radius_cm` 800/300: cambia la partita, SIM 197), C3-C8.
+
 | # | Rilievo |
 |---|---|
 | C1 | Porta e area in 3 JSON e 4 punti del codice: `goal_half_width_cm` in laws.json **e** obstacles.json (letti da moduli diversi), `goal_width_cm` in thought.json, `366`/`244` scritti in orchestrator lib.rs:490, `GOAL_WIDTH_CM` in read.rs:285, `(…, 3400, 244)` in thought.rs:93/1144 e technique.rs:707 (centro porta fisso: sbaglia su un campo non largo 68 m); `keeper_box_*` (offball.json) duplica `penalty_area_*` (laws.json), `is_cross` e technique riscrivono il predicato |

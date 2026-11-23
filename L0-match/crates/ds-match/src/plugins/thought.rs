@@ -89,9 +89,12 @@ impl MatchState {
                 other.players.iter().map(|p| p.id).collect(),
             )
         };
+        // The middle of the goal on this pitch (code audit C1: it was
+        // written as 3400, the middle of a 68 m pitch only).
+        let (length, width) = pitch_cm(ctx);
         let goal = match self.possession {
-            Possession::Home => (i32::from(ctx.match_.pitch.length_m) * 100, 3400),
-            Possession::Away => (0, 3400),
+            Possession::Home => (length, width / 2),
+            Possession::Away => (0, width / 2),
         };
 
         // Scene terms for the latency (ADR-044 §6: the duration is in
@@ -1128,8 +1131,12 @@ impl MatchState {
             None => self.spatial.ball_3d(),
         };
         let to = match self.possession {
-            Possession::Home => (i32::from(ctx.match_.pitch.length_m) * 100, 3400, 244),
-            Possession::Away => (0, 3400, 244),
+            Possession::Home => (
+                pitch_cm(ctx).0,
+                pitch_cm(ctx).1 / 2,
+                self.obstacle_balance.goal_height_cm,
+            ),
+            Possession::Away => (0, pitch_cm(ctx).1 / 2, self.obstacle_balance.goal_height_cm),
         };
         // Difficulty: the pressure on the kick, the same the shooter
         // reckons with (`shot_choice.json` `kick_pressure_radius_cm`):

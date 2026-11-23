@@ -1,5 +1,4 @@
 {
-  "goal_width_cm": 732,
   "possession_value": 0.02,
   "forecast_step_cm": 100,
   "believed_speed_cm_per_tick": 65.0,

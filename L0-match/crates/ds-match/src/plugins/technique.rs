@@ -720,7 +720,8 @@ impl MatchState {
         };
         let teammates: Vec<PlayerId> = own.players.iter().map(|p| p.id).collect();
         let opponents: Vec<PlayerId> = other.players.iter().map(|p| p.id).collect();
-        let goal = (if home { length } else { 0 }, 3400);
+        // The middle of the goal on this pitch (code audit C1: 3400).
+        let goal = (if home { length } else { 0 }, pitch_cm(ctx).1 / 2);
         let own_goal = (length - goal.0, goal.1);
         let gk = opponents.first().copied();
         let keep = ctx.hidden.save_balance();

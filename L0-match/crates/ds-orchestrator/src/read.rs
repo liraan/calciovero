@@ -280,9 +280,11 @@ fn controls(
     first_touch >= r.reading * difficulty
 }
 
-/// Regulatory goal width, cm (7.32 m, Laws of the Game, Law 1). A real
-/// fact of football, not a model choice.
-const GOAL_WIDTH_CM: i64 = 732;
+/// Regulatory goal width, cm (7.32 m, Law 1): from `laws.json` (code
+/// audit C1: it was written here by hand).
+fn goal_width_cm() -> i64 {
+    2 * i64::from(ds_calculator::laws::law1().goal_half_width_cm)
+}
 /// The ball's radius, cm (Law 2: a circumference of 68-70 cm).
 pub use ds_core::geometry::BALL_RADIUS_CM;
 /// The post's radius, cm (Law 1: posts and bar at most 12 cm wide).
@@ -366,7 +368,7 @@ pub fn line_quality(from: (i32, i32), to: (i32, i32), opponents: &[(i32, i32)]) 
 #[allow(clippy::cast_precision_loss)]
 #[allow(clippy::cast_possible_truncation)] // sample coords: from + (dx * k) / 4, well inside i32
 pub fn goal_cone(pos: (i32, i32), goal: (i32, i32)) -> f64 {
-    let half = GOAL_WIDTH_CM / 2;
+    let half = goal_width_cm() / 2;
     let a = (
         i64::from(goal.0) - i64::from(pos.0),
         i64::from(goal.1 - half as i32) - i64::from(pos.1),
@@ -858,7 +860,7 @@ fn shot_candidates(
         };
         // ADR-046 §1, ADR-047: the shot is a complete phrase; both posts,
         // the keeper hiding the side he covers (ADR-047 §3).
-        let aim_edge_cm = (GOAL_WIDTH_CM as f64) * 0.5 * balance.aim_edge_fraction;
+        let aim_edge_cm = (goal_width_cm() as f64) * 0.5 * balance.aim_edge_fraction;
         // His foot's side, as he faces the goal he attacks: facing +x his
         // right is -y.
         let facing: f64 = if goal.0 >= pos.0 { 1.0 } else { -1.0 };
@@ -1093,7 +1095,7 @@ fn aim_inside(
     let angle = own_spread(own_error, power, pressure, strike, nerves);
     let expected_miss = goal_dist_cm * angle;
     #[allow(clippy::cast_precision_loss)] // 732 cm
-    let half = GOAL_WIDTH_CM as f64 * 0.5;
+    let half = goal_width_cm() as f64 * 0.5;
     // His miss is a spread (plan L0-CLOSE 11): he does not know which way
     // the contact will send it, only how wide, as well as he reads it. He
     // aims so that his widest miss, as he reckons it, still meets the
@@ -1342,7 +1344,7 @@ fn runs_into_goal(from: (i32, i32), to: (i32, i32), goal: (i32, i32), run_on: f6
     let s = towards / dx;
     let beyond = s * dmath::hypot(dx, dy);
     let y = s.mul_add(dy, f64::from(to.1));
-    beyond <= run_on && (y - f64::from(goal.1)).abs() <= GOAL_WIDTH_CM as f64 / 2.0
+    beyond <= run_on && (y - f64::from(goal.1)).abs() <= goal_width_cm() as f64 / 2.0
 }
 
 /// Where he plays a ground pass to `id`, standing at `here`: into his run
