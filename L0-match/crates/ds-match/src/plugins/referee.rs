@@ -84,22 +84,39 @@ pub struct FoulFacts {
     pub from_behind: bool,
     /// His approach speed, thousandths of the reference speed.
     pub approach_milli: i32,
-    /// The foul denied an obvious goal-scoring opportunity.
-    pub denies_obvious_chance: bool,
+    /// Whether, and where, the foul denied an obvious goal-scoring
+    /// opportunity.
+    pub denial: Denial,
+}
+
+/// The denial of an obvious goal-scoring opportunity (Law 12).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Denial {
+    /// No obvious goal-scoring opportunity was denied.
+    No,
+    /// Denied outside his own penalty area, or not trying to play the ball.
+    Chance,
+    /// Denied in his own penalty area, the penalty awarded, while he tried
+    /// to play the ball (Law 12, since 2016: then a caution).
+    ChanceForTheBall,
 }
 
 /// Law 12's card for a foul.
 ///
 /// Excessive force (a slide from behind at a sprint) or the denial of an
 /// obvious goal-scoring opportunity is a red card; a reckless challenge (a
-/// slide from behind, at speed) a yellow; a careless one none. Thresholds
-/// in `balance/laws.json`.
+/// slide from behind, at speed) a yellow; a careless one none. The denial
+/// in his own penalty area, the penalty awarded, by a challenge that tried
+/// to play the ball is a yellow (Law 12, since 2016; SIM 194: before, it was
+/// always a red). Thresholds in `balance/laws.json`.
 #[must_use]
 pub const fn card_for(f: &FoulFacts, reckless_milli: i32, excessive_milli: i32) -> Option<Card> {
-    if f.denies_obvious_chance || (f.slide && f.from_behind && f.approach_milli >= excessive_milli)
-    {
+    let excessive = f.slide && f.from_behind && f.approach_milli >= excessive_milli;
+    if excessive || matches!(f.denial, Denial::Chance) {
         Some(Card::Red)
-    } else if f.slide && f.from_behind && f.approach_milli >= reckless_milli {
+    } else if matches!(f.denial, Denial::ChanceForTheBall)
+        || (f.slide && f.from_behind && f.approach_milli >= reckless_milli)
+    {
         Some(Card::Yellow)
     } else {
         None
@@ -468,6 +485,46 @@ impl MatchState {
     /// is called; its card follows the facts (a second yellow is a red, a
     /// red sends the player off); then the advantage, or the free kick where
     /// it happened, or a penalty if it happened in the penalty area.
+    /// Whether the foul denied an obvious goal-scoring opportunity (Law 12:
+    /// the distance to the goal, the location and number of defenders): near
+    /// the goal he attacks, and no outfield defender but the offender nearer
+    /// to it. The keeper alone does not take it away: he is the man the
+    /// attacker through on goal had to beat (`SIM_VERSION` 112; before, the
+    /// keeper counted as cover, and since he nearly always stands nearer the
+    /// goal, the opportunity almost never was one). Every foul of the engine
+    /// is a challenge for the ball: in his own area, the penalty given, it
+    /// tried to play it (Law 12, SIM 194).
+    fn denial(
+        &self,
+        ctx: &MatchContext<'_>,
+        offender: PlayerId,
+        fouled_home: bool,
+        (spot, goal): ((i32, i32), (i32, i32)),
+        in_area: bool,
+    ) -> crate::rules::Denial {
+        let depth = |p: (i32, i32)| (goal.0 - p.0).abs();
+        let defenders = if fouled_home {
+            &ctx.match_.away
+        } else {
+            &ctx.match_.home
+        };
+        let their_keeper = defenders.players.first().map(|p| p.id);
+        let cover: Vec<i32> = defenders
+            .players
+            .iter()
+            .filter(|q| q.id != offender && Some(q.id) != their_keeper)
+            .filter_map(|q| self.spatial.agent(q.id))
+            .map(|a| depth(a.position))
+            .collect();
+        if !crate::rules::obvious_chance(spot, goal, self.laws.dogso_distance_cm, &cover) {
+            crate::rules::Denial::No
+        } else if in_area {
+            crate::rules::Denial::ChanceForTheBall
+        } else {
+            crate::rules::Denial::Chance
+        }
+    }
+
     pub(crate) fn apply_foul(
         &mut self,
         ctx: &mut MatchContext<'_>,
@@ -491,28 +548,7 @@ impl MatchState {
             laws.penalty_area_depth_cm,
             laws.penalty_area_half_width_cm,
         );
-        // An obvious goal-scoring opportunity (Law 12: the distance to the
-        // goal, the location and number of defenders): near the goal he
-        // attacks, and no outfield defender but the offender nearer to it.
-        // The keeper alone does not take it away: he is the man the
-        // attacker through on goal had to beat (SIM_VERSION 112; before, the
-        // keeper counted as cover, and since he nearly always stands nearer
-        // the goal, the opportunity almost never was one).
-        let defenders = if fouled_home {
-            &ctx.match_.away
-        } else {
-            &ctx.match_.home
-        };
-        let their_keeper = defenders.players.first().map(|p| p.id);
-        let cover: Vec<i32> = defenders
-            .players
-            .iter()
-            .filter(|q| q.id != offender && Some(q.id) != their_keeper)
-            .filter_map(|q| self.spatial.agent(q.id))
-            .map(|a| depth(a.position))
-            .collect();
-        facts.denies_obvious_chance =
-            crate::rules::obvious_chance(spot, goal, laws.dogso_distance_cm, &cover);
+        facts.denial = self.denial(ctx, offender, fouled_home, (spot, goal), in_area);
         self.emit_event(
             ctx,
             tick,
@@ -764,7 +800,7 @@ mod tests {
             slide: false,
             from_behind: false,
             approach_milli: 300,
-            denies_obvious_chance: false,
+            denial: Denial::No,
         };
         assert_eq!(card_for(&careless, 600, 900), None);
         let behind = FoulFacts {
@@ -785,10 +821,17 @@ mod tests {
         };
         assert_eq!(card_for(&brutal, 600, 900), Some(Card::Red));
         let dogso = FoulFacts {
-            denies_obvious_chance: true,
+            denial: Denial::Chance,
             ..careless
         };
         assert_eq!(card_for(&dogso, 600, 900), Some(Card::Red));
+        // Twin (Law 12, SIM 194): the same denial in his own area, the
+        // penalty given, trying to play the ball, is a caution.
+        let in_area = FoulFacts {
+            denial: Denial::ChanceForTheBall,
+            ..dogso
+        };
+        assert_eq!(card_for(&in_area, 600, 900), Some(Card::Yellow));
     }
 
     /// Law 11 (P1): beyond the second-last defender and the ball, in their

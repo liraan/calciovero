@@ -179,6 +179,10 @@ impl MatchState {
         // He reads his own composure before he chooses the shot, not only
         // when the engine applies it to the kick (DD-47, ADR-057).
         scene.own_nerves = ctx.hidden.kicker_nerves(attacker);
+        // How far from a man's feet a ball passing him is his (SIM 194):
+        // the control radius every reach is read from.
+        scene.reception.control_radius_cm =
+            f64::from(self.reception_balance.loose_control_radius_cm);
         // What he sees coming (plan L0-CLOSE 11, holding the ball up; the
         // maintainer: "pensa a cosa pensa ed immagina un giocatore"): the
         // players he sees, where they will be by his next decision, going

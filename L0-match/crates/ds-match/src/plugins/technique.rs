@@ -880,11 +880,11 @@ impl MatchState {
                 weight_kg: body.weight_kg,
                 fatigue: body.fatigue,
             });
-        let speed = dmath::hypot(f64::from(a.velocity.0), f64::from(a.velocity.1));
+        let velocity = (f64::from(a.velocity.0), f64::from(a.velocity.1));
         let reach = f64::from(crate::spatial::BODY_RADIUS_CM) * 2.0;
         self.spatial.intercept(
             a.position,
-            (speed, o.acceleration * o.stride, o.v_max * o.stride),
+            (velocity, o.acceleration * o.stride, o.v_max * o.stride),
             reach,
         )
     }

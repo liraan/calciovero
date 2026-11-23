@@ -193,6 +193,37 @@ Stesso comando e stesse tre tranche del 190 (42..61, 62..81, 82..101; 60 partite
 
 **In banda: 191 → 6 su 22**, come 190 e 188. Gol 10.98 → 9.78, fuori banda. Sonda temporanea su 10 partite (42..51): in difesa "restare" 74% → 72%, pressing 7.923 → 8.491 decisioni (il secondo uomo 1.289, il terzo 469: prima 0), marcatura 32.749 → 38.141. Il terzo uomo e oltre restano al posto nel 97% dei casi: con lo stesso passo creduto, chi è più vicino arriva prima, quindi il pericolo che gli resta è piccolo; è la lettura giusta della zona, non un taglio. La leva di OI-100 non è qui: resta il 42% di decisioni con la palla in volo, dove l'unica opzione è restare (prossimo, SIM 192).
 
+## La misura del 194 (2026-11-23, DD-53/ADR-111)
+
+Stesso comando del 190, tre tranche 42..61, 62..81, 82..101 (60 partite), media semplice; banda = media reale ± una deviazione standard. Ogni colonna aggiunge un passo al precedente; l'ultima è il SIM 194 committato. Nessun numero adattato (A5-bis): ogni passo è una correzione della fisica, della lettura o della Legge, tenuto anche quando il conteggio scende.
+
+| Metrica | Reale | Intercetto | + accelerazione | + lancio lungo | + frenata e Legge 12 (194) |
+|---|---|---|---|---|---|
+| goals | 2.68 | 10.32 no | 9.88 no | 9.3 no | 9.2 no |
+| own_goals | 0.1 | 2.07 no | 1.95 no | 1.38 no | 1.05 no |
+| shots | 24.6 | 39.83 no | 39.67 no | 39.07 no | 48.47 no |
+| shots_on_target | 8.69 | 19.93 no | 20.23 no | 20.03 no | 23.18 no |
+| penalties | 0.33 | 0.33 sì | 0.47 sì | 0.38 sì | 0.32 sì |
+| passes | 887.68 | 1702.22 no | 1685.02 no | 1677.2 no | 1837.58 no |
+| passes_accurate | 739.17 | 1388.83 no | 1378.57 no | 1371.43 no | 1509.7 no |
+| aerial_duels | 38.14 | 7.42 no | 7.2 no | 7.07 no | 16.6 no |
+| ground_duels | 182.63 | 169.47 sì | 168.02 sì | 172.78 sì | 201.62 sì |
+| take_ons_won | 16.03 | 20.98 sì | 19.55 sì | 19.98 sì | 20.37 sì |
+| fouls | 26 | 27.42 sì | 26.97 sì | 27.05 sì | 35.15 no |
+| yellow_cards | 3.97 | 7.68 no | 7.93 no | 8.6 no | 1.38 no |
+| red_cards | 0.24 | 0.63 sì | 0.63 sì | 0.62 sì | 0.93 no |
+| corners | 10.3 | 21 no | 20.95 no | 19.62 no | 20.48 no |
+| throw_ins | 42.72 | 26.23 no | 25.53 no | 25.72 no | 17.6 no |
+| goal_kicks | 17.15 | 21.98 no | 21.77 no | 20.9 sì | 18.77 sì |
+| free_kicks | 29.45 | 39.67 no | 40.07 no | 41.23 no | 41.75 no |
+| offsides | 4.26 | 14.02 no | 15.13 no | 15.6 no | 9.98 no |
+| clearances | 29.53 | 42.32 no | 44.98 no | 45.32 no | 54.58 no |
+| saves | 9.37 | 13.57 no | 14.43 no | 14.25 no | 16.72 no |
+| stoppage_first_half_min | 1.49 | 10 no | 10.1 no | 9.66 no | 10.57 no |
+| stoppage_second_half_min | 4.08 | 9.46 no | 8.77 no | 8.66 no | 10.35 no |
+
+**In banda: intercetto 5, + accelerazione 5, + lancio lungo 6, SIM 194 finale 4 su 22** (main al 192: 6). Migliorano autogol (192: 1.95 → 1.05), fuorigioco (13.4 → 9.98), duelli aerei (7.6 → 16.6), gol (10.8 → 9.2), rinvii dal fondo in banda. Peggiorano, con la frenata: falli 27.5 → 35.2, rossi fuori banda (0.93: tutti scivolate da dietro entro 25 m fuori area, chiara occasione negata — la Legge è giusta, le occasioni sono troppe), gialli 1.38 (il modello del cartellino conosce solo la scivolata da dietro veloce), passaggi 1702 → 1838, tiri 39 → 48. La regola sul rasoterra (la deviazione laterale contro la portata più la corsa del compagno) a queste velocità non cambia nulla: identica al passo precedente, numero per numero.
+
 ## La misura del 188 rifatta e del 190 (2026-11-22, DD-50/ADR-108)
 
 Stesso comando, tre tranche 42..61, 62..81, 82..101 (60 partite), aggregate con media semplice; banda = media reale ± una deviazione standard (decisione Y). **Correzione:** la tabella "La misura del 188" qui sotto segnava "in banda" tiri (36.16, banda 19.1–30.1), duelli a terra (147.53, banda 155–210) e rimesse (22.66, banda 33.8–51.6), che non lo sono: il 188 era **6 su 22**, non 9 (né 10). Rimisurato qui con lo stesso metodo del 190. Nessun numero adattato (A5-bis).

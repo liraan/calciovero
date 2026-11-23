@@ -135,6 +135,16 @@ pub struct ReceptionReckoning {
     /// touch and of his worth in the air (SIM 190, the same trust as the
     /// runner's pace of SIM 179). Absent: a stranger, an average man.
     pub intesa: BTreeMap<PlayerId, f64>,
+    /// The base of his own pass's miss as he reckons it, radians (SIM 194,
+    /// as the shooter's own miss): his passing and the foot the ball is on,
+    /// as well as he reads the game; `0` when he has not reckoned it.
+    pub pass_miss_rad: f64,
+    /// The control radius a reach is read from, cm (`reception.json`).
+    pub control_radius_cm: f64,
+    /// How far from his feet he believes each teammate reaches a ball
+    /// passing him, cm (SIM 194): the control radius by the reactivity he
+    /// believes of him (the reach of `offball.json`).
+    pub ball_reach: BTreeMap<PlayerId, f64>,
 }
 
 /// A ground pass weighed to arrive rolling (`kick.json`), struck at `v0`
@@ -1051,6 +1061,23 @@ fn own_spread(own_error: f64, power: f64, pressure: f64, strike: f64, nerves: f6
     )
 }
 
+/// The angle of his own pass's miss as he reckons it (SIM 194): the shot's
+/// reckoning (`own_spread`) of his pass's base miss at the power the pass
+/// needs, scaled as the engine scales the pass's error from the shot's
+/// (`kick.json` `pass_error_ref_rad` over `error_ref_rad`).
+fn own_pass_spread(scene: &PerceivedScene, v0: f64, pressure: f64) -> f64 {
+    let k = &mind().kick;
+    let power = (v0 / k.speed_ref_cm_per_tick.max(1.0)).min(1.0);
+    own_spread(
+        scene.reception.pass_miss_rad,
+        power,
+        pressure,
+        0.0,
+        scene.own_nerves,
+    ) * k.pass_error_ref_rad
+        / k.error_ref_rad.max(1e-6)
+}
+
 /// Where he aims across the goal, from its centre, cm (ADR-052, he knows
 /// his own foot): inside the post by the miss he expects of himself at
 /// this distance and power, so a poor finisher aims nearer the middle;
@@ -1459,9 +1486,38 @@ fn pass_candidates(
         } else {
             space
         };
+        // His ball drifts across its line by as much as his own miss
+        // (SIM 194, `resolve_pass`: `distance x error x contact`, the
+        // contact anywhere across it): the share of it that stays within his
+        // man's reach finds him; the rest runs on, missed.
+        let across = d * own_pass_spread(scene, v0, kick_pressure(pos, scene, balance, 0));
+        // While it rolls he goes to it (his reach, and the ground he covers
+        // once he has reacted, at the pace the passer believes).
+        let rolling = {
+            let arrive = m.kick.pass_arrive_cm_per_tick.min(v0);
+            if v0 > arrive {
+                dmath::log(arrive / v0, scene.ground_keep)
+            } else {
+                d / v0.max(1.0)
+            }
+        };
+        let cover = m.thought.believed_speed_cm_per_tick
+            * (rolling - m.thought.believed_reaction_ticks).max(0.0);
+        let found = scene.reception.ball_reach.get(id).map_or(1.0, |reach| {
+            let within = reach + cover;
+            if across > within {
+                within / across
+            } else {
+                1.0
+            }
+        });
         let geom = worth_of(
             scene,
-            if clean { sure(players, &forecast) } else { 0.0 },
+            if clean {
+                sure(players, &forecast) * found
+            } else {
+                0.0
+            },
             gain_at,
             gain * line_break(pos, gain_at, &opponent_lines.0, opponent_lines.1),
             loss_at,
@@ -1525,7 +1581,14 @@ fn pass_candidates(
                     })
                     .all(|(o, _)| scene.reception.aerial.get(o).copied().unwrap_or(0.0) < mine)
             };
-            let sure = if offside_to(scene, pos, here) {
+            // His kick goes long by his own miss (SIM 194, `resolve_pass`:
+            // the lofted pass carries `distance x (1 + error)`): if that
+            // takes it over his own goal line between the posts, he sees the
+            // ball in his own net, not at his man's feet.
+            let long = d * own_pass_spread(scene, v0, kick_pressure(pos, scene, balance, 0));
+            let sure = if offside_to(scene, pos, here)
+                || runs_into_goal(pos, tpos, scene.own_goal, long)
+            {
                 0.0
             } else if contested {
                 if wins() {

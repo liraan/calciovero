@@ -99,20 +99,20 @@ fn under_foot(off: (f64, f64), at: u64, step: f64) -> Touch {
     }
 }
 
-/// How far a man covers in `t` ticks from `speed`, accelerating at `accel`
-/// up to `top` (cm, cm/tick).
+/// How far a man covers in `t` ticks from `speed`, accelerating from rest
+/// at `accel` and less as he nears `top`, to nothing at it (cm, cm/tick;
+/// SIM 194, the acceleration-speed profile of `movement.json`): his speed
+/// closes on `top` as `top - (top - speed) e^(-accel t / top)`.
 fn run_in(t: f64, speed: f64, accel: f64, top: f64) -> f64 {
     let top = top.max(speed).max(1.0);
     if accel <= 0.0 {
         return speed * t;
     }
-    let to_top = ((top - speed) / accel).max(0.0);
-    if t <= to_top {
-        (0.5 * accel * t).mul_add(t, speed * t)
-    } else {
-        let d = (0.5 * accel * to_top).mul_add(to_top, speed * to_top);
-        top.mul_add(t - to_top, d)
-    }
+    let k = accel / top;
+    (top - speed).mul_add(
+        -(1.0 - dmath::powf(std::f64::consts::E, -k * t)) / k,
+        top * t,
+    )
 }
 
 /// How far a touch of speed `speed` has rolled after `t` ticks.
@@ -1097,7 +1097,12 @@ impl SpatialState {
     /// speed now he accelerates at `accel` up to `top` (cm/tick), and he
     /// needs only to come within `reach` cm of it. The first point of its
     /// path within his height (at most head height, coming down or on the
-    /// grass) that he gets to no later than it does, or where it stops. A
+    /// grass) that he gets to no later than it does, or where it stops. His
+    /// speed counts only as far as it takes him towards each point (SIM 194):
+    /// a man running across or away starts from nothing that way. Before, his
+    /// whole speed counted whichever way he ran, and a keeper drifting along
+    /// his line went for a point far up the path that he never reached, and
+    /// the back pass ran past him into the net. A
     /// ball in the air he meets where it comes down if he gets there in
     /// time, else further on (`SIM_VERSION` 111, OI-102: a keeper who could
     /// not reach where a lofted back pass came down chased it where it was,
@@ -1107,7 +1112,7 @@ impl SpatialState {
     pub fn intercept(
         &self,
         from: (i32, i32),
-        (speed, accel, top): (f64, f64, f64),
+        (velocity, accel, top): ((f64, f64), f64, f64),
         reach: f64,
     ) -> Option<(i32, i32)> {
         if matches!(self.ball, BallState::Possessed) {
@@ -1141,8 +1146,17 @@ impl SpatialState {
             }
             at = Some((x, y));
             #[allow(clippy::cast_precision_loss)]
-            let mine = ((distance_squared(from, (x, y)) as f64).sqrt() - reach).max(0.0);
-            if mine <= run_in(f64::from(t), speed, accel, top) {
+            let way = (distance_squared(from, (x, y)) as f64).sqrt();
+            let toward = if way > 0.0 {
+                velocity
+                    .0
+                    .mul_add(f64::from(x - from.0), velocity.1 * f64::from(y - from.1))
+                    / way
+            } else {
+                0.0
+            };
+            let mine = (way - reach).max(0.0);
+            if mine <= run_in(f64::from(t), toward.max(0.0), accel, top) {
                 return at;
             }
         }
@@ -1860,9 +1874,8 @@ impl SpatialState {
                 && act != Some(ds_orchestrator::OffBallAct::Press)
                 && Some(entry.0) != self.carrier
             {
-                let speed = dmath::hypot(v_prev.0, v_prev.1);
                 let reach = f64::from(BODY_RADIUS_CM) * 2.0;
-                self.intercept(entry.1, (speed, accel, top), reach)
+                self.intercept(entry.1, (v_prev, accel, top), reach)
                     .unwrap_or(target)
             } else {
                 target
@@ -1894,6 +1907,7 @@ impl SpatialState {
             // step a fifth and his accelerations a twenty-fifth of the
             // tick's.
             let steps = f64::from(SUBSTEPS);
+            let sprint_s = outcome.v_max * stride / steps;
             let (top_s, accel_s, decel_s) = (
                 top / steps,
                 accel / (steps * steps),
@@ -1982,12 +1996,20 @@ impl SpatialState {
                                 } else {
                                     top_s * outcome.contest_pace_share
                                 };
-                                if sent.is_some() || (overdue && Some(entry.0) == self.carrier) {
+                                // SIM 194: running to a point (the man he
+                                // presses, the ball he meets) he brakes to
+                                // arrive, as he does at a restart spot; going
+                                // in (a challenge) he goes in at speed.
+                                // Before, he ran at every point at full speed
+                                // and past it: with the acceleration of a
+                                // real player he ran past the man he pressed
+                                // and back again, metres each way.
+                                if act == Some(ds_orchestrator::OffBallAct::Challenge) {
+                                    contest_top
+                                } else {
                                     let arrive = f64::from(BODY_RADIUS_CM);
                                     contest_top
                                         .min((2.0 * decel_s * (dist - arrive).max(0.0)).sqrt())
-                                } else {
-                                    contest_top
                                 }
                             } else {
                                 // SIM 176: a place is covered when he is
@@ -2027,10 +2049,13 @@ impl SpatialState {
                 let turning = now > 0.0
                     && wanted > 0.0
                     && v_prev.0.mul_add(wx, v_prev.1 * wy) < 0.5 * now * wanted;
+                // Speeding up, his acceleration falls as his speed nears his
+                // sprint, to nothing at it (SIM 194, the acceleration-speed
+                // profile, movement.json).
                 let limit = if turning {
                     decel_s * outcome.turn_share
                 } else if wanted > now {
-                    accel_s
+                    accel_s * (1.0 - now / sprint_s.max(1e-9)).max(0.0)
                 } else {
                     decel_s
                 };
@@ -2960,19 +2985,38 @@ mod tests {
         let mut s = make_state();
         s.set_ball_in_flight((3000, 3400, 0), (60, 0, 0));
         let fast = s
-            .intercept((4000, 2400), (0.0, 5.0, 90.0), 0.0)
+            .intercept((4000, 2400), ((0.0, 0.0), 5.0, 90.0), 0.0)
             .expect("rolling");
         let slow = s
-            .intercept((4000, 2400), (0.0, 2.0, 40.0), 0.0)
+            .intercept((4000, 2400), ((0.0, 0.0), 2.0, 40.0), 0.0)
             .expect("rolling");
         assert!(fast.0 > 3000 && slow.0 > fast.0, "{fast:?} {slow:?}");
         // In the air (SIM_VERSION 111): met where it comes down within his
         // height, ahead of where it is now, not chased.
         s.set_ball_in_flight((3000, 3400, 0), (60, 0, 50));
         let lofted = s
-            .intercept((4000, 2400), (0.0, 5.0, 90.0), 0.0)
+            .intercept((4000, 2400), ((0.0, 0.0), 5.0, 90.0), 0.0)
             .expect("met on its path");
         assert!(lofted.0 > 3000, "{lofted:?}");
+    }
+
+    /// Twin test (SIM 194): his speed helps him only the way he is running.
+    /// Running away from the path he meets the ball where a man standing
+    /// still would; running towards it, sooner.
+    #[test]
+    fn a_man_running_away_meets_the_ball_no_sooner_than_one_standing() {
+        let mut s = make_state();
+        s.set_ball_in_flight((3000, 3400, 0), (60, 0, 0));
+        let still = s.intercept((4000, 2400), ((0.0, 0.0), 3.0, 80.0), 0.0);
+        let away = s.intercept((4000, 2400), ((0.0, -60.0), 3.0, 80.0), 0.0);
+        let toward = s.intercept((4000, 2400), ((0.0, 60.0), 3.0, 80.0), 0.0);
+        let (still, away, toward) = (
+            still.expect("met"),
+            away.expect("met"),
+            toward.expect("met"),
+        );
+        assert_eq!(away, still);
+        assert!(toward.0 < still.0, "{toward:?} {still:?}");
     }
 
     #[test]

@@ -8,6 +8,12 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 194 — Il corpo e l'errore (DD-53/ADR-111)
+
+Il 193 è riservato al branch `sim-193-law7-stoppage` (recupero dalla Legge 7), non su main. L'intercetto conta la velocità solo verso il punto (un portiere che scivolava lungo la linea sceglieva un punto che non raggiungeva). L'accelerazione segue il profilo accelerazione-velocità misurato in partita (Alonso-Callejo et al. 2022): 7.2-9.6 m/s² da fermo, che cala in modo lineare fino a zero alla velocità di punta; prima 2.5-5 m/s² costanti, soglie GPS e non capacità. Chi corre a un punto frena per arrivarci (prima il pressatore superava l'uomo e tornava, 11 m per parte); il tackle entra a velocità. Il passatore sa che il lancio va lungo del proprio errore (`resolve_pass`) e non lancia nella sua porta. Legge 12: la chiara occasione negata in area, rigore, tentando il pallone, è giallo.
+
+Con LUNA: dito = velocità, palla, porta alle spalle; luna = un giocatore conosce il proprio corpo e il proprio piede. Gemelli `a_man_running_away_meets_the_ball_no_sooner_than_one_standing`, chiara occasione in area in `card_for`. Golden rigenerati; semi 90/44/42, knock 109. ds-reference 42..101: 4 su 22 (main 192: 6); autogol 1.95 → 1.05, fuorigioco 9.98, duelli aerei 16.6, gol 9.2; falli 35.2, rossi 0.93, gialli 1.38 fuori.
+
 ## 192 — Sul passaggio ognuno legge il gioco che arriva (DD-52/ADR-110)
 
 Sul passaggio in viaggio chi vede l'uomo a cui va legge il gioco che arriva: i difensori accorciano, marcano, coprono; i compagni si smarcano o attaccano la profondità; chi va sulla palla ci va prima. La memoria dello sguardo tiene la corsa vista e chi ricorda un uomo lo immagina proseguire (per trust_ticks); l'ultima linea durante il passaggio è letta dove la portano i difensori. Corretto OFFSIDE_PERCEPTION_ERROR_CM 2000 → 200 (il commento diceva ~2 m).

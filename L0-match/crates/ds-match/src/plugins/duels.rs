@@ -101,7 +101,7 @@ impl MatchState {
                 slide: tackle == ds_calculator::duel::TackleKind::Slide,
                 from_behind,
                 approach_milli: approach * 1000 / duel.speed_ref_cm_per_tick.max(1),
-                denies_obvious_chance: false,
+                denial: crate::rules::Denial::No,
             };
             self.apply_foul(
                 ctx,
@@ -173,7 +173,7 @@ impl MatchState {
                 slide: false,
                 from_behind,
                 approach_milli: approach * 1000 / duel.speed_ref_cm_per_tick.max(1),
-                denies_obvious_chance: false,
+                denial: crate::rules::Denial::No,
             };
             self.apply_foul(
                 ctx,

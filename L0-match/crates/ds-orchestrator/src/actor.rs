@@ -103,6 +103,8 @@ impl Actor {
                 k.miss_reckoned(finishing, left.max(right), reading),
             )
         };
+        // His own pass's miss, as for his shot (SIM 194).
+        let pass_miss = own_pass_miss(hidden, self.player, scene.ball_foot);
         // What he reckons of his teammates' reception (ADR-058): their
         // first touch, which he knows from playing with them, and the
         // difficulty, as well as he reads the game.
@@ -114,6 +116,7 @@ impl Actor {
         } else {
             scene.shift = None;
         }
+        scene.reception.pass_miss_rad = pass_miss;
         scene.reception.reading = hidden
             .custodian(self.player)
             .value(ds_calculator::Characteristic::GameReading);
@@ -127,6 +130,9 @@ impl Actor {
         // well and a good reader of the game see him nearly as he is; a
         // stranger, or a poor reader, as an average man. The same trust
         // as the runner's pace (SIM 179): intesa times game reading.
+        // How far he believes each mate reaches a ball passing him (SIM 194).
+        let reaches = believed_reaches(hidden, &scene);
+        scene.reception.ball_reach.extend(reaches);
         let reading = scene.reception.reading;
         let trust = |id: &PlayerId| {
             scene
@@ -220,6 +226,57 @@ impl Actor {
         };
         (clear.0 > control).then_some(clear.1)
     }
+}
+
+/// The base of his own pass's miss as he reckons it, radians (SIM 194, as
+/// for his shot): his passing and the foot the ball is on (in front of him,
+/// the better one), as well as he reads the game.
+fn own_pass_miss(hidden: &mut GroundTruth, player: PlayerId, foot: Option<crate::Side>) -> f64 {
+    let mut custodian = hidden.custodian(player);
+    let reading = custodian.value(ds_calculator::Characteristic::GameReading);
+    let left = custodian.value(ds_calculator::Characteristic::LeftFoot);
+    let right = custodian.value(ds_calculator::Characteristic::RightFoot);
+    let passing = f64::from(hidden.latents_for(player).technical.passing);
+    let now = match foot {
+        Some(crate::Side::Left) => left,
+        Some(crate::Side::Right) => right,
+        None => left.max(right),
+    };
+    hidden.kick_balance().miss_reckoned(passing, now, reading)
+}
+
+/// How far from his feet he believes each teammate reaches a ball passing
+/// him, cm (SIM 194): the control radius by the reactivity he believes of
+/// him, trusted as far as their intesa and his reading go (SIM 190).
+fn believed_reaches(
+    hidden: &mut GroundTruth,
+    scene: &crate::read::PerceivedScene,
+) -> Vec<(PlayerId, f64)> {
+    if scene.reception.control_radius_cm <= 0.0 {
+        return Vec::new();
+    }
+    #[allow(clippy::cast_possible_truncation)] // cm
+    let radius = scene.reception.control_radius_cm.round() as i32;
+    scene
+        .teammates
+        .iter()
+        .map(|id| {
+            let trust = scene
+                .reception
+                .intesa
+                .get(id)
+                .copied()
+                .unwrap_or(0.0)
+                .clamp(0.0, 1.0)
+                * scene.reception.reading;
+            #[allow(clippy::cast_possible_truncation)] // a belief in [0, 1]
+            let reactivity =
+                believed_of_mate(trust, hidden.latents_for(*id).physical.reactivity) as f32;
+            #[allow(clippy::cast_precision_loss)] // cm
+            let reach = hidden.offball_balance().ball_reach_cm(radius, reactivity) as f64;
+            (*id, reach)
+        })
+        .collect()
 }
 
 /// What a player believes of a teammate's latent (SIM 190): the truth as
