@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `5ea84fe` - "feat(sim-194): the body and the miss (DD-53)"
+**Last commit verified:** `0739039` - "docs(structure): list ADR-111"
 
 ## Mandato attivo (2026-11-16)
 
