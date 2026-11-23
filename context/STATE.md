@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `7285292` - "refactor: the engine no longer carries the commentary (code audit B5)"die" say what the code does (code audit F, third pass)"
+**Last commit verified:** `3160088` - "docs: the plugin phases, the stats and ds-demo as they are (code audit B7, B9, B10)"die" say what the code does (code audit F, third pass)"
 
 ## Mandato attivo (2026-11-16)
 
