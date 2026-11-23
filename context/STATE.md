@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `2a85ce3` - "refactor: three formulas join the calculator (code audit B3, part)"die" say what the code does (code audit F, third pass)"
+**Last commit verified:** `a08ee85` - "refactor: numbers of the code into the balance (code audit C5, part)"die" say what the code does (code audit F, third pass)"
 
 ## Mandato attivo (2026-11-16)
 
