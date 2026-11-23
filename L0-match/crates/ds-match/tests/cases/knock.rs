@@ -55,7 +55,8 @@ fn a_knocked_man_leaves_the_pitch() {
         );
     }
     // The same seed, the same matches: the record has no die in it.
-    let again = simulate_from_seed_recorded(&m, seed, MatchConfig::default()).0;
+    // The engine again, past the suite's cache (2026-11-23).
+    let again = ::ds_match::simulate_from_seed(&m, seed, MatchConfig::default());
     assert_eq!(again.state_hash, r.state_hash, "seed {seed}: no die");
 }
 

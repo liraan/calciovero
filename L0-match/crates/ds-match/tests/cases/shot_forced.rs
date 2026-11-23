@@ -13,7 +13,7 @@
 //! pressure, wider under more pressure).
 
 use ds_core::ids::{MatchId, PlayerId};
-use ds_orchestrator::{GroundTruth, ShotContext, ShotType};
+use ds_orchestrator::{GroundTruth, ShotContext};
 
 const fn shooter(slot: u32) -> PlayerId {
     PlayerId::new(slot, 0)
@@ -71,11 +71,6 @@ fn resolve_shot_returns_new_payload() {
         let h = 244;
         (outcome.to.1 - 3400).abs() < half_w && (0..h).contains(&outcome.to.2)
     });
-    // `shot_type` is derived, not a field of the die.
-    assert!(matches!(
-        outcome.shot_type,
-        ShotType::Power | ShotType::Placed | ShotType::Normal | ShotType::Lob | ShotType::Header
-    ));
 }
 
 #[test]

@@ -63,7 +63,9 @@ fn an_instruction_takes_effect_from_the_next_tick() {
 #[test]
 fn the_same_instructions_give_the_same_match() {
     let a = simulate_from_seed(&instructed(43, AT), 43, MatchConfig::default());
-    let b = simulate_from_seed(&instructed(43, AT), 43, MatchConfig::default());
+    // The engine again, past the suite's cache (2026-11-23): through the
+    // cache the second run was the first one's copy.
+    let b = ::ds_match::simulate_from_seed(&instructed(43, AT), 43, MatchConfig::default());
     assert_eq!(a.state_hash, b.state_hash);
     let later = simulate_from_seed(&instructed(43, AT + 600), 43, MatchConfig::default());
     assert_ne!(a.state_hash, later.state_hash);

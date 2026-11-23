@@ -255,49 +255,6 @@ mod tests {
         }
     }
 
-    /// Every `EventType` maps to a non-empty string.
-    #[test]
-    fn every_event_kind_has_a_display_string() {
-        let kinds = [
-            EventType::Shot,
-            EventType::Pass,
-            EventType::Cross,
-            EventType::Dribble,
-            EventType::KeyPass,
-            EventType::Tackle,
-            EventType::Interception,
-            EventType::Clearance,
-            EventType::Block,
-            EventType::Save,
-            EventType::Duel,
-            EventType::Foul,
-            EventType::Card,
-            EventType::Corner,
-            EventType::FreeKick,
-            EventType::Penalty,
-            EventType::Substitution,
-            EventType::Injury,
-            EventType::Goal,
-            EventType::Assist,
-            EventType::ProgressiveCarry,
-            EventType::ProgressivePass,
-            EventType::Pressure,
-            EventType::RandomEvent,
-            EventType::HalfTime,
-            EventType::FullTime,
-            EventType::MatchAbandoned,
-            EventType::ThrowIn,
-            EventType::GoalKick,
-            EventType::Woodwork,
-            EventType::Instruction,
-            EventType::WaterBreak,
-        ];
-        for kind in kinds {
-            let s = event_kind(kind);
-            assert!(!s.is_empty(), "empty display string for {kind:?}");
-        }
-    }
-
     /// Hex of a known byte slice is lowercase.
     #[test]
     fn hex_is_lowercase() {

@@ -9,8 +9,10 @@
 //! There is one key per simulation, not one per caller: recording does not
 //! change the match (asserted in `cases::tick_record`), so the recorded entry
 //! point is the only one that runs the engine. The plain entry point reads the
-//! same result and drops the records. A determinism test still calls the
-//! underlying engine directly: its second run *is* the assertion, not redundancy.
+//! same result and drops the records. A determinism test calls the engine
+//! itself, `::ds_match::simulate_from_seed`, for its second run: through
+//! the cache it would compare a result with its own copy (2026-11-23: four
+//! tests did, and could not fail).
 
 use std::collections::HashMap;
 use std::sync::{Arc, Condvar, LazyLock, Mutex, OnceLock};

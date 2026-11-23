@@ -17,7 +17,7 @@ const LATENT_NAMES: &[&str] = &[
     "passing",
     "injury_proneness",
     "goalkeeping",
-    "set_pieces",
+    "composure",
     "attacker_score",
     "defender_score",
 ];
@@ -112,6 +112,13 @@ fn match_state_does_not_call_resolve_choice() {
         include_str!("../../src/plugins/set_pieces.rs"),
         include_str!("../../src/plugins/technique.rs"),
         include_str!("../../src/plugins/thought.rs"),
+        // The rest of the engine (2026-11-23): the plugins' module, the
+        // psychology plugin and the loop were not read.
+        include_str!("../../src/plugins/mod.rs"),
+        include_str!("../../src/plugins/psychology.rs"),
+        include_str!("../../src/simulate.rs"),
+        include_str!("../../src/driver.rs"),
+        include_str!("../../src/engine.rs"),
     ];
     assert!(
         !sources.iter().any(|s| s.contains(".resolve_choice(")),

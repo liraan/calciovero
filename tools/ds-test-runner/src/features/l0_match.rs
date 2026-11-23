@@ -23,15 +23,13 @@ use ds_fixtures::match_fixture;
 /// | `DemoTeamScenario` | The demo squads are valid (11 starters, etc.) | If this fails, every other scenario fails for the wrong reason |
 /// | `SameSeedScenario` | Same seed → same state hash | The determinism contract (pillar 1) |
 /// | `DifferentSeedScenario` | Different seed → different hash | The seed is actually used, not ignored |
-/// | `SaveLoadScenario` | Save → load → same hash | The persistence contract (reconstruction from seed + command log) |
-/// | `EventChainScenario` | Every event has a cause, every timestamp ≤ 120' | The transparency contract (every event is explainable) |
-/// | `StatsSanityScenario` | Possession sums to 1, xG ≥ 0, at least one event | The statistics are not garbage |
+/// | `SaveLoadScenario` | Save → load → replay → same hash | The persistence contract (reconstruction from seed + inputs) |
+/// | `EventChainScenario` | The chain hash, recomputed from the events, verifies | The transparency contract (the events are the ones played) |
+/// | `StatsSanityScenario` | Both sides had the ball, at least one event | The statistics are not garbage |
 ///
-/// A seventh scenario would be added when L0's `DoD` grows. For example,
-/// a "replay produces the same result" scenario is covered by `SaveLoadScenario`
-/// (it calls `simulate` twice); a "golden test" scenario (1000 matches,
-/// same hash) is in `ds-match`'s own test suite, not here, because it
-/// is too slow for a `--check` run.
+/// A seventh scenario would be added when L0's `DoD` grows. A "golden
+/// test" scenario (many matches, same hash) is in `ds-match`'s own test
+/// suite, not here, because it is too slow for a `--check` run.
 ///
 /// When L1, L2, L3 are implemented, their scenarios go in
 /// `features/l1_*.rs`, `features/l2_*.rs`, `features/l3_*.rs`, and are
@@ -179,7 +177,9 @@ impl Scenario for SaveLoadScenario {
         let save = MatchSave::from_result(&r1, &match_, ctx.seed, GameInstant::from_raw(0));
         match save.to_bytes().and_then(|b| MatchSave::from_bytes(&b)) {
             Ok(loaded) => {
-                if loaded.result.state_hash == r1.state_hash {
+                // Played again from the save (2026-11-23): before, the
+                // stored hash was read back and compared with itself.
+                if ds_match::replay(&loaded).state_hash == r1.state_hash {
                     result.pass("save/load roundtrip preserves state_hash");
                 } else {
                     result.fail(
@@ -219,16 +219,12 @@ impl Scenario for EventChainScenario {
             }
         };
         let r1 = simulate(&match_, ctx.seed);
-        let mut chain_err: Option<String> = None;
-        for ev in r1.events.events() {
-            if ev.timestamp_minute > 120 {
-                chain_err = Some("event with minute > 120".to_string());
-                break;
-            }
-        }
-        if chain_err.is_none() && !r1.events.verify(r1.state_hash) {
-            chain_err = Some("chain hash does not verify".to_string());
-        }
+        // Recomputed from the events (`EventChain::verify`, 2026-11-23).
+        let chain_err: Option<String> = if r1.events.verify(r1.state_hash) {
+            None
+        } else {
+            Some("chain hash does not verify".to_string())
+        };
         match chain_err {
             None => result.pass("event chain is valid"),
             Some(reason) => result.fail("event chain is valid", reason),
@@ -260,14 +256,16 @@ impl Scenario for StatsSanityScenario {
             }
         };
         let r1 = simulate(&match_, ctx.seed);
+        // Both sides had the ball (2026-11-23: the sum of the two shares
+        // is 1 by construction, and xG was named but never read).
         let (h, a) = r1.stats.possession;
-        let stats_ok = (h + a - 1.0).abs() < 0.01 && !r1.events.is_empty();
+        let stats_ok = h > 0.0 && a > 0.0 && !r1.events.is_empty();
         if stats_ok {
             result.pass("statistics are sane");
         } else {
             result.fail(
                 "statistics are sane",
-                "possession != 1, or xG < 0, or no events",
+                "a side never had the ball, or no events",
             );
         }
         result

@@ -114,19 +114,28 @@ mod tests {
         assert!(!r.events.is_empty());
     }
 
+    /// The clock never goes back within a period (2026-11-23: replaces
+    /// "every minute is at most 120", true by the clamp that writes it).
     #[test]
-    fn all_events_are_within_120_minutes() {
+    fn the_clock_never_goes_back_within_a_period() {
         let r = &*crate::test_support::SIM42_NEW;
-        for ev in r.events.events() {
-            assert!(ev.timestamp_minute <= 120);
+        for w in r.events.events().windows(2) {
+            if w[0].half == w[1].half {
+                let t = |e: &ds_stats::MatchEvent| {
+                    u32::from(e.timestamp_minute) * 60 + u32::from(e.timestamp_second)
+                };
+                assert!(t(&w[1]) >= t(&w[0]), "{:?} after {:?}", w[1], w[0]);
+            }
         }
     }
 
+    /// Both sides have the ball (2026-11-23: replaces "the shares sum to
+    /// one", true by the subtraction that writes the second).
     #[test]
-    fn possession_sums_to_one() {
+    fn both_sides_have_the_ball() {
         let r = &*crate::test_support::SIM42_NEW;
         let (h, a) = r.stats.possession;
-        assert!((h + a - 1.0).abs() < f32::EPSILON);
+        assert!(h > 0.1 && a > 0.1, "possession {h} / {a}");
     }
 
     #[test]

@@ -27,21 +27,22 @@ fn redrawn(seed: u64, channel: Option<Channel>, channels_on: bool) -> Match {
     m
 }
 
-/// When the instruction reached the players: the tick of its fact.
+/// When the instruction reached the players: the tick of its fact, read
+/// from the tick record (2026-11-23: before, rebuilt from the event's clock
+/// with a fixed 10 ticks a second, and a second-half fact came out at the
+/// half's first tick, whatever its minute).
 fn delivered(m: &Match, seed: u64) -> Option<u64> {
-    let r = simulate_from_seed(m, seed, MatchConfig::default());
-    let tps = 10;
-    r.events
+    let (r, records) =
+        crate::ds_match::simulate_from_seed_recorded(m, seed, MatchConfig::default());
+    let at = r
+        .events
         .events()
         .iter()
-        .find(|e| e.event_type == EventType::Instruction)
-        .map(|e| {
-            let offset = u64::from(e.half.offset_minutes()) * 60;
-            (u64::from(e.timestamp_minute) * 60 + u64::from(e.timestamp_second))
-                .saturating_sub(offset)
-                * tps
-                + offset * tps
-        })
+        .position(|e| e.event_type == EventType::Instruction)?;
+    records
+        .iter()
+        .find(|rec| rec.events.contains(&at))
+        .map(|rec| rec.tick)
 }
 
 /// P1 (ADR-068): a whole new board is too much to shout. The game sends it

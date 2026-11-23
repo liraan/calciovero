@@ -2,7 +2,7 @@
 //! the catalogue (`L0-match/design/ACTIONS.md`) is in every match, in
 //! potential, so over the golden range of seeds each one shows at least
 //! once in what an observer sees: the events and the tick record. An act
-//! that never shows is a defect, unless it is in `NOT_YET` with the reason
+//! that never shows is a defect, unless it is in `UNSEEN` with the reason
 //! it cannot show today.
 
 use std::collections::BTreeSet;
@@ -36,20 +36,16 @@ const RARE: &[(&str, &str)] = &[
 /// some match (2026-11-13: ten were not always enough for the claim).
 const SEEDS: std::ops::Range<u64> = 42..56;
 
-/// Acts of the catalogue an observer cannot see yet, and why. The test
-/// fails if one of them shows: then it moves to the detectors.
-const NOT_YET: &[(&str, &str)] = &[
-    (
-        "turn",
-        "the heading changes at once for everyone (ACTIONS §1)",
-    ),
-    (
-        "stop",
-        "braking is not modelled apart from acceleration (ACTIONS §1)",
-    ),
+/// Acts of the catalogue this test has no detector for, and why. A list
+/// for the reader, not an assertion (2026-11-23): before, the test asserted
+/// that none of them was "seen", but no detector could ever produce these
+/// names, so it could not fail; and "turn" and "stop", done in the engine
+/// since SIM 86 and 78, were listed here as not modelled. They now have
+/// their detectors.
+const UNSEEN: &[(&str, &str)] = &[
     (
         "cover",
-        "the recovery run is not an act of its own (ACTIONS §4)",
+        "the recovery run is a choice of place, not an event (ACTIONS §4)",
     ),
     (
         "get set",
@@ -142,6 +138,36 @@ fn acts_seen() -> BTreeSet<&'static str> {
                 }
             }
         }
+        // Turn (ACTIONS §1, SIM 86): a man running, then running more than
+        // 60 degrees off his line a tick later. Stop (SIM 78): a man at 4
+        // m/s or more standing within two seconds.
+        let step = |a: &ds_match::AgentFrame, b: &ds_match::AgentFrame| {
+            (
+                i64::from(b.position.0 - a.position.0),
+                i64::from(b.position.1 - a.position.1),
+            )
+        };
+        let mut fast_at: std::collections::BTreeMap<ds_core::ids::PlayerId, usize> =
+            std::collections::BTreeMap::new();
+        for (k, w) in records.windows(3).enumerate() {
+            for ((a, b), c) in w[0].agents.iter().zip(&w[1].agents).zip(&w[2].agents) {
+                if a.id != b.id || b.id != c.id {
+                    continue;
+                }
+                let (u, v) = (step(a, b), step(b, c));
+                let (nu, nv) = (u.0 * u.0 + u.1 * u.1, v.0 * v.0 + v.1 * v.1);
+                // cos 60 = 1/2: dot < |u||v|/2, squared on both sides.
+                let dot = u.0 * v.0 + u.1 * v.1;
+                if nu >= 20 * 20 && nv >= 20 * 20 && (dot < 0 || 4 * dot * dot < nu * nv) {
+                    seen.insert("turn");
+                }
+                if nu >= 40 * 40 {
+                    fast_at.insert(a.id, k);
+                } else if nv <= 5 * 5 && fast_at.get(&a.id).is_some_and(|t| k - t <= 20) {
+                    seen.insert("stop");
+                }
+            }
+        }
         seen
     })
     .into_iter()
@@ -152,7 +178,8 @@ fn acts_seen() -> BTreeSet<&'static str> {
 #[test]
 // 2026-11-17: three tests in `tick_record.rs` checked Block, Clearance
 // and Dribble one by one with `in_some_match`. They were removed because
-// this test already covers them (lines 86-95), on the same seeds 42-51.
+// this test already covers them (the Block, Clearance and Dribble arms of
+// `acts_seen`), on the seeds of `SEEDS`.
 // If this test ever narrows its coverage, those three acts lose their
 // only guard: bring the dedicated tests back then.
 fn every_act_of_the_catalogue_shows() {
@@ -189,6 +216,8 @@ fn every_act_of_the_catalogue_shows() {
         "sprint",
         "tire",
         "carry",
+        "turn",
+        "stop",
     ];
     assert!(
         RARE.iter().all(|(a, _)| !expected.contains(a)),
@@ -204,13 +233,8 @@ fn every_act_of_the_catalogue_shows() {
         missing.is_empty(),
         "acts that never show in {SEEDS:?}: {missing:?}"
     );
-    let now_seen: Vec<&str> = NOT_YET
-        .iter()
-        .map(|(a, _)| *a)
-        .filter(|a| seen.contains(a))
-        .collect();
     assert!(
-        now_seen.is_empty(),
-        "declared absent but seen: {now_seen:?}"
+        UNSEEN.iter().all(|(a, _)| !expected.contains(a)),
+        "an act is both without a detector and expected"
     );
 }

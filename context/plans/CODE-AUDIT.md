@@ -68,6 +68,8 @@ Cono visivo scritto 3 volte (perception.rs); `kick_pressure` e `difficulty` con 
 
 ## E. Test che non possono fallire
 
+**Stato (2026-11-23):** chiusi. E1: i quattro test di determinismo fanno la seconda corsa con il motore vero (`::ds_match::…`), non con la cache. E2: il repertorio ha i rilevatori di "turn" e "stop" (fatti dal SIM 86 e 78); gli atti senza rilevatore sono un elenco per chi legge, non un'asserzione impossibile. E3: anti_leak legge anche plugins/mod.rs, psychology.rs, simulate.rs, driver.rs, engine.rs. E4: ds-test-runner rigioca davvero il salvataggio, la catena è ricalcolata, nessun xG nominato e non letto, un panic diventa uno scenario fallito (con il suo test). E5: tolti `2+2==4` e i quattro `version_is_not_empty`; "minuto ≤ 120" e "possesso somma a 1" sostituiti da "l'orologio non torna indietro" e "entrambe le squadre hanno la palla"; tolti il match esaustivo di viewmodel e quello di `ShotType`. In più: `channels.rs` leggeva il tick dal minuto con la convenzione sbagliata, ora dal registro dei tick.
+
 | # | Rilievo |
 |---|---|
 | E1 | **La cache della suite rende banali i test di determinismo**: `the_same_instructions_give_the_same_match`, `recording_does_not_change_the_match`, `the_same_seed_gives_the_same_frames`, il "no die" del colpo confrontano un risultato con la sua copia in cache (✔). Il commento di support/mod.rs dice il contrario. Il determinismo vero lo controllano ancora i golden e i test in engine.rs |

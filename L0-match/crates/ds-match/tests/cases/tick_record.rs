@@ -32,7 +32,10 @@ fn recorded() -> &'static (ds_match::MatchResult, Vec<TickRecord>) {
 #[test]
 fn recording_does_not_change_the_match() {
     let m = match_fixture(SEED).expect("fixture");
-    let plain = simulate_from_seed(&m, SEED, MatchConfig::default());
+    // The engine itself, not the suite's cache (2026-11-23): the cache
+    // serves the plain entry point from the recorded run, so the two were
+    // one and the same result and this could not fail.
+    let plain = ::ds_match::simulate_from_seed(&m, SEED, MatchConfig::default());
     let (with_record, _) = recorded();
     assert_eq!(plain.state_hash, with_record.state_hash);
     assert_eq!(plain.score, with_record.score);
@@ -60,9 +63,12 @@ fn one_record_per_tick_in_order() {
 
 #[test]
 fn the_same_seed_gives_the_same_frames() {
-    let (_, a) = recorded_fresh();
-    let (_, b) = recorded_fresh();
-    assert_eq!(a, b);
+    // A second, real run (2026-11-23): `recorded_fresh` goes through the
+    // suite's cache, so two calls compared a result with itself.
+    let (_, a) = recorded();
+    let m = match_fixture(SEED).expect("fixture");
+    let (_, b) = ::ds_match::simulate_from_seed_recorded(&m, SEED, MatchConfig::default());
+    assert_eq!(a, &b);
 }
 
 #[test]
