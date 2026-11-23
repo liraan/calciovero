@@ -8,6 +8,12 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 195 — La frenata con la sua fonte (DD-54)
+
+La frenata da una fonte: Harper, Morin, Carling e Kiely 2020 (Sports Biomechanics, radar, Tabella 1), decelerazione media sull'arresto dopo uno sprint di 20 m 4.45 ± 0.61 m/s²; il motore frena a ritmo costante, quindi la media dell'arresto ± due deviazioni: 3.2-5.7 m/s² (prima 3.5-6.0, spiegati senza fonte). Atleti universitari, non professionisti: dichiarato. Con la nuova frenata, al seme 42 un portatore che aveva vinto la palla lontano dai piedi, senza un tocco in corso, restava fermo 39 minuti (decide solo con la palla al piede): ora va sulla palla, come chi l'ha giocata avanti e non l'ha raggiunta; lo ha trovato il guardiano `a_carrier_with_nothing_on_does_not_stand_still`. Il colpo che costringe al cambio (`knock.json`, grado 2): dal 194 i falli arrivano più lenti e 850 non toccava nessuno in 200 partite; rifissato con lo stesso metodo, 630: semi pari 42-281 0.183 colpi nel primo tempo a partita, dispari tenuti da parte 0.150, reale 0.25. Dichiarato: i falli del motore (36) sono sopra i reali (26), la soglia si sposterà quando scendono.
+
+Con LUNA: dito = metri al secondo quadrato, il tocco, la soglia; luna = il corpo frena come quello di un atleta misurato, e chi ha la palla vicino la va a prendere. Golden rigenerati; semi coppa 88, pari al 90' 50, colpo 49. ds-reference 42..101: 4 su 22 (come il 194: rigori, duelli a terra, dribbling, rinvii); gol 9.28, autogol 1.25, falli 35.9, rossi 0.98, gialli 1.70, fuorigioco 10.55.
+
 ## 194 — Il corpo e l'errore (DD-53/ADR-111)
 
 Il 193 è riservato al branch `sim-193-law7-stoppage` (recupero dalla Legge 7), non su main. L'intercetto conta la velocità solo verso il punto (un portiere che scivolava lungo la linea sceglieva un punto che non raggiungeva). L'accelerazione segue il profilo accelerazione-velocità misurato in partita (Alonso-Callejo et al. 2022): 7.2-9.6 m/s² da fermo, che cala in modo lineare fino a zero alla velocità di punta; prima 2.5-5 m/s² costanti, soglie GPS e non capacità. Chi corre a un punto frena per arrivarci (prima il pressatore superava l'uomo e tornava, 11 m per parte); il tackle entra a velocità. Il passatore sa che il lancio va lungo del proprio errore (`resolve_pass`) e non lancia nella sua porta. Legge 12: la chiara occasione negata in area, rigore, tentando il pallone, è giallo.

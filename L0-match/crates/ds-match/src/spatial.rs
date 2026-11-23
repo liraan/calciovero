@@ -1738,7 +1738,12 @@ impl SpatialState {
         let overdue = self
             .touch
             .as_ref()
-            .is_some_and(|tc| tick.saturating_sub(tc.at) as f64 >= tc.period);
+            .is_some_and(|tc| tick.saturating_sub(tc.at) as f64 >= tc.period)
+            // SIM 195: a ball he has won away from his feet, with no touch on
+            // its way (a challenge won where the contact was): he goes to it.
+            // Before, he stood there and never decided, as he decides only
+            // with the ball at his foot (seed 42: 39 minutes).
+            || (self.touch.is_none() && self.carrier.is_some() && !self.ball_at_feet());
         // The ball he played ahead (SIM 151, pure error 2b): where it will be
         // when he meets it again, and in how many ticks. He runs there to
         // arrive with it, not past it.

@@ -18,9 +18,9 @@ const N: u64 = 10;
 /// First seed of the range.
 const SEED_START: u64 = 42;
 
-/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 194.
+/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 195.
 /// Regenerate when `SIM_VERSION` changes.
-const EXPECTED: &str = "7a97b4572303d2b2a2b61f445a154f1bff56b3d4b272fb34384e8e42289fd730ea4e3a45834be88a7701eb67cadcfea591ced03b6542efcba0396a76a8c41519bd3e889ee01de412104eb6bfa08a45064203822c31082d3dafae2e416d961d8aeb901c4048379bc2de9c9847c68300623c33fab2633d0467afb6dd2978c50d42b831e1b4d9c4e214ed996173ecda5fc21671bfc3bac1bd40990978bd23ac160f52decbe1a1c8e22f6ef39a0fb9d30ee761a4fcc8d67f1a31175755fa15ebae1071cbef9a226649452efadd1f449c3952017a7dcaeaf423c558104a35d9844e953e26d98b59f1717b1cf7a05b4108f639abc80c4c8f3fd02e3a47a55d0bd36d1827205e80463fac9d7871f42cc8c763b0736ee1ae6ba0b8cedbafb0db8220ee4397a359b03af2c194608e1e62eb9d7a4d0fef4d08f9b8a47aa637a331c197ec22";
+const EXPECTED: &str = "888ec96124e1042e4e2fbf762989116fc81659822affe12b37ff13c548b2072219e40894fcea3253a077af370912bc12b1462b0a9f58d914841787fd16a416b1fac3eb0299820bd451b3ed055e40726cd42169724afad06de060860d6a0fd443068477895fd85c5fb0ba08c5b4bc4861f70b522b744717cab29d1eb02514f68d6705099eb3f74e8a9f33e08e2713cea1e99e7016f1dc963944e6cfeba4c08b3eccc2400cfbcb210ef8e72a9f6eccf85337c5b95c8eb9db1e0b863514ede2494e7363e5e26832c969107541c7566eea42aa13bcb1b98ae0d26175d02194dcc2cc45321b189a60eb2563538b9b76eb6789cff51d41f4efbb4ea214d1fc7ee4ded5780370dc8ffb9d9cfa946c72080b4de5f2900c405278ee452de51bdd03172ec7a481e6b2a9969652ca5642f9d68c814d0948a5ea3b3d4c66eebf631feaf9f558";
 
 #[test]
 fn golden_l0_is_deterministic() {
@@ -48,7 +48,7 @@ fn golden_l0_is_deterministic() {
 /// The expected hash with a fixed instruction stream (ADR-059): the home
 /// coach asks for a high, wide block at the 30th minute, the away coach for
 /// a low, narrow one at the 60th. Regenerate when `SIM_VERSION` changes.
-const EXPECTED_INSTRUCTED: &str = "bde69a843f7d3087dca5799ddc123a48f3701ffbdab5ad24a2ec9a1142621c2d254aaedd538ccc7aa2b6f39fca1fd66de41bcbe59972bb903ef216061d038423b84de86d896dfdf47a241d593e957f48af5438018146f9dc7b5391d12d18b76b354a04de3abb8dfd639c8c6696d1482f83443371383c4379ee12c5b33ef2bba8d3b014d013aef2d1a924fc2ac1a4682764c5bf7f7a105819e3243c60fb3009b2dea51b71a1f52d84f0c4987613eeaa4cfe3789975b0308acc1a4ab7ac4384e2b37678b808a85dccb809c9c13258771a63ae651602d02efcbff88ee273b0994c3362654fa51a9fa1c48b2c2c9bf3487ec348afa41069cd8f73c0437e6fe206e878c5209f10fe01f3674d952199aaa01909be1755ad7195fe47ba034a2149e5439987e640e3b0221f981ab76c2ecbb4eb74b50ed02d13eee8532c8f7dc03690f1c";
+const EXPECTED_INSTRUCTED: &str = "df30188076174ed37d06d88cec9fc428e4ad345fb15f60f25aa661460a5d1388b16b5177c3b679f3ee6060c36a4b2fcc1a539e7b9acc00f873b4f4408fd9e7dbca33786ddad23cae1268cefe127142f96a69e881b8d34495b7079d03dfdf5d254d74e7b416abd94c48c1175c206d277928355caec541d9628c2e49d32223c90de825f3468fa9e9b7d955bb964a05ffde929cf44a20d2e1dfb1891dd0e7bc0525f08808afabe1989177c294259f8b332309f4347d33e49531d3628757e0f89fbfdf6b01e6b03452ecc20e0de4e43c9b3865c76c0b801cb5ef3619f2a7c53af4d3ad19494b7e4694f2fe0de8dd285f7138a1a21069712fd40b4e8229c87ce20952f8965935d04454f82bb8ed228d6942f18aceccc57e31a36cb31e29482268df503bddd549585f4b1d0f1784054324314a60a49efcae782bcc56e21c16028f6e21";
 
 #[test]
 fn golden_l0_with_instructions_is_deterministic() {
@@ -83,8 +83,8 @@ fn golden_l0_with_instructions_is_deterministic() {
 /// The expected hash of a cup match that goes to extra time and to
 /// penalties (Laws 7 and 10, plan L0-CLOSE 10h): the first seed from 42
 /// whose cup match is level after 120 minutes, decided by the shoot-out;
-/// the seed is part of what is hashed. SIM 194.
-const EXPECTED_CUP: &str = "90:48046748d79497209bf430ae8948454d7d5ea0e2c793a63925d66cc89d5a8249";
+/// the seed is part of what is hashed. SIM 195.
+const EXPECTED_CUP: &str = "88:f2286abd44865df346d8197faa3981312046875bfb321bbc6ba4b3c56e7fbe9c";
 
 fn play_cup(seed: u64) -> ds_match::MatchResult {
     let mut m = match_fixture(seed).expect("fixture");
