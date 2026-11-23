@@ -1,7 +1,6 @@
 //! The `MatchEngine` trait and the text implementation.
 
 use crate::context::MatchContext;
-use crate::narrative::{NarrativeEntry, narrate};
 use crate::result::MatchResult;
 use crate::simulate::simulate_match;
 
@@ -38,10 +37,7 @@ impl Default for TextMatchEngine {
 
 impl MatchEngine for TextMatchEngine {
     fn simulate(&mut self, mut ctx: MatchContext<'_>) -> MatchResult {
-        let mut result = simulate_match(&mut ctx);
-        let narrative: Vec<NarrativeEntry> = narrate(ctx.match_, &result.events);
-        result.narrative = narrative;
-        result
+        simulate_match(&mut ctx)
     }
 }
 
@@ -157,29 +153,6 @@ mod tests {
                 "seed {seed}: {goals} goals, the match ran away"
             );
         });
-    }
-
-    #[test]
-    fn text_engine_fills_narrative() {
-        let r = &*crate::test_support::SIM42_NEW;
-        assert_eq!(r.narrative.len(), r.events.len());
-    }
-
-    #[test]
-    fn simulate_match_alone_returns_empty_narrative() {
-        use crate::simulate::simulate_match;
-        let match_ = make_match();
-        let mut hidden = GroundTruth::new(42, match_.id);
-        let mut chain = EventChain::new();
-        let config = MatchConfig::default();
-        let mut ctx = MatchContext {
-            match_: &match_,
-            hidden: &mut hidden,
-            chain: &mut chain,
-            config,
-        };
-        let result = simulate_match(&mut ctx);
-        assert_eq!(result.narrative.len(), 0);
     }
 
     #[test]

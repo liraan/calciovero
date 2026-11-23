@@ -18,8 +18,9 @@
 
 use std::fmt::Write as _;
 
+use crate::narration::{NarratedTick, NarrativeEntry};
 use ds_core::ids::PlayerId;
-use ds_match::{BallState, NarratedTick, NarrativeEntry};
+use ds_match::BallState;
 
 /// The size of the drawn pitch, in characters, and of the real one.
 #[derive(Debug, Clone, Copy)]
@@ -367,7 +368,7 @@ mod tests {
                 let (m, result, records) = &*crate::test_support::SEED_42;
                 (
                     result.events.len(),
-                    ds_match::narrate_ticks(m, &result.events, records.clone()),
+                    crate::narration::narrate_ticks(m, &result.events, records.clone()),
                 )
             });
         NARRATED.clone()

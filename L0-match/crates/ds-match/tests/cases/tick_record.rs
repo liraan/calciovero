@@ -40,7 +40,6 @@ fn recording_does_not_change_the_match() {
     assert_eq!(plain.state_hash, with_record.state_hash);
     assert_eq!(plain.score, with_record.score);
     assert_eq!(plain.events.len(), with_record.events.len());
-    assert_eq!(plain.narrative.len(), with_record.narrative.len());
 }
 
 #[test]
@@ -128,18 +127,6 @@ fn the_clock_reads_as_a_broadcast() {
         .find(|r| r.half == ds_stats::Half::Second)
         .expect("a second half");
     assert_eq!(second.clock(), (45, 0), "the second half starts at 45'");
-}
-
-#[test]
-fn every_event_is_narrated_in_exactly_one_tick() {
-    let m = match_fixture(SEED).expect("fixture");
-    let (result, records) = simulate_from_seed_recorded(&m, SEED, MatchConfig::default());
-    let narrated = ds_match::narrate_ticks(&m, &result.events, records);
-    let entries: Vec<_> = narrated.iter().flat_map(|t| t.entries.iter()).collect();
-    assert_eq!(entries.len(), result.events.len());
-    for (entry, event) in entries.iter().zip(result.events.events()) {
-        assert_eq!(entry.event_id, event.event_id, "same order as the chain");
-    }
 }
 
 /// Law 8 (P1): at kick-off a player of the side that kicks off is on the

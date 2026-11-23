@@ -73,7 +73,11 @@ use crate::result::MatchResult;
 ///
 /// v2 -> v3 (2026-11-16, ADR-065): the optional packed tick record
 /// (`record`). A v2 save loads unchanged, with no record; no migration.
-pub const SCHEMA_VERSION: u32 = 3;
+///
+/// v3 -> v4 (2026-11-23, code audit B5): `MatchResult.narrative` removed; the
+/// commentary is read from the events (`ds_narrative::narrate`). A v3 save
+/// loads unchanged: its `narrative` is an unknown field, ignored.
+pub const SCHEMA_VERSION: u32 = 4;
 
 /// The current simulation version.
 ///
@@ -369,14 +373,5 @@ mod tests {
         assert_eq!(replayed.state_hash, result.state_hash);
         assert_eq!(replayed.score, result.score);
         assert_eq!(replayed.stats, result.stats);
-    }
-
-    #[test]
-    fn replay_fills_narrative() {
-        // `simulate_match` alone returns an empty narrative (it is a
-        // renderer concern). `replay` uses `TextMatchEngine`, which fills
-        // the narrative. So the replayed result has a narrative.
-        let replayed = &*crate::test_support::REPLAY42;
-        assert_eq!(replayed.narrative.len(), replayed.events.len());
     }
 }

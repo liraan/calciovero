@@ -12,8 +12,9 @@ use std::time::Duration;
 
 use ds_core::ids::PlayerId;
 use ds_demo::friendly::{self, Choices};
+use ds_demo::narration::{Importance, NarratedTick};
+use ds_match::MatchConfig;
 use ds_match::balance::LawsBalance;
-use ds_match::{Importance, MatchConfig, NarratedTick};
 use ds_model::{BlockHeight, Width};
 use eframe::egui::{self, Align2, FontId, Painter, Pos2, RichText, Sense, Shape, Stroke};
 use rodio::source::SineWave;
@@ -253,7 +254,7 @@ impl App {
                     result.events.events(),
                     i32::from(m.pitch.length_m) * 100,
                 );
-                let ticks = ds_match::narrate_ticks(&m, &result.events, records);
+                let ticks = ds_demo::narration::narrate_ticks(&m, &result.events, records);
                 let names = m
                     .home
                     .players

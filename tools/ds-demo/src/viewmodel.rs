@@ -10,7 +10,8 @@
 //! pitch model. The test at the bottom of this file checks it mechanically
 //! by scanning its own source with `include_str!`.
 
-use ds_match::{Importance, MatchResult, NarrativeEntry};
+use ds_demo::narration::{Importance, NarrativeEntry};
+use ds_match::MatchResult;
 use ds_stats::{EventType, MatchEvent};
 use serde::Serialize;
 
@@ -95,7 +96,7 @@ impl MatchViewModel {
     /// - a narrative entry `X shoots in the N'` immediately followed by
     ///   `GOAL! X scores in the N'` is suppressed for the same reason.
     #[must_use]
-    pub fn from_result(result: &MatchResult) -> Self {
+    pub fn from_result(result: &MatchResult, narrative: &[NarrativeEntry]) -> Self {
         let events: Vec<EventRow> = result
             .events
             .events()
@@ -103,7 +104,7 @@ impl MatchViewModel {
             .filter(|e| !is_goal_shot(e))
             .map(event_row)
             .collect();
-        let narrative: Vec<NarrativeRow> = result.narrative.iter().map(narrative_row).collect();
+        let narrative: Vec<NarrativeRow> = narrative.iter().map(narrative_row).collect();
         Self {
             score: (result.score.home, result.score.away),
             possession_pct: (

@@ -883,6 +883,7 @@ dependencies = [
  "ds-fixtures",
  "ds-match",
  "ds-model",
+ "ds-narrative",
  "ds-stats",
  "serde",
  "serde_json",

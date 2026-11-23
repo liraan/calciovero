@@ -3,6 +3,7 @@
 //! ADR-055). Both read Plane B only (ADR-022 §3).
 
 pub mod friendly;
+pub mod narration;
 pub mod pitchview;
 
 #[cfg(test)]

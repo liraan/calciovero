@@ -31,7 +31,6 @@ pub mod context;
 pub mod driver;
 pub mod engine;
 mod fact;
-pub mod narrative;
 pub mod perception;
 pub mod plugins;
 pub mod record;
@@ -51,7 +50,6 @@ pub(crate) mod test_support;
 pub use context::{MatchConfig, MatchContext};
 pub use driver::{simulate_from_seed, simulate_from_seed_recorded};
 pub use engine::{MatchEngine, TextMatchEngine};
-pub use narrative::{Importance, NarratedTick, NarrativeEntry, narrate, narrate_ticks};
 pub use perception::{
     Neighbour, distance_squared, nearest_opponents, nearest_teammates, nearest_to_point,
 };

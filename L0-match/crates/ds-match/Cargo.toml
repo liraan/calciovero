@@ -15,7 +15,6 @@ ds-model.workspace = true
 ds-orchestrator.workspace = true
 ds-calculator.workspace = true
 ds-match-api.workspace = true
-ds-narrative.workspace = true
 ds-stats.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -26,4 +25,7 @@ thiserror.workspace = true
 workspace = true
 
 [dev-dependencies]
+# The tests of the facts the commentary reads (narrative_fields): a reader
+# of the events, not a dependency of the engine (code audit B5).
+ds-narrative.workspace = true
 ds-fixtures.workspace = true

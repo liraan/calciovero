@@ -12,14 +12,15 @@
 
 use std::fmt::Write as _;
 
-use ds_match::{MatchResult, NarrativeEntry};
+use ds_demo::narration::NarrativeEntry;
+use ds_match::MatchResult;
 
 /// Prints the match result as human-readable text.
 ///
 /// # Errors
 ///
 /// Never fails: returns `Ok(())` for symmetry with the other renderers.
-pub fn print_text(result: &MatchResult) -> std::fmt::Result {
+pub fn print_text(result: &MatchResult, narrative: &[NarrativeEntry]) -> std::fmt::Result {
     let mut out = String::new();
 
     writeln!(out, "=== MATCH RESULT ===")?;
@@ -43,7 +44,7 @@ pub fn print_text(result: &MatchResult) -> std::fmt::Result {
     writeln!(out, "State hash: {}", hex(result.state_hash.as_bytes()))?;
     writeln!(out)?;
     writeln!(out, "=== NARRATIVE ===")?;
-    for entry in &result.narrative {
+    for entry in narrative {
         writeln!(out, "{}", format_narrative(entry))?;
     }
 
@@ -123,7 +124,11 @@ fn sanitize_output_path(path: &str) -> std::io::Result<std::path::PathBuf> {
     }
     Ok(canon_parent.join(file_name))
 }
-pub fn write_html(result: &MatchResult, path: &str) -> std::io::Result<()> {
+pub fn write_html(
+    result: &MatchResult,
+    narrative: &[NarrativeEntry],
+    path: &str,
+) -> std::io::Result<()> {
     let mut html = String::new();
     html.push_str("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\">");
     html.push_str("<title>Calcio Vero - Deep Simulator: match</title>");
@@ -166,7 +171,7 @@ pub fn write_html(result: &MatchResult, path: &str) -> std::io::Result<()> {
     );
     html.push_str("</table>");
     html.push_str("<h2>Narrative</h2><ul class=\"narrative\">");
-    for entry in &result.narrative {
+    for entry in narrative {
         let cls = importance_kind(entry.importance);
         let _ = write!(
             html,
@@ -231,7 +236,7 @@ mod tests {
             minute: 7,
             event_id: ds_core::ids::EventId::new(1, 0),
             text: "GOAL!".to_string(),
-            importance: ds_match::Importance::Critical,
+            importance: ds_demo::narration::Importance::Critical,
         };
         assert_eq!(format_narrative(&entry), "[  7'] GOAL!");
     }

@@ -74,7 +74,5 @@ pub fn simulate_from_seed_recorded(
         chain: &mut chain,
         config,
     };
-    let (mut result, records) = crate::simulate::simulate_match_recorded(&mut ctx);
-    result.narrative = crate::narrative::narrate(ctx.match_, &result.events);
-    (result, records)
+    crate::simulate::simulate_match_recorded(&mut ctx)
 }

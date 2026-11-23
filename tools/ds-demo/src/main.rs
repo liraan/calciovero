@@ -277,7 +277,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         std::fs::write(path, save.to_bytes()?)?;
         eprintln!("match saved to {path}");
     }
-    print_result(&result, &args)?;
+    print_result(&result, &match_, &args)?;
     if args.why {
         print!(
             "{}",
@@ -303,7 +303,7 @@ fn run_load(path: &str, args: &Args) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     let result = ds_match::replay(&save);
-    print_result(&result, args)?;
+    print_result(&result, &save.match_, args)?;
     if result.state_hash == save.result.state_hash {
         eprintln!("replayed: the same match, to the last event");
     } else {
@@ -320,25 +320,28 @@ fn run_load(path: &str, args: &Args) -> Result<(), Box<dyn std::error::Error>> {
 
 fn print_result(
     result: &ds_match::MatchResult,
+    match_: &ds_model::Match,
     args: &Args,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if args.quiet {
         println!("{} - {}", result.score.home, result.score.away);
         return Ok(());
     }
+    // The commentary reads the events (code audit B5: the result carried it).
+    let narrative = ds_demo::narration::narrate(match_, &result.events);
 
     match &args.output {
         Output::Board => {
-            let vm = viewmodel::MatchViewModel::from_result(result);
+            let vm = viewmodel::MatchViewModel::from_result(result, &narrative);
             board::print_board(&vm)?;
         }
         Output::Json => render::print_json(result)?,
         Output::Html(path) => {
-            render::print_text(result)?;
-            render::write_html(result, path)?;
+            render::print_text(result, &narrative)?;
+            render::write_html(result, &narrative, path)?;
             eprintln!("HTML written to {path}");
         }
-        _ => render::print_text(result)?,
+        _ => render::print_text(result, &narrative)?,
     }
 
     Ok(())
@@ -356,7 +359,7 @@ fn run_tui(
     let config = MatchConfig::default();
     let tps = u32::from(config.ticks_per_second).max(1);
     let (result, records) = ds_match::simulate_from_seed_recorded(match_, seed, config);
-    let ticks = ds_match::narrate_ticks(match_, &result.events, records);
+    let ticks = ds_demo::narration::narrate_ticks(match_, &result.events, records);
     let rows = (t.cols * 3 / 10).max(10);
     let view = pitchview::PitchView::new(t.cols, rows, match_.pitch.length_m, match_.pitch.width_m);
     let index_of_minute = |min: u32| -> usize {
@@ -451,8 +454,9 @@ mod tests {
 
     #[test]
     fn rendering_a_result_does_not_panic() {
-        let (_, result, _) = &*crate::test_support::SEED_42;
-        let _ = render::print_text(result);
+        let (m, result, _) = &*crate::test_support::SEED_42;
+        let narrative = ds_demo::narration::narrate(m, &result.events);
+        let _ = render::print_text(result, &narrative);
         let _ = render::print_json(result);
     }
 

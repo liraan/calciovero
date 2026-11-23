@@ -4,8 +4,6 @@ use ds_core::hash::Hash;
 use ds_stats::EventChain;
 use serde::{Deserialize, Serialize};
 
-use crate::narrative::NarrativeEntry;
-
 /// The score of a match.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Score {
@@ -26,11 +24,10 @@ pub struct MatchStatistics {
     pub goals: (u8, u8),
 }
 
-/// The result of a match simulation.
+/// The result of a match simulation: the facts, not their telling.
 ///
-/// The `narrative` field is **data**, not a rendered string. It is filled by
-/// the **renderer** (e.g. `TextMatchEngine`), not by `simulate_match`. A
-/// renderer that does not need narrative leaves it empty.
+/// The commentary is a reader of the events, `ds_narrative::narrate` (ADR-063;
+/// code audit B5: the result carried it, and the engine depended on it).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MatchResult {
     /// The score.
@@ -44,6 +41,4 @@ pub struct MatchResult {
     pub stats: MatchStatistics,
     /// The state hash, equal to `events.chain_hash()`.
     pub state_hash: Hash,
-    /// The narrative entries. Empty if no renderer has filled them.
-    pub narrative: Vec<NarrativeEntry>,
 }

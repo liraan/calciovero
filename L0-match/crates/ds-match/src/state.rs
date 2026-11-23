@@ -1312,7 +1312,6 @@ impl MatchState {
             },
             shootout: self.shootout,
             state_hash,
-            narrative: Vec::new(),
         }
     }
 
