@@ -23,6 +23,7 @@
 //! The narrative is **deterministic**: the same events produce the same
 //! entries. No randomness, no time, no external state.
 
+pub mod why;
 use std::collections::BTreeMap;
 
 use ds_core::ids::{EventId, PlayerId};
