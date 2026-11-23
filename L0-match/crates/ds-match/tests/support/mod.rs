@@ -31,10 +31,10 @@ struct Payload {
 
 type Slot = Arc<OnceLock<Payload>>;
 
-/// The first cup tie that reaches the shoot-out under SIM 191, found once by
+/// The first cup tie that reaches the shoot-out under SIM 192, found once by
 /// the 42..142 scan (see `cases::golden_l0::cup_seed_scan`). The routine tests
 /// play this seed directly: the 75-match scan is a one-off, not a per-run cost.
-pub const CUP_SHOOTOUT_SEED: u64 = 83;
+pub const CUP_SHOOTOUT_SEED: u64 = 52;
 
 static CACHE: LazyLock<Mutex<HashMap<Key, Slot>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 

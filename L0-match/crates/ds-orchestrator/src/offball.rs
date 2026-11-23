@@ -170,6 +170,11 @@ pub struct OffBallScene {
     /// ADR-080). It is a fact of what he perceives, not an order from the
     /// engine.
     pub dead_ball: bool,
+    /// A pass is on its way (SIM 192): the `carrier` or the `with_mate` of
+    /// this scene is the man it goes to, where he meets it, as he reads the
+    /// ball's path. The ball comes first for whoever goes to it; the others
+    /// read the play that is coming.
+    pub carrier_to_come: bool,
 }
 
 /// The dangers a defender reads (ADR-052 §5), each the value of a space to
@@ -378,6 +383,21 @@ impl crate::GroundTruth {
         (act, available_at)
     }
 
+    /// Whether he gets to a ball before the nearest opponent: his own pace
+    /// (movement.json, his max speed), against the opponent at the pace he
+    /// believes.
+    fn first_to_it(&self, s: &OffBallScene, t: Target, max_speed: f32) -> bool {
+        let pace = self.top_speed_base(max_speed);
+        #[allow(clippy::cast_precision_loss)] // cm on a pitch
+        s.loose_rival_cm.is_none_or(|rival| {
+            ds_calculator::thought::ThoughtBalance::load().race(
+                t.distance_cm.max(0) as f64,
+                pace,
+                rival.max(0) as f64,
+            ) > 0.5
+        })
+    }
+
     /// The most salient act (ADR-049): hold, press, challenge, go to the
     /// ball. Ties go to holding his place.
     fn choose_act(&mut self, s: &OffBallScene) -> OffBallAct {
@@ -400,6 +420,17 @@ impl crate::GroundTruth {
             Place::Outfield => true,
             Place::Keeper { ball_in_area } => ball_in_area,
         };
+        // SIM 192: a pass on its way. Whoever goes to the ball goes first,
+        // by the same race as a loose ball; a teammate who yields it does not
+        // stand still for it, he reads the play that is coming.
+        if let (Some(t), true, true) = (s.loose_ball, may_leave, s.carrier_to_come) {
+            let yield_threshold = f64::from(self.offball_balance().intesa_yield_milli) / 1000.0;
+            let yields = t.rank >= 1 && s.partner_intesa >= yield_threshold;
+            let first = self.first_to_it(s, t, l.physical.max_speed);
+            if !yields && goes_for_loose_ball(t.rank, reading, first) {
+                return OffBallAct::GoToBall;
+            }
+        }
         if let (Some(th), Some(c)) = (s.threats, s.carrier) {
             return self.defend(s, &th, c);
         }
@@ -412,7 +443,9 @@ impl crate::GroundTruth {
         // The first aim is the ball (ADR-052 note, 2026-11-14): a ball
         // nobody has is worth more than any place, at any distance. On a
         // restart the ball is dead, so it is nobody's to run to.
-        if let (Some(t), true, false) = (s.loose_ball, may_leave, s.dead_ball) {
+        if let (Some(t), true, false, false) =
+            (s.loose_ball, may_leave, s.dead_ball, s.carrier_to_come)
+        {
             // Strato 3 (the call): a loose ball between two teammates of the
             // same side. The nearest (rank 0) always goes. A teammate who
             // knows him (intesa high enough) trusts that he will get there
@@ -428,15 +461,7 @@ impl crate::GroundTruth {
             }
             // The second one's race: his own pace (movement.json, his
             // max speed), against the nearest opponent at the pace he believes.
-            let pace = self.top_speed_base(l.physical.max_speed);
-            #[allow(clippy::cast_precision_loss)] // cm on a pitch
-            let first = s.loose_rival_cm.is_none_or(|rival| {
-                ds_calculator::thought::ThoughtBalance::load().race(
-                    t.distance_cm.max(0) as f64,
-                    pace,
-                    rival.max(0) as f64,
-                ) > 0.5
-            });
+            let first = self.first_to_it(s, t, l.physical.max_speed);
             if goes_for_loose_ball(t.rank, reading, first) {
                 return OffBallAct::GoToBall;
             }
@@ -641,6 +666,7 @@ mod tests {
             threats: None,
             partner_intesa: 0.0,
             dead_ball: false,
+            carrier_to_come: false,
         }
     }
 
@@ -1031,6 +1057,33 @@ mod tests {
         });
         assert_eq!(choose(&cover), OffBallAct::Cover);
         assert_ne!(choose(&defending(QUIET)), OffBallAct::Cover);
+    }
+
+    /// Twin test (SIM 192): the same defender, the same man the pass goes
+    /// to, 6 m from where he meets it. Before the ball arrives he already
+    /// reads the play that is coming and closes him; when he does not see
+    /// a pass coming (no carrier yet in his scene), he has only his place.
+    #[test]
+    fn on_the_pass_the_defender_steps_to_the_man_it_goes_to() {
+        let coming = OffBallScene {
+            carrier: at(600, 0),
+            threats: Some(QUIET),
+            carrier_to_come: true,
+            ..scene()
+        };
+        assert_eq!(choose(&coming), OffBallAct::Press);
+        let unseen = OffBallScene {
+            carrier: None,
+            threats: None,
+            ..coming
+        };
+        assert_eq!(choose(&unseen), OffBallAct::Hold);
+        // The ball comes first: the man the pass is in reach of goes to it.
+        let cut = OffBallScene {
+            loose_ball: at(200, 0),
+            ..coming
+        };
+        assert_eq!(choose(&cut), OffBallAct::GoToBall);
     }
 
     /// Twin test (SIM 191): the same second man, the same carrier 6 m from

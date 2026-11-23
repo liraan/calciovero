@@ -458,6 +458,7 @@ impl TeamView {
         home: bool,
         length: i32,
         carrier: Option<PlayerId>,
+        ahead_ticks: i32,
     ) -> Self {
         let forward = if home { 1 } else { -1 };
         let their_keeper = other.players.first().map(|p| p.id);
@@ -468,9 +469,17 @@ impl TeamView {
             .filter_map(|q| spatial.agent(q.id))
             .map(|a| a.position)
             .collect();
-        let last_line = outfield
+        // SIM 192: the line where it will be when the next pass can be
+        // played (`ahead_ticks`: none with the ball at a man's foot, the
+        // ball's time to its man while a pass is on its way), read from how
+        // he sees the defenders moving: a runner on a pass does not run to
+        // where the line was.
+        let last_line = other
+            .players
             .iter()
-            .map(|p| p.0 * forward)
+            .filter(|q| Some(q.id) != their_keeper)
+            .filter_map(|q| spatial.agent(q.id))
+            .map(|a| (a.position.0 + i32::from(a.velocity.0) * ahead_ticks) * forward)
             .max()
             .map(|u| u * forward);
         // Their lines as the men on this side read them: the first pressure
@@ -641,8 +650,10 @@ impl TeamView {
         // OI-98: the offside line is not read perfectly. A poor reader
         // sees it further forward (more room) than it is, so he may offer
         // beyond the real line and be caught offside. ~2 m of error at
-        // game_reading 0, none at 1.0.
-        const OFFSIDE_PERCEPTION_ERROR_CM: i32 = 2000;
+        // game_reading 0, none at 1.0. (SIM 192: the value was 2000, twenty
+        // metres, against its own comment; corrected to the two metres it
+        // declares. Still arbitrary, declared: OI-098.)
+        const OFFSIDE_PERCEPTION_ERROR_CM: i32 = 200;
         let perceived_last = self.last_line.map(|l| {
             #[allow(clippy::cast_possible_truncation)]
             let err = ((1.0 - game_reading.clamp(0.0, 1.0))
@@ -1185,11 +1196,19 @@ impl MatchState {
             .collect()
     }
 
-    /// Where `observer` believes `other` is: where he last saw him, or
-    /// nothing if he never has (OI-106).
+    /// Where `observer` believes `other` is: where he last saw him, gone
+    /// on at the run he saw for as long as a forecast is sure to him
+    /// (SIM 192: `trust_ticks`, the thought's own horizon); nothing if he
+    /// never saw him (OI-106).
     pub(crate) fn perceived(&self, observer: PlayerId, other: PlayerId) -> Option<(i32, i32)> {
         use crate::plugins::key;
-        self.perception.memory.get(key(observer), key(other))
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // ticks
+        let horizon = ds_calculator::thought::ThoughtBalance::load()
+            .trust_ticks
+            .max(0.0) as u32;
+        self.perception
+            .memory
+            .believed(key(observer), key(other), horizon)
     }
 
     /// Emits a match-boundary event (`KickOff`, `HalfTime`, `SecondHalf`,
@@ -1867,6 +1886,7 @@ mod possession_is_movement_tests {
             threats: None,
             partner_intesa: 0.0,
             dead_ball: false,
+            carrier_to_come: false,
         };
         let near = ctx.hidden.choose_off_ball(&scene(0), 0).0;
         let third = ctx.hidden.choose_off_ball(&scene(2), 0).0;

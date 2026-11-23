@@ -665,6 +665,27 @@ impl MatchState {
                 cutters.sort_by_key(|c| (c.2, c.0));
             }
         }
+        // SIM 192: the man a pass goes to and where he meets it: on the
+        // ground where his run meets its path, in the air where it comes
+        // down, else where he stands. Not on a restart: a pass from a dead
+        // ball is still a pass, but the scene is the restart's.
+        let coming: Option<(PlayerId, (i32, i32))> = if carrier.is_none() {
+            meets_pass.and_then(|r| {
+                self.meets_rolling_ball(ctx, r)
+                    .or(air_drop)
+                    .or_else(|| self.spatial.agent(r).map(|a| a.position))
+                    .map(|at| (r, at))
+            })
+        } else {
+            None
+        };
+        // How long until the pass reaches its man, ticks: the ball's way to
+        // where he meets it at its speed now (0 with the ball at a foot).
+        let ahead_ticks = coming.map_or(0, |(_, at)| {
+            let (vx, vy, _) = self.spatial.ball_velocity();
+            let speed = (i64::from(vx).pow(2) + i64::from(vy).pow(2)).isqrt().max(1);
+            i32::try_from(distance_squared(self.spatial.ball(), at).isqrt() / speed).unwrap_or(0)
+        });
         let duel = ctx.hidden.duel_balance();
         // Within a slide's reach he may go in; how is chosen at the contact
         // (ADR-042, amended).
@@ -684,7 +705,7 @@ impl MatchState {
                 .and_then(|c| self.spatial.agent(c))
                 .map(|a| a.position);
             let mut held: Vec<(PlayerId, (i32, i32))> = Vec::new();
-            let mut view = TeamView::new(&self.spatial, other, home, length, carrier);
+            let mut view = TeamView::new(&self.spatial, other, home, length, carrier, ahead_ticks);
             view.mate_carrier = carrier_mate;
             view.ours = squad
                 .players
@@ -716,6 +737,20 @@ impl MatchState {
                 let Some(me) = self.spatial.agent(id).map(|a| a.position) else {
                     continue;
                 };
+                // SIM 192: a pass on its way, read by every man who sees the
+                // one it goes to (or is him): the receiver where he meets
+                // it is the carrier to come, for both sides.
+                let sees_coming =
+                    coming.filter(|(r, _)| *r == id || self.perceived(id, *r).is_some());
+                let to_come_mate = sees_coming
+                    .filter(|(r, _)| squad.players.iter().any(|q| q.id == *r))
+                    .map(|(_, at)| at);
+                let to_come_opp = sees_coming
+                    .filter(|(r, _)| other.players.iter().any(|q| q.id == *r))
+                    .map(|(_, at)| at);
+                let carrier_to_come = to_come_mate.is_some() || to_come_opp.is_some();
+                let carrier_pos = carrier_pos.or(to_come_opp);
+                let carrier_mate = carrier_mate.or(to_come_mate);
                 // Whoever was running at a loose ball and finds an opponent
                 // with it within his reach chooses at once: the scene has
                 // changed, he does not wait for his next turn. The how —
@@ -952,7 +987,8 @@ impl MatchState {
                             rank: rank(c),
                             left: left(c),
                         }),
-                    carrier_in_reach: to_carrier.is_some_and(|d| d <= slide_reach),
+                    carrier_in_reach: !carrier_to_come
+                        && to_carrier.is_some_and(|d| d <= slide_reach),
                     with_mate: carrier_mate.map(|c| {
                         let zone = self
                             .spatial
@@ -1024,6 +1060,7 @@ impl MatchState {
                     // order to press or to hold, only what he perceives. The
                     // choice in `choose_off_ball` follows from it.
                     dead_ball: self.restart_pass.is_some(),
+                    carrier_to_come,
                 };
                 if let Some(place) = closed {
                     held.push((id, place));

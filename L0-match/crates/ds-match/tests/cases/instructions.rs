@@ -188,11 +188,24 @@ fn no_more_substitutions_than_the_laws_allow() {
     let mut m = ordered(47, AT, &[(1, 0), (2, 1), (3, 2), (4, 3), (5, 4)]);
     m.rules.subs_allowed = 3;
     let allowed = usize::from(m.rules.subs_allowed);
-    let (_, records) = simulate_from_seed_recorded(&m, 47, MatchConfig::default());
-    let bench: Vec<_> = m.home.bench.iter().map(|p| p.id).collect();
-    let last = records.last().expect("records");
-    let on = last.agents.iter().filter(|a| bench.contains(&a.id)).count();
-    assert_eq!(on, allowed, "{on} came on, {allowed} allowed");
+    let (result, _) = simulate_from_seed_recorded(&m, 47, MatchConfig::default());
+    let bench: Vec<_> = m.home.bench.iter().map(|p| p.id.slot()).collect();
+    // Counted from the substitutions told, not from who is on at the end:
+    // a man named in an order may be sent off first, and a substitute who
+    // came on may be sent off after (SIM 192, seed 47: three home reds).
+    let made = result
+        .events
+        .events()
+        .iter()
+        .filter(|e| e.event_type == EventType::Substitution)
+        .filter(|e| {
+            e.fields["in"]
+                .as_u64()
+                .is_some_and(|s| bench.iter().any(|b| u64::from(*b) == s))
+        })
+        .count();
+    assert!(made >= 1, "the orders are made");
+    assert!(made <= allowed, "{made} came on, {allowed} allowed");
 }
 
 /// P1 (ADR-059 step 3): a quick instruction and the transition choices are

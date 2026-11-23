@@ -8,6 +8,12 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 192 — Sul passaggio ognuno legge il gioco che arriva (DD-52/ADR-110)
+
+Sul passaggio in viaggio chi vede l'uomo a cui va legge il gioco che arriva: i difensori accorciano, marcano, coprono; i compagni si smarcano o attaccano la profondità; chi va sulla palla ci va prima. La memoria dello sguardo tiene la corsa vista e chi ricorda un uomo lo immagina proseguire (per trust_ticks); l'ultima linea durante il passaggio è letta dove la portano i difensori. Corretto OFFSIDE_PERCEPTION_ERROR_CM 2000 → 200 (il commento diceva ~2 m).
+
+Con LUNA: dito = la palla che viaggia e l'uomo che le va incontro; luna = ognuno decide prima che arrivi. Gemelli on_the_pass_the_defender_steps_to_the_man_it_goes_to, a_man_seen_running_is_imagined_gone_on. Golden rigenerati; semi 52/52/42. ds-reference 42..101: 6 su 22; duelli a terra in banda (172.1); fuorigioco 13.4.
+
 ## 191 — Il pericolo che lasciano i compagni più vicini (DD-51/ADR-109)
 
 In difesa pressare e marcare erano moltiplicati per un rango (1 al più vicino,

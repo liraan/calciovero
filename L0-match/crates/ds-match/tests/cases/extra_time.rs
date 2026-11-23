@@ -15,15 +15,15 @@ use ds_match::{MatchConfig, MatchResult};
 use ds_model::Match;
 use ds_stats::{EventType, Half};
 
-/// A level and a decisive friendly of the range under SIM 191, found once
+/// A level and a decisive friendly of the range under SIM 192, found once
 /// with `ds_fixtures::first_seed`. Asserted below, so a change in the engine
 /// fails here instead of silently scanning again.
-const LEVEL_AT_90_SEED: u64 = 54;
+const LEVEL_AT_90_SEED: u64 = 52;
 const DECIDED_AT_90_SEED: u64 = 42;
 
-/// A SIM 191 shoot-out whose kicks are all shots (Law 10/14), found on real
-/// matches: the golden's first shoot-out seed is the same (83).
-const SHOOTOUT_KICKS_SEED: u64 = 83;
+/// A SIM 192 shoot-out whose kicks are all shots (Law 10/14), found on real
+/// matches: the golden's first shoot-out seed is the same (52).
+const SHOOTOUT_KICKS_SEED: u64 = 52;
 
 /// The same fixture, as a cup tie: extra time is asked for.
 fn cup(seed: u64) -> Match {
