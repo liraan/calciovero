@@ -107,7 +107,9 @@ pub const CARDS: [PluginCard; 11] = [
         name: "fatigue",
         version: "1",
         phases: &[Phase::Move],
-        reads: &["velocities"],
+        // The characteristic it reads through `World::characteristic` is
+        // declared here, and `anti_leak` checks it (ADR-063 §4, ADR-112).
+        reads: &["velocities", "endurance", "condition"],
         writes: &["bodies"],
         weight: Weight::Core,
         narrative: &[],
@@ -116,9 +118,11 @@ pub const CARDS: [PluginCard; 11] = [
 
 /// The cards of the plugins that may be switched off (ADR-063 §4).
 ///
-/// In the order of `ds_match_api::OPTIONAL`. The environment and the knocks have no
-/// code yet: their cards say what they will read and write (the weather and
-/// the pitch; the force of a contact and the player's body, OI-110).
+/// In the order of `ds_match_api::OPTIONAL`. The environment has no code
+/// yet: its card says what it will read and write (the weather and the
+/// pitch). The knocks are made by the referee on the force of a contact,
+/// as the actor reads it on the body (`GroundTruth::contact_force_milli`,
+/// ADR-112), and the bench (OI-110); they cannot be switched off yet.
 pub const OPTIONAL_CARDS: [PluginCard; 3] = [
     PluginCard {
         name: "psychology",

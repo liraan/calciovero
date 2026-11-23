@@ -1256,10 +1256,87 @@ impl GroundTruth {
         self.top_speed_base(max_speed) * self.fatigue_balance.v_max_factor(fatigue)
     }
 
-    /// The player's latent characteristics (Plane A). Read-only access for match plugins.
-    #[must_use]
-    pub fn latents_for(&mut self, player: PlayerId) -> PlayerLatents {
+    /// The player's latent characteristics (Plane A), for the actor's own
+    /// readings inside this crate only (ADR-112): before, `pub`, "read-only
+    /// access for match plugins", and the engine read them raw.
+    fn latents_for(&mut self, player: PlayerId) -> PlayerLatents {
         self.vault.latents_for(player)
+    }
+
+    /// The foot he plays the ball onto when he shifts it inside: his
+    /// better one (ADR-112; before, the engine compared his two feet).
+    #[must_use]
+    pub fn strong_foot(&mut self, player: PlayerId) -> Side {
+        let t = self.latents_for(player).technical;
+        if f64::from(t.left_foot) > f64::from(t.right_foot) {
+            Side::Left
+        } else {
+            Side::Right
+        }
+    }
+
+    /// How fast `passer` believes a running mate goes (SIM 179, ADR-094):
+    /// the pace he `seen`, trusted by their `intesa` and his own game
+    /// reading, else the `generic` pace (ADR-112: the reading is his, read
+    /// here, not by the engine).
+    #[must_use]
+    pub fn believed_run_pace(
+        &mut self,
+        passer: PlayerId,
+        intesa: f64,
+        (seen, generic): (f64, f64),
+    ) -> f64 {
+        let reading = f64::from(self.latents_for(passer).cognitive.game_reading);
+        (intesa * reading).mul_add(seen - generic, generic)
+    }
+
+    /// Where `player` closes a space without the ball (ADR-071 §5), with
+    /// his own game reading in the scene (ADR-112).
+    #[must_use]
+    pub fn choose_closed_place(
+        &mut self,
+        player: PlayerId,
+        scene: &offball::ClosedPlaceScene<'_>,
+    ) -> (i32, i32) {
+        let game_reading = f64::from(self.latents_for(player).cognitive.game_reading);
+        offball::choose_closed_place(&offball::ClosedPlaceScene {
+            game_reading,
+            ..*scene
+        })
+    }
+
+    /// How far forward `player` misreads the offside line, cm (OI-98): ~2 m
+    /// at game reading 0, none at 1 (SIM 192; arbitrary, declared, OI-098).
+    /// His perception, so read here (ADR-112).
+    #[must_use]
+    pub fn offside_line_misread_cm(&mut self, player: PlayerId) -> i32 {
+        const OFFSIDE_PERCEPTION_ERROR_CM: i32 = 200;
+        let game_reading = f64::from(self.latents_for(player).cognitive.game_reading);
+        #[allow(clippy::cast_possible_truncation)]
+        let err =
+            ((1.0 - game_reading.clamp(0.0, 1.0)) * f64::from(OFFSIDE_PERCEPTION_ERROR_CM)) as i32;
+        err
+    }
+
+    /// How much of the goal a keeper of `height_cm` covers on each side
+    /// from the middle, at a free kick: his standing reach and his dive by
+    /// his explosive force (ADR-112: before, computed in the engine).
+    #[must_use]
+    pub fn wall_cover_cm(&mut self, keeper: PlayerId, height_cm: f64) -> f64 {
+        let ef = f64::from(self.latents_for(keeper).physical.explosive_force);
+        let save = self.save_balance;
+        save.standing_reach_cm(height_cm)
+            .mul_add(1.0, save.dive_max_cm * 0.5f64.mul_add(ef, 0.5))
+    }
+
+    /// The force of a foul's contact on `fouled`'s body (decision Y,
+    /// ADR-066): the approach in thousandths of the reference speed,
+    /// weighed by his proneness to injury, `approach x (0.5 + proneness)`
+    /// (ADR-112: the body is read here; the referee compares the force).
+    #[must_use]
+    pub fn contact_force_milli(&mut self, fouled: PlayerId, approach_milli: i32) -> f64 {
+        let proneness = f64::from(self.latents_for(fouled).physical.injury_proneness);
+        ds_calculator::duel::contact_force_milli(approach_milli, proneness)
     }
 }
 

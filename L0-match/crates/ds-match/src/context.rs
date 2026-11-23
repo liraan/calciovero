@@ -32,7 +32,9 @@ impl Default for MatchConfig {
 pub struct MatchContext<'a> {
     /// The match (home squad, away squad, pitch, referee, seed, rules).
     pub match_: &'a Match,
-    /// The hidden state (Plane A). Never read directly; only `resolve_*`.
+    /// The hidden state (Plane A). Never read directly: only the `resolve_*`
+    /// and the actor's readings (ADR-112), and a plugin's declared reads
+    /// through `World::characteristic`.
     pub hidden: &'a mut GroundTruth,
     /// The event chain (Plane B). Append-only.
     pub chain: &'a mut EventChain,

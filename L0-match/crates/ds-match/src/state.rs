@@ -644,22 +644,14 @@ impl TeamView {
         onside_margin_cm: i32,
         (length, width): (i32, i32),
         intesa: f64,
-        game_reading: f64,
+        line_misread_cm: i32,
     ) -> (i32, i32) {
         const PREDICT_TICKS: i32 = 5;
         // OI-98: the offside line is not read perfectly. A poor reader
         // sees it further forward (more room) than it is, so he may offer
-        // beyond the real line and be caught offside. ~2 m of error at
-        // game_reading 0, none at 1.0. (SIM 192: the value was 2000, twenty
-        // metres, against its own comment; corrected to the two metres it
-        // declares. Still arbitrary, declared: OI-098.)
-        const OFFSIDE_PERCEPTION_ERROR_CM: i32 = 200;
-        let perceived_last = self.last_line.map(|l| {
-            #[allow(clippy::cast_possible_truncation)]
-            let err = ((1.0 - game_reading.clamp(0.0, 1.0))
-                * f64::from(OFFSIDE_PERCEPTION_ERROR_CM)) as i32;
-            l + self.forward * err
-        });
+        // beyond the real line and be caught offside: how far is his own
+        // reading (`GroundTruth::offside_line_misread_cm`, ADR-112).
+        let perceived_last = self.last_line.map(|l| l + self.forward * line_misread_cm);
         let corridor = (width / 5).max(1);
         let line = (block_depth / 3).max(1);
         let goal = (self.their_goal_x, width / 2);
@@ -767,7 +759,6 @@ impl TeamView {
         &self,
         (me, anchor): ((i32, i32), (i32, i32)),
         (length, width): (i32, i32),
-        game_reading: f64,
         fatigue: f64,
     ) -> ds_orchestrator::offball::ClosedPlaceScene<'_> {
         let block = crate::balance::BlockBalance::load();
@@ -782,7 +773,8 @@ impl TeamView {
             ours: &self.ours,
             opponents: &self.opponents,
             carrier: self.carrier_at,
-            game_reading,
+            // His own, filled in by the actor (ADR-112).
+            game_reading: 0.0,
             fatigue,
         }
     }
@@ -1954,12 +1946,10 @@ mod marking_tests {
         reading: f64,
         fatigue: f64,
     ) -> (i32, i32) {
-        ds_orchestrator::offball::choose_closed_place(&v.closed_place_scene(
-            (me, anchor),
-            (PITCH_LENGTH, PITCH_WIDTH),
-            reading,
-            fatigue,
-        ))
+        ds_orchestrator::offball::choose_closed_place(&ds_orchestrator::offball::ClosedPlaceScene {
+            game_reading: reading,
+            ..v.closed_place_scene((me, anchor), (PITCH_LENGTH, PITCH_WIDTH), fatigue)
+        })
     }
 
     /// Twin test (ADR-071 §5, SIM 154, `BEHAVIOURS.md` 19 and 20): the same
@@ -2073,7 +2063,8 @@ mod marking_tests {
             50,
             (PITCH_LENGTH, PITCH_WIDTH),
             0.8,
-            0.5,
+            // The misread of a reader of 0.5 (ADR-112).
+            100,
         );
         let mut v2 = block_view(vec![me, mate], vec![carrier], carrier);
         v2.ours_vel = vec![(0, 0), (0, 400)];
@@ -2084,7 +2075,7 @@ mod marking_tests {
             50,
             (PITCH_LENGTH, PITCH_WIDTH),
             0.1,
-            0.5,
+            100,
         );
         // With intesa the prediction is active: the two results need not
         // coincide (complementarity may move him); without, the prediction
@@ -2154,7 +2145,7 @@ mod marking_tests {
                 50,
                 (PITCH_LENGTH, PITCH_WIDTH),
                 0.5,
-                0.5,
+                100,
             )
         };
         let (plain, between) = (place(&plain), place(&reading));

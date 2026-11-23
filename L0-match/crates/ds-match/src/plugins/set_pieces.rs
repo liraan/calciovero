@@ -515,16 +515,10 @@ impl MatchState {
             &ctx.match_.home
         };
         let keeper = defenders.players.first().map(|p| p.id);
-        let save = ctx.hidden.save_balance();
         let cover = keeper.map_or(0.0, |k| {
             let height = self.bodies.get(&k).map_or(0.0, |b| b.height_cm);
-            let ef = ctx
-                .hidden
-                .characteristic(k, "explosive_force")
-                .unwrap_or(0.5);
-            // The wall keeps the fused add; the standing term is the one rule.
-            save.standing_reach_cm(height)
-                .mul_add(1.0, save.dive_max_cm * 0.5f64.mul_add(ef, 0.5))
+            // The keeper's own reach and dive, read by the actor (ADR-112).
+            ctx.hidden.wall_cover_cm(k, height)
         });
         let half = f64::from(self.obstacle_balance.goal_half_width_cm);
         // The keeper at the middle covers `cover` on each side: what is left

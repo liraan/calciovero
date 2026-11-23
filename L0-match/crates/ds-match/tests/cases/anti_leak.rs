@@ -126,3 +126,68 @@ fn match_state_does_not_call_resolve_choice() {
          ds_orchestrator::Actor::decide (ADR-043, A.1-actor)"
     );
 }
+
+/// ADR-112: the engine reads no characteristic of Plane A, by name or whole.
+/// It asks the actor for his readings (`GroundTruth::strong_foot`,
+/// `believed_run_pace`, `offside_line_misread_cm`, `wall_cover_cm`,
+/// `contact_force_milli`, the `resolve_*`); a plugin reads one only through
+/// `World::characteristic`, and only what its card declares. Before, six
+/// places of the engine read raw characteristics by name and one the whole
+/// latents.
+#[test]
+fn the_engine_reads_no_characteristic_but_through_its_cards() {
+    let engine: [(&str, &str); 19] = [
+        ("state", include_str!("../../src/state.rs")),
+        ("spatial", include_str!("../../src/spatial.rs")),
+        ("simulate", include_str!("../../src/simulate.rs")),
+        ("driver", include_str!("../../src/driver.rs")),
+        ("engine", include_str!("../../src/engine.rs")),
+        ("perception", include_str!("../../src/perception.rs")),
+        ("shape", include_str!("../../src/shape.rs")),
+        ("ball", include_str!("../../src/plugins/ball.rs")),
+        ("bench", include_str!("../../src/plugins/bench.rs")),
+        ("body", include_str!("../../src/plugins/body.rs")),
+        ("duels", include_str!("../../src/plugins/duels.rs")),
+        ("fatigue", include_str!("../../src/plugins/fatigue.rs")),
+        ("keeper", include_str!("../../src/plugins/keeper.rs")),
+        (
+            "perception",
+            include_str!("../../src/plugins/perception.rs"),
+        ),
+        (
+            "psychology",
+            include_str!("../../src/plugins/psychology.rs"),
+        ),
+        ("referee", include_str!("../../src/plugins/referee.rs")),
+        (
+            "set_pieces",
+            include_str!("../../src/plugins/set_pieces.rs"),
+        ),
+        ("technique", include_str!("../../src/plugins/technique.rs")),
+        ("thought", include_str!("../../src/plugins/thought.rs")),
+    ];
+    for (name, source) in engine {
+        // The code, not its tests: a test may read what it checks.
+        let code = source.split("#[cfg(test)]").next().unwrap_or(source);
+        assert!(
+            !code.contains("latents_for("),
+            "{name}: reads the whole latents (ADR-112)"
+        );
+        let mut rest = code;
+        while let Some(at) = rest.find(".characteristic(") {
+            let before = &rest[..at];
+            let after = &rest[at + ".characteristic(".len()..];
+            assert!(
+                before.ends_with("world"),
+                "{name}: reads a characteristic outside `World` (ADR-112)"
+            );
+            let declared = ds_match::registry::card(name).reads;
+            let quoted = after.split('"').nth(1).unwrap_or("");
+            assert!(
+                declared.contains(&quoted),
+                "{name}: reads {quoted:?} but its card declares {declared:?} (ADR-063 §4)"
+            );
+            rest = after;
+        }
+    }
+}

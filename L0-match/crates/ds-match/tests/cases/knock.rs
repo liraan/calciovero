@@ -66,6 +66,7 @@ fn a_knocked_man_leaves_the_pitch() {
 fn the_same_contact_knocks_the_frailer_body() {
     let k = ds_match::balance::KnockBalance::load();
     let hard = k.knock_force_milli;
-    assert!(k.knocks(hard, 0.6) && !k.knocks(hard, 0.3));
-    assert!(!k.knocks(hard / 2, 0.6) && !k.knocks(hard / 2, 0.3));
+    let force = ds_calculator::duel::contact_force_milli;
+    assert!(k.knocks(force(hard, 0.6)) && !k.knocks(force(hard, 0.3)));
+    assert!(!k.knocks(force(hard / 2, 0.6)) && !k.knocks(force(hard / 2, 0.3)));
 }

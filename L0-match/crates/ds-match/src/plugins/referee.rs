@@ -567,12 +567,11 @@ impl MatchState {
         );
         // The knock (decision Y, ADR-066): a contact this strong on this
         // body, and the fouled man cannot go on.
-        let proneness = ctx
-            .hidden
-            .characteristic(fouled, "injury_proneness")
-            .unwrap_or(0.0);
-        let knocked = crate::balance::KnockBalance::load().knocks(facts.approach_milli, proneness)
-            && self.knocked.insert(fouled);
+        // The force on his body, read by the actor (ADR-112); the Law
+        // compares it with the threshold.
+        let force = ctx.hidden.contact_force_milli(fouled, facts.approach_milli);
+        let knocked =
+            crate::balance::KnockBalance::load().knocks(force) && self.knocked.insert(fouled);
         if knocked {
             // The man down stops play: a pause for the bench (ADR-068).
             self.pauses += 1;

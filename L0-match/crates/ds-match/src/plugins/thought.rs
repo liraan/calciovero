@@ -229,10 +229,6 @@ impl MatchState {
         // The teammates he sees attacking the depth, and where they run to
         // (plan L0-CLOSE 10a: the through ball).
         let seen = crate::perception::visible_to(&self.spatial, attacker);
-        let reading = ctx
-            .hidden
-            .characteristic(attacker, "game_reading")
-            .unwrap_or(0.5);
         let generic_pace =
             ds_calculator::thought::ThoughtBalance::load().believed_speed_cm_per_tick;
         for id in scene.teammates.iter().copied() {
@@ -254,7 +250,9 @@ impl MatchState {
                 #[allow(clippy::cast_precision_loss)] // cm/tick
                 dmath::hypot(f64::from(*vx), f64::from(*vy))
             });
-            let believed = (intesa * reading).mul_add(seen_pace - generic_pace, generic_pace);
+            let believed =
+                ctx.hidden
+                    .believed_run_pace(attacker, intesa, (seen_pace, generic_pace));
             scene.run_pace.insert(id, believed);
         }
         // SIM 190: how well he knows each mate, for what he believes of
@@ -377,21 +375,7 @@ impl MatchState {
         }
         if chosen == ChosenAction::Shift {
             // A touch inside, towards the middle, onto his better foot.
-            let strong = {
-                let left = ctx
-                    .hidden
-                    .characteristic(attacker, "left_foot")
-                    .unwrap_or(0.0);
-                let right = ctx
-                    .hidden
-                    .characteristic(attacker, "right_foot")
-                    .unwrap_or(0.0);
-                if left > right {
-                    ds_orchestrator::Side::Left
-                } else {
-                    ds_orchestrator::Side::Right
-                }
-            };
+            let strong = ctx.hidden.strong_foot(attacker);
             self.spatial.set_ball_foot(Some(strong));
             if let Some(a) = self.spatial.agent(attacker) {
                 let (x, y) = a.position;
@@ -886,15 +870,18 @@ impl MatchState {
                 // Strato 3: the same reading drives where he closes a space
                 // without the ball (ADR-071 §5, emendamento 2026-11-19) and
                 // where he offers with it. One man, one reading, two acts.
-                let game_reading = ctx.hidden.characteristic(id, "game_reading").unwrap_or(0.5);
+                // The actor fills in his own reading (ADR-112).
                 let closed = (carrier_pos.is_some() && !keeper).then(|| {
-                    ds_orchestrator::offball::choose_closed_place(&view.closed_place_scene(
-                        (me, anchor),
-                        (length, width),
-                        game_reading,
-                        self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
-                    ))
+                    ctx.hidden.choose_closed_place(
+                        id,
+                        &view.closed_place_scene(
+                            (me, anchor),
+                            (length, width),
+                            self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
+                        ),
+                    )
                 });
+                let line_misread = ctx.hidden.offside_line_misread_cm(id);
                 let partner_intesa = if ball_loose {
                     let nearest_mate = squad
                         .players
@@ -1024,7 +1011,7 @@ impl MatchState {
                                     }
                                     if n > 0 { sum / f64::from(n) } else { 0.5 }
                                 },
-                                game_reading,
+                                line_misread,
                             )
                         };
                         held.push((id, place));

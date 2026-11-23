@@ -765,11 +765,11 @@ impl KnockBalance {
         Self::default()
     }
 
-    /// Whether a contact at `approach_milli` knocks out a man of this
-    /// `injury_proneness` (no die: the same contact, the same body, the
-    /// same outcome).
+    /// Whether a contact of this force on a body
+    /// (`GroundTruth::contact_force_milli`) knocks him out (no die: the same
+    /// contact, the same body, the same outcome).
     #[must_use]
-    pub fn knocks(&self, approach_milli: i32, injury_proneness: f64) -> bool {
-        f64::from(approach_milli) * (0.5 + injury_proneness) >= f64::from(self.knock_force_milli)
+    pub fn knocks(&self, force_milli: f64) -> bool {
+        force_milli >= f64::from(self.knock_force_milli)
     }
 }

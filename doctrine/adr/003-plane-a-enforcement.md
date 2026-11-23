@@ -202,6 +202,8 @@ crates/
 - `doctrine/STRUCTURE.md` §2 — level rules
 
 ## Exception: `pcfm-debug`
+
+> **Note (2026-11-23):** the exception no longer exists in the code: `ds-test-runner` (the former `pcfm-test-runner`) does not depend on `ds-orchestrator` or `ds-db`, and builds no `GroundTruth`. The enforcement inside the engine itself is now ADR-112: the latents do not leave `ds-orchestrator`, the engine asks the actor for his readings, and a plugin reads a characteristic only through `World` and only if its card declares it. The section below is history.
 > **Note (2026-11-01):** the exception now covers **`pcfm-test-runner` only**. `pcfm-demo` no longer depends on `pcfm-hidden`: it calls `pcfm_match::simulate_from_seed(match, seed, config)`, which builds `GroundTruth`, `RngRegistry`, `EventChain` and `MatchContext` inside `pcfm-match` and returns a `MatchResult`. Plane A stays in `pcfm-match`; the demo crate never sees the type. Verified: `crates/pcfm-demo/Cargo.toml` has no `pcfm-hidden` dependency, and no `pcfm_hidden` reference in `crates/pcfm-demo/src/`. The test runner keeps the exception because it must exercise the L0 contract at the `MatchContext` level (determinism, save roundtrip, event chain), not only the `MatchResult`. **This supersedes the `pcfm-demo` part of the 2026-10-30 note below**; the `pcfm-test-runner` part still holds.
 
 

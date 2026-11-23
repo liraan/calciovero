@@ -393,6 +393,16 @@ fn milli(v: i32) -> f32 {
     f32::from(i16::try_from(v).unwrap_or(i16::MAX)) / 1000.0
 }
 
+/// The force of a foul's contact on a body (decision Y, ADR-066).
+///
+/// The approach in thousandths of the reference speed, weighed by the
+/// fouled man's proneness to injury, `approach x (0.5 + proneness)`: the
+/// formula of the knock, here with the other formulas (ADR-112).
+#[must_use]
+pub fn contact_force_milli(approach_milli: i32, injury_proneness: f64) -> f64 {
+    f64::from(approach_milli) * (0.5 + injury_proneness)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{CarrierAnswer, DuelBalance, DuelBody, TackleKind};
