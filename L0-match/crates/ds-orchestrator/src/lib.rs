@@ -877,8 +877,10 @@ impl GroundTruth {
             // kick (finishing at goal, passing to deliver) by the quality
             // of his better foot.
             let t = self.latents_for(*id).technical;
-            let foot = 0.5f32.mul_add(t.left_foot.max(t.right_foot), 0.5);
-            let quality = if penalty { t.finishing } else { t.passing } * foot;
+            let quality = ds_calculator::kick::set_piece_quality(
+                if penalty { t.finishing } else { t.passing },
+                (t.left_foot, t.right_foot),
+            );
             if best.is_none_or(|(q, _)| quality > q) {
                 best = Some((quality, *id));
             }
@@ -897,10 +899,7 @@ impl GroundTruth {
         ticks_per_s: f64,
     ) -> u64 {
         let vision = f64::from(self.latents_for(player).cognitive.vision);
-        let rate = (rate_max - rate_min).mul_add(vision, rate_min).max(0.01);
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let ticks = (ticks_per_s / rate).round() as u64;
-        ticks.max(1)
+        ds_calculator::latency::scan_interval_ticks(vision, (rate_min, rate_max), ticks_per_s)
     }
 
     /// How far ahead a player imagines, cm (plan L0-CLOSE 10b): his
@@ -908,9 +907,8 @@ impl GroundTruth {
     /// horizon (`thought.json`).
     #[must_use]
     pub fn horizon_cm(&mut self, player: PlayerId) -> f64 {
-        let t = ds_calculator::thought::ThoughtBalance::load();
         let a = f64::from(self.latents_for(player).cognitive.anticipation);
-        (t.horizon_max_cm - t.horizon_min_cm).mul_add(a, t.horizon_min_cm)
+        ds_calculator::thought::ThoughtBalance::load().horizon_cm(a)
     }
 
     /// The speed, cm/tick, the ball `player` wins keeps after his control

@@ -54,6 +54,14 @@ pub struct ThoughtBalance {
 }
 
 impl ThoughtBalance {
+    /// How far ahead a player of this `anticipation` imagines, cm (plan
+    /// L0-CLOSE 10b): between the shortest and the longest horizon. Moved
+    /// here from the orchestrator (code audit B3).
+    #[must_use]
+    pub fn horizon_cm(&self, anticipation: f64) -> f64 {
+        (self.horizon_max_cm - self.horizon_min_cm).mul_add(anticipation, self.horizon_min_cm)
+    }
+
     /// How sure he is of a forecast that leaves `margin` ticks to spare
     /// (negative: the other side gets there first), in `[0, 1]`.
     #[must_use]

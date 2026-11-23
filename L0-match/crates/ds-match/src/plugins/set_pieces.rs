@@ -740,10 +740,11 @@ mod tests {
                 .map(|(id, _)| id)
                 .collect();
             let mut quality = |id: ds_core::ids::PlayerId| {
-                let passing = hidden.characteristic(id, "passing").unwrap_or(0.0);
-                let left = hidden.characteristic(id, "left_foot").unwrap_or(0.0);
-                let right = hidden.characteristic(id, "right_foot").unwrap_or(0.0);
-                passing * 0.5f64.mul_add(left.max(right), 0.5)
+                // The calculator's formula, not a copy (code audit B3).
+                #[allow(clippy::cast_possible_truncation)]
+                let mut c = |name| hidden.characteristic(id, name).unwrap_or(0.0) as f32;
+                let (passing, left, right) = (c("passing"), c("left_foot"), c("right_foot"));
+                ds_calculator::kick::set_piece_quality(passing, (left, right))
             };
             let best = ids
                 .iter()

@@ -128,6 +128,19 @@ impl LatencyBalance {
     }
 }
 
+/// How many ticks between two of a player's glances around.
+///
+/// Plan L0-CLOSE 10b: his `vision` places him between the fewest and the most glances a
+/// second (`scanning.json`). Moved here from the orchestrator (code audit
+/// B3).
+#[must_use]
+pub fn scan_interval_ticks(vision: f64, (rate_min, rate_max): (f64, f64), ticks_per_s: f64) -> u64 {
+    let rate = (rate_max - rate_min).mul_add(vision, rate_min).max(0.01);
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let ticks = (ticks_per_s / rate).round() as u64;
+    ticks.max(1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

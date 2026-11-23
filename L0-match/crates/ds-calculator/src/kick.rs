@@ -55,6 +55,16 @@ pub struct KickBalance {
     pub loft_ticks_per_10m: f64,
 }
 
+/// How good a taker of a set piece is.
+///
+/// The technique of the kick (`finishing` for a penalty, `passing` to deliver) by the quality of his
+/// better foot, `0.5 + 0.5 x foot`. Derived from his roots, not stored.
+/// Moved here from the orchestrator (code audit B3).
+#[must_use]
+pub fn set_piece_quality(technique: f32, (left_foot, right_foot): (f32, f32)) -> f32 {
+    technique * 0.5f32.mul_add(left_foot.max(right_foot), 0.5)
+}
+
 impl KickBalance {
     /// The speed a ground pass over `d` cm is struck at, weighed to reach
     /// the receiver still rolling at `pass_arrive_cm_per_tick` on grass
