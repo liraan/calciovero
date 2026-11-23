@@ -155,12 +155,9 @@ fn controls_ground(
     receiver: PlayerId,
     (at, d, v0): ((i32, i32), f64, f64),
 ) -> bool {
-    let arrive = mind().kick.pass_arrive_cm_per_tick.min(v0);
-    let ticks = if v0 > arrive {
-        dmath::log(arrive / v0, scene.ground_keep)
-    } else {
-        d / v0.max(1.0)
-    };
+    let k = mind().kick;
+    let arrive = k.pass_arrive_cm_per_tick.min(v0);
+    let ticks = k.rolling_ticks(d, v0, scene.ground_keep);
     controls(scene, players, receiver, (at, arrive, ticks))
 }
 
@@ -221,10 +218,22 @@ fn controls_lofted(
 ) -> bool {
     // The speed he gives it so that it lands there through the air (the
     // engine's own weighing, `resolve_pass`), and what the air leaves it.
+    controls(
+        scene,
+        players,
+        receiver,
+        (at, lob_landing(scene, d, flight), flight),
+    )
+}
+
+/// The speed a lofted pass over `d` cm still has where it comes down after
+/// `flight` ticks: struck so that the air carries it there (the engine's
+/// own weighing, `resolve_pass`), less what the air took (code audit D:
+/// written twice).
+fn lob_landing(scene: &PerceivedScene, d: f64, flight: f64) -> f64 {
     let a = scene.reception.air_keep.clamp(0.0, 0.999_999);
     let carried = ((1.0 - dmath::powf(a, flight)) / (1.0 - a)).max(1.0);
-    let landing = d / carried * dmath::powf(a, flight);
-    controls(scene, players, receiver, (at, landing, flight))
+    d / carried * dmath::powf(a, flight)
 }
 
 /// Where a lofted pass from `from` to `to` is lost if nobody takes it where
@@ -241,9 +250,7 @@ fn lofted_missed_at(
     flight: f64,
 ) -> (i32, i32) {
     let d = (distance_squared(from, to) as f64).sqrt();
-    let a = scene.reception.air_keep.clamp(0.0, 0.999_999);
-    let carried = ((1.0 - dmath::powf(a, flight)) / (1.0 - a)).max(1.0);
-    let landing = d / carried * dmath::powf(a, flight);
+    let landing = lob_landing(scene, d, flight);
     let run_on = landing / (1.0 - scene.ground_keep).max(0.001);
     if runs_into_goal(from, to, scene.own_goal, run_on) {
         scene.own_goal
@@ -1452,9 +1459,7 @@ fn pass_candidates(
         // ADR-052: he imagines the pass, weighed to arrive rolling, and who
         // reaches it first along its path; it is worth what it reaches.
         let d = distance_squared(pos, tpos).isqrt() as f64;
-        let v0 = d
-            .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
-            .min(m.kick.speed(1.0, 0.5));
+        let v0 = m.kick.weighed_pass_speed(d, scene.ground_keep);
         let forecast = ds_calculator::thought::who_first(
             pos,
             tpos,
@@ -1489,14 +1494,7 @@ fn pass_candidates(
         let across = d * own_pass_spread(scene, v0, kick_pressure(pos, scene, balance, 0));
         // While it rolls he goes to it (his reach, and the ground he covers
         // once he has reacted, at the pace the passer believes).
-        let rolling = {
-            let arrive = m.kick.pass_arrive_cm_per_tick.min(v0);
-            if v0 > arrive {
-                dmath::log(arrive / v0, scene.ground_keep)
-            } else {
-                d / v0.max(1.0)
-            }
-        };
+        let rolling = m.kick.rolling_ticks(d, v0, scene.ground_keep);
         let cover = m.thought.believed_speed_cm_per_tick
             * (rolling - m.thought.believed_reaction_ticks).max(0.0);
         let found = scene.reception.ball_reach.get(id).map_or(1.0, |reach| {
@@ -1656,9 +1654,7 @@ fn through_candidates(
             .unwrap_or(m.thought.believed_speed_cm_per_tick)
             .max(1.0);
         let d = dmath::hypot(f64::from(run_to.0 - pos.0), f64::from(run_to.1 - pos.1));
-        let v0 = d
-            .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
-            .min(m.kick.speed(1.0, 0.5));
+        let v0 = m.kick.weighed_pass_speed(d, scene.ground_keep);
         let ball_ticks =
             ds_calculator::thought::ball_ticks(d, v0, scene.ground_keep).unwrap_or(d / v0);
         let his = dmath::hypot(
@@ -1668,9 +1664,7 @@ fn through_candidates(
         let lead = (pace.mul_add(ball_ticks, -his)).clamp(0.0, 2000.0);
         let at = (dir.mul_add(lead, f64::from(run_to.0)) as i32, run_to.1);
         let d_at = dmath::hypot(f64::from(at.0 - pos.0), f64::from(at.1 - pos.1));
-        let v_at = d_at
-            .mul_add(1.0 - scene.ground_keep, m.kick.pass_arrive_cm_per_tick)
-            .min(m.kick.speed(1.0, 0.5));
+        let v_at = m.kick.weighed_pass_speed(d_at, scene.ground_keep);
         let forecast = ds_calculator::thought::who_first(
             pos,
             at,

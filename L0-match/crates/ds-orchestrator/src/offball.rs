@@ -249,9 +249,7 @@ fn reaches(f: &ThreatFacts, carrier: (i32, i32), man: (i32, i32)) -> f64 {
         .collect();
     #[allow(clippy::cast_precision_loss)]
     let dist = distance_squared(carrier, man).isqrt() as f64;
-    let v0 = dist
-        .mul_add(1.0 - f.ground_keep, kick.pass_arrive_cm_per_tick)
-        .min(kick.speed(1.0, 0.5));
+    let v0 = kick.weighed_pass_speed(dist, f.ground_keep);
     let forecast = ds_calculator::thought::who_first(
         carrier,
         man,

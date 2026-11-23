@@ -56,6 +56,29 @@ pub struct KickBalance {
 }
 
 impl KickBalance {
+    /// The speed a ground pass over `d` cm is struck at, weighed to reach
+    /// the receiver still rolling at `pass_arrive_cm_per_tick` on grass
+    /// that keeps `ground_keep` of it a tick, at most an average man's
+    /// strongest kick. The one weighing every reader imagines (code audit
+    /// D: it was written in four places of the orchestrator).
+    #[must_use]
+    pub fn weighed_pass_speed(&self, d: f64, ground_keep: f64) -> f64 {
+        d.mul_add(1.0 - ground_keep, self.pass_arrive_cm_per_tick)
+            .min(self.speed(1.0, 0.5))
+    }
+
+    /// How many ticks a ground pass struck at `v0` over `d` cm rolls before
+    /// it is down to its arrival speed (code audit D: written twice).
+    #[must_use]
+    pub fn rolling_ticks(&self, d: f64, v0: f64, ground_keep: f64) -> f64 {
+        let arrive = self.pass_arrive_cm_per_tick.min(v0);
+        if v0 > arrive {
+            ds_core::dmath::log(arrive / v0, ground_keep)
+        } else {
+            d / v0.max(1.0)
+        }
+    }
+
     /// Loads the embedded kick parameters.
     ///
     /// # Panics
