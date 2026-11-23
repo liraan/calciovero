@@ -6,7 +6,8 @@ use crate::{Phase, PluginCard, World};
 /// card.
 ///
 /// It acts in the phases of its card through `run`, on the observable
-/// state (`World`); the core calls it in the order of the phases.
+/// state (`World`); the core is to call it in the order of the phases
+/// (today it does not: `crate::phase`).
 pub trait MatchPlugin {
     /// Its card.
     fn card(&self) -> PluginCard;

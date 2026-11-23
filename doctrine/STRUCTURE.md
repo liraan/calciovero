@@ -121,7 +121,7 @@ calciovero/
 ├── L1-season/ L2-career/ L3-meta/    created with their first file (D3)
 │
 ├── tools/                   crates that are tools, not the simulation
-│   ├── ds-demo/             demonstrate a match (text, JSON, HTML)
+│   ├── ds-demo/             demonstrate a match (text, JSON, HTML); also the views' library the GUI uses (friendly choices, 2D projection, narrated ticks)
 │   ├── ds-gui/              the desktop GUI (egui, ADR-055)
 │   ├── ds-fixtures/         the demo and test squads
 │   ├── ds-testkit/          the test contract (no dependency on any ds-* crate)
@@ -147,7 +147,7 @@ The dependency order is the reading order, from the inside out:
 |---|---|
 | `ds-core` | the primitives: ids, time, hash, deterministic geometry |
 | `ds-model` | the identity of the world: Player, Squad, Pitch, Match |
-| `ds-stats` | the observation: events and statistics (Plane B), append-only |
+| `ds-stats` | the observation: the events (Plane B), append-only. The match's statistics are the engine's (`MatchStatistics`, possession counted per tick) and the readers' (`ds-reference`), not this crate's (code audit B7) |
 | `ds-calculator` | a formula from `balance/`, applied to a player and a situation |
 | `ds-db` | the vault: the players' performances, derived by key, one door |
 | `ds-orchestrator` | the decision: which actor, when, with which scene; the contact |
