@@ -58,6 +58,12 @@ pub struct OffBallBalance {
     /// he knows (strato 3): thousandths.
     #[serde(default = "intesa_yield_default")]
     pub intesa_yield_milli: i32,
+    /// The intesa of two teammates who start the match together,
+    /// thousandths (strato 3; code audit C5: 0.5 in the code).
+    pub intesa_baseline_milli: i32,
+    /// What a completed pass between two teammates adds to their intesa,
+    /// thousandths (decision BB; code audit C5: 0.1 in the code).
+    pub intesa_step_milli: i32,
 }
 
 const fn intesa_yield_default() -> i32 {

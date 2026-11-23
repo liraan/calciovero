@@ -513,7 +513,8 @@ impl TeamView {
             mate_carrier: None,
             ours: Vec::new(),
             ours_vel: Vec::new(),
-            ground_keep: 0.957,
+            // The grass of the ball's physics (code audit C5: 0.957 here).
+            ground_keep: f64::from(spatial.ground_friction_milli()) / 1000.0,
         }
     }
 
@@ -983,7 +984,10 @@ impl MatchState {
             offball_due: BTreeMap::new(),
             intesa: {
                 let mut m = BTreeMap::new();
-                let baseline = 0.5;
+                // `offball.json` (code audit C5: 0.5 in the code).
+                let baseline =
+                    f64::from(ds_calculator::offball::OffBallBalance::load().intesa_baseline_milli)
+                        / 1000.0;
                 for squad in [&match_.home, &match_.away] {
                     for a in &squad.players {
                         for b in &squad.players {

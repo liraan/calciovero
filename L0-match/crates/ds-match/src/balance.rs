@@ -194,6 +194,8 @@ const KEEPER_JSON: &str = include_str!("../../../balance/keeper.json");
 /// Keeper positioning parameters as they appear in `L0-match/balance/keeper.json`.
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct KeeperBalance {
+    /// Where the keeper rests off his line with the ball far, cm.
+    pub line_offset_cm: i32,
     /// Beyond this distance ball-goal, the keeper stays on the line (cm).
     pub positioning_range_cm: i32,
     /// How far the keeper advances when the ball is on the line (cm).

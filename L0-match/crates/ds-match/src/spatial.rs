@@ -479,9 +479,14 @@ pub struct SpatialState {
 /// ~45 cm shoulder half-width; two agents closer than 2R are pushed apart.
 pub(crate) const BODY_RADIUS_CM: i32 = 45;
 
-/// Distance from the goal line at which the goalkeeper stands (F.3-b3).
-/// Arbitrary, declared: 2 m off the line.
-const GK_LINE_OFFSET_CM: i32 = 200;
+/// Distance from the goal line at which the goalkeeper stands (F.3-b3):
+/// `keeper.json` `line_offset_cm`, read once (code audit C5: a constant of
+/// the code until 2026-11-23).
+fn gk_line_offset_cm() -> i32 {
+    static OFFSET: std::sync::LazyLock<i32> =
+        std::sync::LazyLock::new(|| crate::balance::KeeperBalance::load().line_offset_cm);
+    *OFFSET
+}
 
 /// One agent's work tuple for the movement pass: id, current position,
 /// formation slot. A named type keeps the borrow simple and the signature
@@ -509,7 +514,7 @@ impl SpatialState {
         // placed in their block for the kick-off below.
         for (i, player) in home.players.iter().enumerate() {
             let position = if i == 0 {
-                (GK_LINE_OFFSET_CM, width / 2)
+                (gk_line_offset_cm(), width / 2)
             } else {
                 (length / 2, width / 2)
             };
@@ -527,7 +532,7 @@ impl SpatialState {
         }
         for (i, player) in away.players.iter().enumerate() {
             let position = if i == 0 {
-                (length - GK_LINE_OFFSET_CM, width / 2)
+                (length - gk_line_offset_cm(), width / 2)
             } else {
                 (length / 2, width / 2)
             };
@@ -1613,7 +1618,7 @@ impl SpatialState {
     /// The keeper moves with the same body; only his target differs: across,
     /// on the bisector of the angle the ball makes with the posts
     /// (`keeper_across`, SIM 124); in depth, his read of the line
-    /// (`line_depth_cm`) plus `GK_LINE_OFFSET_CM` (`keeper.json`).
+    /// (`line_depth_cm`) plus `line_offset_cm` (`keeper.json`).
     /// (2026-11-23, code audit F: this doc described the slot moved with the
     /// ball, the nearest man sent to it, L-infinity speeds and the anchored
     /// keeper, all gone.)
@@ -1659,7 +1664,7 @@ impl SpatialState {
         // ball-goal segment, with a fraction that depends on the
         // distance from the ball to the goal (L0-match/balance/keeper.json).
         // The same movement formula as every agent, a different target.
-        // The rest x is GK_LINE_OFFSET_CM, not 0: the keeper does not
+        // The rest x is `line_offset_cm`, not 0: the keeper does not
         // stand on the goal line (existing fact, missing in the cantiere).
         let goal_y = f64::from(pitch_width_cm) / 2.0;
         let range = f64::from(keeper_balance.positioning_range_cm);
@@ -1684,7 +1689,7 @@ impl SpatialState {
             // ready on his line (ADR-078).
             let read = hidden.foresight(gk);
             let advance_cm = ds_calculator::keeper::line_depth_cm(advance, t, read);
-            let off_line = (advance_cm + f64::from(GK_LINE_OFFSET_CM)).min(depth_cap);
+            let off_line = (advance_cm + f64::from(gk_line_offset_cm())).min(depth_cap);
             let x_target = f64::mul_add(sign, off_line, goal_x);
             // Across, he stands on the bisector of the angle the ball makes
             // with his two posts, at his depth (SIM_VERSION 124): there he
@@ -1731,7 +1736,7 @@ impl SpatialState {
                     pitch_length_cm - line.0
                 };
                 let support_u = (line_u - keeper_balance.support_gap_cm)
-                    .clamp(GK_LINE_OFFSET_CM, keeper_balance.support_max_cm);
+                    .clamp(gk_line_offset_cm(), keeper_balance.support_max_cm);
                 let current_u = if home { tx } else { pitch_length_cm - tx };
                 if support_u > current_u {
                     tx = if home {
@@ -2564,8 +2569,8 @@ mod tests {
         let s = make_state();
         let home_gk = s.agent(PlayerId::new(0, 0)).unwrap();
         let away_gk = s.agent(PlayerId::new(100, 0)).unwrap();
-        assert_eq!(home_gk.position.0, GK_LINE_OFFSET_CM);
-        assert_eq!(away_gk.position.0, 10500 - GK_LINE_OFFSET_CM);
+        assert_eq!(home_gk.position.0, gk_line_offset_cm());
+        assert_eq!(away_gk.position.0, 10500 - gk_line_offset_cm());
     }
 
     #[test]

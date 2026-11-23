@@ -23,6 +23,11 @@ pub struct Law1 {
     pub penalty_area_depth_cm: i32,
     /// Half the width of the penalty area (40.32 m).
     pub penalty_area_half_width_cm: i32,
+    /// The depth of the goal area, where a goal kick is taken (5.5 m).
+    pub goal_area_depth_cm: i32,
+    /// The radius of the centre circle (9.15 m), the distance the
+    /// opponents keep at a restart (Laws 8, 13).
+    pub centre_circle_radius_cm: i32,
 }
 
 static LAW1: LazyLock<Law1> =

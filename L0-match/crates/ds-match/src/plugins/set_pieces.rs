@@ -316,8 +316,9 @@ impl MatchState {
         restart: &crate::rules::Restart,
         (taker, walk): (PlayerId, bool),
     ) {
-        const DISTANCE_CM: i64 = 915;
         use crate::rules::RestartKind;
+        // Laws 8 and 13: the centre circle's radius (code audit C5: 915).
+        let distance_cm = i64::from(self.laws.centre_circle_radius_cm);
         let (length, width) = pitch_cm(ctx);
         let restarting_home = restart.side == crate::rules::Side::Home;
         let ids: Vec<(PlayerId, bool)> = ctx
@@ -338,7 +339,7 @@ impl MatchState {
                         continue;
                     };
                     let d2 = distance_squared(p, restart.spot);
-                    if d2 >= DISTANCE_CM * DISTANCE_CM {
+                    if d2 >= distance_cm * distance_cm {
                         continue;
                     }
                     // Back along the line from the ball, or towards his
@@ -355,10 +356,10 @@ impl MatchState {
                     };
                     let l = if len == 0 { 1 } else { len };
                     let to = (
-                        i32::try_from(i64::from(restart.spot.0) + ux * DISTANCE_CM / l)
+                        i32::try_from(i64::from(restart.spot.0) + ux * distance_cm / l)
                             .unwrap_or(restart.spot.0)
                             .clamp(0, length),
-                        i32::try_from(i64::from(restart.spot.1) + uy * DISTANCE_CM / l)
+                        i32::try_from(i64::from(restart.spot.1) + uy * distance_cm / l)
                             .unwrap_or(restart.spot.1)
                             .clamp(0, width),
                     );
@@ -375,7 +376,7 @@ impl MatchState {
                 let back = self
                     .laws
                     .penalty_area_depth_cm
-                    .max(self.laws.penalty_spot_cm + 915)
+                    .max(self.laws.penalty_spot_cm + self.laws.centre_circle_radius_cm)
                     + 100;
                 let edge = if restarting_home { length - back } else { back };
                 let defending_keeper = if restarting_home {
@@ -497,7 +498,9 @@ impl MatchState {
         restart: &crate::rules::Restart,
         (restarting_home, walk): (bool, bool),
     ) {
-        const DISTANCE_CM: f64 = 915.0;
+        // Law 13: the wall stands at the centre circle's radius (code audit
+        // C5: 915).
+        let distance_cm = f64::from(self.laws.centre_circle_radius_cm);
         let (length, width) = pitch_cm(ctx);
         let goal = (if restarting_home { length } else { 0 }, width / 2);
         let dist = dmath::hypot(
@@ -506,7 +509,7 @@ impl MatchState {
         );
         let range = ds_orchestrator::ShotChoiceBalance::load().shot_range_cm;
         #[allow(clippy::cast_precision_loss)]
-        if dist > range as f64 || dist <= DISTANCE_CM {
+        if dist > range as f64 || dist <= distance_cm {
             return;
         }
         let defenders = if restarting_home {
@@ -523,7 +526,7 @@ impl MatchState {
         let half = f64::from(self.obstacle_balance.goal_half_width_cm);
         // The keeper at the middle covers `cover` on each side: what is left
         // of the goal, measured at the wall.
-        let gap = 2.0f64.mul_add(half, -2.0 * cover).max(0.0) * DISTANCE_CM / dist;
+        let gap = 2.0f64.mul_add(half, -2.0 * cover).max(0.0) * distance_cm / dist;
         let body = f64::from(2 * crate::spatial::BODY_RADIUS_CM);
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let men = (gap / body).ceil() as usize;
@@ -537,7 +540,7 @@ impl MatchState {
         let to_post = (post.0 - bx, post.1 - by);
         let len = dmath::hypot(to_post.0, to_post.1).max(1.0);
         let (ux, uy) = (to_post.0 / len, to_post.1 / len);
-        let first = (ux.mul_add(DISTANCE_CM, bx), uy.mul_add(DISTANCE_CM, by));
+        let first = (ux.mul_add(distance_cm, bx), uy.mul_add(distance_cm, by));
         // Inward, across the line of the shot, towards the middle of goal.
         let (mut px, mut py) = (-uy, ux);
         if (f64::from(goal.1) - first.1) * py < 0.0 {

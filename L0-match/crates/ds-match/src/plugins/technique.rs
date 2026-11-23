@@ -1114,16 +1114,17 @@ impl MatchState {
                 }
                 // Strato 3: a completed pass between two teammates grows
                 // their mutual intesa (decision BB).
-                let bump = |v: &mut f64| *v = (*v + 0.1).min(1.0);
-                if let Some(v) = self.intesa.get_mut(&(by, id)) {
-                    bump(v);
-                } else {
-                    self.intesa.insert((by, id), 0.6);
-                }
-                if let Some(v) = self.intesa.get_mut(&(id, by)) {
-                    bump(v);
-                } else {
-                    self.intesa.insert((id, by), 0.6);
+                // A pair with no intesa yet (a man who came on) starts from
+                // the baseline (`offball.json`; code audit C5: 0.1 and 0.6
+                // were written here).
+                let off = ds_calculator::offball::OffBallBalance::load();
+                let (baseline, step) = (
+                    f64::from(off.intesa_baseline_milli) / 1000.0,
+                    f64::from(off.intesa_step_milli) / 1000.0,
+                );
+                for pair in [(by, id), (id, by)] {
+                    let v = self.intesa.entry(pair).or_insert(baseline);
+                    *v = (*v + step).min(1.0);
                 }
             } else {
                 // Struck into him before he reacted: it hits him and runs on.

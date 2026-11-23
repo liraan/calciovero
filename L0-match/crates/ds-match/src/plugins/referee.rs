@@ -179,7 +179,18 @@ pub fn out_of_play((x, y): (i32, i32), last: Side, (length, width): (i32, i32)) 
     } else {
         Restart {
             side: defending,
-            spot: (if home_goal_line { 550 } else { length - 550 }, width / 2),
+            // Law 16, from the goal area (code audit C5: it was 550 here).
+            spot: {
+                let depth = ds_calculator::laws::law1().goal_area_depth_cm;
+                (
+                    if home_goal_line {
+                        depth
+                    } else {
+                        length - depth
+                    },
+                    width / 2,
+                )
+            },
             kind: RestartKind::GoalKick,
         }
     })
