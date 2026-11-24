@@ -77,7 +77,12 @@ use crate::result::MatchResult;
 /// v3 -> v4 (2026-11-23, code audit B5): `MatchResult.narrative` removed; the
 /// commentary is read from the events (`ds_narrative::narrate`). A v3 save
 /// loads unchanged: its `narrative` is an unknown field, ignored.
-pub const SCHEMA_VERSION: u32 = 4;
+///
+/// v4 -> v5 (2026-11-24, code audit D): `MatchSave.events` removed; the
+/// chain is the result's (`result.events`), which is now the one verified.
+/// It was written twice and only the unread copy was checked. A v4 save
+/// loads unchanged: its `events` is an unknown field, ignored.
+pub const SCHEMA_VERSION: u32 = 5;
 
 /// The current simulation version.
 ///
@@ -102,8 +107,6 @@ pub struct MatchSave {
     pub created_at: GameInstant,
     /// The match (squads, pitch, referee, seed, rules).
     pub match_: Match,
-    /// The append-only event chain.
-    pub events: EventChain,
     /// The result of the simulation (score, stats, state hash, narrative).
     pub result: MatchResult,
     /// The tick record of the finished match, packed (ADR-065). Absent in
@@ -128,7 +131,6 @@ impl MatchSave {
             match_id: match_.id,
             created_at,
             match_: match_.clone(),
-            events: result.events.clone(),
             result: result.clone(),
             record: None,
         }
@@ -183,7 +185,7 @@ impl MatchSave {
                 current: SCHEMA_VERSION,
             });
         }
-        if !self.events.verify(self.result.state_hash) {
+        if !self.result.events.verify(self.result.state_hash) {
             return Err(SaveError::ChainHashMismatch);
         }
         if let Some(r) = &self.record
@@ -279,7 +281,7 @@ mod tests {
         // and f64"). The state_hash is the identity of the chain; the
         // individual event fields (a serde_json::Value) may lose 1 ulp on f64
         // roundtrip through JSON.
-        assert_eq!(loaded.events.len(), save.events.len());
+        assert_eq!(loaded.result.events.len(), save.result.events.len());
     }
 
     /// A finished match saves its record and gets it back, tick for tick.

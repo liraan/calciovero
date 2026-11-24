@@ -33,21 +33,9 @@ impl MatchState {
         restart: crate::rules::Restart,
     ) -> Option<PlayerId> {
         let taker = self.restart_taker(ctx, &restart)?;
-        self.stoppage = true;
-        self.pending = None;
-        self.offside_at_pass.clear();
-        self.restart_pass = Some(restart.kind);
         self.spatial.set_position(taker, restart.spot);
-        // Out of play nobody has it, even if it went out under his foot.
-        self.spatial.set_carrier(None);
-        self.spatial
-            .set_ball_in_flight((restart.spot.0, restart.spot.1, 0), (0, 0, 0));
-        self.spatial.advance_ball();
+        self.stop_for_restart(&restart);
         self.spatial.set_carrier(Some(taker));
-        self.possession = match restart.side {
-            crate::rules::Side::Home => Possession::Home,
-            crate::rules::Side::Away => Possession::Away,
-        };
         self.clear_the_spot(ctx, &restart, (taker, false));
         if restart.kind == crate::rules::RestartKind::Penalty {
             // He kicks before anyone can come back into the area (Law 14:
@@ -55,6 +43,26 @@ impl MatchState {
             self.latencies.remove(&taker);
         }
         Some(taker)
+    }
+
+    /// Play stops for a restart: the flight and the offside marks are over,
+    /// the ball is placed at rest on the spot with nobody on it, and it
+    /// belongs to the restarting side (one place for both kinds of restart;
+    /// code audit D: the block was written in each).
+    fn stop_for_restart(&mut self, restart: &crate::rules::Restart) {
+        self.stoppage = true;
+        self.pending = None;
+        self.offside_at_pass.clear();
+        self.restart_pass = Some(restart.kind);
+        // Out of play nobody has it, even if it went out under his foot.
+        self.spatial.set_carrier(None);
+        self.spatial
+            .set_ball_in_flight((restart.spot.0, restart.spot.1, 0), (0, 0, 0));
+        self.spatial.advance_ball();
+        self.possession = match restart.side {
+            crate::rules::Side::Home => Possession::Home,
+            crate::rules::Side::Away => Possession::Away,
+        };
     }
 
     /// Puts `id` at `place` for a restart, or, with `walk`, sends him there
@@ -82,18 +90,7 @@ impl MatchState {
         goal_party: Option<GoalParty>,
     ) -> Option<PlayerId> {
         let taker = self.restart_taker(ctx, &restart)?;
-        self.stoppage = true;
-        self.pending = None;
-        self.offside_at_pass.clear();
-        self.restart_pass = Some(restart.kind);
-        self.spatial.set_carrier(None);
-        self.spatial
-            .set_ball_in_flight((restart.spot.0, restart.spot.1, 0), (0, 0, 0));
-        self.spatial.advance_ball();
-        self.possession = match restart.side {
-            crate::rules::Side::Home => Possession::Home,
-            crate::rules::Side::Away => Possession::Away,
-        };
+        self.stop_for_restart(&restart);
         self.spatial.clear_sent();
         self.spatial.send(taker, restart.spot, true);
         self.clear_the_spot(ctx, &restart, (taker, true));

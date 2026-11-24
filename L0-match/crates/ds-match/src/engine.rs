@@ -73,27 +73,17 @@ mod tests {
         let _ = &*crate::test_support::SIM42_NEW;
     }
 
+    /// The same seed, the same match: hash, score, statistics and every
+    /// event (one pair of matches; code audit E: three tests played the
+    /// same pair each).
     #[test]
-    fn same_seed_same_state_hash() {
+    fn same_seed_same_match() {
         let a = simulate_once(42);
         let b = simulate_once(42);
         assert_eq!(a.state_hash, b.state_hash);
-    }
-
-    #[test]
-    fn same_seed_same_score_and_stats() {
-        let a = simulate_once(42);
-        let b = simulate_once(42);
-        assert_eq!(a.score.home, b.score.home);
-        assert_eq!(a.score.away, b.score.away);
+        assert_eq!(a.score, b.score);
         assert_eq!(a.stats.shots, b.stats.shots);
         assert_eq!(a.stats.goals, b.stats.goals);
-    }
-
-    #[test]
-    fn same_seed_same_events() {
-        let a = simulate_once(42);
-        let b = simulate_once(42);
         assert_eq!(a.events.events(), b.events.events());
     }
 
