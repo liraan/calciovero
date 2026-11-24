@@ -9,21 +9,11 @@
 //! engine reads it (`team_of`); the matchday maps it to the match's places.
 
 use ds_season_api::{Moment, PluginCard, PluginError, SeasonPlugin, SeasonWorld, Tier};
-use ds_world::{CLUB_CREATED, pick};
+use ds_world::{CLUB_CREATED, Pack, pick};
 use serde::{Deserialize, Serialize};
-
-const PACK_JSON: &str = include_str!("../../../world/v1.json");
 
 /// The event told for every squad made.
 pub const SQUAD_REGISTERED: &str = "SquadRegistered";
-
-#[derive(Deserialize)]
-struct NameParts {
-    first_names: Vec<String>,
-    surname_start: Vec<String>,
-    surname_end: Vec<String>,
-    squad_roles: Vec<String>,
-}
 
 /// A player of a squad.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -45,37 +35,39 @@ pub struct Player {
 /// The year the first season starts in (the age of the players is from it).
 pub const FIRST_SEASON: u32 = 2026;
 
-/// The squad of `club` from `seed`: one player for each role of the pack.
+/// The squad of `club` from `seed`: one player for each role of the pack;
+/// what `players.json` fixes wins over the generator.
 #[must_use]
-pub fn make_squad(seed: u64, club: u32) -> Vec<Player> {
-    let n: NameParts = serde_json::from_str(PACK_JSON).unwrap_or(NameParts {
-        first_names: vec![],
-        surname_start: vec![],
-        surname_end: vec![],
-        squad_roles: vec![],
-    });
-    n.squad_roles
+pub fn make_squad(pack: &Pack, seed: u64, club: u32) -> Vec<Player> {
+    pack.squad_roles
         .iter()
         .enumerate()
         .map(|(k, role)| {
             let k = u32::try_from(k).unwrap_or(0);
             let id = club * 100 + k;
             let key = u64::from(id);
-            let name = format!(
-                "{} {}{}",
-                n.first_names[pick(seed, "first_name", key, n.first_names.len())],
-                n.surname_start[pick(seed, "surname_start", key, n.surname_start.len())],
-                n.surname_end[pick(seed, "surname_end", key, n.surname_end.len())],
-            );
             // 17 to 35 at the start of the first season.
             let age = 17 + u32::try_from(pick(seed, "age", key, 19)).unwrap_or(0);
-            Player {
+            let made = Player {
                 id,
                 club,
-                name,
+                name: pack.player_name(seed, key),
                 born: FIRST_SEASON - age,
                 role: role.clone(),
                 shirt: k + 1,
+            };
+            match pack
+                .players
+                .iter()
+                .find(|p| p.club == club && p.number == k)
+            {
+                Some(f) => Player {
+                    name: f.name.clone().unwrap_or(made.name),
+                    role: f.role.clone().unwrap_or(made.role),
+                    born: f.born.unwrap_or(made.born),
+                    ..made
+                },
+                None => made,
             }
         })
         .collect()
@@ -83,12 +75,28 @@ pub fn make_squad(seed: u64, club: u32) -> Vec<Player> {
 
 /// The roster plugin: on the first day, after the world, a squad for every
 /// club told.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Roster {
+    pack: Pack,
     players: Vec<Player>,
 }
 
+impl Default for Roster {
+    fn default() -> Self {
+        Self::new(Pack::v1())
+    }
+}
+
 impl Roster {
+    /// The squads of `pack`.
+    #[must_use]
+    pub const fn new(pack: Pack) -> Self {
+        Self {
+            pack,
+            players: Vec::new(),
+        }
+    }
+
     /// Every player of the world's squads.
     #[must_use]
     pub fn players(&self) -> &[Player] {
@@ -128,7 +136,7 @@ impl SeasonPlugin for Roster {
             })
             .collect();
         for club in clubs {
-            let squad = make_squad(w.seed(), club);
+            let squad = make_squad(&self.pack, w.seed(), club);
             w.emit(
                 SQUAD_REGISTERED,
                 &[

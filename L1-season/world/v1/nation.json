@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "nation": "Italia",
+  "series": [
+    {
+      "name": "Serie A",
+      "clubs": 20
+    }
+  ]
+}

@@ -1,0 +1,182 @@
+[
+  {
+    "city": "Bergamo",
+    "region": "Lombardia",
+    "colours": [
+      "#000000",
+      "#1E50AA"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Bologna",
+    "region": "Emilia-Romagna",
+    "colours": [
+      "#A01428",
+      "#142878"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Cagliari",
+    "region": "Sardegna",
+    "colours": [
+      "#A01428",
+      "#142878"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Como",
+    "region": "Lombardia",
+    "colours": [
+      "#143CA0",
+      "#FAFAFA"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Cremona",
+    "region": "Lombardia",
+    "colours": [
+      "#828282",
+      "#C81E1E"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Firenze",
+    "region": "Toscana",
+    "colours": [
+      "#64288C",
+      "#FAFAFA"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Genova",
+    "region": "Liguria",
+    "colours": [
+      "#A01428",
+      "#142878"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Verona",
+    "region": "Veneto",
+    "colours": [
+      "#142878",
+      "#F0C828"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Milano",
+    "region": "Lombardia",
+    "colours": [
+      "#142878",
+      "#000000"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Milano",
+    "region": "Lombardia",
+    "colours": [
+      "#C81E1E",
+      "#000000"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Torino",
+    "region": "Piemonte",
+    "colours": [
+      "#FAFAFA",
+      "#000000"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Torino",
+    "region": "Piemonte",
+    "colours": [
+      "#78141E",
+      "#FAFAFA"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Roma",
+    "region": "Lazio",
+    "colours": [
+      "#8C1428",
+      "#F0AA1E"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Roma",
+    "region": "Lazio",
+    "colours": [
+      "#78B4E6",
+      "#FAFAFA"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Lecce",
+    "region": "Puglia",
+    "colours": [
+      "#F0C828",
+      "#C81E1E"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Napoli",
+    "region": "Campania",
+    "colours": [
+      "#2878C8",
+      "#FAFAFA"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Parma",
+    "region": "Emilia-Romagna",
+    "colours": [
+      "#F0C828",
+      "#142878"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Pisa",
+    "region": "Toscana",
+    "colours": [
+      "#000000",
+      "#1E50AA"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Sassuolo",
+    "region": "Emilia-Romagna",
+    "colours": [
+      "#000000",
+      "#1E823C"
+    ],
+    "series": 0
+  },
+  {
+    "city": "Udine",
+    "region": "Friuli-Venezia Giulia",
+    "colours": [
+      "#FAFAFA",
+      "#000000"
+    ],
+    "series": 0
+  }
+]

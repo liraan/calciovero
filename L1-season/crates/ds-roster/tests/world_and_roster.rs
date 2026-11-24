@@ -37,7 +37,7 @@ fn twenty_clubs_and_their_squads_the_same_from_the_same_seed() {
 fn every_player_has_one_club() {
     let mut ids = std::collections::BTreeSet::new();
     for club in 0..20 {
-        let squad = ds_roster::make_squad(42, club);
+        let squad = ds_roster::make_squad(&ds_world::Pack::v1(), 42, club);
         assert_eq!(squad.iter().filter(|p| p.role == "goalkeeper").count(), 3);
         for p in squad {
             assert_eq!(p.id / 100, club, "the side is read from the id");

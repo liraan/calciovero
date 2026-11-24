@@ -1,0 +1,38 @@
+{
+  "start": [
+    "Bar",
+    "Ber",
+    "Car",
+    "Cor",
+    "Fer",
+    "Gal",
+    "Lom",
+    "Mar",
+    "Mor",
+    "Pel",
+    "Ric",
+    "Ros",
+    "Ser",
+    "Tor",
+    "Val",
+    "Vit",
+    "Col",
+    "Bran",
+    "Gian",
+    "Del"
+  ],
+  "end": [
+    "etti",
+    "ini",
+    "oni",
+    "elli",
+    "ucci",
+    "ari",
+    "ato",
+    "esi",
+    "otti",
+    "ardi",
+    "ello",
+    "ani"
+  ]
+}
