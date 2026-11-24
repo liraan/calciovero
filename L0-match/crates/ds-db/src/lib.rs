@@ -44,6 +44,11 @@ pub struct Vault {
     /// Each player's role, for his profile (`balance/profiles.json`).
     /// A player with no registered role is derived uniformly.
     roles: BTreeMap<PlayerId, String>,
+    /// The identity each place of the match stands for (L1, ADR-113 §6): a
+    /// player keeps his characteristics in every match of a season, at
+    /// home or away, whatever place the match gives him. A place with no
+    /// key is its own identity (a friendly, every L0 match).
+    keys: BTreeMap<PlayerId, PlayerId>,
     profiles: Option<profiles::Profiles>,
 }
 
@@ -55,6 +60,7 @@ impl Vault {
             identity,
             latents: BTreeMap::new(),
             roles: BTreeMap::new(),
+            keys: BTreeMap::new(),
             profiles: None,
         }
     }
@@ -67,6 +73,13 @@ impl Vault {
         if self.profiles.is_none() {
             self.profiles = Some(profiles::Profiles::load());
         }
+    }
+
+    /// Registers the identity each place of the match stands for: his
+    /// characteristics are derived from the identity, not from the place.
+    /// Must be called before the first read of those players.
+    pub fn register_keys(&mut self, keys: impl IntoIterator<Item = (PlayerId, PlayerId)>) {
+        self.keys.extend(keys);
     }
 
     /// Returns the match identity the vault was built with.
@@ -85,11 +98,12 @@ impl Vault {
     pub fn latents_for(&mut self, player: PlayerId) -> PlayerLatents {
         *self.latents.entry(player).or_insert_with(|| {
             let seed = self.identity.world_seed;
+            let key = self.keys.get(&player).copied().unwrap_or(player);
             self.roles
                 .get(&player)
                 .zip(self.profiles.as_ref())
-                .and_then(|(role, p)| p.latents(seed, player, role))
-                .unwrap_or_else(|| PlayerLatents::from_key(seed, player))
+                .and_then(|(role, p)| p.latents(seed, key, role))
+                .unwrap_or_else(|| PlayerLatents::from_key(seed, key))
         })
     }
 
@@ -112,6 +126,39 @@ impl std::fmt::Debug for Vault {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// L1 (ADR-113 §6): the same identity at home (place 3) and away (place
+    /// 103) has the same characteristics; a place with no key is its own.
+    #[test]
+    fn a_player_keeps_his_characteristics_in_any_place() {
+        let mut v = Vault::new(Identity::new(42, ds_core::ids::MatchId::new(1, 0)));
+        let (home, away, key) = (
+            PlayerId::new(3, 0),
+            PlayerId::new(103, 0),
+            PlayerId::new(1207, 0),
+        );
+        v.register_roles([(home, "striker".to_string()), (away, "striker".to_string())]);
+        v.register_keys([(home, key), (away, key)]);
+        // `PlayerLatents` shows nothing (no Debug, no comparison: code audit
+        // S6): a few of its values, compared one by one.
+        let sig = |l: PlayerLatents| {
+            [
+                l.physical.max_speed,
+                l.technical.finishing,
+                l.cognitive.game_reading,
+                l.psychological.composure,
+            ]
+            .map(f32::to_bits)
+        };
+        assert_eq!(sig(v.latents_for(home)), sig(v.latents_for(away)));
+        let mut plain = Vault::new(Identity::new(42, ds_core::ids::MatchId::new(1, 0)));
+        plain.register_roles([(home, "striker".to_string())]);
+        assert_ne!(
+            sig(plain.latents_for(home)),
+            sig(v.latents_for(home)),
+            "the key, not the place"
+        );
+    }
     use ds_core::ids::MatchId;
 
     fn ident() -> Identity {

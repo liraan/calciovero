@@ -136,6 +136,20 @@ impl GroundTruth {
         g
     }
 
+    /// The ground truth of a match of a season (ADR-113 §6): like
+    /// [`GroundTruth::for_match`], with the identity each place stands for,
+    /// so a player keeps his characteristics in every match of the season.
+    #[must_use]
+    pub fn for_match_keyed(
+        world_seed: u64,
+        match_: &ds_model::Match,
+        keys: &[(ds_core::ids::PlayerId, ds_core::ids::PlayerId)],
+    ) -> Self {
+        let mut g = Self::for_match(world_seed, match_);
+        g.vault.register_keys(keys.iter().copied());
+        g
+    }
+
     /// Returns the world seed.
     #[must_use]
     pub const fn world_seed(&self) -> u64 {

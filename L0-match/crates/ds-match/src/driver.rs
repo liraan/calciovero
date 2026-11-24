@@ -46,6 +46,39 @@ pub fn simulate_from_seed(match_: &Match, seed: u64, config: MatchConfig) -> Mat
     engine.simulate(ctx)
 }
 
+/// A match of a season (ADR-113 §6), the door the matchday plays through.
+///
+/// Like [`simulate_from_seed`], with the world's seed (the same for every
+/// match of the season) and the identity each place stands for, so a player
+/// keeps his characteristics at home and away.
+///
+/// # Panics
+///
+/// As [`simulate_from_seed`]: another tick rate than `TICKS_PER_SECOND`.
+#[must_use]
+pub fn simulate_keyed(
+    match_: &Match,
+    world_seed: u64,
+    keys: &[(ds_core::ids::PlayerId, ds_core::ids::PlayerId)],
+    config: MatchConfig,
+) -> MatchResult {
+    assert_eq!(
+        config.ticks_per_second,
+        crate::context::TICKS_PER_SECOND,
+        "the balance is written per tick at ten ticks a second (ADR-069)"
+    );
+    let mut hidden = GroundTruth::for_match_keyed(world_seed, match_, keys);
+    let mut chain = EventChain::new();
+    let ctx = MatchContext {
+        match_,
+        hidden: &mut hidden,
+        chain: &mut chain,
+        config,
+    };
+    let mut engine = TextMatchEngine::new();
+    engine.simulate(ctx)
+}
+
 /// Like [`simulate_from_seed`], and also returns the tick record.
 ///
 /// One [`crate::TickRecord`] per tick (IDEA-INFRA-018). The result is the same

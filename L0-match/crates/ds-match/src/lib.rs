@@ -45,7 +45,7 @@ pub mod state;
 pub(crate) mod test_support;
 
 pub use context::{MatchConfig, MatchContext};
-pub use driver::{simulate_from_seed, simulate_from_seed_recorded};
+pub use driver::{simulate_from_seed, simulate_from_seed_recorded, simulate_keyed};
 pub use engine::{MatchEngine, TextMatchEngine};
 pub use perception::{
     Neighbour, distance_squared, nearest_opponents, nearest_teammates, nearest_to_point,
