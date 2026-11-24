@@ -90,7 +90,7 @@ fn season_full(
     s
 }
 
-/// The fingerprint of the small season at `SEASON_VERSION` 5 and
+/// The fingerprint of the small season at `SEASON_VERSION` 6 and
 /// `SIM_VERSION` 205; regenerate on a bump of either.
 const SMALL_GOLDEN: &str = "5c40f9b6b07024e73116ab92fcf6023b694f4270deb0218dfa4c094495724dc3";
 

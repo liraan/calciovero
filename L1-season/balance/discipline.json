@@ -1,12 +1,16 @@
 {
-  "_note": "Discipline in the league (ds-discipline, L1 step 7): yellow cards counted over the season, a one-match ban at each threshold, a one-match ban after a red card (the minimum; a longer one is the judge's call, not modelled yet). Data, so anyone can correct it without touching code.",
+  "_note": "Discipline in the league (ds-discipline, L1 step 7): cautions counted over the season, a one-match ban at each threshold and after every caution past the last, a one-match ban after a sending-off (the minimum; a longer one is the judge's call, not modelled yet). Data, so anyone can correct it without touching code.",
   "yellow_ban_at": [
     5,
     10,
     14,
-    17
+    17,
+    19
   ],
-  "_yellow_ban_at_source": "5 and 10: the Giudice Sportivo di Serie A's communiqués (a player 'diffidato' at his 4th and 9th caution, banned at the 5th and the 10th). 14 and 17: reported by the press, NOT verified on the text in force of the FIGC Codice di Giustizia Sportiva (art. 19 c. 9 states the general rule, a ban at the 4th caution; Serie A and B have their own progression): to verify before 0.1.",
+  "ban_every_yellow_after_last": true,
+  "_yellow_ban_at_source": "Read on the text: FIGC Codice di Giustizia Sportiva, updated 2 July 2024, art. 9 c. 5 (https://www.figc.it/media/244307/codice-di-giustizia-sportiva-figc_modifica_-aggiornato-al-02-luglio-2024.pdf): a ban at the fifth caution; on a repeat, the next at the fifth, then at the fourth, the third, the second, then at every further caution, whatever the offence: 5, 10, 14, 17, 19, then every one. The communiques of the Serie A judge (CU n. 138, 3 March 2026) apply it ('AMMONIZIONE CON DIFFIDA (QUARTA SANZIONE)', '(NONA SANZIONE)'). Not verified that the 2025-26 text is the same word for word.",
   "red_ban_matches": 1,
-  "_red_ban_matches_source": "the minimum ban for a sending-off (CGS); a longer one, for violent conduct, is the judge's call."
+  "_red_ban_matches_source": "CGS art. 9 c. 7: a man sent off gets automatically the minimum ban of one match; the judge may give more (not modelled yet).",
+  "_double_yellow": "The two cautions of a sending-off for a second caution do not count towards the thresholds: read in the press and the referees' forums (fanpage.it; arbitri.com), consistent with the communiques that list them among the sent off, not among the numbered cautions; NOT read on the text. The engine records a second caution as a red after the first yellow of the same match, so a yellow followed by a red in the same match is read as a double yellow (a yellow then a straight red, rarer, is read the same: a declared limit until the card event says which).",
+  "_season_end": "CGS art. 19 c. 9: the cautions that have not led to a ban lapse at the end of the season; bans not yet served remain. Coppa Italia counts apart (art. 19 c. 4-6): when the cups come, their count is their own."
 }

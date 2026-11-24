@@ -31,12 +31,15 @@ pub const UNAVAILABLE: &str = "Unavailable";
 #[derive(Debug, Clone, Deserialize)]
 struct DisciplineBalance {
     yellow_ban_at: Vec<u32>,
+    #[serde(default)]
+    ban_every_yellow_after_last: bool,
     red_ban_matches: u32,
 }
 
 fn balance() -> DisciplineBalance {
     serde_json::from_str(DISCIPLINE_JSON).unwrap_or_else(|_| DisciplineBalance {
         yellow_ban_at: vec![5, 10],
+        ban_every_yellow_after_last: false,
         red_ban_matches: 1,
     })
 }
@@ -150,6 +153,14 @@ impl SeasonPlugin for Discipline {
                     .find(|(k, _)| k == CARDS_FIELD)
                     .map(|(_, t)| read_cards(t))
                     .unwrap_or_default();
+                // A yellow then a red to the same man in the same match is a second
+                // caution: its cautions do not count (discipline.json,
+                // "_double_yellow").
+                let sent_off: Vec<u32> = cards
+                    .iter()
+                    .filter(|(_, red)| *red)
+                    .map(|(id, _)| *id)
+                    .collect();
                 for (id, red) in cards {
                     w.emit(
                         BOOKING,
@@ -157,10 +168,14 @@ impl SeasonPlugin for Discipline {
                     );
                     let ban = if red {
                         b.red_ban_matches
+                    } else if sent_off.contains(&id) {
+                        0
                     } else {
                         let n = self.yellows.entry(id).or_default();
                         *n += 1;
-                        u32::from(b.yellow_ban_at.contains(n))
+                        let past_last = b.ban_every_yellow_after_last
+                            && b.yellow_ban_at.last().is_some_and(|l| *n > *l);
+                        u32::from(b.yellow_ban_at.contains(n) || past_last)
                     };
                     if ban > 0 {
                         *self.banned.entry(id).or_default() += ban;
@@ -191,12 +206,68 @@ impl SeasonPlugin for Discipline {
 
 #[cfg(test)]
 mod tests {
-    use super::{balance, read_cards, write_cards};
+    use super::{
+        CARDS_FIELD, Discipline, SUSPENSION, SUSPENSION_SERVED, balance, read_cards, write_cards,
+    };
+    use ds_season_api::{MATCH_PLAYED, Moment, SeasonEvent, SeasonPlugin, SeasonWorld};
+
+    /// A match of club 3 at home to club 4 on `day`, with `cards`.
+    fn played(day: u32, cards: &[(u32, bool)]) -> SeasonEvent {
+        SeasonEvent {
+            day,
+            moment: Moment::BeforeMatches,
+            plugin: "matchday",
+            kind: MATCH_PLAYED.into(),
+            fields: vec![
+                ("home".into(), "3".into()),
+                ("away".into(), "4".into()),
+                (CARDS_FIELD.into(), write_cards(cards)),
+            ],
+        }
+    }
+
+    fn after(d: &mut Discipline, m: &SeasonEvent) -> Vec<SeasonEvent> {
+        let mut out = Vec::new();
+        let mut w = SeasonWorld::new(
+            (m.day, Moment::AfterMatch, "discipline", 42),
+            &[],
+            Some(m),
+            &mut out,
+        );
+        d.run(Moment::AfterMatch, &mut w).expect("runs");
+        out
+    }
+
+    /// CGS art. 9 c. 5: the fifth caution bans; the cautions of a second
+    /// caution do not count; the ban is served at his club's next match.
+    #[test]
+    fn the_fifth_caution_bans_and_a_double_yellow_does_not_count() {
+        let mut d = Discipline::default();
+        let mut bans = 0;
+        for day in 0..4 {
+            bans += after(&mut d, &played(day, &[(305, false)]))
+                .iter()
+                .filter(|e| e.kind == SUSPENSION)
+                .count();
+        }
+        assert_eq!(bans, 0, "four cautions, no ban");
+        // A double yellow: a yellow and a red in the same match. One match
+        // for the red, the caution not counted.
+        let out = after(&mut d, &played(4, &[(305, false), (305, true)]));
+        assert_eq!(out.iter().filter(|e| e.kind == SUSPENSION).count(), 1);
+        let out = after(&mut d, &played(5, &[]));
+        assert!(out.iter().any(|e| e.kind == SUSPENSION_SERVED));
+        // Still four counted: the fifth bans.
+        let out = after(&mut d, &played(6, &[(305, false)]));
+        assert_eq!(out.iter().filter(|e| e.kind == SUSPENSION).count(), 1);
+    }
 
     #[test]
     fn the_thresholds_come_from_the_data_and_the_cards_round_trip() {
         let b = balance();
-        assert_eq!(b.yellow_ban_at.first(), Some(&5));
+        // CGS art. 9 c. 5: 5, 10, 14, 17, 19, then every caution.
+        assert_eq!(b.yellow_ban_at, vec![5, 10, 14, 17, 19]);
+        assert!(b.ban_every_yellow_after_last);
         assert_eq!(b.red_ban_matches, 1);
         let t = write_cards(&[(305, false), (1107, true)]);
         assert_eq!(read_cards(&t), vec![(305, false), (1107, true)]);

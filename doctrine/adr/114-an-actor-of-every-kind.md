@@ -1,6 +1,6 @@
 # ADR-114 — Un attore di ogni tipo, i ruoli come dati: l'allenatore sceglie l'undici (DD-66)
 
-- **Status:** Accepted (delegated, 2026-11-24) — da rivedere da parte del maintainer
+- **Status:** Accepted (delegated, 2026-11-24); emendato dal maintainer il 2026-11-24 (decisione BM, §7)
 - **Date:** 2026-11-24
 - **Decision:** DD-66
 - **Attua:** `context/plans/L1-COACH.md` ("Un attore come i giocatori", "Il giocatore umano sceglie il suo ruolo", "Come sceglie, senza dadi"); decisioni AH, AI; `L1.md` passo 5, primo anello
@@ -25,6 +25,12 @@ Al passo 4 ogni squadra scende in campo con i primi della rosa per ruolo: nessun
 5. **I ruoli sono dati** (decisione AI). Un ruolo è una scheda: le scelte che gli spettano, cosa vede e con che precisione, a chi risponde. Il primo ruolo è `coach`, a cui spettano l'undici e il piano; ogni scelta di ogni plugin dichiara il ruolo a cui spetta. Il posto giocabile in L1 è l'allenatore: quando il giocatore umano lo prende, le sue scelte entrano come input datati (ADR-060) al posto di quelle dell'attore; la proposta del vice (`L1-COACH.md`) è la scelta dell'attore stesso.
 
 6. **`LineupAnnounced`.** Il plugin `ds-coach` annuncia la formazione a `BeforeMatches`, prima della Giornata (che dipende da lui): l'identità di ogni posto, la panchina, il blocco e l'ampiezza. La Giornata la legge e la gioca; senza annuncio la partita non si gioca e la stagione si ferma con un errore che lo dice.
+
+7. **Emendamento (decisione BM, maintainer, 2026-11-24; `L1-COACH-STUDY.md` §4.2).**
+   - **Lo spareggio:** a stima pari sceglie chi ha giocato meno di recente (il giorno dell'ultima formazione che lo schierava), poi l'identità più bassa. Con stime continue la parità è rara: conta soprattutto quando la stima include lo stato del giorno (la rotazione).
+   - **La panchina:** quanti ne permette la regola della serie (`nation.json`), fino a quanti il motore sa giocarne (`MAX_BENCH`, oggi 7); lo scarto si dichiara. Il primo posto è un portiere; gli altri, a turno sui ruoli del campo, il migliore rimasto per ciascuno (non "uno per reparto").
+   - **Il blocco continuo:** l'altezza del blocco e l'ampiezza sono valori continui nella lavagna libera (decisione AL); fino a quando il piano del motore li prende continui (un cambiamento di L0) restano in tre terzi, la radice continua.
+   - **Le radici:** le disposizioni dell'allenatore (idea, adattabilità, lettura del gioco, stile con le persone, rotazione, giovani, rischio) non hanno un'unità: sono percentili del mondo in `[0, 1)`, che è la forma che la decisione AE chiede per il livello; le code sono quelle delle grandezze con un'unità (i giocatori), non di un percentile.
 
 ## Con LUNA
 

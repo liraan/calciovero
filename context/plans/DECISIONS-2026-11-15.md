@@ -106,3 +106,17 @@ Il maintainer, 2026-11-24: "dobbiamo rendere il database di squadre, nomi eccete
 ## Decisione del 2026-11-24: le conferenze stampa nella 0.2
 
 Il maintainer, 2026-11-24: "sì, anticipale". Le conferenze stampa (decisione BC, `L2.md`) passano dalla 1.1 alla 0.2 · Mercato e panchina, insieme ai discorsi dell'allenatore (`L1-COACH.md`), con cui condividono il meccanismo a pezzi (decisione AM): chi parla compone, chi ascolta legge da attore, nessun dado. Chi le legge nella 0.2: i giocatori, il presidente, l'allenatore avversario, il giudice sportivo; i tifosi come attore collettivo e il resto della stampa (voci, pagelle) restano nella 1.1, quindi nella 0.2 la reazione dei tifosi è una lettura facoltativa dichiarata (decisione B). Modulo consigliato, con una versione più immediata per Android.
+
+## Decisione BM, 2026-11-24: lo studio dell'allenatore, le raccomandazioni
+
+Il maintainer, 2026-11-24: "per quanto riguarda i coach procedi con i consigliati". Le otto raccomandazioni di `L1-COACH-STUDY.md` §8 sono decise:
+1. un modello di allenatore, due posti (umano e AI);
+2. le sette radici dell'allenatore (idea, adattabilità, lettura del gioco, stile con le persone, rotazione, giovani, rischio);
+3. niente rapporto carico acuto/cronico: l'infortunio nasce dal carico del giorno contro la capacità del giorno (con il suo ADR);
+4. una lista sola dei tipi di seduta, in un file di dati (`balance/sessions.json`);
+5. ADR-114 emendato (spareggio per chi ha giocato meno di recente, la panchina dalla regola della serie, il blocco continuo con la lavagna, le radici come percentili);
+6. in L1 la partita la riferisce l'allenatore stesso; nella 0.2 le conferenze le delega il vice;
+7. i dieci principi del flusso della settimana, i più urgenti l'agenda, il vice che propone, il tempo che si ferma quando lo dice il giocatore;
+8. le pause per le nazionali in L1 (sono calendario); la programmazione della stagione dopo la settimana.
+
+L'ordine degli anelli: `L1-COACH-STUDY.md` §7.

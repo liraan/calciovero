@@ -1,6 +1,6 @@
 # L1 · Studio dell'allenatore (proposta per il maintainer)
 
-> 2026-11-24, Claude Code. **Proposta, non decisione:** nessun codice finché il maintainer non risponde alle domande del §8. Nasce da una richiesta del maintainer: «dobbiamo studiarlo per bene il coach, perché è anche allenamento, crescita dei giocatori, gestione psicologica, crescita cognitiva e fisica… LUNA e partita vera». Mette insieme quello che è già deciso (`L1-COACH.md`, `L1.md` decisione AB, `L2.md` AS/AU/BB/BC, ADR-059, ADR-114) e ci aggiunge le fonti esterne. Le fonti sono state lette quasi tutte come abstract o sintesi: quelle segnate *(da verificare)* vanno controllate sul testo prima di diventare un numero in `balance/` (grado 1).
+> 2026-11-24, Claude Code. **Deciso:** il maintainer ha accettato le otto raccomandazioni del §8 (decisione BM, 2026-11-24); gli anelli seguono il §7. Nasce da una richiesta del maintainer: «dobbiamo studiarlo per bene il coach, perché è anche allenamento, crescita dei giocatori, gestione psicologica, crescita cognitiva e fisica… LUNA e partita vera». Mette insieme quello che è già deciso (`L1-COACH.md`, `L1.md` decisione AB, `L2.md` AS/AU/BB/BC, ADR-059, ADR-114) e ci aggiunge le fonti esterne. Le fonti sono state lette quasi tutte come abstract o sintesi: quelle segnate *(da verificare)* vanno controllate sul testo prima di diventare un numero in `balance/` (grado 1).
 
 ## 1. LUNA: la proprietà, non l'elenco
 
