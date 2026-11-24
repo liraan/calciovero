@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `49dcf28` - "refactor: the keeper's exit, courage and the header are the actor's (code audit B2, ADR-112)"die" say what the code does (code audit F, third pass)"
+**Last commit verified:** `34e6382` - "refactor: the save's chain once, the restart's stop once (code audit D, third pass)"die" say what the code does (code audit F, third pass)"
 
 ## Mandato attivo (2026-11-16)
 
