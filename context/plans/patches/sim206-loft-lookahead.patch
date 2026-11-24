@@ -1,0 +1,45 @@
+diff --git a/L0-match/crates/ds-match/src/save.rs b/L0-match/crates/ds-match/src/save.rs
+index 2af7385..9bdf03a 100644
+--- a/L0-match/crates/ds-match/src/save.rs
++++ b/L0-match/crates/ds-match/src/save.rs
+@@ -90,7 +90,7 @@ pub const SCHEMA_VERSION: u32 = 5;
+ /// event emission). A bump requires a `L0-match/CHANGELOG-SIM.md` entry and a
+ /// golden-test regeneration. See `doctrine/adr/003-plane-a-enforcement.md` and
+ /// `L0-match/CHANGELOG-SIM.md`.
+-pub const SIM_VERSION: u32 = 205;
++pub const SIM_VERSION: u32 = 206;
+ 
+ /// The save of a single match.
+ #[derive(Debug, Clone, Serialize, Deserialize)]
+diff --git a/L0-match/crates/ds-orchestrator/src/read.rs b/L0-match/crates/ds-orchestrator/src/read.rs
+index eebfdb4..15cc3e0 100644
+--- a/L0-match/crates/ds-orchestrator/src/read.rs
++++ b/L0-match/crates/ds-orchestrator/src/read.rs
+@@ -1595,14 +1595,24 @@ fn pass_candidates(
+             } else {
+                 0.0
+             };
+-            let geom = worth(
++            // The same measure as the ground pass (ADR-052, OI-116 A; SIM 206,
++            // code audit T33): a man he reaches in the air is worth the best
++            // pass he will then have, not only the space where it comes down.
++            // Before, only the ground pass looked a step ahead, and a long ball
++            // was always worth less than a short one to the same space.
++            let space = space_value(tpos, scene.goal, scene.own_goal);
++            let gain = if lookahead && sure > 0.0 {
++                space.max(receiver_best_pass(scene, *id, tpos, risk_appetite, balance))
++            } else {
++                space
++            };
++            let geom = worth_of(
+                 scene,
+-                pos,
+                 sure,
+                 tpos,
++                gain * line_break(pos, tpos, &opponent_lines.0, opponent_lines.1),
+                 lofted_missed_at(scene, pos, tpos, flight),
+                 risk_appetite,
+-                &opponent_lines,
+             );
+             candidates.push(ChoiceCandidate {
+                 kind: ChoiceKind::Loft(*id),
