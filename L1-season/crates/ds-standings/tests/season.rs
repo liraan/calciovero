@@ -10,7 +10,7 @@ use ds_calendar::Calendar;
 use ds_matchday::Matchday;
 use ds_roster::Roster;
 use ds_season::Season;
-use ds_season_api::{MATCH_PLAYED, SeasonPlugin};
+use ds_season_api::{MATCH_PLAYED, SeasonEvent, SeasonPlugin};
 use ds_standings::{FINAL_TABLE, Standings};
 use ds_world::{Pack, World};
 
@@ -33,6 +33,29 @@ fn pack(clubs: usize) -> Pack {
 
 fn season(seed: u64, clubs: usize) -> Season {
     season_with(seed, clubs, true)
+}
+
+/// What the tests read of a season played: its plugins' order, its events,
+/// its fingerprint.
+struct Played {
+    order: Vec<&'static str>,
+    events: Vec<SeasonEvent>,
+    hash: String,
+}
+
+/// The small season (seed 42, 4 clubs, every plugin on), played once for
+/// all the tests of this binary that read it: the same events every time,
+/// so playing it again would only cost time.
+fn small() -> &'static Played {
+    static SMALL: std::sync::OnceLock<Played> = std::sync::OnceLock::new();
+    SMALL.get_or_init(|| {
+        let s = season(42, 4);
+        Played {
+            order: s.order(),
+            events: s.events().to_vec(),
+            hash: s.hash(),
+        }
+    })
 }
 
 fn season_with(seed: u64, clubs: usize, body: bool) -> Season {
@@ -73,9 +96,9 @@ const SMALL_GOLDEN: &str = "5c40f9b6b07024e73116ab92fcf6023b694f4270deb0218dfa4c
 
 #[test]
 fn a_small_league_is_played_whole_by_the_engine() {
-    let s = season(42, 4);
+    let s = small();
     assert_eq!(
-        s.order(),
+        s.order,
         [
             "body",
             "discipline",
@@ -87,13 +110,9 @@ fn a_small_league_is_played_whole_by_the_engine() {
             "standings"
         ]
     );
-    let played: Vec<_> = s
-        .events()
-        .iter()
-        .filter(|e| e.kind == MATCH_PLAYED)
-        .collect();
+    let played: Vec<_> = s.events.iter().filter(|e| e.kind == MATCH_PLAYED).collect();
     assert_eq!(played.len(), 12, "4 clubs, home and away");
-    let get = |e: &ds_season_api::SeasonEvent, k: &str| -> u32 {
+    let get = |e: &SeasonEvent, k: &str| -> u32 {
         e.fields
             .iter()
             .find(|(f, _)| f == k)
@@ -111,7 +130,7 @@ fn a_small_league_is_played_whole_by_the_engine() {
         .count();
     let expected: u32 = u32::try_from(3 * (12 - draws) + 2 * draws).unwrap_or(0);
     let table = s
-        .events()
+        .events
         .iter()
         .find(|e| e.kind == FINAL_TABLE)
         .expect("a final table");
@@ -122,8 +141,7 @@ fn a_small_league_is_played_whole_by_the_engine() {
         .sum();
     assert_eq!(points, expected);
     assert_eq!(
-        s.hash(),
-        SMALL_GOLDEN,
+        s.hash, SMALL_GOLDEN,
         "the small season changed: SIM_VERSION or SEASON_VERSION bump"
     );
 }
@@ -145,9 +163,9 @@ fn the_season_runs_with_the_body_switched_off() {
             .iter()
             .all(|e| e.kind != ds_body::BODIES_AT_KICK_OFF)
     );
-    let on = season(42, 4);
     assert!(
-        on.events()
+        small()
+            .events
             .iter()
             .any(|e| e.kind == ds_body::BODIES_AT_KICK_OFF)
     );
@@ -155,13 +173,12 @@ fn the_season_runs_with_the_body_switched_off() {
 
 /// No banned man in a line-up (`L1.md`, the invariants): every man told
 /// unavailable in the morning is out of that day's line-ups.
-fn no_banned_man_lines_up(s: &Season) {
-    for e in s
-        .events()
+fn no_banned_man_lines_up(events: &[SeasonEvent]) {
+    for e in events
         .iter()
         .filter(|e| e.kind == ds_coach::LINEUP_ANNOUNCED)
     {
-        let out = ds_discipline::unavailable_of(s.events(), e.day);
+        let out = ds_discipline::unavailable_of(events, e.day);
         let l = ds_coach::lineup_of(e).expect("a line-up");
         assert!(
             l.places.iter().all(|p| !out.contains(p)),
@@ -173,7 +190,7 @@ fn no_banned_man_lines_up(s: &Season) {
 
 #[test]
 fn a_banned_man_never_lines_up() {
-    no_banned_man_lines_up(&season(42, 4));
+    no_banned_man_lines_up(&small().events);
 }
 
 /// The human player's seat (decision AI): a valid line-up is played as he
@@ -212,7 +229,7 @@ fn the_human_coach_lines_up_his_side() {
             .cloned()
             .expect("club 0 lines up")
     };
-    let by = |e: &ds_season_api::SeasonEvent| {
+    let by = |e: &SeasonEvent| {
         e.fields
             .iter()
             .find(|(k, _)| k == "by")
@@ -245,7 +262,7 @@ fn the_first_series_is_played_whole() {
         .find(|e| e.kind == FINAL_TABLE)
         .expect("a final table");
     println!("{}", table.fields[0].1);
-    no_banned_man_lines_up(&s);
+    no_banned_man_lines_up(s.events());
     assert!(
         s.events()
             .iter()
