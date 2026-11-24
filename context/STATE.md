@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `5b0d842` - "feat(sim-199): each meets the high ball with his own head; the bench reads the broadcast clock (DD-59)"in time", the kick's pressure from the kicker, the same head at the reception (DD-57)"die" say what the code does (code audit F, third pass)"
+**Last commit verified:** `8326df5` - "refactor: the taker's radius into the balance; ACTIONS as the engine is (code audit C5, F)"in time", the kick's pressure from the kicker, the same head at the reception (DD-57)"die" say what the code does (code audit F, third pass)"
 
 ## Mandato attivo (2026-11-16)
 
