@@ -1,0 +1,17 @@
+[package]
+name = "ds-calendar"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The calendar plugin of Calcio Vero - Deep Simulator: the double round robin of a series, a matchday a week (L1, ADR-113)."
+publish = false
+
+[dependencies]
+ds-season-api = { path = "../ds-season-api" }
+ds-world = { path = "../ds-world" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

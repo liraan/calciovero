@@ -1,0 +1,24 @@
+[package]
+name = "ds-standings"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The standings plugin of Calcio Vero - Deep Simulator: the table of a series from its results (L1, ADR-113)."
+publish = false
+
+[dependencies]
+ds-season-api = { path = "../ds-season-api" }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+ds-season = { path = "../ds-season" }
+ds-world = { path = "../ds-world" }
+ds-roster = { path = "../ds-roster" }
+ds-calendar = { path = "../ds-calendar" }
+ds-matchday = { path = "../ds-matchday" }
+
+[lints]
+workspace = true

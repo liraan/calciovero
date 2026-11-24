@@ -23,6 +23,10 @@ const PROFILES_JSON: &str = include_str!("../../../balance/profiles.json");
 /// A role's profile: `[mean, spread]` per characteristic.
 #[derive(Debug, Clone, Deserialize)]
 pub struct RoleProfile {
+    /// The body, visible (Plane B): height, `[mean, spread]`.
+    pub height_cm: [f32; 2],
+    /// The body, visible: weight, `[mean, spread]`.
+    pub weight_kg: [f32; 2],
     /// `[mean, spread]` per characteristic name.
     pub characteristics: BTreeMap<String, [f32; 2]>,
 }
@@ -50,6 +54,27 @@ impl Profiles {
     #[must_use]
     pub fn load() -> Self {
         serde_json::from_str(PROFILES_JSON).expect("embedded profiles file is valid JSON")
+    }
+
+    /// A player's body in `role` (visible, Plane B), derived by key: taller
+    /// players tend to be heavier (the weight shares half of the height's
+    /// key). The one reading of the bodies of `profiles.json` (code audit,
+    /// third pass, dati 18: before, `ds-fixtures` parsed them again).
+    /// `None` if the role has no profile.
+    #[must_use]
+    pub fn body(&self, seed: u64, player: PlayerId, role: &str) -> Option<(u16, u16)> {
+        let p = self.roles.get(role)?;
+        let z = |u: f32| u.mul_add(2.0, -1.0);
+        let h_key = z(ds_core::hash::unit_from_key(seed, player, "height_cm"));
+        let w_key = 0.5_f32.mul_add(
+            h_key,
+            0.5 * z(ds_core::hash::unit_from_key(seed, player, "weight_kg")),
+        );
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let height = p.height_cm[1].mul_add(h_key, p.height_cm[0]).round() as u16;
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let weight = p.weight_kg[1].mul_add(w_key, p.weight_kg[0]).round() as u16;
+        Some((height, weight))
     }
 
     /// The hidden characteristics of `player` in `role`, derived by key.

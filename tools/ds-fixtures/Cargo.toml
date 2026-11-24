@@ -11,6 +11,7 @@ description = "Test fixtures for Calcio Vero - Deep Simulator: hardcoded squads 
 [dependencies]
 ds-core.workspace = true
 ds-model.workspace = true
+ds-db.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

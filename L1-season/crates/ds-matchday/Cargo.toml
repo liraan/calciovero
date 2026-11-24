@@ -1,0 +1,20 @@
+[package]
+name = "ds-matchday"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The matchday plugin of Calcio Vero - Deep Simulator: every match of the day played by the match engine (L1, ADR-113 §6-7)."
+publish = false
+
+[dependencies]
+ds-season-api = { path = "../ds-season-api" }
+ds-world = { path = "../ds-world" }
+ds-roster = { path = "../ds-roster" }
+ds-calendar = { path = "../ds-calendar" }
+ds-core.workspace = true
+ds-model.workspace = true
+ds-match.workspace = true
+
+[lints]
+workspace = true

@@ -12,7 +12,6 @@
 //! Split out of `pcfm-debug::demo` when the demo binary was separated from
 //! the test runner (ADR-020).
 
-use ds_core::hash::unit_from_key;
 use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
 use ds_model::{
     FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player,
@@ -86,36 +85,11 @@ const BENCH_ROLES: [&str; 5] = [
     "striker",
 ];
 
-const PROFILES_JSON: &str = include_str!("../../../L0-match/balance/profiles.json");
-
-/// The visible part of a role's profile: the body.
-#[derive(serde::Deserialize)]
-struct BodyProfile {
-    height_cm: [f32; 2],
-    weight_kg: [f32; 2],
-}
-
-#[derive(serde::Deserialize)]
-struct Profiles {
-    roles: std::collections::BTreeMap<String, BodyProfile>,
-}
-
-/// A player's body, derived by key from his role's profile: taller players
-/// tend to be heavier (the weight shares half of the height's key).
+/// A player's body, from the one reader of `profiles.json` (`ds-db`).
 fn body(seed: u64, id: PlayerId, role: &str) -> Result<(u16, u16), String> {
-    let profiles: Profiles = serde_json::from_str(PROFILES_JSON).map_err(|e| e.to_string())?;
-    let p = profiles
-        .roles
-        .get(role)
-        .ok_or_else(|| format!("no profile for role {role}"))?;
-    let z = |u: f32| u.mul_add(2.0, -1.0);
-    let h_key = z(unit_from_key(seed, id, "height_cm"));
-    let w_key = 0.5_f32.mul_add(h_key, 0.5 * z(unit_from_key(seed, id, "weight_kg")));
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let height = p.height_cm[1].mul_add(h_key, p.height_cm[0]).round() as u16;
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let weight = p.weight_kg[1].mul_add(w_key, p.weight_kg[0]).round() as u16;
-    Ok((height, weight))
+    ds_db::profiles::Profiles::load()
+        .body(seed, id, role)
+        .ok_or_else(|| format!("no profile for role {role}"))
 }
 
 fn make_player(

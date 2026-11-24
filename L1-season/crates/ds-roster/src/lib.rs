@@ -30,6 +30,10 @@ pub struct Player {
     pub role: String,
     /// His shirt number.
     pub shirt: u32,
+    /// His height, cm (visible, Plane B; from his role's profile).
+    pub height_cm: u16,
+    /// His weight, kg.
+    pub weight_kg: u16,
 }
 
 /// The year the first season starts in (the age of the players is from it).
@@ -39,6 +43,7 @@ pub const FIRST_SEASON: u32 = 2026;
 /// what `players.json` fixes wins over the generator.
 #[must_use]
 pub fn make_squad(pack: &Pack, seed: u64, club: u32) -> Vec<Player> {
+    let profiles = ds_db::profiles::Profiles::load();
     pack.squad_roles
         .iter()
         .enumerate()
@@ -48,6 +53,9 @@ pub fn make_squad(pack: &Pack, seed: u64, club: u32) -> Vec<Player> {
             let key = u64::from(id);
             // 17 to 35 at the start of the first season.
             let age = 17 + u32::try_from(pick(seed, "age", key, 19)).unwrap_or(0);
+            let (height_cm, weight_kg) = profiles
+                .body(seed, ds_core::ids::PlayerId::new(id, 0), role)
+                .unwrap_or((180, 75));
             let made = Player {
                 id,
                 club,
@@ -55,6 +63,8 @@ pub fn make_squad(pack: &Pack, seed: u64, club: u32) -> Vec<Player> {
                 born: FIRST_SEASON - age,
                 role: role.clone(),
                 shirt: k + 1,
+                height_cm,
+                weight_kg,
             };
             match pack
                 .players

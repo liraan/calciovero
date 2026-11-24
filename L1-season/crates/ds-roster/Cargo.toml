@@ -10,6 +10,8 @@ publish = false
 [dependencies]
 ds-season-api = { path = "../ds-season-api" }
 ds-world = { path = "../ds-world" }
+ds-db.workspace = true
+ds-core.workspace = true
 blake3.workspace = true
 serde.workspace = true
 serde_json.workspace = true

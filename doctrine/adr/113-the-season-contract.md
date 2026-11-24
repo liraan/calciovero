@@ -48,7 +48,7 @@ L1 è una stagione intera giocata dal motore di L0. `L1.md` la descrive come un 
 11. **I plugin ufficiali sono compilati dentro il gioco; gli esterni solo WebAssembly** (decisione 4), deterministici, con i NaN canonicalizzati e un limite di carburante per giornata, dalla stessa porta e con la stessa scheda.
 
 12. **Le prove** (`L1.md`, "Test, golden e gate"):
-    - il **golden piccolo**: 2 serie da 6 squadre, 2 stagioni, lo stesso hash, a ogni commit (C2);
+    - il **golden piccolo**: un campionato di 4 squadre (12 partite), lo stesso hash, a ogni commit (C2) (2026-11-24: una partita costa secondi, le 120 partite di 2 serie da 6 squadre per 2 stagioni sarebbero minuti a ogni commit; vanno nel golden pieno);
     - le **combinazioni dei plugin spegnibili** sul mondo piccolo, a ogni commit;
     - le **invarianti** (ognuno incontra ognuno, nessuno gioca due volte lo stesso giorno, i punti tornano, nessuno squalificato in campo, nessuna rosa vuota), a ogni commit;
     - il **golden pieno** (dieci stagioni del mondo intero), di notte e prima di un merge del motore della stagione;
