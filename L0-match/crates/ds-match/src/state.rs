@@ -1253,6 +1253,16 @@ impl MatchState {
                 goals: (self.score.home, self.score.away),
             },
             shootout: self.shootout,
+            #[allow(clippy::cast_possible_truncation)]
+            bodies: self
+                .bodies
+                .iter()
+                .map(|(id, b)| crate::result::EndBody {
+                    player: *id,
+                    fatigue: b.fatigue as f32,
+                    damage: b.damage as f32,
+                })
+                .collect(),
             state_hash,
         }
     }

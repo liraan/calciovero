@@ -1,0 +1,17 @@
+[package]
+name = "ds-body"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The body plugin of Calcio Vero - Deep Simulator: fatigue and muscle damage between matches, and their recovery (L1 step 6, decision AB)."
+publish = false
+
+[dependencies]
+ds-season-api = { path = "../ds-season-api" }
+ds-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

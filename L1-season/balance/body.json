@@ -1,0 +1,9 @@
+{
+  "_note": "The body between matches (ds-body, L1 step 6, decision AB). Each morning a player's fatigue and muscle damage recover by the same share of what is left: the share a day is the one that leaves a tenth after the recovery time of the source (a declared reading of the sources, grade 2 by derivation: 'recovered' read as 90%).",
+  "fatigue_recovery_hours": 72,
+  "_fatigue_recovery_hours_source": "Nédélec M., McCall A., Carling C., Legall F., Berthoin S., Dupont G. (2012). Recovery in soccer: part I - post-match fatigue and time course of recovery. Sports Medicine 42(12), 997-1015: physical performance recovered about 72 h after a match.",
+  "damage_recovery_hours": 120,
+  "_damage_recovery_hours_source": "Ispirlidis I. et al. (2008). Time-course of changes in inflammatory and performance responses following a soccer game. Clinical Journal of Sport Medicine 18(5), 423-431: creatine kinase back to baseline by 96-120 h; the upper bound read here.",
+  "left_after_recovery": 0.1,
+  "_left_after_recovery_source": "the reading of 'recovered' as 90% of the post-match value gone (declared, grade 3 for the 10%)"
+}

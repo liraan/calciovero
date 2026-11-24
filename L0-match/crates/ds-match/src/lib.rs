@@ -54,7 +54,7 @@ pub use record::{AgentFrame, BallFrame, TickRecord};
 pub use recording::{
     PackedRecord, RECORD_FORMAT_VERSION, RecordError, RecordHeader, RecordPhysics,
 };
-pub use result::{MatchResult, MatchStatistics, Score};
+pub use result::{EndBody, MatchResult, MatchStatistics, Score};
 pub use save::{MatchSave, SCHEMA_VERSION, SIM_VERSION, SaveError, replay};
 pub use simulate::{simulate_match, simulate_match_recorded};
 pub use spatial::{AgentState, BallState, SpatialState};

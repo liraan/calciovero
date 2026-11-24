@@ -24,6 +24,7 @@ members = [
     "L1-season/crates/ds-world",
     "L1-season/crates/ds-roster",
     "L1-season/crates/ds-calendar",
+    "L1-season/crates/ds-body",
     "L1-season/crates/ds-coach",
     "L1-season/crates/ds-matchday",
     "L1-season/crates/ds-standings",

@@ -24,6 +24,17 @@ pub struct MatchStatistics {
     pub goals: (u8, u8),
 }
 
+/// A player's body at the final whistle.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct EndBody {
+    /// His place in the match.
+    pub player: ds_core::ids::PlayerId,
+    /// His fatigue, 0 to 1.
+    pub fatigue: f32,
+    /// His muscle damage, 0 to 1.
+    pub damage: f32,
+}
+
 /// The result of a match simulation: the facts, not their telling.
 ///
 /// The commentary is a reader of the events, `ds_narrative::narrate` (ADR-063;
@@ -39,6 +50,11 @@ pub struct MatchResult {
     pub events: EventChain,
     /// The statistics.
     pub stats: MatchStatistics,
+    /// Every player's body at the final whistle, by the match's place: his
+    /// fatigue and his muscle damage (decision AB). Observed, not hashed:
+    /// the season carries it to the next match (L1, `ds-body`).
+    #[serde(default)]
+    pub bodies: Vec<EndBody>,
     /// The state hash, equal to `events.chain_hash()`.
     pub state_hash: Hash,
 }

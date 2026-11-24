@@ -1,18 +1,23 @@
 //! `ds-matchday` — the matchday plugin (`L1.md`, "Giornata"; ADR-113 §6-7).
 //!
 //! The only plugin that calls the match engine. For every match of the day
-//! it builds the two sides from the squads and plays it through
-//! `ds_match::simulate_keyed`, with the world's seed and each place's
-//! identity, so a player keeps his characteristics all season. No result is
-//! drawn from the clubs' strength: every match is played. The day's matches
-//! read the season as it is before them and not one another, so they are
-//! played side by side; their results are told in the order of the match id.
+//! it builds the two sides as their coaches announced them (`ds-coach`,
+//! ADR-114: the eleven, the bench, the block and the width), each man with
+//! the body the season carried (`ds-body`, an optional read: without it
+//! every man starts fresh), and plays it through `ds_match::simulate_keyed`
+//! with the world's seed and each place's identity, so a player keeps his
+//! characteristics all season. No result is drawn from the clubs' strength.
+//! The day's matches read the season as it is before them and not one
+//! another: they are played side by side, their results told in the order
+//! of the match id, with every man's body at the final whistle.
 //!
-//! Every side as its coach announced it (`ds-coach`, ADR-114): the eleven,
-//! the bench, the block and the width. Until `ds-db` holds the squads
-//! (decision AD), the squads are made again from the pack and the seed by
-//! `ds_roster::make_squad`, the same men the roster made.
+//! Until `ds-db` holds the squads (decision AD), the squads are made again
+//! from the pack and the seed by `ds_roster::make_squad`, the same men the
+//! roster made.
 
+use std::collections::BTreeMap;
+
+use ds_body::{BODIES_AT_KICK_OFF, BODIES_FIELD, read_bodies, write_bodies};
 use ds_calendar::{FIXTURE_SCHEDULED, Fixture};
 use ds_coach::{LINEUP_ANNOUNCED, Lineup, PLACES, lineup_of};
 use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
@@ -23,29 +28,49 @@ use ds_model::{
 };
 use ds_roster::Player;
 use ds_season_api::{
-    MATCH_PLAYED, Moment, PluginCard, PluginError, SeasonPlugin, SeasonWorld, Tier,
+    MATCH_PLAYED, Moment, OptionalRead, PluginCard, PluginError, SeasonPlugin, SeasonWorld, Tier,
 };
 use ds_world::Pack;
 
-fn to_match_player(p: &Player, slot: u32, role: &str) -> Result<MatchPlayer, PluginError> {
+/// The bodies at the kick-off, by identity: (fatigue, damage).
+pub type Start = BTreeMap<u32, (f64, f64)>;
+
+/// A match played: the goals, home and away, and every man's body at the
+/// final whistle by his identity.
+pub type Played = (u16, u16, Vec<(u32, f64, f64)>);
+
+fn to_match_player(
+    p: &Player,
+    slot: u32,
+    role: &str,
+    start: (f64, f64),
+) -> Result<MatchPlayer, PluginError> {
+    // His body at the kick-off (decision AB, ADR-067): what the season carried.
+    #[allow(clippy::cast_possible_truncation)]
+    let physical = PhysicalStateMinimal {
+        fatigue: start.0 as f32,
+        damage: start.1 as f32,
+        ..PhysicalStateMinimal::default()
+    };
     MatchPlayer::try_new(
         PlayerId::new(slot, 0),
         p.name.clone(),
         RoleId::new(role).map_err(|e| PluginError(e.to_string()))?,
         p.height_cm,
         p.weight_kg,
-        PhysicalStateMinimal::default(),
+        physical,
         PsychologicalStateMinimal::default(),
     )
     .map_err(|e| PluginError(e.to_string()))
 }
 
-/// The side of `club` for a match, as its coach lined it up, at the places
-/// from `base` (0 home, 100 away), and the identity each place stands for.
+/// The side of a club as its coach lined it up, at the places from `base`
+/// (0 home, 100 away), and the identity each place stands for.
 fn side(
     squad: &[Player],
     lineup: &Lineup,
     base: u32,
+    start: &Start,
 ) -> Result<(Squad, Vec<(PlayerId, PlayerId)>), PluginError> {
     let mut keys = Vec::new();
     let mut xi = Vec::with_capacity(11);
@@ -57,8 +82,17 @@ fn side(
             .ok_or_else(|| PluginError(format!("player {id} is not in club {}", lineup.club)))?;
         let slot = base + u32::try_from(i).unwrap_or(0);
         keys.push((PlayerId::new(slot, 0), PlayerId::new(p.id, 0)));
-        let mp = to_match_player(p, slot, role)?;
-        if i < 11 { xi.push(mp) } else { subs.push(mp) }
+        let mp = to_match_player(
+            p,
+            slot,
+            role,
+            start.get(&p.id).copied().unwrap_or((0.0, 0.0)),
+        )?;
+        if i < 11 {
+            xi.push(mp);
+        } else {
+            subs.push(mp);
+        }
     }
     let block =
         [BlockHeight::Low, BlockHeight::Mid, BlockHeight::High][usize::from(lineup.block.min(2))];
@@ -79,7 +113,7 @@ fn side(
     Ok((squad, keys))
 }
 
-/// A match of the calendar, played: (home goals, away goals).
+/// A match of the calendar, played from the bodies at the kick-off.
 ///
 /// # Errors
 ///
@@ -89,11 +123,12 @@ pub fn play(
     world_seed: u64,
     f: &Fixture,
     lineups: (&Lineup, &Lineup),
-) -> Result<(u16, u16), PluginError> {
+    start: &Start,
+) -> Result<Played, PluginError> {
     let home_squad = ds_roster::make_squad(pack, world_seed, f.home);
     let away_squad = ds_roster::make_squad(pack, world_seed, f.away);
-    let (home, mut keys) = side(&home_squad, lineups.0, 0)?;
-    let (away, away_keys) = side(&away_squad, lineups.1, 100)?;
+    let (home, mut keys) = side(&home_squad, lineups.0, 0, start)?;
+    let (away, away_keys) = side(&away_squad, lineups.1, 100, start)?;
     keys.extend(away_keys);
     let m = Match::new(
         MatchId::new(f.id + 1, 0),
@@ -105,7 +140,15 @@ pub fn play(
         MatchRules::default(),
     );
     let r = ds_match::simulate_keyed(&m, world_seed, &keys, ds_match::MatchConfig::default());
-    Ok((u16::from(r.score.home), u16::from(r.score.away)))
+    let bodies = r
+        .bodies
+        .iter()
+        .filter_map(|b| {
+            let id = keys.iter().find(|(slot, _)| *slot == b.player)?.1.slot();
+            Some((id, f64::from(b.fatigue), f64::from(b.damage)))
+        })
+        .collect();
+    Ok((u16::from(r.score.home), u16::from(r.score.away), bodies))
 }
 
 /// The matchday plugin.
@@ -143,7 +186,10 @@ impl SeasonPlugin for Matchday {
             steps: &[Moment::BeforeMatches],
             depends: &["coach", "roster", "calendar"],
             reads: &["coach.lineup", "roster.squad", "calendar.fixture"],
-            optional_reads: &[],
+            optional_reads: &[OptionalRead {
+                what: "body.state",
+                without: "every man starts fresh, as in a friendly",
+            }],
             writes: &["matchday.result"],
             tier: Tier::Core,
             cost_us: 0,
@@ -166,6 +212,9 @@ impl SeasonPlugin for Matchday {
                 })
             })
             .collect();
+        if today.is_empty() {
+            return Ok(());
+        }
         let lineups: Vec<Lineup> = w
             .events()
             .iter()
@@ -181,17 +230,30 @@ impl SeasonPlugin for Matchday {
             .iter()
             .map(|f| Ok((of(f.home)?, of(f.away)?)))
             .collect::<Result<_, PluginError>>()?;
-        let seed = w.seed();
-        let pack = &self.pack;
-        // Side by side (ADR-113 §7): each match reads only the season before it.
-        // Every match started before any is waited for: the collect is the
-        // parallelism, not a needless one.
+        // The bodies at the kick-off, if the body plugin is on (decision B).
+        let start: Start = w
+            .events()
+            .iter()
+            .rev()
+            .find(|e| e.kind == BODIES_AT_KICK_OFF && e.day == w.day())
+            .and_then(|e| e.fields.first())
+            .map(|(_, t)| {
+                read_bodies(t)
+                    .into_iter()
+                    .map(|(id, f, d)| (id, (f, d)))
+                    .collect()
+            })
+            .unwrap_or_default();
+        let (seed, pack, start) = (w.seed(), &self.pack, &start);
+        // Side by side (ADR-113 §7): each match reads only the season before
+        // it. Every match is started before any is waited for: the collect is
+        // the parallelism, not a needless one.
         #[allow(clippy::needless_collect)]
-        let results: Vec<Result<(u16, u16), PluginError>> = std::thread::scope(|s| {
+        let results: Vec<Result<Played, PluginError>> = std::thread::scope(|s| {
             let handles: Vec<_> = today
                 .iter()
                 .zip(pairs.iter().copied())
-                .map(|(f, l)| s.spawn(move || play(pack, seed, f, l)))
+                .map(|(f, l)| s.spawn(move || play(pack, seed, f, l, start)))
                 .collect();
             handles
                 .into_iter()
@@ -202,7 +264,7 @@ impl SeasonPlugin for Matchday {
                 .collect()
         });
         for (f, r) in today.iter().zip(results) {
-            let (hg, ag) = r?;
+            let (hg, ag, bodies) = r?;
             w.emit(
                 MATCH_PLAYED,
                 &[
@@ -212,6 +274,7 @@ impl SeasonPlugin for Matchday {
                     ("away", f.away.to_string()),
                     ("home_goals", hg.to_string()),
                     ("away_goals", ag.to_string()),
+                    (BODIES_FIELD, write_bodies(&bodies)),
                 ],
             );
         }

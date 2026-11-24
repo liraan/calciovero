@@ -6,6 +6,10 @@ This file records every bump of `SEASON_VERSION` (`L1-season/crates/ds-season/sr
 
 ---
 
+## 3 — the body between matches (DD-67)
+
+`ds-body` (recommended, may be switched off): every man's fatigue and muscle damage at the final whistle (the engine's new observed `MatchResult.bodies`) are carried to the next kick-off, where the matchday gives them to the engine as his starting state (decision AB, ADR-067); each morning they recover by the share of what is left that the sources give (`L1-season/balance/body.json`: Nédélec et al. 2012, 72 h; Ispirlidis et al. 2008, 120 h; "recovered" read as 90%). Switched off, every man starts fresh. The small golden regenerated.
+
 ## 2 — the coach lines up his side (DD-66)
 
 ADR-114: every club's coach is an actor; before the day's matches he announces the line-up (`LineupAnnounced`): for every place of the 4-4-2 and of the bench the man of his squad who fits the role best (first what he lacks against the role's profile, then what he has beyond it), and the plan from his game idea (the block, the width), which the matchday gives the engine as the coach's intention from the kick-off. The small golden regenerated.

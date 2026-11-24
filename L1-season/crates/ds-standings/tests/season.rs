@@ -32,8 +32,12 @@ fn pack(clubs: usize) -> Pack {
 }
 
 fn season(seed: u64, clubs: usize) -> Season {
+    season_with(seed, clubs, true)
+}
+
+fn season_with(seed: u64, clubs: usize, body: bool) -> Season {
     let p = pack(clubs);
-    let plugins: Vec<Box<dyn SeasonPlugin>> = vec![
+    let mut plugins: Vec<Box<dyn SeasonPlugin>> = vec![
         Box::new(Standings::default()),
         Box::new(Matchday::new(p.clone())),
         Box::new(ds_coach::Coach::new(p.clone())),
@@ -41,15 +45,18 @@ fn season(seed: u64, clubs: usize) -> Season {
         Box::new(Roster::new(p.clone())),
         Box::new(World::new(p)),
     ];
+    if body {
+        plugins.push(Box::new(ds_body::Body::default()));
+    }
     let days = ds_calendar::season_days(u32::try_from(clubs).unwrap_or(0));
     let mut s = Season::new(seed, days, plugins).expect("valid cards");
     s.run_to_end().expect("the season runs");
     s
 }
 
-/// The fingerprint of the small season at `SEASON_VERSION` 2 and
+/// The fingerprint of the small season at `SEASON_VERSION` 3 and
 /// `SIM_VERSION` 204; regenerate on a bump of either.
-const SMALL_GOLDEN: &str = "5ee9b9c6e7a581c6a916c093afc1a9030713c513cadf34c06dd3258faf21bdab";
+const SMALL_GOLDEN: &str = "4c128c1b6200f9333aae2de34f7402054fdee9563b4687afe0fcf822fc0a39fd";
 
 #[test]
 fn a_small_league_is_played_whole_by_the_engine() {
@@ -57,6 +64,7 @@ fn a_small_league_is_played_whole_by_the_engine() {
     assert_eq!(
         s.order(),
         [
+            "body",
             "world",
             "calendar",
             "roster",
@@ -103,6 +111,31 @@ fn a_small_league_is_played_whole_by_the_engine() {
         s.hash(),
         SMALL_GOLDEN,
         "the small season changed: SIM_VERSION or SEASON_VERSION bump"
+    );
+}
+
+/// The body may be switched off (`L1.md` step 6): the season runs whole,
+/// every man starting fresh; with it on, the bodies are carried.
+#[test]
+fn the_season_runs_with_the_body_switched_off() {
+    let off = season_with(42, 4, false);
+    assert_eq!(
+        off.events()
+            .iter()
+            .filter(|e| e.kind == MATCH_PLAYED)
+            .count(),
+        12
+    );
+    assert!(
+        off.events()
+            .iter()
+            .all(|e| e.kind != ds_body::BODIES_AT_KICK_OFF)
+    );
+    let on = season(42, 4);
+    assert!(
+        on.events()
+            .iter()
+            .any(|e| e.kind == ds_body::BODIES_AT_KICK_OFF)
     );
 }
 
