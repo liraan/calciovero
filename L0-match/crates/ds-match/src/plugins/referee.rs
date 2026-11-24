@@ -153,10 +153,16 @@ pub const fn kick_off(side: Side, (length, width): (i32, i32)) -> Restart {
 /// the attackers did.
 #[must_use]
 pub fn out_of_play((x, y): (i32, i32), last: Side, (length, width): (i32, i32)) -> Option<Restart> {
-    if (0..=length).contains(&x) && (0..=width).contains(&y) {
+    // The whole ball over the line (Laws 9 and 10): beyond it by its radius,
+    // as the goal reads it (SIM 200, code audit S1; before, the centre on
+    // the line was out, and a ball just in the goal at a tick's end was
+    // given as a goal kick before the goal could be scored).
+    #[allow(clippy::cast_possible_truncation)]
+    let r = ds_core::geometry::BALL_RADIUS_CM as i32;
+    if (-r..=length + r).contains(&x) && (-r..=width + r).contains(&y) {
         return None;
     }
-    if !(0..=width).contains(&y) {
+    if !(-r..=width + r).contains(&y) {
         return Some(Restart {
             side: last.other(),
             spot: (x.clamp(100, length - 100), y.clamp(0, width)),
@@ -594,11 +600,28 @@ impl MatchState {
                 serde_json::json!({ "by": offender.slot(), "force_milli": facts.approach_milli }),
             );
         }
+        // Advantage: the side that suffered it keeps the ball in the
+        // opponents' half, outside the area; play goes on. Not with a man
+        // down (Law 5, SIM 196): the referee stops play for him.
+        let advantage =
+            !knocked && crate::rules::play_advantage(kept, in_area, depth(spot), length);
+        // Law 12: with the advantage played the chance is not denied, and the
+        // offender is cautioned, not sent off (SIM 200, code audit S14;
+        // before, the red for the denial and play went on).
+        let denied = !matches!(facts.denial, crate::rules::Denial::No);
+        if advantage {
+            facts.denial = crate::rules::Denial::No;
+        }
         let card = crate::rules::card_for(
             &facts,
             laws.reckless_speed_milli,
             laws.excessive_speed_milli,
         );
+        let card = if advantage && denied && card.is_none() {
+            Some(crate::rules::Card::Yellow)
+        } else {
+            card
+        };
         let card = match card {
             Some(crate::rules::Card::Yellow) => {
                 crate::rules::card_after(!self.cautioned.insert(offender), card)
@@ -619,11 +642,7 @@ impl MatchState {
                 self.spatial.send_off(offender, (length / 2, -300));
             }
         }
-        // Advantage: the side that suffered it keeps the ball in the
-        // opponents' half, outside the area; play goes on. Not with a man
-        // down (Law 5, SIM 196): the referee stops play for him; before, the
-        // pause was counted and play went on.
-        if !knocked && crate::rules::play_advantage(kept, in_area, depth(spot), length) {
+        if advantage {
             return;
         }
         let side = if fouled_home {
@@ -925,6 +944,9 @@ mod tests {
 
     #[test]
     fn over_the_goal_line_the_attacker_gives_a_goal_kick() {
+        // The whole ball over (Law 10, SIM 200): its centre 5 cm past the line
+        // is still in play; 20 cm past, it is out.
+        assert_eq!(out_of_play((10_505, 5000), Side::Home, PITCH), None);
         let r = out_of_play((10_520, 5000), Side::Home, PITCH).expect("out");
         assert_eq!(
             r,

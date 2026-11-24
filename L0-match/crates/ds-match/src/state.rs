@@ -1030,6 +1030,7 @@ impl MatchState {
             bodies: &mut self.bodies,
             spatial: &self.spatial,
             hidden,
+            reads: crate::registry::card("perception").reads,
         };
         self.perception
             .run(ds_match_api::Phase::Perceive, &mut world);
@@ -1084,6 +1085,7 @@ impl MatchState {
             bodies: &mut self.bodies,
             spatial: &self.spatial,
             hidden: ctx.hidden,
+            reads: crate::registry::card("fatigue").reads,
         };
         self.fatigue_plugin
             .run(ds_match_api::Phase::Move, &mut world);
@@ -1242,6 +1244,11 @@ impl MatchState {
 
     /// A tick of possession to the side that has the ball.
     const fn count_possession(&mut self) {
+        // The shoot-out is not the match's (Law 10): its ticks are not
+        // possession (SIM 200, code audit S20).
+        if matches!(self.half, ds_stats::Half::Shootout) {
+            return;
+        }
         match self.possession {
             Possession::Home => self.home_possession_ticks += 1,
             Possession::Away => self.away_possession_ticks += 1,

@@ -992,7 +992,9 @@ impl MatchState {
             .as_ref()
             .map_or((false, None), |p| (p.cross, p.foot));
         self.pending = None;
-        self.offside_at_pass.clear();
+        // The marks stay (SIM 200, code audit S12, Law 11): a man in an
+        // offside position when it was played who takes the missed pass is
+        // offside; the marks go when someone not marked takes it.
         let fact = crate::fact::Fact::Trajectory {
             actor: passer,
             kind: crate::fact::TrajectoryKind::Pass {
@@ -1054,6 +1056,18 @@ impl MatchState {
             return;
         };
         let home = |who: PlayerId| ctx.match_.home.players.iter().any(|p| p.id == who);
+        // A loose ball (a missed pass, a deflection) taken by a man who was
+        // in an offside position when his teammate played it: offside (Law
+        // 11, SIM 200, code audit S12; before, the marks were cleared when
+        // the pass was missed). Taken by anyone else, the marks go.
+        if pass.is_none() {
+            if self.offside_at_pass.contains(&id) {
+                let offender_home = home(id);
+                self.call_offside(ctx, tick, id, offender_home, (ball, None));
+                return;
+            }
+            self.offside_at_pass.clear();
+        }
         // A ball nobody played to him (loose from a contact, deflected,
         // cleared, bouncing) is a reception like any other (ADR-058; OI-117,
         // SIM 130): his first touch against its speed and the nearest

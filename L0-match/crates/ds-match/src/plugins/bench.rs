@@ -56,7 +56,12 @@ impl MatchPlugin for Bench {
                 world
                     .planned(home)
                     .into_iter()
-                    .filter(|(m, off, _)| u64::from(*m) <= minute && !world.substituted(*off))
+                    // Only a change that can be made: the man is on the pitch
+                    // (SIM 200, code audit S15: one sent off or carried off
+                    // took a place of Law 3 at every stoppage, for ever).
+                    .filter(|(m, off, _)| {
+                        u64::from(*m) <= minute && !world.substituted(*off) && world.on_pitch(*off)
+                    })
                     // Not the taker of the restart: he is on the ball.
                     .filter(|(_, off, _)| Some(*off) != carrier)
                     .map(|(_, off, on)| (off, on))
@@ -70,7 +75,10 @@ impl MatchPlugin for Bench {
                     .ordered(home)
                     .into_iter()
                     .filter(|(off, on)| {
-                        !world.substituted(*off) && !world.substituted(*on) && Some(*off) != carrier
+                        !world.substituted(*off)
+                            && !world.substituted(*on)
+                            && world.on_pitch(*off)
+                            && Some(*off) != carrier
                     })
                     .take(left),
             );
@@ -236,6 +244,7 @@ impl MatchState {
             hidden,
             live,
             minute,
+            reads: crate::registry::card("bench").reads,
         };
         bench.run(ds_match_api::Phase::Referee, &mut world);
         self.bench_plugin = bench;
@@ -296,6 +305,16 @@ impl MatchState {
             }
             let incoming = squad.bench.remove(j);
             self.bodies.insert(incoming.id, PlayerBody::of(&incoming));
+            // His intesa with the eleven starts from the baseline, as the
+            // starters' (SIM 200, code audit S19; before, none, and the
+            // readers fell back on 0.0, 0.5 or the baseline).
+            let baseline =
+                f64::from(ds_calculator::offball::OffBallBalance::load().intesa_baseline_milli)
+                    / 1000.0;
+            for mate in squad.players.iter().map(|p| p.id).filter(|m| *m != off) {
+                self.intesa.entry((incoming.id, mate)).or_insert(baseline);
+                self.intesa.entry((mate, incoming.id)).or_insert(baseline);
+            }
             let outgoing = std::mem::replace(&mut squad.players[i], incoming);
             squad.bench.push(outgoing);
             self.substituted.insert(off);

@@ -104,11 +104,6 @@ pub trait World {
         let _ = home;
         false
     }
-    /// How fast `player` can run, as tired as `fatigue`, cm a tick.
-    fn top_speed(&mut self, player: PlayerKey, fatigue: f64) -> Option<f64> {
-        let _ = (player, fatigue);
-        None
-    }
     /// Replaces `off` with `on` from the bench (Law 3); whether it was made.
     fn substitute(&mut self, off: PlayerKey, on: PlayerKey) -> bool {
         let _ = (off, on);

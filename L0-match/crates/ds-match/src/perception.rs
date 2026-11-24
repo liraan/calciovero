@@ -108,8 +108,10 @@ pub fn visible_to(spatial: &SpatialState, from: PlayerId) -> Vec<PlayerId> {
         return Vec::new();
     };
     let origin = observer.position;
+    // On the pitch only (SIM 200, code audit S10): the men sent off sit by
+    // the benches, and nobody sees them as players.
     spatial
-        .iter()
+        .on_pitch()
         .filter_map(|(id, other)| {
             // One cone test for the eye (code audit D: written here and in
             // `in_cone`).

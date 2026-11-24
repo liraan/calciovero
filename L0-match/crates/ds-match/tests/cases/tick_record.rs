@@ -179,10 +179,14 @@ fn the_ball_never_stays_out_of_the_pitch() {
         i32::from(m.pitch.width_m) * 100,
     );
     let (_, records) = recorded();
+    // In play while any of it is on the line (Laws 9-10, SIM 200): the
+    // centre may be up to the ball's radius past it.
+    #[allow(clippy::cast_possible_truncation)]
+    let r_cm = ds_core::geometry::BALL_RADIUS_CM as i32;
     for r in records {
         let (x, y, _) = r.ball.position;
         assert!(
-            (0..=length).contains(&x) && (0..=width).contains(&y),
+            (-r_cm..=length + r_cm).contains(&x) && (-r_cm..=width + r_cm).contains(&y),
             "tick {}: ball at {:?}",
             r.tick,
             r.ball.position

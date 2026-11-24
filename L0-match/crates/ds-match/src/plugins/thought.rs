@@ -1341,7 +1341,7 @@ impl MatchState {
 
         // Compute the current coverage set (immutable phase).
         let (nominal_carrier, current): (PlayerId, BTreeSet<PlayerId>) = {
-            let (own, opp) = self.squads(ctx);
+            let (_, opp) = self.squads(ctx);
             let mut set: BTreeSet<PlayerId> = BTreeSet::new();
             for p in &opp.players {
                 if let Some(a) = self.spatial.agent(p.id) {
@@ -1351,7 +1351,10 @@ impl MatchState {
                     }
                 }
             }
-            let Some(carrier) = nearest_in_squad(&self.spatial, own, ball) else {
+            // The carrier himself (SIM 200, code audit S11): before, the
+            // nearest of his side to the ball, a leftover of the "nearest
+            // agent" model, which named a teammate when the ball ran ahead.
+            let Some(carrier) = self.spatial.carrier() else {
                 return;
             };
             (carrier, set)

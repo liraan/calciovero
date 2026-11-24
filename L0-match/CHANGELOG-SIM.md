@@ -8,6 +8,12 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 200 — seconda passata dell'audit (DD-60)
+
+Seconda passata dell'audit (S1-S20, `CODE-AUDIT.md`): la palla è fuori solo intera oltre la linea, come per il gol (S1); il tiro alto vale la stessa probabilità per la parte che resta sotto la traversa, non un peso fisso di 0.85 (S4, ADR-052); il colpo di testa pensato usa il proprio errore stimato, senza la pressione infinita e la potenza contata due volte (S3); il lancio è valutato dove il compagno è, come il motore lo calcia (S2); il cono non vede gli espulsi (S10); la pressione nomina il portatore (S11); il fuorigioco resta segnato se il passaggio è sbagliato o deviato (S12, Legge 11); vantaggio su chiara occasione: giallo, non rosso (S14, Legge 12); un cambio impossibile non occupa un posto (S15); la deriva del passaggio e del rinvio dal piede, non dal segno di dy (S16); il subentrato parte dall'intesa di base (S19); i tiri dei rigori non contano nel possesso (S20); `World` dà solo le caratteristiche che la scheda del plugin dichiara, `World::top_speed` tolto (S6).
+
+Golden rigenerati; semi coppa 110, pari al 90' 48, decisa 42, colpo 43. ds-reference 42..101: **7 su 22** (penalties, ground_duels, take_ons_won, fouls, red_cards, goal_kicks, saves); gol 6.53, autogol 0.82, tiri 42.43, in porta 19.7, passaggi 1854.2, falli 31.4, gialli 1.45, rossi 0.55, parate 12.47, fuorigioco 14.73, recupero 8.79/8.21.
+
 ## 199 — Ognuno incontra il pallone alto con la sua testa; la panchina legge l'orologio della trasmissione (DD-59)
 
 Audit del codice C5: il pallone alto si incontrava a 180 cm per tutti; ora all'altezza di ciascuno (`intercept`, `drop_point`), e dove serve un uomo medio con `movement.json` `height_ref`. Trovato durante il lavoro: la panchina confrontava il minuto di un cambio pianificato e delle pause per l'acqua con l'orologio che corre nel recupero; un primo tempo con un recupero lungo arrivava al "60'" e faceva lì il cambio del secondo tempo. Ora nel recupero l'orologio resta a "45'+".

@@ -635,8 +635,18 @@ impl GroundTruth {
         pos: (i32, i32),
     ) -> Option<(f64, f64, f64)> {
         let risk_appetite = f64::from(self.risk_appetite(winner));
-        let own_error = self.header_error_rad(winner, false);
-        let closing = i64::MAX;
+        // His own miss as he reckons it, like a shot's (SIM 200, code audit
+        // S3): his heading for skill and foot alike, read through his game
+        // reading; the power and the pressure enter once, in the read.
+        // Before, the composed error (power counted twice) and a closing of
+        // i64::MAX, which made every opponent in the scene a full pressure.
+        let l = self.latents_for(winner);
+        let own_error = self.kick_balance.miss_reckoned(
+            f64::from(l.technical.heading),
+            f64::from(l.technical.heading),
+            f64::from(l.cognitive.game_reading),
+        );
+        let closing = 0;
         read::header_shot(
             scene,
             pos,
@@ -733,7 +743,15 @@ impl GroundTruth {
         // always drifted towards the centre of the pitch (a declared
         // placeholder): a misplaced pass never ran out over a touchline.
         let contact = ctx.gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
-        let foot_side = if dy >= 0.0 { 1.0 } else { -1.0 };
+        // The side of the foot he kicks with, as the comment says (SIM 200,
+        // code audit S16; before, the sign of the pass's absolute `dy`,
+        // the same for both feet, the defect SIM 55 removed from the shot).
+        let left_footed = match ctx.foot {
+            Some(Side::Left) => true,
+            Some(Side::Right) => false,
+            None => passer.technical.left_foot > passer.technical.right_foot,
+        };
+        let foot_side = if left_footed { 1.0 } else { -1.0 };
         let drift = distance * error * contact * foot_side;
         #[allow(clippy::cast_possible_truncation)]
         let aim = (
@@ -872,7 +890,13 @@ impl GroundTruth {
             * k.pass_error_ref_rad
             / k.error_ref_rad.max(1e-6);
         let contact = gait.clamp(0.0, 1.0).mul_add(2.0, -1.0);
-        let foot_side = if dy >= 0.0 { 1.0 } else { -1.0 };
+        // The side of his stronger foot, the one he clears with (SIM 200,
+        // code audit S16; before, the sign of the absolute `dy`).
+        let foot_side = if l.technical.left_foot > l.technical.right_foot {
+            1.0
+        } else {
+            -1.0
+        };
         let drift = distance * error * contact * foot_side;
         let (ux, uy) = if distance > 0.0 {
             (dx / distance, dy / distance)

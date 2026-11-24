@@ -915,16 +915,26 @@ fn shot_candidates(
                     visibility: shot_visibility,
                 });
                 // OI-100: the shot's height is also a choice. A high shot
-                // (contact_height 1.0) goes over the keeper when he is low;
-                // it is harder to place and riskier, so it wins only for a
-                // shooter who reads the game and accepts the risk.
+                // (contact_height 1.0) is aimed nearer the bar: the same
+                // chance, if it stays under it. How sure he is of that is his
+                // own spread against the room under the bar, as for the post
+                // (SIM 200, code audit S4: before, a fixed 0.85, a weight for
+                // the kind of option that ADR-052 removes).
+                let aim_h = f64::from(m.kick.aim_height_cm(1.0));
+                let room = (f64::from(ds_calculator::laws::law1().goal_height_cm) - aim_h).max(0.0);
+                let miss_v = goal_dist as f64 * spread;
+                let under = if room + miss_v > 0.0 {
+                    room / (room + miss_v)
+                } else {
+                    0.0
+                };
                 candidates.push(ChoiceCandidate {
                     kind: ChoiceKind::Shoot {
                         aim_y,
                         power,
                         contact_height: 1.0,
                     },
-                    geometric: geom * 0.85,
+                    geometric: worth_of(chance * under),
                     visibility: shot_visibility,
                 });
             }
@@ -1534,6 +1544,12 @@ fn pass_candidates(
         // and it reaches farther; it is less precise and harder to control
         // (`loft_salience`). A teammate too far for a ground pass may be
         // found in the air (ADR-051, the long ball, the switch, the cross).
+        // The engine plays a lofted ball to where the man is now, not into
+        // his run: the same target here (SIM 200, code audit S2; before, it
+        // was valued at the run's lead point the ground pass reckons).
+        let tpos = here;
+        #[allow(clippy::cast_precision_loss)] // cm on a pitch
+        let d = distance_squared(pos, here).isqrt() as f64;
         if d >= balance.loft_min_cm as f64 {
             // In the air it goes over the lines; who is first where it
             // lands, after its flight, less the spread of a long kick.

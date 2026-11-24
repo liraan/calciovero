@@ -35,6 +35,9 @@ pub(crate) struct EngineWorld<'a> {
     pub(crate) bodies: &'a mut BTreeMap<PlayerId, PlayerBody>,
     pub(crate) spatial: &'a SpatialState,
     pub(crate) hidden: &'a mut ds_orchestrator::GroundTruth,
+    /// What the plugin using it declares it reads (its card, ADR-063 §4):
+    /// a characteristic not declared is not given (code audit S6).
+    pub(crate) reads: &'static [&'static str],
 }
 
 impl EngineWorld<'_> {
@@ -86,6 +89,11 @@ impl World for EngineWorld<'_> {
     }
 
     fn characteristic(&mut self, p: PlayerKey, name: &str) -> Option<f64> {
+        // Only what the plugin's card declares (ADR-063 §4, code audit S6).
+        if !self.reads.contains(&name) {
+            debug_assert!(false, "{name:?} read without its card declaring it");
+            return None;
+        }
         let id = self.id(p)?;
         self.hidden.characteristic(id, name)
     }
@@ -100,6 +108,8 @@ pub(crate) struct StateWorld<'a> {
     pub(crate) hidden: &'a mut ds_orchestrator::GroundTruth,
     pub(crate) live: &'a mut ds_model::Match,
     pub(crate) minute: u64,
+    /// What the plugin using it declares it reads (its card, ADR-063 §4).
+    pub(crate) reads: &'static [&'static str],
 }
 
 impl StateWorld<'_> {
@@ -168,6 +178,11 @@ impl World for StateWorld<'_> {
     }
 
     fn characteristic(&mut self, p: PlayerKey, name: &str) -> Option<f64> {
+        // Only what the plugin's card declares (ADR-063 §4, code audit S6).
+        if !self.reads.contains(&name) {
+            debug_assert!(false, "{name:?} read without its card declaring it");
+            return None;
+        }
         let id = self.id(p)?;
         self.hidden.characteristic(id, name)
     }
@@ -250,11 +265,6 @@ impl World for StateWorld<'_> {
 
     fn on_pitch(&self, p: PlayerKey) -> bool {
         self.state.spatial.on_pitch().any(|(id, _)| key(*id) == p)
-    }
-
-    fn top_speed(&mut self, p: PlayerKey, fatigue: f64) -> Option<f64> {
-        let id = self.id(p)?;
-        Some(self.hidden.top_speed_now(id, fatigue))
     }
 
     fn substitute(&mut self, off: PlayerKey, on: PlayerKey) -> bool {

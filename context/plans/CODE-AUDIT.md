@@ -98,3 +98,37 @@ Conteggio dei test 589 contro 605 `#[test]`; `rules.rs` citato in CONTRIBUTING/A
 4. **C1, C2, C6**: una sola fonte per porta/area/raggi, e `ticks_per_second` o vero o costante.
 5. B2-B4 e le ridondanze D: decisione architetturale (ADR) prima di toccare.
 6. Documentazione F: un passaggio unico, solo doc.
+
+
+## Seconda passata (2026-11-24, notte)
+
+Rilanciata l'analisi con gli stessi 8 analisti, a partire da questo file. Nuovi rilievi e voci chiuse ma non del tutto, in ordine di priorità.
+
+**Alta (cambiano la partita o aprono il piano A)**
+- S1. ✅ (SIM 200) Gol perso con la palla appena oltre la linea (0-11 cm) a fine tick: il gol vuole la palla intera, `out_of_play` il centro, e assegna rimessa dal fondo (ball.rs:121, 250; referee.rs:156). Anche la rimessa laterale va a palla intera (Legge 9).
+- S2. ✅ (SIM 200) Il lancio alto si valuta verso il punto d'anticipo della corsa, il motore lo calcia dove il compagno è adesso (read.rs:1445, thought.rs:438).
+- S3. ✅ (SIM 200) Il colpo di testa pensato: `closing = i64::MAX` dà sempre pressione piena; la potenza contata due volte (lib.rs:637, read.rs:457, 1060).
+- S4. ✅ (SIM 200) Peso fisso 0.85 sul tiro alto (read.rs:921): un peso per opzione contro ADR-052.
+- S5. Passaggi durante la serie dei rigori (Legge 10): il test usa un seme scelto perché non succede (extra_time.rs).
+- S6. ◐ (SIM 200: `World` filtra per scheda, `top_speed` tolto; restano `characteristic` pubblica in GroundTruth, il test che non legge mod.rs, `PlayerLatents` pubblico) `GroundTruth::characteristic(nome)` resta pubblica e generica; i `World` la inoltrano senza guardare la scheda; il test di ADR-112 non legge plugins/mod.rs; `World::top_speed` morto; `PlayerLatents` con campi pubblici e `Debug` in ds-db.
+- S7. Il motore mette ancora nella scena letture dell'attore (`horizon_cm`, `kicker_nerves`).
+
+**Media**
+- S8. Portiere espulso o portato fuori: nessuno prende i guanti (Legge 3), ogni tiro nello specchio è gol.
+- S9. `deflect_ball` non respinge una palla Loose o portata sul palo.
+- S10. ✅ (SIM 200) `visible_to`/`nearest_to_point` vedono gli espulsi; il record li elenca tra i ventidue e gli strumenti li contano.
+- S11. ✅ (SIM 200) Pressure nomina il compagno più vicino, non il portatore.
+- S12. ✅ (SIM 200) Il fuorigioco si cancella se il passaggio manca il destinatario o è deviato (Legge 11).
+- S13. "Ultimo tocco" diverso per fuori e porta (`Touches` contro possesso).
+- S14. ✅ (SIM 200) Chiara occasione negata più vantaggio: rosso e si gioca (la Legge 12 vuole il giallo).
+- S15. ✅ (SIM 200) Un cambio impossibile (uomo espulso) occupa per sempre un posto della Legge 3.
+- S16. ✅ (SIM 200) Deriva di passaggio e rinvio dal segno assoluto di `dy`, non dal piede.
+- S17. `Hold` senza la perdita (due misure del tenere palla); `brings()` calcolato e buttato, `progression_*` morte.
+- S18. Lancio e rinvio pensati con un calciatore medio; il portiere immaginato con 3000/400/200 scritti a mano; `POST_RADIUS_CM`.
+- S19. ✅ (SIM 200) Intesa di un subentrato letta con tre ripieghi (0.0, 0.5, base).
+- S20. ✅ (SIM 200) Il possesso conta i tick della serie dei rigori.
+- S21. Gli strumenti: tabellone numerato da 0; passaggi persi da ds-reference (deviati, giocati di prima, in fuorigioco); portiere per slot in GUI e ds-reference; `--instruct` sul tick assoluto; post-it dei subentrati; arbitro del TUI.
+- S22. `MatchRules.duration_minutes`, `half_time_minute`, `Match.seed` mai letti; `MAX_SUBSTITUTIONS` doppio di `subs_allowed`; 10 tick/s ancora in calcolatore, orchestratore e test.
+- S23. Chiavi morte: `influence.json` (cinque), `reception.json` (due), `decision_bias` con due significati, `speed_ref_cm_per_tick` con due significati.
+
+**Bassa (documentazione e ridondanze)**: doc di B5 nel motore (lib, engine, simulate, save, driver), `sheet.toml` in STRUCTURE, ACTIONS (coraggio e uscita già fatti), README (motore 184), SOURCES (stati "sourced" su valori arbitrari, formule vecchie), `MatchEvent` campi temporali, `why.rs` con 5250/10500/3400 e un minuto diverso dalla cronaca, `LawsBalance` e `Law1` due parser, `MovementBalance`/`KickBalance` non in cache, copie (cono, `check_shot_crossing`/`check_goal_line`, piede, composure, tired), test (knock con "portato fuori", repertorio incompleto, test doppi, id fissi nei test, `reach_has_one_value`), metadati del workspace.

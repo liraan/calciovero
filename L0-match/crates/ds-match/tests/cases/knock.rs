@@ -12,7 +12,7 @@
 //! full speed) to seed 109; at SIM 195 (the braking of the source, the knock
 //! threshold refixed on the slower fouls) to seed 49; at SIM 196 (the audit's
 //! bugs) to seed 46; at SIM 197 (one "in time", the kick's pressure, the
-//! reception's head) to seed 48; at SIM 198 (the flight through the air) to seed 45; at SIM 199 (his own head; the broadcast clock for the bench) to seed 48: the range follows it.
+//! reception's head) to seed 48; at SIM 198 (the flight through the air) to seed 45; at SIM 199 (his own head; the broadcast clock for the bench) to seed 48; at SIM 200 the second audit pass to seed 43: the range follows it.
 
 use crate::ds_match::simulate_from_seed_recorded;
 use ds_fixtures::{first_seed, match_fixture};
