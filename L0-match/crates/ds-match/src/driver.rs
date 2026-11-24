@@ -109,3 +109,33 @@ pub fn simulate_from_seed_recorded(
     };
     crate::simulate::simulate_match_recorded(&mut ctx)
 }
+
+/// [`simulate_keyed`] with the tick record (ADR-065): the same match, the
+/// same result, every tick recorded for a view. Recording observes, it does
+/// not act.
+///
+/// # Panics
+///
+/// As [`simulate_from_seed`]: another tick rate than `TICKS_PER_SECOND`.
+#[must_use]
+pub fn simulate_keyed_recorded(
+    match_: &Match,
+    world_seed: u64,
+    keys: &[(ds_core::ids::PlayerId, ds_core::ids::PlayerId)],
+    config: MatchConfig,
+) -> (MatchResult, Vec<crate::record::TickRecord>) {
+    assert_eq!(
+        config.ticks_per_second,
+        crate::context::TICKS_PER_SECOND,
+        "the balance is written per tick at ten ticks a second (ADR-069)"
+    );
+    let mut hidden = GroundTruth::for_match_keyed(world_seed, match_, keys);
+    let mut chain = EventChain::new();
+    let mut ctx = MatchContext {
+        match_,
+        hidden: &mut hidden,
+        chain: &mut chain,
+        config,
+    };
+    crate::simulate::simulate_match_recorded(&mut ctx)
+}

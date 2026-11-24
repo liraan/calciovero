@@ -19,6 +19,9 @@ ds-standings = { path = "../ds-standings" }
 ds-body = { path = "../ds-body" }
 ds-discipline = { path = "../ds-discipline" }
 ds-week = { path = "../ds-week" }
+ds-core.workspace = true
+ds-model.workspace = true
+ds-match.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

@@ -4,6 +4,18 @@ Le scelte di design della GUI prese con il maintainer tra il 13 e il 16 novembre
 
 **Regola di lavoro:** il design si discute prima di applicarlo (RULES A1), e **ogni cambio visivo si mostra prima al maintainer con un'anteprima** (maintainer, 16 novembre 2026: "dammi sempre una preview"): un prototipo o uno screenshot, prima di passarlo al codice. I gruppi e i post-it nuovi si decidono quando c'è il contenuto da metterci, non prima.
 
+## Le finestre e la scrivania (decisione BO, maintainer, 2026-11-24)
+
+Sostituisce i post-it qui sotto come contenitori; la lavagna resta lo sfondo.
+
+- **Finestre, non post-it.** Ogni contenuto è una finestra che si affianca alle altre (tiling), si espande per avere più dati, si chiude. Chi gioca compone la sua schermata; il gioco ne fornisce già una composta, e la schermata si salva.
+- **La colonna di sinistra:** le icone delle finestre, raggruppate (Scrivania: agenda, rosa, tattica, partita; Stagione: classifica, calendario, statistiche; Società: mercato, osservatori, club ed economia, staff). Un clic apre la finestra; la colonna si allarga con le etichette. Compare l'icona di un modulo solo quando il modulo esiste (niente icone morte).
+- **La lavagna come sfondo, con la tattica:** con palla, transizione, senza palla; gli aiuti del vice e degli analisti su come disporre la squadra, sempre dai fatti visti (piano B), mai dalle caratteristiche (piano A).
+- **Le schede giocatore** dettagliate, con le stime (intervalli che si stringono con le partite viste), mai i numeri veri.
+- **La partita in 2.5D si apre in una finestra con la cornice di un tablet**, come se l'allenatore la guardasse da lì; chiuso il tablet si torna alla lavagna.
+- **Android:** una finestra alla volta a tutto schermo, la colonna diventa un cassetto; il tablet è lo schermo stesso, senza cornice.
+- Le prove in immagine del 2026-11-24 (la scrivania, la partita nel tablet) sono il riferimento dell'anteprima.
+
 ## La lavagna, sfondo di tutto
 
 - Lo sfondo è la lavagna tattica, in tre temi: **Lavagna**, **Notte**, **Carta**. I post-it seguono il tema.

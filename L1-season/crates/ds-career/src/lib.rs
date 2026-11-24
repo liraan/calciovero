@@ -66,6 +66,31 @@ pub struct TableLine {
     pub row: ds_standings::Row,
 }
 
+/// A match to watch (`Career::watch`).
+#[derive(Debug, Clone)]
+pub struct Watch {
+    /// The match as the engine played it.
+    pub match_: ds_model::Match,
+    /// The identity each place stands for.
+    pub keys: Vec<(ds_core::ids::PlayerId, ds_core::ids::PlayerId)>,
+    /// The world's seed.
+    pub seed: u64,
+}
+
+impl Watch {
+    /// The match played again with every tick recorded: the same result as
+    /// in the season.
+    #[must_use]
+    pub fn recorded(&self) -> (ds_match::MatchResult, Vec<ds_match::TickRecord>) {
+        ds_match::simulate_keyed_recorded(
+            &self.match_,
+            self.seed,
+            &self.keys,
+            ds_match::MatchConfig::default(),
+        )
+    }
+}
+
 /// The save of a career: the club, and the season's save (ADR-113 §9).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct CareerSave {
@@ -332,6 +357,48 @@ impl Career {
         Ok(())
     }
 
+    /// A match of the calendar already played, to watch: the match as the
+    /// engine played it in the season (the same sides, line-ups and bodies)
+    /// with the identity each place stands for; played again with
+    /// `ds_match::simulate_keyed_recorded` and this career's seed it gives
+    /// the same result, every tick recorded.
+    ///
+    /// # Errors
+    ///
+    /// A [`CareerError`] if that match is not in the calendar of that day
+    /// or not played yet.
+    pub fn watch(&self, f: &Fixture) -> Result<Watch, CareerError> {
+        if f.score.is_none() {
+            return Err(CareerError("not played yet".into()));
+        }
+        let events = self.season.events();
+        let cal = ds_matchday::fixtures_on(events, f.day)
+            .into_iter()
+            .find(|c| c.home == f.home && c.away == f.away)
+            .ok_or_else(|| CareerError("no such match".into()))?;
+        let lineups = ds_matchday::lineups_on(events, f.day);
+        let of = |club: u32| {
+            lineups
+                .iter()
+                .find(|l| l.club == club)
+                .ok_or_else(|| CareerError(format!("no line-up of club {club}")))
+        };
+        let start = ds_matchday::start_on(events, f.day);
+        let (match_, keys) = ds_matchday::build(
+            &self.pack,
+            self.seed,
+            &cal,
+            (of(f.home)?, of(f.away)?),
+            &start,
+        )
+        .map_err(|e| CareerError(e.0))?;
+        Ok(Watch {
+            match_,
+            keys,
+            seed: self.seed,
+        })
+    }
+
     /// The save, as text.
     #[must_use]
     pub fn save(&self) -> String {
@@ -386,15 +453,25 @@ mod tests {
     /// the same as one never saved.
     #[test]
     fn a_career_is_played_saved_and_resumed() {
-        let mut c = Career::new(pack(4), 42, 1).expect("a career");
-        assert_eq!(c.squad().len(), 23);
-        assert_eq!(c.table().len(), 4);
-        let mut l = c.proposal().expect("a proposal");
-        l.places.swap(9, 10);
-        c.give_lineup(&l.places, 0, 2).expect("taken");
-        let played = c.advance_to_next_match().expect("plays");
-        assert!(played.iter().any(|f| f.home == 1 || f.away == 1));
-        let mine = c
+        let mut career = Career::new(pack(4), 42, 1).expect("a career");
+        assert_eq!(career.squad().len(), 23);
+        assert_eq!(career.table().len(), 4);
+        let mut proposal = career.proposal().expect("a proposal");
+        proposal.places.swap(9, 10);
+        career.give_lineup(&proposal.places, 0, 2).expect("taken");
+        let played = career.advance_to_next_match().expect("plays");
+        let mine_played = played
+            .iter()
+            .find(|f| f.home == 1 || f.away == 1)
+            .expect("my match");
+        // The match watched is the match of the season.
+        let (result, records) = career.watch(mine_played).expect("watchable").recorded();
+        assert_eq!(
+            Some((u32::from(result.score.home), u32::from(result.score.away))),
+            mine_played.score
+        );
+        assert_ne!(records.len(), 0);
+        let mine = career
             .events()
             .iter()
             .filter(|e| e.kind == ds_coach::LINEUP_ANNOUNCED)
@@ -403,14 +480,14 @@ mod tests {
             .expect("my line-up");
         assert_eq!(
             (mine.places.clone(), mine.block, mine.width),
-            (l.places.clone(), 0, 2)
+            (proposal.places.clone(), 0, 2)
         );
-        assert!(c.table().iter().map(|t| t.row.played).sum::<u32>() > 0);
-        let saved = c.save();
+        assert!(career.table().iter().map(|t| t.row.played).sum::<u32>() > 0);
+        let saved = career.save();
         let mut back = Career::load(pack(4), &saved).expect("loads");
-        assert_eq!(back.day(), c.day());
-        let a = c.advance_to_next_match().expect("plays");
-        let b = back.advance_to_next_match().expect("plays");
-        assert_eq!(a, b);
+        assert_eq!(back.day(), career.day());
+        let ahead = career.advance_to_next_match().expect("plays");
+        let resumed = back.advance_to_next_match().expect("plays");
+        assert_eq!(ahead, resumed);
     }
 }

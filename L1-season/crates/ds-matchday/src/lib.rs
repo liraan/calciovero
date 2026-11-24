@@ -113,18 +113,20 @@ fn side(
     Ok((squad, keys))
 }
 
-/// A match of the calendar, played from the bodies at the kick-off.
+/// The match of the calendar `f` as the engine plays it: the two sides as
+/// their coaches lined them up, from the bodies at the kick-off, and the
+/// identity each place stands for (the keys of `simulate_keyed`).
 ///
 /// # Errors
 ///
 /// A [`PluginError`] if a side cannot be lined up.
-pub fn play(
+pub fn build(
     pack: &Pack,
     world_seed: u64,
     f: &Fixture,
     lineups: (&Lineup, &Lineup),
     start: &Start,
-) -> Result<Played, PluginError> {
+) -> Result<(Match, Vec<(PlayerId, PlayerId)>), PluginError> {
     let home_squad = ds_roster::make_squad(pack, world_seed, f.home);
     let away_squad = ds_roster::make_squad(pack, world_seed, f.away);
     let (home, mut keys) = side(&home_squad, lineups.0, 0, start)?;
@@ -139,6 +141,68 @@ pub fn play(
         MatchSeed::from_raw(world_seed),
         MatchRules::default(),
     );
+    Ok((m, keys))
+}
+
+/// The matches of the calendar on `day`, from the events told.
+#[must_use]
+pub fn fixtures_on(events: &[ds_season_api::SeasonEvent], day: u32) -> Vec<Fixture> {
+    events
+        .iter()
+        .filter(|e| e.kind == FIXTURE_SCHEDULED && field(e, "day") == Some(day))
+        .filter_map(|e| {
+            Some(Fixture {
+                id: field(e, "id")?,
+                matchday: field(e, "matchday")?,
+                day: field(e, "day")?,
+                home: field(e, "home")?,
+                away: field(e, "away")?,
+            })
+        })
+        .collect()
+}
+
+/// The line-ups announced on `day`.
+#[must_use]
+pub fn lineups_on(events: &[ds_season_api::SeasonEvent], day: u32) -> Vec<Lineup> {
+    events
+        .iter()
+        .filter(|e| e.kind == LINEUP_ANNOUNCED && e.day == day)
+        .filter_map(lineup_of)
+        .collect()
+}
+
+/// The bodies at the kick-off on `day`, if the body plugin told them
+/// (decision B: else every man starts fresh).
+#[must_use]
+pub fn start_on(events: &[ds_season_api::SeasonEvent], day: u32) -> Start {
+    events
+        .iter()
+        .rev()
+        .find(|e| e.kind == BODIES_AT_KICK_OFF && e.day == day)
+        .and_then(|e| e.fields.first())
+        .map(|(_, t)| {
+            read_bodies(t)
+                .into_iter()
+                .map(|(id, f, d)| (id, (f, d)))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// A match of the calendar, played from the bodies at the kick-off.
+///
+/// # Errors
+///
+/// A [`PluginError`] if a side cannot be lined up.
+pub fn play(
+    pack: &Pack,
+    world_seed: u64,
+    f: &Fixture,
+    lineups: (&Lineup, &Lineup),
+    start: &Start,
+) -> Result<Played, PluginError> {
+    let (m, keys) = build(pack, world_seed, f, lineups, start)?;
     let r = ds_match::simulate_keyed(&m, world_seed, &keys, ds_match::MatchConfig::default());
     let bodies = r
         .bodies
@@ -219,29 +283,11 @@ impl SeasonPlugin for Matchday {
     }
 
     fn run(&mut self, _: Moment, w: &mut SeasonWorld<'_>) -> Result<(), PluginError> {
-        let today: Vec<Fixture> = w
-            .events()
-            .iter()
-            .filter(|e| e.kind == FIXTURE_SCHEDULED && field(e, "day") == Some(w.day()))
-            .filter_map(|e| {
-                Some(Fixture {
-                    id: field(e, "id")?,
-                    matchday: field(e, "matchday")?,
-                    day: field(e, "day")?,
-                    home: field(e, "home")?,
-                    away: field(e, "away")?,
-                })
-            })
-            .collect();
+        let today = fixtures_on(w.events(), w.day());
         if today.is_empty() {
             return Ok(());
         }
-        let lineups: Vec<Lineup> = w
-            .events()
-            .iter()
-            .filter(|e| e.kind == LINEUP_ANNOUNCED && e.day == w.day())
-            .filter_map(lineup_of)
-            .collect();
+        let lineups = lineups_on(w.events(), w.day());
         let of = |club: u32| {
             lineups.iter().find(|l| l.club == club).ok_or_else(|| {
                 PluginError(format!("club {club} has no line-up for day {}", w.day()))
@@ -251,20 +297,7 @@ impl SeasonPlugin for Matchday {
             .iter()
             .map(|f| Ok((of(f.home)?, of(f.away)?)))
             .collect::<Result<_, PluginError>>()?;
-        // The bodies at the kick-off, if the body plugin is on (decision B).
-        let start: Start = w
-            .events()
-            .iter()
-            .rev()
-            .find(|e| e.kind == BODIES_AT_KICK_OFF && e.day == w.day())
-            .and_then(|e| e.fields.first())
-            .map(|(_, t)| {
-                read_bodies(t)
-                    .into_iter()
-                    .map(|(id, f, d)| (id, (f, d)))
-                    .collect()
-            })
-            .unwrap_or_default();
+        let start = start_on(w.events(), w.day());
         let (seed, pack, start) = (w.seed(), &self.pack, &start);
         // Side by side (ADR-113 §7): each match reads only the season before
         // it. Every match is started before any is waited for: the collect is
