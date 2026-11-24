@@ -131,6 +131,10 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 1.35 | 5.54 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 4.51 | 2.5–5.7 | sì | — |
 
+## La misura del 204 (2026-11-24, DD-65)
+
+Stesso comando e banda. **10 su 22** (shots_on_target, penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.43, autogol 0.83, tiri 42.37, in porta 11.32, passaggi 1626.17, duelli aerei 6.15, duelli a terra 213.62, dribbling 27.23, spazzate 22.5, rimesse 17.73, fuorigioco 9.2, recupero 7.17/6.74. Nessun numero adattato. Rientrano i tiri in porta; le spazzate scendono da 36.5 a 22.5 (in banda). Restano fuori, con le cause della misura del 203: gol, autogol, tiri, passaggi, duelli aerei (la contesa solo nello stesso piccolo passo), duelli a terra e dribbling, rimesse, fuorigioco, recupero (taratura dichiarata). Nuovo sintomo dei gol in eccesso: in coppa i rigori arrivano una partita su circa 150 (il calcio vero circa una su otto).
+
 ## La misura del 203 (2026-11-24, DD-63)
 
 Stesso comando e banda. **9 su 22** (penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.5, autogol 0.78, tiri 45.02, in porta 11.92, passaggi 1583.57, duelli aerei 6.08, duelli a terra 214.63, dribbling 26.53, falli 27.27, gialli 3.1, rossi 0.45, angoli 8.67, rimesse 18.37, punizioni 34.9, fuorigioco 9.77, spazzate 36.53, parate 7.47, recupero 7.16/6.83. Nessun numero adattato. Le parate restano "in banda" con la riserva di T11 (la banda reale conta anche i tentativi sui gol).
