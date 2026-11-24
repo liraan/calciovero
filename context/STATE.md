@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `969c35b` - "L1 the career core for the playable preview (decision BN)"
+**Last commit verified:** `89902d5` - "L1 the match of the career to watch; the GUI design decided (BO)"
 
 ## Mandato attivo (2026-11-16)
 
