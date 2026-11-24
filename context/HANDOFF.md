@@ -83,3 +83,4 @@ Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'opera
 | 2026-11-24 | Claude Code | pulizia (file, rami, worktree); lo studio dell'allenatore; la stagione piccola giocata una volta nei test | `aa0cfd1` |
 | 2026-11-24 | Claude Code | decisione BM; la disciplina sul testo del CGS (`0984db5`); l'anello 1 dell'allenatore | `cc9748a` |
 | 2026-11-24 | Claude Code | l'anello 2 dell'allenatore, la rotazione | `c2a1f2a` |
+| 2026-11-24 | Claude Code | la settimana, primo anello (`ds-week`) | `f95fc57` |
