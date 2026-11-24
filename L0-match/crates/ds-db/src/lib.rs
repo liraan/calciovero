@@ -6,12 +6,13 @@
 //! characteristic at a time through the `Custodian` trait; the engine
 //! never names a type of this crate.
 //!
-//! **The door (ADR-003, amended by ADR-041 §3).** One door, no public
-//! fields, no `Serialize`. `Vault::custodian` builds a `CustodianView`
-//! for one player; the view answers `value(characteristic)`. The view is
-//! the only public type that carries a latent, and it carries it by value
-//! (`PlayerLatents` is `Copy`), so no borrow of the vault crosses a
-//! `resolve_*` call.
+//! **The door (ADR-003, amended by ADR-041 §3).** No `Serialize`, no
+//! `Debug` that prints a value. `Vault::custodian` builds a
+//! `CustodianView` for the calculator; the orchestrator, the one crate
+//! allowed to read Plane A (ADR-112), reads `PlayerLatents` whole through
+//! `Vault::latents_for`. Its fields are public to that crate only by
+//! contract: no other crate depends on `ds-db` (today only
+//! `ds-orchestrator` does).
 //!
 //! **What is not here:** the identity (`ds_core::identity::Identity`, a
 //! primitive of the world) and the decision (the orchestrator, ADR-041

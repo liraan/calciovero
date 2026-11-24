@@ -1486,15 +1486,18 @@ impl App {
         };
         let l = self.laws;
         painter.add(Shape::closed_line(
-            circle(length / 2, width / 2, l.centre_circle_radius_cm),
+            circle(length / 2, width / 2, l.law1.centre_circle_radius_cm),
             line,
         ));
         painter.circle_filled(on(length / 2, width / 2), 2.0, t.lines);
         for (line_x, dir) in [(0, 1), (length, -1)] {
             let mid = width / 2;
             for (depth, half) in [
-                (l.penalty_area_depth_cm, l.penalty_area_half_width_cm),
-                (l.goal_area_depth_cm, l.goal_area_half_width_cm),
+                (
+                    l.law1.penalty_area_depth_cm,
+                    l.law1.penalty_area_half_width_cm,
+                ),
+                (l.law1.goal_area_depth_cm, l.law1.goal_area_half_width_cm),
             ] {
                 painter.add(Shape::closed_line(
                     quad(line_x, mid - half, line_x + dir * depth, mid + half),

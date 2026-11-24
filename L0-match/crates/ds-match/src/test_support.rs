@@ -3,7 +3,7 @@
 //! The same seed, the same fixture and the same configuration were replayed
 //! by several tests in this crate: the engine's shape guards, the record's
 //! pack/unpack guards, the save guards. `simulate_from_seed_recorded` returns
-//! the result of `simulate_from_seed` (narrative included), so one recorded
+//! the result of `simulate_from_seed`, so one recorded
 //! run serves all the tests that do not assert that two runs are equal.
 //! Determinism tests still run the match twice: the second run *is* the
 //! assertion, not redundancy.

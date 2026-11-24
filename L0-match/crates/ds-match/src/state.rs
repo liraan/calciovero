@@ -1352,9 +1352,9 @@ pub(crate) const fn is_cross(
     (goal_x, width): (i32, i32),
     laws: &crate::balance::LawsBalance,
 ) -> bool {
-    let wide = (from.1 - width / 2).abs() > laws.penalty_area_half_width_cm;
-    let into_area = (goal_x - to.0).abs() <= laws.penalty_area_depth_cm
-        && (to.1 - width / 2).abs() <= laws.penalty_area_half_width_cm;
+    let wide = (from.1 - width / 2).abs() > laws.law1.penalty_area_half_width_cm;
+    let into_area = (goal_x - to.0).abs() <= laws.law1.penalty_area_depth_cm
+        && (to.1 - width / 2).abs() <= laws.law1.penalty_area_half_width_cm;
     wide && into_area
 }
 

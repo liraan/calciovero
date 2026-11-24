@@ -171,7 +171,6 @@ impl MatchState {
             .filter_map(|id| self.bodies.get(id).map(|b| (*id, b.height_cm)))
             .collect();
         scene.penalty_kick = self.restart_pass == Some(crate::rules::RestartKind::Penalty);
-        scene.horizon_cm = ctx.hidden.horizon_cm(attacker);
         scene.strike_error_rad = ctx.hidden.strike_error_he_expects(
             attacker,
             self.spatial.agent(attacker).map_or(0.0, |a| {
@@ -179,9 +178,6 @@ impl MatchState {
             }),
             self.bodies.get(&attacker).map_or(0.0, |b| b.fatigue),
         );
-        // He reads his own composure before he chooses the shot, not only
-        // when the engine applies it to the kick (DD-47, ADR-057).
-        scene.own_nerves = ctx.hidden.kicker_nerves(attacker);
         // How far from a man's feet a ball passing him is his (SIM 194):
         // the control radius every reach is read from.
         scene.reception.control_radius_cm =

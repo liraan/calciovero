@@ -110,25 +110,39 @@ Rilanciata l'analisi con gli stessi 8 analisti, a partire da questo file. Nuovi 
 - S3. ✅ (SIM 200) Il colpo di testa pensato: `closing = i64::MAX` dà sempre pressione piena; la potenza contata due volte (lib.rs:637, read.rs:457, 1060).
 - S4. ✅ (SIM 200) Peso fisso 0.85 sul tiro alto (read.rs:921): un peso per opzione contro ADR-052.
 - S5. Passaggi durante la serie dei rigori (Legge 10): il test usa un seme scelto perché non succede (extra_time.rs).
-- S6. ◐ (SIM 200: `World` filtra per scheda, `top_speed` tolto; restano `characteristic` pubblica in GroundTruth, il test che non legge mod.rs, `PlayerLatents` pubblico) `GroundTruth::characteristic(nome)` resta pubblica e generica; i `World` la inoltrano senza guardare la scheda; il test di ADR-112 non legge plugins/mod.rs; `World::top_speed` morto; `PlayerLatents` con campi pubblici e `Debug` in ds-db.
-- S7. Il motore mette ancora nella scena letture dell'attore (`horizon_cm`, `kicker_nerves`).
+- S6. ✅ (SIM 200-201: `World` filtra per scheda; il test legge tutto il motore con nome letterale; `PlayerLatents` senza `Debug`; la porta pubblica documentata) `GroundTruth::characteristic(nome)` resta pubblica e generica; i `World` la inoltrano senza guardare la scheda; il test di ADR-112 non legge plugins/mod.rs; `World::top_speed` morto; `PlayerLatents` con campi pubblici e `Debug` in ds-db.
+- S7. ✅ (SIM 201) Il motore mette ancora nella scena letture dell'attore (`horizon_cm`, `kicker_nerves`).
 
 **Media**
-- S8. Portiere espulso o portato fuori: nessuno prende i guanti (Legge 3), ogni tiro nello specchio è gol.
-- S9. `deflect_ball` non respinge una palla Loose o portata sul palo.
+- S8. ✅ (SIM 201) Portiere espulso o portato fuori: nessuno prende i guanti (Legge 3), ogni tiro nello specchio è gol.
+- S9. ✅ (SIM 201) `deflect_ball` non respinge una palla Loose o portata sul palo.
 - S10. ✅ (SIM 200) `visible_to`/`nearest_to_point` vedono gli espulsi; il record li elenca tra i ventidue e gli strumenti li contano.
 - S11. ✅ (SIM 200) Pressure nomina il compagno più vicino, non il portatore.
 - S12. ✅ (SIM 200) Il fuorigioco si cancella se il passaggio manca il destinatario o è deviato (Legge 11).
-- S13. "Ultimo tocco" diverso per fuori e porta (`Touches` contro possesso).
+- S13. ✅ (SIM 201) "Ultimo tocco" diverso per fuori e porta (`Touches` contro possesso).
 - S14. ✅ (SIM 200) Chiara occasione negata più vantaggio: rosso e si gioca (la Legge 12 vuole il giallo).
 - S15. ✅ (SIM 200) Un cambio impossibile (uomo espulso) occupa per sempre un posto della Legge 3.
 - S16. ✅ (SIM 200) Deriva di passaggio e rinvio dal segno assoluto di `dy`, non dal piede.
-- S17. `Hold` senza la perdita (due misure del tenere palla); `brings()` calcolato e buttato, `progression_*` morte.
-- S18. Lancio e rinvio pensati con un calciatore medio; il portiere immaginato con 3000/400/200 scritti a mano; `POST_RADIUS_CM`.
+- S17. ✅ (SIM 201) `Hold` senza la perdita (due misure del tenere palla); `brings()` calcolato e buttato, `progression_*` morte.
+- S18. ✅ (SIM 201) Lancio e rinvio pensati con un calciatore medio; il portiere immaginato con 3000/400/200 scritti a mano; `POST_RADIUS_CM`.
 - S19. ✅ (SIM 200) Intesa di un subentrato letta con tre ripieghi (0.0, 0.5, base).
 - S20. ✅ (SIM 200) Il possesso conta i tick della serie dei rigori.
 - S21. Gli strumenti: tabellone numerato da 0; passaggi persi da ds-reference (deviati, giocati di prima, in fuorigioco); portiere per slot in GUI e ds-reference; `--instruct` sul tick assoluto; post-it dei subentrati; arbitro del TUI.
 - S22. `MatchRules.duration_minutes`, `half_time_minute`, `Match.seed` mai letti; `MAX_SUBSTITUTIONS` doppio di `subs_allowed`; 10 tick/s ancora in calcolatore, orchestratore e test.
-- S23. Chiavi morte: `influence.json` (cinque), `reception.json` (due), `decision_bias` con due significati, `speed_ref_cm_per_tick` con due significati.
+- S23. ✅ (SIM 201) Chiavi morte: `influence.json` (cinque), `reception.json` (due), `decision_bias` con due significati, `speed_ref_cm_per_tick` con due significati.
 
 **Bassa (documentazione e ridondanze)**: doc di B5 nel motore (lib, engine, simulate, save, driver), `sheet.toml` in STRUCTURE, ACTIONS (coraggio e uscita già fatti), README (motore 184), SOURCES (stati "sourced" su valori arbitrari, formule vecchie), `MatchEvent` campi temporali, `why.rs` con 5250/10500/3400 e un minuto diverso dalla cronaca, `LawsBalance` e `Law1` due parser, `MovementBalance`/`KickBalance` non in cache, copie (cono, `check_shot_crossing`/`check_goal_line`, piede, composure, tired), test (knock con "portato fuori", repertorio incompleto, test doppi, id fissi nei test, `reach_has_one_value`), metadati del workspace.
+
+
+## Terza fase: un motore corretto prima della taratura (concordata il 2026-11-24 con il maintainer)
+
+Obiettivo del maintainer: "partire con un motore stabile e corretto"; togliere la taratura dove lo scarto viene da un bug.
+
+1. **Controlli di regola su molte partite** (`tests/cases/laws_hold.rs`): su molti semi, a ogni tick del record, le Leggi come asserzioni: al più undici in campo e sempre un portiere (Legge 3); nessun espulso in gioco; gol solo con la palla intera oltre la linea, fra i pali e sotto la traversa (Leggi 1, 10); ogni ripresa alla squadra e del tipo giusti (Leggi 15-17); cambi entro il limite; fuorigioco solo su un compagno che riceve (Legge 11). Un seme leggero nel gate, molti semi `#[ignore]`.
+2. **Ogni violazione corretta**, una SIM per blocco, con guardia; rilancio fino a controlli puliti.
+3. **A ogni giro (anche il punto 4, chiesto dal maintainer):** misura delle 22 metriche; ogni metrica fuori banda è un indizio: si cerca negli eventi delle partite più lontane la catena causale, si decide **bug** (si corregge, SIM + guardia) o **taratura** (meccanismo giusto, parametro arbitrario: si annota, non si tocca guardando la metrica, A5-bis). Esito in una tabella "metrica | fuori banda | causa trovata | bug o taratura" nella misura di ogni SIM in `L0-CALIBRATION.md`.
+4. Poi le voci rimaste della seconda passata (S5, S21, S22, ridondanze di H) e la chiusura di L0 (≥16/22 in banda, ogni fuori banda spiegato), poi L1.
+
+Stato al momento della scrittura: SIM 200 pushato; SIM 201 (S6 resto, S7, S8, S9, S13, S17, S18, S23) in ciclo, non ancora committato.
+
+5. **Test più veloci** (chiesto dal maintainer il 2026-11-24): misurare il tempo di ogni test e trovare i più lenti; riusare le partite simulate (cache `tests/support`); partite più corte dove la regola lo consente; raggruppare golden e semi in una corsa release; `opt-level` delle dipendenze nel profilo di test. Vincolo: nessuna copertura persa.

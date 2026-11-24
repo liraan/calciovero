@@ -315,7 +315,7 @@ impl MatchState {
     ) {
         use crate::rules::RestartKind;
         // Laws 8 and 13: the centre circle's radius (code audit C5: 915).
-        let distance_cm = i64::from(self.laws.centre_circle_radius_cm);
+        let distance_cm = i64::from(self.laws.law1.centre_circle_radius_cm);
         let (length, width) = pitch_cm(ctx);
         let restarting_home = restart.side == crate::rules::Side::Home;
         let ids: Vec<(PlayerId, bool)> = ctx
@@ -372,8 +372,9 @@ impl MatchState {
                 // Outside the area and 9.15 m behind the mark.
                 let back = self
                     .laws
+                    .law1
                     .penalty_area_depth_cm
-                    .max(self.laws.penalty_spot_cm + self.laws.centre_circle_radius_cm)
+                    .max(self.laws.penalty_spot_cm + self.laws.law1.centre_circle_radius_cm)
                     + 100;
                 let edge = if restarting_home { length - back } else { back };
                 let defending_keeper = if restarting_home {
@@ -497,7 +498,7 @@ impl MatchState {
     ) {
         // Law 13: the wall stands at the centre circle's radius (code audit
         // C5: 915).
-        let distance_cm = f64::from(self.laws.centre_circle_radius_cm);
+        let distance_cm = f64::from(self.laws.law1.centre_circle_radius_cm);
         let (length, width) = pitch_cm(ctx);
         let goal = (if restarting_home { length } else { 0 }, width / 2);
         let dist = dmath::hypot(

@@ -571,8 +571,8 @@ impl MatchState {
         let in_area = crate::rules::in_penalty_area(
             depth(spot),
             (spot.1 - goal.1).abs(),
-            laws.penalty_area_depth_cm,
-            laws.penalty_area_half_width_cm,
+            laws.law1.penalty_area_depth_cm,
+            laws.law1.penalty_area_half_width_cm,
         );
         facts.denial = self.denial(ctx, offender, fouled_home, (spot, goal), in_area);
         self.emit_event(
@@ -681,9 +681,13 @@ impl MatchState {
         // ahead of him between two touches, or under his foot as he takes it
         // (plan L0-CLOSE 11). At his feet it is where he is, on the pitch.
         let (x, y, _) = self.spatial.ball_3d();
-        // The last to touch it: the man who has it, if anyone (the side in
-        // possession can lag a tick behind a ball just won).
-        let last = self.spatial.carrier().map_or_else(
+        // The last to touch it, from the same touches the goal reads (code
+        // audit S13): the man who has it; else the last who touched it on
+        // its way (a deflection, a parry); else the last who played it; the
+        // side in possession only when nobody is known.
+        let seen = self.spatial.touches();
+        let last_man = self.spatial.carrier().or(seen.deflected).or(seen.played);
+        let last = last_man.map_or_else(
             || side_of(self.possession),
             |c| {
                 if ctx.match_.home.players.iter().any(|p| p.id == c) {

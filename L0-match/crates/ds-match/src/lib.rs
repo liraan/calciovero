@@ -14,11 +14,8 @@
 //! separate crate, e.g. `ds-match-3d`) call it. They differ only in
 //! rendering.
 //!
-//! The **narrative** (see [`narrative`]) is **data**, not a rendered
-//! string. It is filled by the renderer, not by `simulate_match`. A
-//! `ThreeDEngine` can use `NarrativeEntry.text` as subtitles, or use
-//! `NarrativeEntry.template_key + params` to render its own localised text,
-//! or ignore narrative entirely.
+//! The **narrative** is not here (code audit B5): the result carries the
+//! events, and the views (`ds-narrative`, `ds-demo`) tell them.
 //!
 //! The **save** (see [`save`]) serialises the match, the event chain, and
 //! the result. `GroundTruth` is not saved: it is reconstructed from

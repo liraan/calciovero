@@ -153,7 +153,7 @@ impl MatchState {
             self.spatial.ball_velocity(),
             &self.obstacle_balance,
         ) {
-            self.spatial.deflect_ball(impact, v);
+            self.spatial.deflect_off_woodwork(impact, v);
             self.pending = None;
             self.emit_event(
                 ctx,
@@ -282,7 +282,7 @@ impl MatchState {
             &self.obstacle_balance,
         ) {
             self.spatial.set_carrier(None);
-            self.spatial.deflect_ball(impact, v);
+            self.spatial.deflect_off_woodwork(impact, v);
             self.emit_event(
                 ctx,
                 tick,

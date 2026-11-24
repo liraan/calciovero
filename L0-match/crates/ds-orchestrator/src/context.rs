@@ -221,33 +221,11 @@ pub struct InfluenceContext {
     pub skill: SkillKind,
 }
 
-/// Weights and thresholds for the influence formula.
-///
-/// Prototype values, not calibrated. The form is doctrine; the numbers are
-/// calibration (see `L0-match/balance/influence.json`).
-#[derive(Debug, Clone, Copy)]
-pub struct InfluenceWeights {
-    /// Weight of the space term.
-    pub w_space: i32,
-    /// Weight of the skill term.
-    pub w_skill: i32,
-    /// Weight of the fatigue term.
-    pub w_cost: i32,
-    /// Weight of the redundancy term.
-    pub w_red: i32,
-    /// Distance (cm) at which the space term reaches zero.
-    pub space_threshold_cm: i32,
-}
-
 /// Parameters and thresholds for the reception formula (REC).
 ///
 /// Prototype values, not calibrated (see `L0-match/balance/reception.json`).
 #[derive(Debug, Clone, Copy)]
 pub struct ReceptionParams {
-    /// Base flight speed, cm/tick.
-    pub speed_base_cm_per_tick: i32,
-    /// Passing bonus on flight speed, cm/tick.
-    pub speed_passing_bonus_cm_per_tick: i32,
     /// The hardest ball a kick produces, cm/tick (`kick.json`
     /// `speed_ref_cm_per_tick`): alone, it demands a perfect first touch.
     pub speed_ref_cm_per_tick: f64,

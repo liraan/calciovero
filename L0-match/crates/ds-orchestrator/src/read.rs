@@ -294,8 +294,6 @@ fn goal_width_cm() -> i64 {
 }
 /// The ball's radius, cm (Law 2: a circumference of 68-70 cm).
 pub use ds_core::geometry::BALL_RADIUS_CM;
-/// The post's radius, cm (Law 1: posts and bar at most 12 cm wide).
-const POST_RADIUS_CM: f64 = 6.0;
 
 /// Pass distance below this: the pass is not plausible, cm.
 const PASS_MIN_CM: i64 = 500;
@@ -306,9 +304,8 @@ const PASS_FAR_CM: i64 = 3000;
 /// Pass distance above this: the pass is not plausible, cm.
 const PASS_MAX_CM: i64 = 4500;
 
-/// Duel proximity range: above this distance there is no contest, cm.
-/// (Declared, not used yet: the Duel candidate is the prototype fallback,
-/// see the note in ADR-040 dated 2026-11-09.)
+/// Duel proximity range, cm: an opponent nearer than this to a pass's
+/// line closes the lane (`line_quality`, the off-ball lane read).
 const DUEL_PROXIMITY_CM: i64 = 500;
 
 /// The plausible-distance hump: 0 outside `[PASS_MIN_CM, PASS_MAX_CM]`,
@@ -460,27 +457,6 @@ fn kick_pressure(
             let r = balance.kick_pressure_radius_cm.max(1);
             (1.0 - (d as f64) / (r as f64)).clamp(0.0, 1.0)
         })
-}
-
-/// What a pass brings (ADR-050): its progression in [-1, 1] (nearer to the
-/// goal is positive), weighed by the carrier's appetite for risk, less
-/// under pressure. A pass back stays a real option (the floor).
-#[allow(clippy::cast_precision_loss)] // pitch distances are far below 2^52
-fn brings(
-    from: (i32, i32),
-    to: (i32, i32),
-    goal: (i32, i32),
-    risk_appetite: f64,
-    pressure: f64,
-    balance: &ds_calculator::shot_choice::ShotChoiceBalance,
-) -> f64 {
-    let carrier_to_goal = distance_squared(from, goal).isqrt().max(1) as f64;
-    let receiver_to_goal = distance_squared(to, goal).isqrt() as f64;
-    let progression = ((carrier_to_goal - receiver_to_goal) / carrier_to_goal).clamp(-1.0, 1.0);
-    let weight = balance.progression_gain * risk_appetite * (1.0 - pressure);
-    weight
-        .mul_add(progression, 1.0)
-        .max(balance.progression_floor)
 }
 
 /// The directions he may carry the ball in, as unit vectors (thousandths):
@@ -1115,8 +1091,13 @@ fn aim_inside(
     // inside of the post: nearer the post every shot he misses goes wide,
     // farther in the keeper covers more. Before `SIM_VERSION` 91 he kept
     // half as much again, when his miss was a known offset.
-    aim_edge_cm
-        .min((half - BALL_RADIUS_CM - POST_RADIUS_CM - expected_miss).max(aim_edge_cm * 0.25))
+    aim_edge_cm.min(
+        (half
+            - BALL_RADIUS_CM
+            - f64::from(ds_calculator::laws::law1().post_radius_cm)
+            - expected_miss)
+            .max(aim_edge_cm * 0.25),
+    )
 }
 
 /// ADR-051, "carry": with room in front he may carry the ball himself, in
@@ -1527,12 +1508,7 @@ fn pass_candidates(
             loss_at,
             risk_appetite,
         );
-        let _ = (
-            goal,
-            pressure,
-            balance,
-            brings(pos, tpos, goal, risk_appetite, pressure, balance),
-        );
+        let _ = (goal, pressure, balance);
         if free {
             candidates.push(ChoiceCandidate {
                 kind: ChoiceKind::Pass(*id),

@@ -6,7 +6,7 @@
 //!
 //! - The `Match` (squads, pitch, referee, seed, rules).
 //! - The `EventChain` (append-only events).
-//! - The `MatchResult` (score, stats, state hash, narrative).
+//! - The `MatchResult` (score, stats, state hash).
 //! - Metadata: `schema_version`, `sim_version`, `world_seed`, `match_id`,
 //!   `created_at`.
 //! - For a finished match, its tick record, packed (ADR-065, schema v3):
@@ -90,7 +90,7 @@ pub const SCHEMA_VERSION: u32 = 5;
 /// event emission). A bump requires a `L0-match/CHANGELOG-SIM.md` entry and a
 /// golden-test regeneration. See `doctrine/adr/003-plane-a-enforcement.md` and
 /// `L0-match/CHANGELOG-SIM.md`.
-pub const SIM_VERSION: u32 = 200;
+pub const SIM_VERSION: u32 = 201;
 
 /// The save of a single match.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,7 +107,7 @@ pub struct MatchSave {
     pub created_at: GameInstant,
     /// The match (squads, pitch, referee, seed, rules).
     pub match_: Match,
-    /// The result of the simulation (score, stats, state hash, narrative).
+    /// The result of the simulation (score, stats, state hash).
     pub result: MatchResult,
     /// The tick record of the finished match, packed (ADR-065). Absent in
     /// a v2 save, and in a save made without it.

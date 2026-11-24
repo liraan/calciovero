@@ -136,20 +136,21 @@ fn match_state_does_not_call_resolve_choice() {
 /// latents.
 #[test]
 fn the_engine_reads_no_characteristic_but_through_its_cards() {
-    let engine: [(&str, &str); 19] = [
-        ("state", include_str!("../../src/state.rs")),
-        ("spatial", include_str!("../../src/spatial.rs")),
-        ("simulate", include_str!("../../src/simulate.rs")),
+    let engine = [
+        ("balance", include_str!("../../src/balance.rs")),
+        ("context", include_str!("../../src/context.rs")),
         ("driver", include_str!("../../src/driver.rs")),
         ("engine", include_str!("../../src/engine.rs")),
+        ("fact", include_str!("../../src/fact.rs")),
+        ("lib", include_str!("../../src/lib.rs")),
         ("perception", include_str!("../../src/perception.rs")),
-        ("shape", include_str!("../../src/shape.rs")),
         ("ball", include_str!("../../src/plugins/ball.rs")),
         ("bench", include_str!("../../src/plugins/bench.rs")),
         ("body", include_str!("../../src/plugins/body.rs")),
         ("duels", include_str!("../../src/plugins/duels.rs")),
         ("fatigue", include_str!("../../src/plugins/fatigue.rs")),
         ("keeper", include_str!("../../src/plugins/keeper.rs")),
+        ("plugins", include_str!("../../src/plugins/mod.rs")),
         (
             "perception",
             include_str!("../../src/plugins/perception.rs"),
@@ -165,6 +166,16 @@ fn the_engine_reads_no_characteristic_but_through_its_cards() {
         ),
         ("technique", include_str!("../../src/plugins/technique.rs")),
         ("thought", include_str!("../../src/plugins/thought.rs")),
+        ("record", include_str!("../../src/record.rs")),
+        ("recording", include_str!("../../src/recording.rs")),
+        ("registry", include_str!("../../src/registry.rs")),
+        ("result", include_str!("../../src/result.rs")),
+        ("save", include_str!("../../src/save.rs")),
+        ("shape", include_str!("../../src/shape.rs")),
+        ("simulate", include_str!("../../src/simulate.rs")),
+        ("spatial", include_str!("../../src/spatial.rs")),
+        ("state", include_str!("../../src/state.rs")),
+        ("test_support", include_str!("../../src/test_support.rs")),
     ];
     for (name, source) in engine {
         // The code, not its tests: a test may read what it checks.
@@ -177,17 +188,29 @@ fn the_engine_reads_no_characteristic_but_through_its_cards() {
         while let Some(at) = rest.find(".characteristic(") {
             let before = &rest[..at];
             let after = &rest[at + ".characteristic(".len()..];
+            rest = after;
+            // The one gate: the `World`s of plugins/mod.rs, which give only
+            // what the card of the plugin they serve declares (code audit S6).
+            if name == "plugins" && before.ends_with("self.hidden") {
+                continue;
+            }
             assert!(
                 before.ends_with("world"),
                 "{name}: reads a characteristic outside `World` (ADR-112)"
             );
+            // The name is a literal, read here (code audit S6: before, the
+            // first quoted string anywhere after the call).
+            let arg = after.split_once(',').map_or("", |(_, a)| a.trim_start());
+            assert!(
+                arg.starts_with('"'),
+                "{name}: reads a characteristic by a name that is not a literal"
+            );
+            let quoted = arg.split('"').nth(1).unwrap_or("");
             let declared = ds_match::registry::card(name).reads;
-            let quoted = after.split('"').nth(1).unwrap_or("");
             assert!(
                 declared.contains(&quoted),
                 "{name}: reads {quoted:?} but its card declares {declared:?} (ADR-063 §4)"
             );
-            rest = after;
         }
     }
 }

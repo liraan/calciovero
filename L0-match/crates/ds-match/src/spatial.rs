@@ -584,7 +584,7 @@ impl SpatialState {
             ),
             transition: (0, 0),
             pitch_cm: (length, width),
-            goal_half_width_cm: crate::balance::LawsBalance::load().goal_half_width_cm,
+            goal_half_width_cm: ds_calculator::laws::law1().goal_half_width_cm,
             home_in_possession: true,
             carry_target: None,
             touch: None,
@@ -778,6 +778,20 @@ impl SpatialState {
             self.carrier = Some(incoming);
         }
         true
+    }
+
+    /// A teammate takes the gloves (Law 3: any player may change places
+    /// with the goalkeeper at a stoppage): he becomes his side's keeper, with
+    /// no place in the block (code audit S8).
+    pub fn give_gloves(&mut self, home: bool, to: PlayerId) {
+        if home {
+            self.goalkeepers.0 = to;
+        } else {
+            self.goalkeepers.1 = to;
+        }
+        self.roles.remove(&to);
+        self.acts.remove(&to);
+        self.act_targets.remove(&to);
     }
 
     /// Where a player's chosen act takes him (offer, run, mark), if it
@@ -1112,6 +1126,20 @@ impl SpatialState {
     /// reflection applies to a moving ball only.
     pub const fn deflect_ball(&mut self, impact: (i32, i32, i32), velocity: (i16, i16, i16)) {
         if matches!(self.ball, BallState::InFlight) {
+            self.ball_position = impact;
+            self.ball_velocity = velocity;
+        }
+    }
+
+    /// The ball off the woodwork (ADR-048 §1): as `deflect_ball`, for a ball
+    /// in flight or rolling loose (code audit S9: before, a loose ball ran
+    /// through the post); one at a man's feet is his.
+    pub const fn deflect_off_woodwork(
+        &mut self,
+        impact: (i32, i32, i32),
+        velocity: (i16, i16, i16),
+    ) {
+        if !matches!(self.ball, BallState::Possessed) {
             self.ball_position = impact;
             self.ball_velocity = velocity;
         }
@@ -3094,6 +3122,18 @@ mod tests {
         assert_eq!(s.ball_3d(), (100, 200, 50));
         assert_eq!(s.ball_state(), BallState::InFlight);
         assert_eq!(s.ball_velocity(), (10, 5, 20));
+    }
+
+    #[test]
+    fn a_loose_ball_comes_off_the_woodwork_too() {
+        // Code audit S9 (SIM 201): a ball rolling loose into the post is
+        // deflected as one in flight; before, it went through.
+        let mut s = make_state();
+        s.set_ball_in_flight((10_400, 3766, 0), (150, 0, 0));
+        s.set_carrier(None);
+        s.deflect_off_woodwork((10_500, 3766, 0), (-120, 0, 0));
+        assert_eq!(s.ball_3d(), (10_500, 3766, 0));
+        assert_eq!(s.ball_velocity(), (-120, 0, 0));
     }
 
     #[test]

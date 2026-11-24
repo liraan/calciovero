@@ -16,9 +16,8 @@ pub trait MatchEngine: Send + Sync {
 
 /// The text implementation of the match engine.
 ///
-/// A thin wrapper around `crate::simulate::simulate_match`. It runs the
-/// shared simulation, then fills `MatchResult.narrative` using
-/// `crate::narrative::narrate`.
+/// A thin wrapper around `crate::simulate::simulate_match`: the events and
+/// the result, no narrative (the views tell it, code audit B5).
 pub struct TextMatchEngine;
 
 impl TextMatchEngine {

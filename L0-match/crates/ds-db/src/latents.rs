@@ -37,7 +37,7 @@
 use ds_core::ids::PlayerId;
 
 /// A latent attribute of a player, grouped by family (L0.11 §7, §12.2).
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct PlayerLatents {
     /// Physical performances (L0.11 §7.1).
     pub physical: PhysicalLatents,
@@ -50,7 +50,7 @@ pub struct PlayerLatents {
 }
 
 /// Physical performances (L0.11 §7.1).
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct PhysicalLatents {
     /// Explosive force, consumed by the movement (F.7).
     pub explosive_force: f32,
@@ -80,7 +80,7 @@ pub struct PhysicalLatents {
 }
 
 /// Technical performances (L0.11 §7.2).
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct TechnicalLatents {
     /// Finishing, consumed by the shot (prototype name; L0.11 §7.2 calls
     /// the characteristic "shooting").
@@ -111,7 +111,7 @@ pub struct TechnicalLatents {
 ///
 /// The first disposition enters with its first consumer, the duel
 /// (ADR-042, ADR-051).
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct PsychologicalLatents {
     /// Aggressiveness: how readily he goes into a contact, and how hard
     /// (consumed by the defender's choice of how to go in).
@@ -140,7 +140,7 @@ pub struct PsychologicalLatents {
 /// L0.11 §7.4 note requires: a latent with no consumer is D3, and the
 /// consumer is `resolve_choice`. `vision` is not here: it belongs to
 /// the scanning rule (ADR-034, F.6 part 2 / OI-71).
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct CognitiveLatents {
     /// Reading the game: what the player understands (consumed by the choice, F.6-cog).
     pub game_reading: f32,

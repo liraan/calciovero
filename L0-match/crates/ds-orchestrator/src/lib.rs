@@ -14,7 +14,9 @@
 //!
 //! The only crate that reads latent attributes (Plane A, through `ds-db`). It exposes
 //! **only** computations (`resolve_*`) and **only** Plane B observations
-//! (`drain_observations`). It never exposes a latent value.
+//! (`drain_observations`). One reading of one characteristic by name
+//! (`characteristic`) is public for the engine's `World`, which gives it
+//! only to a plugin whose card declares it (ADR-063 §4, code audit S6).
 //!
 //! # What this crate is not
 //!
@@ -39,8 +41,8 @@ pub use read::PerceivedScene;
 
 pub use choice::{ChoiceCandidate, ChoiceContext, ChoiceKind, ChoiceOutcome, Side};
 pub use context::{
-    DuelContext, DuelType, InfluenceWeights, LatencyContext, MovementContext, PassContext,
-    ReceptionContext, ReceptionParams, SaveContext, ShotContext, SkillKind,
+    DuelContext, DuelType, LatencyContext, MovementContext, PassContext, ReceptionContext,
+    ReceptionParams, SaveContext, ShotContext, SkillKind,
 };
 pub use ds_calculator::shot_choice::ShotChoiceBalance;
 pub use observation::ObservationEvent;
@@ -635,6 +637,11 @@ impl GroundTruth {
         pos: (i32, i32),
     ) -> Option<(f64, f64, f64)> {
         let risk_appetite = f64::from(self.risk_appetite(winner));
+        // His own nerves, read here (code audit S7; before, the engine put
+        // them in the scene).
+        let mut own = scene.clone();
+        own.own_nerves = self.kicker_nerves(winner);
+        let scene = &own;
         // His own miss as he reckons it, like a shot's (SIM 200, code audit
         // S3): his heading for skill and foot alike, read through his game
         // reading; the power and the pressure enter once, in the read.
@@ -1665,8 +1672,6 @@ mod reception_tests {
 
     pub fn params() -> ReceptionParams {
         ReceptionParams {
-            speed_base_cm_per_tick: 150,
-            speed_passing_bonus_cm_per_tick: 150,
             speed_ref_cm_per_tick: 340.0,
             pressure_radius_cm: 500,
         }

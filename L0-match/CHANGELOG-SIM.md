@@ -8,6 +8,12 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 201 — resto della seconda passata (DD-61)
+
+Resto della seconda passata dell'audit (`CODE-AUDIT.md`): un compagno prende i guanti quando il portiere esce o è espulso (S8, Legge 3); la palla che rotola rimbalza sul palo come quella in volo (S9); fuori e gol leggono lo stesso ultimo tocco, deviazioni comprese (S13); l'attore legge da sé orizzonte e nervi (S7); il test di ADR-112 legge tutti i file del motore e vuole un nome letterale, `PlayerLatents` senza `Debug` (S6); un solo parser della Legge 1 e il raggio del palo in `laws.json` (S18, S22); nove chiavi mai lette tolte (S17, S23). I gol salgono e le parate escono dalla banda: da indagare come indizio (Terza fase), nessun numero toccato.
+
+Golden rigenerati; semi coppa 122, pari al 90' 50, decisa 42, colpo 43. ds-reference 42..101: **5 su 22** (penalties, ground_duels, fouls, red_cards, goal_kicks); gol 7.78, autogol 1.13, tiri 43.58, in porta 21.17, passaggi 1830.32, falli 30.63, gialli 1.38, rossi 0.48, parate 13.3, fuorigioco 14.1, recupero 9.33/8.66.
+
 ## 200 — seconda passata dell'audit (DD-60)
 
 Seconda passata dell'audit (S1-S20, `CODE-AUDIT.md`): la palla è fuori solo intera oltre la linea, come per il gol (S1); il tiro alto vale la stessa probabilità per la parte che resta sotto la traversa, non un peso fisso di 0.85 (S4, ADR-052); il colpo di testa pensato usa il proprio errore stimato, senza la pressione infinita e la potenza contata due volte (S3); il lancio è valutato dove il compagno è, come il motore lo calcia (S2); il cono non vede gli espulsi (S10); la pressione nomina il portatore (S11); il fuorigioco resta segnato se il passaggio è sbagliato o deviato (S12, Legge 11); vantaggio su chiara occasione: giallo, non rosso (S14, Legge 12); un cambio impossibile non occupa un posto (S15); la deriva del passaggio e del rinvio dal piede, non dal segno di dy (S16); il subentrato parte dall'intesa di base (S19); i tiri dei rigori non contano nel possesso (S20); `World` dà solo le caratteristiche che la scheda del plugin dichiara, `World::top_speed` tolto (S6).

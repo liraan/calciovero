@@ -154,7 +154,7 @@ impl MatchState {
         // On target as it reaches the line, by the ball's own flight
         // (Law 1).
         let (half, bar) = (
-            self.laws.goal_half_width_cm,
+            self.laws.law1.goal_half_width_cm,
             self.obstacle_balance.goal_height_cm,
         );
         let on_target = self
@@ -233,9 +233,6 @@ impl MatchState {
         );
         scene.ball_foot = None;
         scene.strike_error_rad = 0.0;
-        // Through the actor's own reading (SIM 196): before, the engine read
-        // the raw composure (Plane A) and ignored the psychology switch.
-        scene.own_nerves = ctx.hidden.kicker_nerves(winner);
         scene.reception.heights = scene
             .positions
             .keys()
@@ -407,8 +404,8 @@ impl MatchState {
         let speed = f64::from(ctx.hidden.duel_balance().header_speed_cm_per_tick);
         let depth = |g: (i32, i32)| (g.0 - bx).abs();
         let laws = self.laws;
-        let in_their_area = depth(goal) <= laws.penalty_area_depth_cm
-            && (by - goal.1).abs() <= laws.penalty_area_half_width_cm;
+        let in_their_area = depth(goal) <= laws.law1.penalty_area_depth_cm
+            && (by - goal.1).abs() <= laws.law1.penalty_area_half_width_cm;
         if hands {
             // The keeper claims it.
             self.spatial.set_carrier(Some(winner));
@@ -733,7 +730,6 @@ impl MatchState {
         scene.positions = self.as_seen_by(id, std::mem::take(&mut scene.positions));
         // He imagines himself where the ball reaches him.
         scene.positions.insert(id, self.spatial.ball());
-        scene.horizon_cm = ctx.hidden.horizon_cm(id);
         // Controlled, does he play it before the man on him gets there? His
         // own time to decide (`latency.json`, the carrier's), against the
         // nearest opponent's run at the pace and reaction he believes; if

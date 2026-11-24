@@ -88,57 +88,9 @@ pub fn stoppage_for(events: &[ds_stats::MatchEvent], table: &StoppageTime) -> u3
     table.total(events.iter().map(|e| e.event_type))
 }
 
-/// The embedded influence weights file (`03-entities-minimal` §2.9).
+/// The embedded influence file: the pressure's radius and hysteresis.
 const INFLUENCE_JSON: &str = include_str!("../../../balance/influence.json");
 
-/// Influence weights as they appear in `L0-match/balance/influence.json`.
-///
-/// Converted to [`ds_orchestrator::InfluenceWeights`] at load time: `ds-db` and `ds-orchestrator`
-/// does not depend on `serde`, so the JSON shape lives here.
-#[derive(Debug, Clone, Copy, Deserialize)]
-pub struct InfluenceWeightsJson {
-    /// Weight of the space term.
-    pub w_space: i32,
-    /// Weight of the skill term.
-    pub w_skill: i32,
-    /// Weight of the fatigue term.
-    pub w_cost: i32,
-    /// Weight of the redundancy term.
-    pub w_red: i32,
-    /// Distance (cm) at which the space term reaches zero.
-    pub space_threshold_cm: i32,
-}
-
-impl Default for InfluenceWeightsJson {
-    fn default() -> Self {
-        serde_json::from_str(INFLUENCE_JSON).expect("embedded influence file is valid JSON")
-    }
-}
-
-impl InfluenceWeightsJson {
-    /// Loads the embedded influence weights.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the embedded JSON is invalid. The test
-    /// `embedded_influence_is_valid` catches this at test time.
-    #[must_use]
-    pub fn load() -> Self {
-        Self::default()
-    }
-
-    /// Converts to the `ds-db` and `ds-orchestrator` type used by `resolve_influence`.
-    #[must_use]
-    pub const fn to_weights(self) -> ds_orchestrator::InfluenceWeights {
-        ds_orchestrator::InfluenceWeights {
-            w_space: self.w_space,
-            w_skill: self.w_skill,
-            w_cost: self.w_cost,
-            w_red: self.w_red,
-            space_threshold_cm: self.space_threshold_cm,
-        }
-    }
-}
 /// The embedded scanning parameters file (ADR-034).
 const SCANNING_JSON: &str = include_str!("../../../balance/scanning.json");
 
@@ -242,18 +194,11 @@ pub struct LawsBalance {
     pub dogso_distance_cm: i32,
     /// The penalty mark, from the goal line, cm (Law 1).
     pub penalty_spot_cm: i32,
-    /// The penalty area's depth, cm (Law 1).
-    pub penalty_area_depth_cm: i32,
-    /// The penalty area's half width, cm (Law 1).
-    pub penalty_area_half_width_cm: i32,
-    /// The goal area's depth, cm (Law 1).
-    pub goal_area_depth_cm: i32,
-    /// The goal area's half width, cm (Law 1).
-    pub goal_area_half_width_cm: i32,
-    /// The centre circle's radius, cm (Law 1).
-    pub centre_circle_radius_cm: i32,
-    /// Half the distance between the posts, cm (Law 1).
-    pub goal_half_width_cm: i32,
+    /// Law 1's measures, from the one parser of this file
+    /// (`ds_calculator::laws`; code audit S22: before, the engine had its
+    /// own copy of the same fields).
+    #[serde(flatten)]
+    pub law1: ds_calculator::laws::Law1,
 }
 
 impl LawsBalance {
@@ -278,10 +223,6 @@ const RECEPTION_JSON: &str = include_str!("../../../balance/reception.json");
 /// does not depend on `serde`, so the JSON shape lives here.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct ReceptionBalance {
-    /// Base flight speed, cm/tick.
-    pub speed_base_cm_per_tick: i32,
-    /// Passing bonus on flight speed, cm/tick.
-    pub speed_passing_bonus_cm_per_tick: i32,
     /// A loose ball within this distance of a player is his (ADR-041 §5).
     pub loose_control_radius_cm: i32,
     /// The share of the ball's speed the worst first touch leaves it,
@@ -317,8 +258,6 @@ impl ReceptionBalance {
         pressure_radius_cm: i32,
     ) -> ds_orchestrator::ReceptionParams {
         ds_orchestrator::ReceptionParams {
-            speed_base_cm_per_tick: self.speed_base_cm_per_tick,
-            speed_passing_bonus_cm_per_tick: self.speed_passing_bonus_cm_per_tick,
             speed_ref_cm_per_tick,
             pressure_radius_cm: pressure_radius_cm as i64,
         }
@@ -363,18 +302,6 @@ mod tests {
             make_event(EventType::Foul),
         ];
         assert_eq!(stoppage_for(&events, &table), 140);
-    }
-
-    #[test]
-    fn embedded_influence_is_valid() {
-        let w = InfluenceWeightsJson::load();
-        assert_eq!(w.w_space, 100);
-        assert_eq!(w.w_skill, 40);
-        assert_eq!(w.w_cost, 20);
-        assert_eq!(w.w_red, 50);
-        assert_eq!(w.space_threshold_cm, 2000);
-        let hidden = w.to_weights();
-        assert_eq!(hidden.w_space, w.w_space);
     }
 
     #[test]
@@ -439,7 +366,8 @@ pub struct ObstacleBalance {
     /// Crossbar height, in cm (Law 1, as above).
     #[serde(skip)]
     pub goal_height_cm: i32,
-    /// Post radius, in cm (prototype).
+    /// Post radius, in cm (Law 1, as above).
+    #[serde(skip)]
     pub post_radius_cm: i32,
     /// Crossbar thickness, in cm (prototype).
     pub crossbar_thickness_cm: i32,
@@ -456,6 +384,7 @@ impl Default for ObstacleBalance {
         let law = ds_calculator::laws::law1();
         b.goal_half_width_cm = law.goal_half_width_cm;
         b.goal_height_cm = law.goal_height_cm;
+        b.post_radius_cm = law.post_radius_cm;
         b
     }
 }

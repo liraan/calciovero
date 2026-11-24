@@ -27,7 +27,7 @@ const GUARD_MINUTES: u64 = 45;
 /// Runs the simulation and returns the `MatchResult`.
 ///
 /// The returned `MatchResult` contains only data: score, events, statistics,
-/// state hash, and an **empty** narrative. Rendering (text or 3D) is the
+/// state hash. Rendering and narrative (text or 3D) are the
 /// responsibility of the caller.
 #[must_use]
 pub fn simulate_match(ctx: &mut MatchContext<'_>) -> MatchResult {

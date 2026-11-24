@@ -49,7 +49,7 @@ pub fn simulate_from_seed(match_: &Match, seed: u64, config: MatchConfig) -> Mat
 /// Like [`simulate_from_seed`], and also returns the tick record.
 ///
 /// One [`crate::TickRecord`] per tick (IDEA-INFRA-018). The result is the same
-/// as [`simulate_from_seed`]'s, narrative included: recording observes, it
+/// as [`simulate_from_seed`]'s: recording observes, it
 /// does not act. The record is regenerated, never saved.
 ///
 /// # Panics

@@ -90,6 +90,11 @@ impl Actor {
         own.foresight = hidden
             .custodian(self.player)
             .value(ds_calculator::Characteristic::GameReading);
+        // How far ahead he sees and how much pressure shakes him, read by
+        // himself too (code audit S7: the engine read them and put them in
+        // the scene).
+        own.horizon_cm = hidden.horizon_cm(self.player);
+        own.own_nerves = hidden.kicker_nerves(self.player);
         let scene = &own;
         let preferred_foot = {
             let mut custodian = hidden.custodian(self.player);

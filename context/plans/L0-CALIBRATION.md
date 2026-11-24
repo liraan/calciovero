@@ -131,6 +131,10 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 1.35 | 5.54 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 4.51 | 2.5–5.7 | sì | — |
 
+## La misura del 201 (2026-11-24, DD-61)
+
+Stesso comando e banda. **5 su 22** (penalties, ground_duels, fouls, red_cards, goal_kicks); gol 7.78, autogol 1.13, tiri 43.58, in porta 21.17, passaggi 1830.32, falli 30.63, gialli 1.38, rossi 0.48, parate 13.3, fuorigioco 14.1, recupero 9.33/8.66. Nessun numero adattato.
+
 ## La misura del 200 (2026-11-24, DD-60)
 
 Stesso comando e banda. **7 su 22** (penalties, ground_duels, take_ons_won, fouls, red_cards, goal_kicks, saves); gol 6.53, autogol 0.82, tiri 42.43, in porta 19.7, passaggi 1854.2, falli 31.4, gialli 1.45, rossi 0.55, parate 12.47, fuorigioco 14.73, recupero 8.79/8.21. Nessun numero adattato.

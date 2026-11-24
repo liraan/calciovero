@@ -248,6 +248,41 @@ impl MatchState {
         };
         bench.run(ds_match_api::Phase::Referee, &mut world);
         self.bench_plugin = bench;
+        self.keep_a_keeper(live);
+    }
+
+    /// Law 3: a side whose keeper has left the pitch (sent off, or carried
+    /// off with no change left) puts a man in goal at the stoppage: the one
+    /// on the pitch nearest his own goal (code audit S8; before, nobody took
+    /// the gloves, and every shot on target was a goal).
+    fn keep_a_keeper(&mut self, live: &mut ds_model::Match) {
+        let length = i32::from(live.pitch.length_m) * 100;
+        for (home, squad) in [(true, &mut live.home), (false, &mut live.away)] {
+            let Some(keeper) = squad.players.first().map(|p| p.id) else {
+                continue;
+            };
+            if self.spatial.agent(keeper).is_some() {
+                continue;
+            }
+            let goal_x = if home { 0 } else { length };
+            let Some(k) = squad
+                .players
+                .iter()
+                .enumerate()
+                .skip(1)
+                .filter_map(|(k, p)| {
+                    self.spatial
+                        .agent(p.id)
+                        .map(|a| (k, (a.position.0 - goal_x).abs(), p.id))
+                })
+                .min_by_key(|&(_, d, id)| (d, id))
+                .map(|(k, _, _)| k)
+            else {
+                continue;
+            };
+            squad.players.swap(0, k);
+            self.spatial.give_gloves(home, squad.players[0].id);
+        }
     }
 
     /// The broadcast clock's minute: in the stoppage of a period it stays at
@@ -531,6 +566,31 @@ impl MatchState {
 #[cfg(test)]
 mod tests {
     use ds_match_api::MatchPlugin;
+
+    #[test]
+    fn a_side_whose_keeper_is_sent_off_puts_a_man_in_goal() {
+        // Law 3, code audit S8 (SIM 201): the keeper off, the teammate
+        // nearest his goal takes the gloves at the stoppage.
+        let mut live = ds_fixtures::match_fixture(42).expect("fixture");
+        let mut s = crate::state::MatchState::new(&live);
+        let keeper = live.home.players[0].id;
+        s.spatial.send_off(keeper, (5250, -300));
+        s.keep_a_keeper(&mut live);
+        let new = live.home.players[0].id;
+        assert_ne!(new, keeper);
+        assert!(
+            s.spatial.agent(new).is_some(),
+            "the new keeper is on the pitch"
+        );
+        let nearest = live
+            .home
+            .players
+            .iter()
+            .filter_map(|p| s.spatial.agent(p.id).map(|a| a.position.0))
+            .min()
+            .expect("men on the pitch");
+        assert_eq!(s.spatial.agent(new).map(|a| a.position.0), Some(nearest));
+    }
 
     #[test]
     fn the_plugin_has_its_card() {
