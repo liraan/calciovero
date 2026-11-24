@@ -59,16 +59,18 @@ fn small() -> &'static Played {
 }
 
 fn season_with(seed: u64, clubs: usize, body: bool) -> Season {
-    season_full(seed, clubs, body, None)
+    season_full(seed, clubs, body, body, None)
 }
 
 fn season_full(
     seed: u64,
     clubs: usize,
     body: bool,
+    week: bool,
     human: Option<(u32, Vec<ds_coach::HumanLineup>)>,
 ) -> Season {
     let p = pack(clubs);
+    let p2 = p.clone();
     let mut plugins: Vec<Box<dyn SeasonPlugin>> = vec![
         Box::new(Standings::default()),
         Box::new(Matchday::new(p.clone())),
@@ -84,15 +86,18 @@ fn season_full(
         plugins.push(Box::new(ds_body::Body::default()));
         plugins.push(Box::new(ds_discipline::Discipline::default()));
     }
+    if week {
+        plugins.push(Box::new(ds_week::WeekPlugin::new(p2)));
+    }
     let days = ds_calendar::season_days(u32::try_from(clubs).unwrap_or(0));
     let mut s = Season::new(seed, days, plugins).expect("valid cards");
     s.run_to_end().expect("the season runs");
     s
 }
 
-/// The fingerprint of the small season at `SEASON_VERSION` 8 and
+/// The fingerprint of the small season at `SEASON_VERSION` 9 and
 /// `SIM_VERSION` 205; regenerate on a bump of either.
-const SMALL_GOLDEN: &str = "03618dc9205e348f5ab41ad26e57214ce89d0d1d860f4232bbc92f3616630b21";
+const SMALL_GOLDEN: &str = "12a55d04460854644829f68d0cdb8e6a713f4581636b9ab9548d73dadc4089b4";
 
 #[test]
 fn a_small_league_is_played_whole_by_the_engine() {
@@ -107,7 +112,8 @@ fn a_small_league_is_played_whole_by_the_engine() {
             "roster",
             "coach",
             "matchday",
-            "standings"
+            "standings",
+            "week"
         ]
     );
     let played: Vec<_> = s.events.iter().filter(|e| e.kind == MATCH_PLAYED).collect();
@@ -225,7 +231,7 @@ fn the_human_coach_lines_up_his_side() {
             width: 1,
         },
     ];
-    let s = season_full(42, 4, true, Some((0, inputs)));
+    let s = season_full(42, 4, true, true, Some((0, inputs)));
     let lineup = |day: u32| {
         s.events()
             .iter()
@@ -253,6 +259,37 @@ fn the_human_coach_lines_up_his_side() {
             .any(|e| e.kind == ds_coach::LINEUP_REFUSED && e.day == 8)
     );
     assert_eq!(by(&lineup(8)).as_deref(), Some("vice"));
+}
+
+/// Twin (`L1.md` "Settimana"): the same season but the week; the side
+/// that trains comes to its matches carrying more of the week's toll, and
+/// a session is held every day that is not a matchday.
+#[test]
+fn the_week_weighs_on_the_body_between_matches() {
+    let carried = |events: &[SeasonEvent]| -> f64 {
+        events
+            .iter()
+            .filter(|e| e.kind == ds_body::BODIES_AT_KICK_OFF)
+            .filter_map(|e| e.fields.first())
+            .flat_map(|(_, t)| ds_body::read_bodies(t))
+            .map(|(_, f, _)| f)
+            .sum()
+    };
+    let rested = season_full(42, 4, true, false, None);
+    let trained = &small().events;
+    assert!(
+        carried(trained) > carried(rested.events()),
+        "{} vs {}",
+        carried(trained),
+        carried(rested.events())
+    );
+    assert!(trained.iter().any(|e| e.kind == ds_week::SESSION_HELD));
+    assert!(
+        rested
+            .events()
+            .iter()
+            .all(|e| e.kind != ds_week::SESSION_HELD)
+    );
 }
 
 /// The first series of the shipped world: 38 matchdays, 380 matches.

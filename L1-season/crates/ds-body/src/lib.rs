@@ -19,6 +19,10 @@ const BODY_JSON: &str = include_str!("../../../balance/body.json");
 /// `identity:fatigue:damage`, comma-separated.
 pub const BODIES_AT_KICK_OFF: &str = "BodiesAtKickOff";
 
+/// The event of the load of a day's training on a club's men (`ds-week`),
+/// in the `bodies` field: what each adds to his fatigue and damage.
+pub const TRAINING_LOAD: &str = "TrainingLoad";
+
 /// The field of `MatchPlayed` the matchday writes the bodies at the final
 /// whistle in, the same form.
 pub const BODIES_FIELD: &str = "bodies";
@@ -99,10 +103,13 @@ impl SeasonPlugin for Body {
         PluginCard {
             name: "body",
             version: "1",
-            steps: &[Moment::DayStarted, Moment::AfterMatch],
+            steps: &[Moment::DayStarted, Moment::AfterMatch, Moment::DayEnded],
             depends: &[],
             reads: &["matchday.result"],
-            optional_reads: &[],
+            optional_reads: &[ds_season_api::OptionalRead {
+                what: "body.training_load",
+                without: "the days between matches weigh nothing",
+            }],
             writes: &["body.state"],
             tier: Tier::Recommended,
             cost_us: 0,
@@ -132,6 +139,23 @@ impl SeasonPlugin for Body {
                         .map(|(id, c)| (*id, c.fatigue, c.damage))
                         .collect();
                     w.emit(BODIES_AT_KICK_OFF, &[("bodies", write_bodies(&all))]);
+                }
+            }
+            Moment::DayEnded => {
+                // The evening: the day's training weighs on the body
+                // (ds-week, decision AB), on top of what is carried.
+                let today = w.day();
+                let loads: Vec<(u32, f64, f64)> = w
+                    .events()
+                    .iter()
+                    .filter(|e| e.kind == TRAINING_LOAD && e.day == today)
+                    .filter_map(|e| e.fields.iter().find(|(k, _)| k == BODIES_FIELD))
+                    .flat_map(|(_, t)| read_bodies(t))
+                    .collect();
+                for (id, f, d) in loads {
+                    let c = self.carried.entry(id).or_default();
+                    c.fatigue = (c.fatigue + f).min(1.0);
+                    c.damage = (c.damage + d).min(1.0);
                 }
             }
             Moment::AfterMatch => {

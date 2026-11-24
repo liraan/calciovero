@@ -1,0 +1,40 @@
+{
+  "_note": "The week (ds-week, L1 step 8 first ring; decision AB, decision BM point 4: one list of the sessions, as data). The day of the microcycle sets the session; its load is the share of a match's load measured on that day of a professional week. The kind of each day is the convention of the coaches (tactical periodization: Delgado-Bordonau & Mendez-Villanueva 2012); the load is the measure.",
+  "sessions": [
+    {
+      "kind": "recovery",
+      "load_share": 0.26
+    },
+    {
+      "kind": "general",
+      "load_share": 0.39
+    },
+    {
+      "kind": "strength",
+      "load_share": 0.53
+    },
+    {
+      "kind": "endurance",
+      "load_share": 0.46
+    },
+    {
+      "kind": "speed",
+      "load_share": 0.28
+    },
+    {
+      "kind": "activation",
+      "load_share": 0.13
+    }
+  ],
+  "_load_share_source": "Oliveira R., Canario-Lemos R., Peixoto R., Vilaca-Alves J., Morgans R., Brito J.P. (2023). PLoS One, doi:10.1371/journal.pone.0289374, Table 2 (13 first-division professionals, read on the text): session-RPE MD-5 225, MD-4 302, MD-3 264, MD-2 157, MD-1 74, MD+1 150, the match 570 AU; the shares are those over the match. Concordant: Los Arcos, Mendez-Villanueva, Martinez-Santos 2017, Biology of Sport, doi:10.5114/biolsport.2017.64588 (MD-4 53%, MD-3 57%, MD-2 33%, MD-1 21%). The sources disagree on the peak day (MD-5 to MD-3) and on minutes; the shares, not the minutes, are used. MD+1 is not split between starters and the others in the source (Martin-Garcia et al. 2018 describe a recovery for those over 60 minutes and a compensatory session for the others): one share for all, declared.",
+  "week": {
+    "after_1": "recovery",
+    "before_5": "general",
+    "before_4": "strength",
+    "before_3": "endurance",
+    "before_2": "speed",
+    "before_1": "activation"
+  },
+  "_week_source": "The days of Oliveira et al. 2023: MD+1, then MD-5 to MD-1; no day off in their week (MD+2 has no usable data in any source found). A day more than five before the match is a general session.",
+  "_recovery": "An active recovery does not speed the return of performance (Van Hooren & Peake 2018, Sports Medicine, PMC5999142; Nedelec et al. 2013): the recovery day is a load, not a cure."
+}

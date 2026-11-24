@@ -170,6 +170,7 @@ The dependency order is the reading order, from the inside out:
 | `ds-standings` | the table |
 | `ds-body` | fatigue and muscle damage between matches, and their recovery (may be switched off) |
 | `ds-discipline` | cautions counted over the season, bans and who may not play (may be switched off) |
+| `ds-week` | the session of each day of the microcycle and its load on the body (may be switched off) |
 
 ### Naming
 

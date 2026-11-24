@@ -1094,6 +1094,7 @@ dependencies = [
  "ds-roster",
  "ds-season",
  "ds-season-api",
+ "ds-week",
  "ds-world",
  "serde",
  "serde_json",
@@ -1127,6 +1128,20 @@ dependencies = [
 [[package]]
 name = "ds-testkit"
 version = "0.1.0"
+
+[[package]]
+name = "ds-week"
+version = "0.1.0"
+dependencies = [
+ "ds-body",
+ "ds-calendar",
+ "ds-coach",
+ "ds-roster",
+ "ds-season-api",
+ "ds-world",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "ds-world"

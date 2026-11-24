@@ -1,0 +1,21 @@
+[package]
+name = "ds-week"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The week plugin of Calcio Vero - Deep Simulator: the session of each day of the microcycle and its load on the body (L1 step 8)."
+publish = false
+
+[dependencies]
+ds-season-api = { path = "../ds-season-api" }
+ds-world = { path = "../ds-world" }
+ds-roster = { path = "../ds-roster" }
+ds-calendar = { path = "../ds-calendar" }
+ds-coach = { path = "../ds-coach" }
+ds-body = { path = "../ds-body" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

@@ -6,6 +6,10 @@ This file records every bump of `SEASON_VERSION` (`L1-season/crates/ds-season/sr
 
 ---
 
+## 9 — the week: the session of every day and its load (decision AB, BM)
+
+New plugin `ds-week` (recommended, may be switched off). Each morning that is not a matchday every club holds the session of its day of the microcycle (`L1-season/balance/sessions.json`, one list of sessions as data): the day after a match a recovery, then from five days before the next to the day before, each with the share of a match's load measured on that day (Oliveira et al. 2023, PLoS One, session-RPE; Los Arcos et al. 2017 concordant). The load reaches the body as that share of what a match leaves a starter, averaged over the season's matches so far (no number of its own): `TrainingLoad`, which `ds-body` adds in the evening. Twin test: the same season without the week carries less fatigue to the kick-offs. The small golden regenerated.
+
 ## 8 — the rotation: the coach reads the body (decision BM)
 
 `ds-coach` (card version 3) reads this morning's bodies (`ds-body`, optional: without it every man is fresh). A man carried tired is read against his role as the engine will make him run: his fatigue the greater of what he carries, his top speed dimmed by the engine's `v_max_factor`, brought back to the scale of `max_speed`. The coach heeds it as far as his new root `coach_rotation` says: 0, always the same men; towards 1, the body's true effect. No weight of its own. Twin test: a worn-out eleven is changed by a coach who heeds the body, kept by one who does not. The small golden is the same: in four clubs with a week between matches nobody is carried tired enough to change a choice.
