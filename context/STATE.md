@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `f95fc57` - "L1 step 8 (first ring): the week, the session of every day and its load"
+**Last commit verified:** `969c35b` - "L1 the career core for the playable preview (decision BN)"
 
 ## Mandato attivo (2026-11-16)
 
@@ -151,7 +151,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | Pr. | # | Cosa | Dipende da | Prima azione |
 |---|---|---|---|---|
 | [next] | L1 | **La stagione** (`plans/L1.md`, ADR-113, ADR-114). Fatti i passi 1-4 (contratto, nucleo, mondo modificabile, rose, calendario, Giornata, classifiche); il 5 (allenatore) e il 6 (corpo) al primo anello. Ordine: gli anelli rimasti del 5 e del 6, la disciplina (7), la settimana (8), SQLite dietro `ds-db` (decisione AD), la piramide (9), la GUI e la 0.1 (10). La coda dettagliata è in `context/HANDOFF.md` §4 B. | L0 virtualmente chiuso (maintainer, 2026-11-24) | L'allenatore legge la freschezza che `ds-body` porta: la condizione e la rotazione (`L1-COACH.md`, "Come sceglie, senza dadi"). |
-| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 205: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | L1, gli anelli di `L1-COACH-STUDY.md` §7 (decisione BM): fatti l'1 (allenatori, panchina, spareggio), il 2 (la rotazione) e il 3 (`ds-week` minimo); prossimo il 4, l'ADR degli infortuni. L0 all'operatore su ramo (dal SIM 206 pronto, HANDOFF §4 A0). |
+| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 205: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | **L'anteprima giocabile (decisione BN):** fatto `ds-career`; ora la GUI della carriera (proposta del maintainer: finestre affiancabili, colonna di icone, lavagna della tattica, partita nel tablet; con tattica, mercato, osservazione, un po' di economia), poi Android. L0 all'operatore; gli anelli dell'allenatore ripartono dal 4 (ADR infortuni). |
 | [done] | BENCH | La panchina in partita (decisione T) e i passi di L0-CLOSE: fatti fino al SIM 204; il resto della storia in `captures/STATE-ARCHIVE-2026-11-24.md` e in `git log`. | — | — |
 | [deferred] | 11 | **Ruleset GitHub (fase 2).** Disattivo; si riattiva quando c'è un secondo revisore, il progetto esce, o un agente riceve un token di scrittura. | — | Rileggere `RULES.md` §C quando una delle tre condizioni si presenta. |
 
