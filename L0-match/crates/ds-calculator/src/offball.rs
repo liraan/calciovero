@@ -64,6 +64,10 @@ pub struct OffBallBalance {
     /// What a completed pass between two teammates adds to their intesa,
     /// thousandths (decision BB; code audit C5: 0.1 in the code).
     pub intesa_step_milli: i32,
+    /// How far from a free kick or a corner the men who may take it stand,
+    /// cm: the best kicker among them takes it (code audit C5: a constant
+    /// of the code, `TAKER_RADIUS_CM`).
+    pub taker_radius_cm: i32,
 }
 
 const fn intesa_yield_default() -> i32 {

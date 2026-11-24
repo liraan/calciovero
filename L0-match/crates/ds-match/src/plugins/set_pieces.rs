@@ -233,7 +233,7 @@ impl MatchState {
     /// Who takes a restart (plan L0-CLOSE step 7, ADR-080): a goal kick
     /// belongs to the keeper; a throw-in to the wide man or full back on
     /// that side; a corner or a free kick to the best deliverer among the
-    /// outfield players within `TAKER_RADIUS_CM`; a penalty to the best
+    /// outfield players within `offball.json` `taker_radius_cm`; a penalty to the best
     /// finisher. A kick-off is taken by the nearest man. These are the
     /// players' own tendencies by role and by the technique a team knows
     /// from training, not an order from the engine: the chosen man still
@@ -243,8 +243,8 @@ impl MatchState {
         ctx: &mut MatchContext<'_>,
         restart: &crate::rules::Restart,
     ) -> Option<PlayerId> {
-        const TAKER_RADIUS_CM: i64 = 3000;
         use crate::rules::RestartKind;
+        let radius = i64::from(ctx.hidden.offball_balance().taker_radius_cm);
         let squad = match restart.side {
             crate::rules::Side::Home => &ctx.match_.home,
             crate::rules::Side::Away => &ctx.match_.away,
@@ -261,9 +261,9 @@ impl MatchState {
             .map(|p| p.id)
             .filter(|id| self.spatial.agent(*id).is_some());
         let within = |id: PlayerId| {
-            self.spatial.agent(id).is_some_and(|a| {
-                distance_squared(a.position, restart.spot) <= TAKER_RADIUS_CM * TAKER_RADIUS_CM
-            })
+            self.spatial
+                .agent(id)
+                .is_some_and(|a| distance_squared(a.position, restart.spot) <= radius * radius)
         };
         match restart.kind {
             RestartKind::GoalKick => keeper.or(nearest),

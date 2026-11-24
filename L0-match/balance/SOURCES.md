@@ -9,7 +9,7 @@
 - **explained, no source**: the file explains what it does, without a source or a derivation.
 - **undocumented**: the file says nothing about this parameter. These come first in the work to do.
 
-**Today:** 217 parameters in 21 files: 28 sourced, 17 derived, 86 arbitrary and declared (grade 3), 87 explained without a source, 0 undocumented (2026-11-23, code audit: three numbers of the code moved into the balance, the keeper's rest off the line and the intesa's baseline and step; the goal, the box and three dead keys removed as duplicates or unread, four keys given their missing row, two radii renamed apart; the braking sourced on Harper et al. 2020. SIM 194: the two accelerations sourced on Alonso-Callejo et al. 2022. 2026-11-22: the 92 undocumented rows classified from the code and each file's `_source`; no source invented, no value changed). Earlier: 2026-11-15, the four parameters of the old choice formula removed, SIM 126, OI-85; the block's width measured on tracking data, SIM 127, OI-100; the bounce derived from FIFA's vertical rebound, SIM 128.
+**Today:** 218 parameters in 21 files: 28 sourced, 17 derived, 87 arbitrary and declared (grade 3), 87 explained without a source, 0 undocumented (2026-11-23, code audit: three numbers of the code moved into the balance, the keeper's rest off the line and the intesa's baseline and step; the goal, the box and three dead keys removed as duplicates or unread, four keys given their missing row, two radii renamed apart; the braking sourced on Harper et al. 2020. SIM 194: the two accelerations sourced on Alonso-Callejo et al. 2022. 2026-11-22: the 92 undocumented rows classified from the code and each file's `_source`; no source invented, no value changed). Earlier: 2026-11-15, the four parameters of the old choice formula removed, SIM 126, OI-85; the block's width measured on tracking data, SIM 127, OI-100; the bounce derived from FIFA's vertical rebound, SIM 128.
 
 **The rule from now on.** A change to a number in `balance/` updates its row here in the same commit, with the source (author, year, title, and the page or table) or the derivation, or the word *arbitrary*. A number chosen by looking at the statistic it produces is never a source. This file was generated from the JSON files on 2026-11-14 (the classification is read from their text and is a first pass: a row marked sourced still needs its full reference written here when the file gives only a name).
 
@@ -291,6 +291,7 @@ The quick instructions move the block by a step that is the coach's choice shown
 | `intesa_yield_milli` | 500 | arbitrary, declared | The intesa above which a player yields a loose ball to a teammate he knows (strato 3), thousandths. Row added 2026-11-23 (code audit C4: the key had none). |
 | `intesa_baseline_milli` | 500 | arbitrary, declared | The intesa of two teammates who start the match together (strato 3). Moved from the code 2026-11-23 (code audit C5). |
 | `intesa_step_milli` | 100 | arbitrary, declared | What a completed pass between two teammates adds to their intesa (decision BB). Moved from the code 2026-11-23 (code audit C5). |
+| `taker_radius_cm` | 3000 | arbitrary, declared | How far from a free kick or a corner the men who may take it stand; the best kicker among them takes it. Moved from the code 2026-11-24 (code audit C5). |
 
 ### `profiles.json`
 
