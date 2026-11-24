@@ -78,3 +78,4 @@ Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'opera
 | 2026-11-24 | Claude Code | SIM 205 (T29 chiuso); l'esame di opencode (7/10: buona disciplina, si ferma alla prima causa, aveva allentato una soglia); la regola sulle soglie | `19050bd` |
 | 2026-11-24 | Claude Code | il SIM 206 come patch per l'operatore (L0 a opencode, maintainer); L1 passo 7, primo anello (la disciplina) | `be3273b` |
 | 2026-11-24 | Claude Code | L1 passo 5, secondo anello (il posto umano, l'adattabilità, DD-70); il passaggio all'operatore unico scrittore: `prompts/OPENCODE.md`, `REVIEW-QUEUE.md`, `prompts/CLAUDE-RESUME.md` | `1275a83` |
+| 2026-11-24 | Claude Code | pulizia (file, rami, worktree); lo studio dell'allenatore; la stagione piccola giocata una volta nei test | `aa0cfd1` |
