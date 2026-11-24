@@ -10,7 +10,8 @@
 //!
 //! # Design rules
 //!
-//! - No dependency on any `ds-*` crate (ADR-063 §3), like `ds-testkit`.
+//! - No dependency on any `ds-*` crate (ADR-063 §3), like `ds-testkit`, but
+//!   the shared card of `ds-plugin-api`, which has none either (ADR-113 §3).
 //! - No I/O, no clock, no randomness: a plugin is deterministic (ADR-035).
 //! - Within a phase nobody reads what another writes in that phase
 //!   (ADR-063 §2): every phase reads the world as the previous one left it.
@@ -20,7 +21,7 @@ pub mod phase;
 pub mod plugin;
 pub mod world;
 
-pub use card::{PluginCard, Weight};
+pub use card::{CardError, OptionalRead, PluginCard, Tier, order};
 pub use phase::Phase;
 pub use plugin::{MANDATORY, MatchPlugin, OPTIONAL};
 pub use world::{PlayerKey, World};

@@ -1,0 +1,19 @@
+[package]
+name = "ds-season"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The season core of Calcio Vero - Deep Simulator: the clock of the season a day at a time, the registry of the plugins, the events, the save (ADR-113)."
+publish = false
+
+[dependencies]
+ds-season-api = { path = "../ds-season-api" }
+blake3.workspace = true
+serde.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

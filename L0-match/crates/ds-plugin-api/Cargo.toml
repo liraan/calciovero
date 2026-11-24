@@ -1,0 +1,15 @@
+[package]
+name = "ds-plugin-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The card of a plugin of Calcio Vero - Deep Simulator, shared by the match and the season, and its one validator (ADR-113, decision AQ)."
+publish = false
+
+[dependencies]
+# Deliberately empty, like ds-match-api (ADR-063 §3): the match, the season
+# and the external plugins learn one card.
+
+[lints]
+workspace = true

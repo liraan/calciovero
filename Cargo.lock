@@ -937,6 +937,9 @@ dependencies = [
 [[package]]
 name = "ds-match-api"
 version = "0.1.0"
+dependencies = [
+ "ds-plugin-api",
+]
 
 [[package]]
 name = "ds-model"
@@ -971,6 +974,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-plugin-api"
+version = "0.1.0"
+
+[[package]]
 name = "ds-reference"
 version = "0.1.0"
 dependencies = [
@@ -980,6 +987,23 @@ dependencies = [
  "ds-stats",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "ds-season"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "ds-season-api",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "ds-season-api"
+version = "0.1.0"
+dependencies = [
+ "ds-plugin-api",
 ]
 
 [[package]]

@@ -1,0 +1,16 @@
+[package]
+name = "ds-season-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The contract of a season plugin for Calcio Vero - Deep Simulator: the five moments of a day, the plugin, its view of the season (ADR-113)."
+publish = false
+
+[dependencies]
+# Only the shared card (ADR-113 §3), like ds-match-api: the core, the
+# official plugins and the external ones learn one model.
+ds-plugin-api.workspace = true
+
+[lints]
+workspace = true

@@ -8,9 +8,11 @@ description = "The contract of a match plugin for Calcio Vero - Deep Simulator: 
 publish = false
 
 [dependencies]
-# Deliberately empty (ADR-063 §3): like ds-testkit, the contract depends on
-# no ds-* crate, so that the core, the official plugins and the external
-# ones learn one model, the same that ds-season-api will have in L1.
+# Only the shared card (ADR-113 §3, decision AQ), itself with no dependency:
+# like ds-testkit, the contract depends on no other ds-* crate, so that the
+# core, the official plugins and the external ones learn one model, the same
+# that ds-season-api has.
+ds-plugin-api.workspace = true
 
 [lints]
 workspace = true

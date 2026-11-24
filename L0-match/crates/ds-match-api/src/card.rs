@@ -1,49 +1,18 @@
-//! The card of a plugin (ADR-012, ADR-063 §1).
+//! The card of a plugin (ADR-012, ADR-063 §1), shared with the season
+//! (ADR-113 §3, decision AQ): `ds-plugin-api`'s card over the phases of a
+//! tick, with its one validator.
 
 use crate::Phase;
 
-/// How much a plugin weighs in the level of detail of a match (ADR-012):
-/// a lighter level may run without the optional plugins.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Weight {
-    /// Always run: the match is not football without it.
-    Core,
-    /// Run in a detailed match; may be switched off (ADR-063 §4).
-    Detail,
-}
+pub use ds_plugin_api::{CardError, OptionalRead, Tier, order};
 
-/// What a plugin says about itself, for the registry and the validator.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PluginCard {
-    /// Its name, unique in the registry.
-    pub name: &'static str,
-    /// Its version; a change of behaviour is a new `SIM_VERSION` too.
-    pub version: &'static str,
-    /// The phases it acts in.
-    pub phases: &'static [Phase],
-    /// What of the observable state it reads.
-    pub reads: &'static [&'static str],
-    /// What of the observable state it writes.
-    pub writes: &'static [&'static str],
-    /// Its weight in the level of detail.
-    pub weight: Weight,
-    /// The keys of the commentary lines it gives (the texts live outside
-    /// the engine: who watches does not write in the match).
-    pub narrative: &'static [&'static str],
-}
-
-impl PluginCard {
-    /// Whether the card is well formed: a name, a version, at least one
-    /// phase.
-    #[must_use]
-    pub const fn is_valid(&self) -> bool {
-        !self.name.is_empty() && !self.version.is_empty() && !self.phases.is_empty()
-    }
-}
+/// The card of a match plugin: the shared card, acting in the phases of a
+/// tick.
+pub type PluginCard = ds_plugin_api::PluginCard<Phase>;
 
 #[cfg(test)]
 mod tests {
-    use super::{PluginCard, Weight};
+    use super::{PluginCard, Tier};
     use crate::Phase;
 
     #[test]
@@ -51,17 +20,17 @@ mod tests {
         let good = PluginCard {
             name: "fatigue",
             version: "1",
-            phases: &[Phase::Move],
+            steps: &[Phase::Move],
+            depends: &[],
             reads: &["speed"],
+            optional_reads: &[],
             writes: &["fatigue"],
-            weight: Weight::Core,
+            tier: Tier::Core,
+            cost_us: 0,
             narrative: &[],
         };
         assert!(good.is_valid());
-        let no_phase = PluginCard {
-            phases: &[],
-            ..good
-        };
+        let no_phase = PluginCard { steps: &[], ..good };
         assert!(!no_phase.is_valid());
     }
 }

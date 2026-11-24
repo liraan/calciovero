@@ -55,7 +55,7 @@ fi
 # `cargo test` in C2 (closing step 1), and the README badge is the declared
 # value, not a second source. Checking the badge against itself is circular.
 # Excluded: lines with "as of" (historical).
-a4_real_crates=$(ls -d L0-match/crates/ds-* tools/ds-* 2>/dev/null | wc -l | tr -d ' ')
+a4_real_crates=$(ls -d L0-match/crates/ds-* L1-season/crates/ds-* tools/ds-* 2>/dev/null | wc -l | tr -d ' ')
 a4_real_adrs=$(ls doctrine/adr/*.md 2>/dev/null | grep -v '000-template' | wc -l | tr -d ' ')
 a4_bad=""
 for a4_f in README.md doctrine/_index.md doctrine/STRUCTURE.md CONTRIBUTING.md; do

@@ -10,110 +10,143 @@
 //! through the registry waits for the observable state as a type of
 //! `ds-match-api`.
 
-use ds_match_api::{Phase, PluginCard, Weight};
+use ds_match_api::{Phase, PluginCard, Tier};
 
 /// The cards of the mandatory plugins, in the order of `ds_match_api::MANDATORY`.
 pub const CARDS: [PluginCard; 11] = [
     PluginCard {
         name: "ball",
         version: "1",
-        phases: &[Phase::Move],
+        steps: &[Phase::Move],
         reads: &["ball", "pitch"],
         writes: &["ball"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &["woodwork"],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "body",
         version: "1",
-        phases: &[Phase::Move, Phase::ResolveContacts],
+        steps: &[Phase::Move, Phase::ResolveContacts],
         reads: &["positions", "acts", "bodies"],
         writes: &["positions", "velocities"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &[],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "perception",
         version: "1",
-        phases: &[Phase::Perceive],
+        steps: &[Phase::Perceive],
         reads: &["positions", "gaze"],
         writes: &["memory", "gaze"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &[],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "thought",
         version: "1",
-        phases: &[Phase::DecideOffBall, Phase::DecideOnBall],
+        steps: &[Phase::DecideOffBall, Phase::DecideOnBall],
         reads: &["memory", "ball", "intention"],
         writes: &["acts", "choice"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &[],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "technique",
         version: "1",
-        phases: &[Phase::Act, Phase::ResolveContacts],
+        steps: &[Phase::Act, Phase::ResolveContacts],
         reads: &["choice", "ball", "positions"],
         writes: &["ball"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &["pass", "shot", "cross"],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "duels",
         version: "1",
-        phases: &[Phase::ResolveContacts],
+        steps: &[Phase::ResolveContacts],
         reads: &["positions", "acts", "ball"],
         writes: &["ball", "possession"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &["duel", "dribble", "tackle"],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "keeper",
         version: "1",
-        phases: &[Phase::DecideOffBall, Phase::ResolveContacts],
+        steps: &[Phase::DecideOffBall, Phase::ResolveContacts],
         reads: &["ball", "positions"],
         writes: &["ball", "possession"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &["save"],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "referee",
         version: "1",
-        phases: &[Phase::Referee],
+        steps: &[Phase::Referee],
         reads: &["ball", "positions", "contacts"],
         writes: &["restart", "cards", "score"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &["foul", "card", "goal", "offside"],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "set_pieces",
         version: "1",
-        phases: &[Phase::Referee],
+        steps: &[Phase::Referee],
         reads: &["restart", "positions"],
         writes: &["positions", "ball"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &["corner", "free_kick", "throw_in", "goal_kick", "penalty"],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "bench",
         version: "1",
-        phases: &[Phase::Referee],
+        steps: &[Phase::Referee],
         reads: &["stoppage", "bodies", "instructions"],
         writes: &["squads", "intention"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &["substitution", "instruction"],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "fatigue",
         version: "1",
-        phases: &[Phase::Move],
+        steps: &[Phase::Move],
         // The characteristic it reads through `World::characteristic` is
         // declared here, and `anti_leak` checks it (ADR-063 §4, ADR-112).
         reads: &["velocities", "endurance", "condition"],
         writes: &["bodies"],
-        weight: Weight::Core,
+        tier: Tier::Core,
         narrative: &[],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
 ];
 
@@ -128,29 +161,38 @@ pub const OPTIONAL_CARDS: [PluginCard; 3] = [
     PluginCard {
         name: "psychology",
         version: "1",
-        phases: &[Phase::DecideOffBall, Phase::Act],
+        steps: &[Phase::DecideOffBall, Phase::Act],
         reads: &["courage", "composure", "bodies", "pressure"],
         writes: &["contest", "error"],
-        weight: Weight::Detail,
+        tier: Tier::Recommended,
         narrative: &[],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "environment",
         version: "0",
-        phases: &[Phase::Move],
+        steps: &[Phase::Move],
         reads: &["pitch", "weather"],
         writes: &["ball"],
-        weight: Weight::Detail,
+        tier: Tier::Recommended,
         narrative: &[],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
     PluginCard {
         name: "knocks",
         version: "0",
-        phases: &[Phase::ResolveContacts],
+        steps: &[Phase::ResolveContacts],
         reads: &["contacts", "bodies"],
         writes: &["squads"],
-        weight: Weight::Detail,
+        tier: Tier::Recommended,
         narrative: &["injury"],
+        depends: &[],
+        optional_reads: &[],
+        cost_us: 0,
     },
 ];
 
@@ -167,11 +209,14 @@ pub fn card(name: &str) -> PluginCard {
         .unwrap_or(PluginCard {
             name: "unknown",
             version: "0",
-            phases: &[],
+            steps: &[],
             reads: &[],
             writes: &[],
-            weight: Weight::Detail,
+            tier: Tier::Recommended,
             narrative: &[],
+            depends: &[],
+            optional_reads: &[],
+            cost_us: 0,
         })
 }
 
@@ -186,12 +231,19 @@ mod tests {
         let names: Vec<&str> = CARDS.iter().map(|c| c.name).collect();
         assert_eq!(names, ds_match_api::MANDATORY);
         assert!(CARDS.iter().all(ds_match_api::PluginCard::is_valid));
+        // The one validator of the match and the season (ADR-113 §3).
+        let all: Vec<ds_match_api::PluginCard> = CARDS
+            .iter()
+            .chain(super::OPTIONAL_CARDS.iter())
+            .cloned()
+            .collect();
+        assert!(ds_match_api::order(&all).is_ok());
         let optional: Vec<&str> = super::OPTIONAL_CARDS.iter().map(|c| c.name).collect();
         assert_eq!(optional, ds_match_api::OPTIONAL);
         assert!(
             super::OPTIONAL_CARDS
                 .iter()
-                .all(|c| c.is_valid() && c.weight == ds_match_api::Weight::Detail)
+                .all(|c| c.is_valid() && c.tier == ds_match_api::Tier::Recommended)
         );
     }
 }
