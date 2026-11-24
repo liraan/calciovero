@@ -11,7 +11,7 @@
 *No star ratings. No hidden dice. No secrets you are not allowed to read.*
 
 [![Status](https://img.shields.io/badge/status-early_prototype-orange)](#where-we-are-honestly)
-[![Tests](https://img.shields.io/badge/tests-602_passing-brightgreen)](https://github.com/liraan/calciovero)
+[![Tests](https://img.shields.io/badge/tests-632_passing-brightgreen)](https://github.com/liraan/calciovero)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](LICENSE-MIT)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](#build-it-with-us)
 [![Built with](https://img.shields.io/badge/docs-AI--assisted-purple)](#ai-disclosure)
@@ -142,10 +142,12 @@ classic Italian ones. The longer version is in
 
 ## Where we are, honestly
 
-**There is no full game yet.** What you can watch today is a friendly: the
-engine is close to complete and is being measured against real football,
-one verified step at a time, in the open. Engine version **184**;
-**602 tests** and a health check run on every commit.
+**There is no full game yet.** What you can watch today is a friendly, and
+the first season is being built: twenty invented clubs (real cities and
+colours, invented names), their squads, a calendar, every match played by
+the engine, the standings, a coach who picks his eleven and his plan, the
+body carried from one match to the next. Engine version **204**; **632
+tests** and a health check run on every commit.
 
 ### The road, level by level
 
@@ -153,9 +155,9 @@ The game is built in four concentric levels; each one widens the previous and de
 
 | Level | What it is | Status | Plan |
 |---|---|---|---|
-| **L0 · The match** | twenty-two players who think, a ball with physics, the Laws, the bench | 🟡 almost complete; calibration in progress | [`L0-CLOSE`](context/plans/L0-CLOSE.md), [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md) |
+| **L0 · The match** | twenty-two players who think, a ball with physics, the Laws, the bench | 🟡 virtually closed: 10 of 22 metrics in band, every one out a bug being hunted; closed for real at 22 of 22 | [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md), [`CODE-AUDIT`](context/plans/CODE-AUDIT.md) |
 | **L0 · Plugins** | the match split into plugins behind one contract, the commentary out of the engine | ✅ done ([ADR-063](doctrine/adr/063-the-match-split-into-plugins.md)) | [`PLUGINS`](context/plans/PLUGINS.md) |
-| **L1 · The season** | three divisions and the cup in the real Italian format, every match played by the engine | ⬜ planned, starts when L0 is closed | [`L1`](context/plans/L1.md) |
+| **L1 · The season** | three divisions and the cup in the real Italian format, every match played by the engine | 🟡 in progress: the season contract ([ADR-113](doctrine/adr/113-the-season-contract.md)), the world as an editable folder, squads, calendar, matchday, standings; the coach ([ADR-114](doctrine/adr/114-an-actor-of-every-kind.md)) and the body, first rings | [`L1`](context/plans/L1.md) |
 | **L2 · The career** | contracts, market, scouts, academy, growth, finances, the dressing room, the coach's life | ⬜ planned | [ADR-060](doctrine/adr/060-the-season-is-true-the-career-builds.md) |
 | **L3 · Make it yours** | editor for every value, packs, a local importer for your own data, external plugins in WebAssembly | ⬜ planned | [decisions](context/plans/DECISIONS-2026-11-15.md) |
 | **Interface** | desktop window today: the 2.5D view (numbered tokens with their gestures from the facts, a continuous zoom, follow the ball or drag the view, the stadium and its crowd, three themes), orders in the top bar, the bench in a collapsible right panel, commentary, why you conceded; the full design is decided | 🟡 | [`DESIGN`](tools/ds-gui/DESIGN.md) |
@@ -166,12 +168,12 @@ The game is built in four concentric levels; each one widens the previous and de
 | Version | When | What you get |
 |---|---|---|
 | **0.1 · Season** | when L1's season is done | a full season, the free tactics board, the calendar, the squad, the week, the 2.5D match; for a few testers |
-| **0.2 · Market and bench** | right after the 0.1, closing L1 | contracts, transfer windows, transfers and loans, play as the sporting director; the coach's modules: signals from the bench, talks and credibility, if-then plans, the tactical meeting, the leaders |
+| **0.2 · Market and bench** | right after the 0.1, closing L1 | contracts, transfer windows, transfers and loans, play as the sporting director; the coach's modules: signals from the bench, talks and credibility, if-then plans, the tactical meeting, the leaders; the press conferences |
 | **0.3 · Club** | after the first half of L2 | player growth and decline, the whole staff, agents, modern contracts, foreign leagues, the full accounts, the board; play as the president |
 | **0.4 · Career** | after L2 | the youth system and the academies, coaching licences, job offers, the dressing room, the facilities; open to everyone |
 | **The coach's life** | after the 0.4 | optional modules: the coach's private life, the players' private lives |
 | **1.0** | after L3 | the editor (a player is born from his statistics), the packs, the importer, external plugins, accessibility (screen reader, read-aloud on hover, radio commentary), the tutorial, on desktop |
-| **1.1** | after the 1.0 | Android, then the fans and the press |
+| **1.1** | after the 1.0 | Android, then the fans and the rest of the press |
 
 ### The match against real football
 
@@ -179,28 +181,29 @@ We measure the engine against real football instead of tuning it to a
 target. Sixty simulated matches against Serie A 2017-18 (380 real matches,
 Wyscout open data, CC BY 4.0). A metric is *in band* when it sits within one
 standard deviation of the real matches: a real match can end 0-0 or 4-3,
-so the question is whether a single simulated one is credible. **Today 5 of
-22 metrics are in band**; every metric outside has an open item with its
-cause. No number is ever fitted to hit a target: a distance is a question
-about how a player sees, thinks or moves.
+so the question is whether a single simulated one is credible. **Today 10 of
+22 metrics are in band.** No number is ever fitted to hit a target: a metric
+out of band is a bug to find in how a player sees, thinks or moves, or in
+how the Laws are applied, so L0 closes for real at 22 of 22. The work on the
+season goes on meanwhile (the maintainer's decision of 24 November 2026).
 
 | In band | Real | Engine | | Not yet | Real | Engine |
 |---|---|---|---|---|---|---|
-| penalties | 0.33 | 0.02 | | goals | 2.68 | 13.2 |
-| ground duels | 183 | 164 | | shots | 24.6 | 52.7 |
-| take-ons won | 16.0 | 20.0 | | shots on target | 8.69 | 24.8 |
-| yellow cards | 3.97 | 4.20 | | aerial duels | 38.1 | 15.8 |
-| red cards | 0.24 | 0.13 | | passes | 888 | 1526 |
-| | | | | fouls | 26.0 | 11.4 |
-| | | | | throw-ins | 42.7 | 30.6 |
-| | | | | saves | 9.4 | 30.0 |
+| shots on target | 8.69 | 11.32 | | goals | 2.68 | 5.43 |
+| penalties | 0.33 | 0.23 | | own goals | 0.1 | 0.83 |
+| fouls | 26 | 27.35 | | shots | 24.6 | 42.37 |
+| yellow cards | 3.97 | 2.82 | | passes | 887.68 | 1626.17 |
+| red cards | 0.24 | 0.42 | | aerial duels | 38.14 | 6.15 |
+| corners | 10.3 | 10.6 | | ground duels | 182.63 | 213.62 |
+| goal kicks | 17.15 | 14.32 | | take-ons won | 16.03 | 27.23 |
+| free kicks | 29.45 | 34.4 | | throw-ins | 42.72 | 17.73 |
+| clearances | 29.53 | 22.5 | | offsides | 4.26 | 9.2 |
+| saves | 9.37 | 7.25 | | stoppage, 1st half (min) | 1.49 | 7.17 |
+|  |  |  | | stoppage, 2nd half (min) | 4.08 | 6.74 |
 
 The full table, with the cause of every distance, is in
-[`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md). The count has fallen
-from 12 to 5 as imposed order was removed from the model: L0 closes at 16
-in band, so the work is to build the understanding back into the players,
-not to push the numbers
-([`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md), §il test del burattino).
+[`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md); the bugs still open are in
+[`CODE-AUDIT`](context/plans/CODE-AUDIT.md).
 
 ## What the engine does, and what is coming
 
@@ -215,9 +218,9 @@ by act, is [`L0-match/design/ACTIONS.md`](L0-match/design/ACTIONS.md).
 | **Without the ball** | press, challenge standing, sliding or jockeying; mark, offer, run in behind; hold the block's shape and width; intercept; cover; block a shot; react to a ball before it is played | | |
 | **In goal** | dive, hold or parry, claim crosses; split the angle of his posts; throw | coming out (in his area only) | reading the shot to position himself; getting set |
 | **The ball** | flight with air resistance, bounce from FIFA's rebound test, rolling, posts and crossbar, in integers so the match is the same everywhere | | spin |
-| **The Laws** | kick-off and restarts; offside read as the eye sees it; fouls, advantage, cards, penalties; free kicks with the wall; extra time and the penalty shoot-out; the referee hiding nothing | stoppage time (the engine adds all the time lost) | |
+| **The Laws** | kick-off and restarts; offside read as the eye sees it; fouls, advantage, cards, penalties; free kicks with the wall; extra time and the penalty shoot-out; the referee hiding nothing | stoppage time (the engine adds all the time lost; a real referee adds about half: being modelled) | |
 | **The manager** | the eleven and the bench; the free board (positions with and without the ball, each player's responsibilities), changed during the match; quick instructions and the transitions; substitutions planned or made live; save, reload, replay; why you conceded each goal ([ADR-059](doctrine/adr/059-the-coach-speaks-during-the-match.md)) | the opponent coach reads the score and the clock and changes players; moving his block with the score waits for its check on real data | the channels from the bench (voice, gesture, the note at a pause); half-time talks and the water breaks |
-| **The structure** | eleven mandatory plugins behind one contract; psychology can be switched off; the commentary in its own crate; a knock that forces a player off ([ADR-066](doctrine/adr/066-the-knock-that-forces-a-substitution.md)); the finished match keeps its record ([ADR-065](doctrine/adr/065-the-match-record-is-a-contract.md)) | | each player's freshness and condition at the kick-off as an input |
+| **The structure** | eleven mandatory plugins behind one contract; psychology can be switched off; the commentary in its own crate; a knock that forces a player off ([ADR-066](doctrine/adr/066-the-knock-that-forces-a-substitution.md)); the finished match keeps its record ([ADR-065](doctrine/adr/065-the-match-record-is-a-contract.md)); each player's freshness at the kick-off, carried by the season | | his condition and match sharpness |
 
 ## Try the engine today
 

@@ -37,7 +37,7 @@
 - **Regola di sequenza:** ogni causa deve passare **sia** il test del burattino
   **sia** la misura sulle stesse 60 partite. Una causa che alza le metriche ma
   lascia l'atto invariato al cambiare della lettura è un burattino più ordinato
-  e va respinta. La soglia 16/22 resta la misura; il giudizio finale è lo
+  e va respinta. La soglia (22 su 22 dal 2026-11-24, `CLAUDE.md`) resta la misura; il giudizio finale è lo
   sguardo sul campo: *si vede un giocatore che ha giocato migliaia di ore?*
 
 ## La cipolla (maintainer, 2026-11-19)
@@ -100,7 +100,7 @@ come calcio vero.
 È il giudizio finale già scritto sopra (*si vede un giocatore che ha giocato
 migliaia di ore?*) detto in termini di simulazione: **la misura è la sensazione
 che il modello produce, non la completezza né la vetrina**. Le 60 partite e la
-soglia 16/22 misurano quella sensazione; il test del burattino la garantisce.
+soglia (22 su 22) misurano quella sensazione; il test del burattino la garantisce.
 Non si giustifica un comportamento da burattino dicendo "è solo una demo": in
 un gioco simulativo è proprio quello che non può succedere.
 

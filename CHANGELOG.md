@@ -11,6 +11,20 @@ This project does not use semantic versioning for the docs; the version of each 
 > **Terminology note (2026-10-25):** the terms are **module** (a directory of the specification, e.g. `L0-match`), **sub-module** (a file inside a module, e.g. `04-match-engine.md`), **plugin** (a Rust crate with a `sheet.toml`, defined in ADR-012). The term **cell** is deprecated. In entries **before** this date, 'cell' means 'module', and 'module' (in the plugin sense) means 'plugin'. In entries **from** this date onwards, the new terminology is used.
 
 ---
+## 2026-11-24
+
+### Added
+- `context/HANDOFF.md`: how an operator carries on when Claude Code is away (who writes on `main`, the queue, the procedures, the traps, a log).
+- `L1-season/`: the season crates (ADR-113, ADR-114), the world pack as an editable folder (`world/v1/`, its `README.md` and `FORMAT.md`), `PLUGIN-TEMPLATE.md`, `CHANGELOG-SEASON.md`, `balance/body.json`.
+- `L0-match/crates/ds-plugin-api`: the plugin card shared by the match and the season.
+- ADR-113 (the season contract), ADR-114 (an actor of every kind).
+
+### Changed
+- `README.md`: the state of today (engine 204, 632 tests, 10 of 22 metrics, L1 in progress, the press conferences in 0.2).
+- `context/NEW-AI-PROMPT.md`: the operator role, the season crates, L0 virtually closed (22 of 22 for real).
+- `context/STATE.md`: slimmed to a bookmark; the history up to SIM 202 and the old notes moved to `context/captures/STATE-ARCHIVE-2026-11-24.md`; the Plan with L1 and L0-22.
+- `doctrine/STRUCTURE.md`, `CONTRIBUTING.md`: the L1 crates and how to write a season plugin.
+
 ## [2026-11-14] — From the end of the die to an engine that thinks (summary, 2026-11-07 → 2026-11-14)
 
 A summary of a week of work, written after the fact from `git log`

@@ -202,3 +202,7 @@ the human who opens the PR: say in the PR that AI helped.
 
 Open a [Discussion](https://github.com/liraan/calciovero/discussions) or an
 issue with the `question` label. Everything happens in public.
+
+## Write a season plugin
+
+The season (L1) is a small core and plugins (ADR-113). A plugin is one type that implements `ds_season_api::SeasonPlugin`; the core is never touched. Start from [`L1-season/PLUGIN-TEMPLATE.md`](L1-season/PLUGIN-TEMPLATE.md). The world the season starts from is a folder of plain files you can edit without code: [`L1-season/world/v1/README.md`](L1-season/world/v1/README.md).

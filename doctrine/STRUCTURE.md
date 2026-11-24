@@ -151,9 +151,24 @@ The dependency order is the reading order, from the inside out:
 | `ds-calculator` | a formula from `balance/`, applied to a player and a situation |
 | `ds-db` | the vault: the players' performances, derived by key, one door |
 | `ds-orchestrator` | the decision: which actor, when, with which scene; the contact |
-| `ds-match-api` | the contract of a match plugin: the eight phases of the tick, the plugin card, the plugin (ADR-063); depends on no `ds-*` crate |
+| `ds-match-api` | the contract of a match plugin: the eight phases of the tick, the plugin (ADR-063); its card is the shared one of `ds-plugin-api` |
+| `ds-plugin-api` | the card of a plugin shared by the match and the season, and its one validator with the order by dependencies (ADR-113 §3, decision AQ); depends on no `ds-*` crate |
 | `ds-match` | the engine: the core (the tick, the state, the events, the save) and its plugins in `src/plugins/` (ADR-063, `context/plans/PLUGINS.md`) |
 | `ds-narrative` | the commentary: the events told as a story, after them; the engine does not depend on its texts (ADR-063) |
+
+**L1, the season** (`L1-season/crates/`, ADR-113, ADR-114):
+
+| Crate | Responsibility |
+|---|---|
+| `ds-season-api` | the contract of a season plugin: the five moments of a day, the plugin, its view of the season |
+| `ds-season` | the core: a day at a time, the plugins in the validator's order, the events, the save with its manifest, `SEASON_VERSION` |
+| `ds-world` | the world pack (`L1-season/world/v1/`, an editable folder; its format in `FORMAT.md`), its validator and export; the clubs |
+| `ds-roster` | the squads of the clubs: identity, role, body |
+| `ds-calendar` | the competitions and the calendar of the first series |
+| `ds-coach` | every club's coach, an actor: the line-up and the plan |
+| `ds-matchday` | the only plugin that calls the engine: the day's matches, side by side |
+| `ds-standings` | the table |
+| `ds-body` | fatigue and muscle damage between matches, and their recovery (may be switched off) |
 
 ### Naming
 
