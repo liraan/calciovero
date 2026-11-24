@@ -1687,8 +1687,7 @@ impl SpatialState {
             // number. A keeper who reads the play comes off his line to
             // narrow the angle and claim space; one who does not stays
             // ready on his line (ADR-078).
-            let read = hidden.foresight(gk);
-            let advance_cm = ds_calculator::keeper::line_depth_cm(advance, t, read);
+            let advance_cm = hidden.keeper_line_depth_cm(gk, advance, t);
             let off_line = (advance_cm + f64::from(gk_line_offset_cm())).min(depth_cap);
             let x_target = f64::mul_add(sign, off_line, goal_x);
             // Across, he stands on the bisector of the angle the ball makes

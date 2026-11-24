@@ -403,6 +403,16 @@ pub fn contact_force_milli(approach_milli: i32, injury_proneness: f64) -> f64 {
     f64::from(approach_milli) * (0.5 + injury_proneness)
 }
 
+/// Whether a man goes up for a high ball a heavier rival can reach.
+///
+/// ADR-057, OI-109: always against a man no heavier than him; against a
+/// heavier one, if his courage is at least the rival's share of their two
+/// weights. No number of its own. Moved from the engine (ADR-112).
+#[must_use]
+pub fn goes_up(courage: f64, weight: f64, rival: f64) -> bool {
+    rival <= weight || courage >= rival / (rival + weight)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{CarrierAnswer, DuelBalance, DuelBody, TackleKind};

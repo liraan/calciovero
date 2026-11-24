@@ -614,9 +614,30 @@ impl GroundTruth {
         self.offball_balance
     }
 
-    /// The player's appetite for risk, 0..1 (ADR-050).
+    /// The header at goal `winner` chooses from `pos` (ADR-106): aim, power
+    /// and contact, with his own appetite for risk and his own miss
+    /// (ADR-112: the engine read his raw risk management).
     #[must_use]
-    pub fn risk_appetite(&mut self, player: PlayerId) -> f32 {
+    pub fn choose_header_shot(
+        &mut self,
+        winner: PlayerId,
+        scene: &read::PerceivedScene,
+        pos: (i32, i32),
+    ) -> Option<(f64, f64, f64)> {
+        let risk_appetite = f64::from(self.risk_appetite(winner));
+        let own_error = self.header_error_rad(winner, false);
+        let closing = i64::MAX;
+        read::header_shot(
+            scene,
+            pos,
+            own_error,
+            (risk_appetite, closing),
+            self.shot_choice_balance(),
+        )
+    }
+
+    /// The player's appetite for risk, 0..1 (ADR-050).
+    fn risk_appetite(&mut self, player: PlayerId) -> f32 {
         self.latents_for(player).cognitive.risk_management
     }
 
@@ -920,11 +941,13 @@ impl GroundTruth {
         ds_calculator::control::spill_speed(incoming, first_touch, keep_max)
     }
 
-    /// How far `player` trusts what he imagines the others will do (ADR-052):
-    /// his game reading.
+    /// How far a keeper of this read comes off his line (ADR-078, 10d):
+    /// `line_depth_cm` with his own game reading (ADR-112: the engine read
+    /// it raw).
     #[must_use]
-    pub fn foresight(&mut self, player: PlayerId) -> f64 {
-        f64::from(self.latents_for(player).cognitive.game_reading)
+    pub fn keeper_line_depth_cm(&mut self, keeper: PlayerId, advance_cm: f64, t: f64) -> f64 {
+        let read = f64::from(self.latents_for(keeper).cognitive.game_reading);
+        ds_calculator::keeper::line_depth_cm(advance_cm, t, read)
     }
 
     /// How sure `player` is to keep the ball shielding it against a man on
@@ -1206,14 +1229,19 @@ impl GroundTruth {
         std::mem::take(&mut self.observations)
     }
 
-    /// His courage (ADR-057, OI-109): what the engine reads when he decides
-    /// whether to go up against a heavier man.
-    pub fn courage(&mut self, player: PlayerId) -> f64 {
-        if !self.psychology {
+    /// Whether `player`, of `weight` kilos, goes up for a high ball a rival
+    /// of `rival` kilos can reach (ADR-057, OI-109): his courage against
+    /// the rival's share of their two weights (ADR-112: the engine read his
+    /// raw courage).
+    #[must_use]
+    pub fn goes_up_against(&mut self, player: PlayerId, weight: f64, rival: f64) -> bool {
+        let courage = if self.psychology {
+            f64::from(self.latents_for(player).psychological.courage)
+        } else {
             // Off: nothing holds him back (the contest as before courage).
-            return 1.0;
-        }
-        f64::from(self.latents_for(player).psychological.courage)
+            1.0
+        };
+        ds_calculator::duel::goes_up(courage, weight, rival)
     }
 
     /// The top-speed interpolation of `movement.json` for `max_speed`,
@@ -1283,6 +1311,22 @@ impl GroundTruth {
             game_reading,
             ..*scene
         })
+    }
+
+    /// Whether a keeper comes for a ball falling in his area (OI-102, SIM
+    /// 149): he believes he gets there, `mine` cm away at his pace now,
+    /// before the nearest opponent he has seen, `rival` cm away at the pace
+    /// and reaction he believes theirs (the race of a ball nobody has, more
+    /// sure than not). The keeper's call (code audit B2: the engine made it).
+    #[must_use]
+    pub fn keeper_comes_for(
+        &mut self,
+        keeper: PlayerId,
+        (mine, rival): (f64, f64),
+        fatigue: f64,
+    ) -> bool {
+        let pace = self.top_speed_now(keeper, fatigue);
+        ds_calculator::thought::ThoughtBalance::load().race(mine, pace, rival) > 0.5
     }
 
     /// Where `player`, of the side with the ball, holds his place (ADR-071):

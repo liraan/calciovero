@@ -241,16 +241,8 @@ impl MatchState {
             .keys()
             .filter_map(|id| self.bodies.get(id).map(|b| (*id, b.height_cm)))
             .collect();
-        let risk_appetite = f64::from(ctx.hidden.risk_appetite(winner));
-        let own_error = ctx.hidden.header_error_rad(winner, false);
-        let closing = i64::MAX;
-        ds_orchestrator::read::header_shot(
-            &scene,
-            (bx, by),
-            own_error,
-            (risk_appetite, closing),
-            ctx.hidden.shot_choice_balance(),
-        )
+        // His choice, with his own appetite and miss (ADR-112).
+        ctx.hidden.choose_header_shot(winner, &scene, (bx, by))
     }
 
     #[allow(clippy::too_many_arguments, clippy::too_many_lines)]

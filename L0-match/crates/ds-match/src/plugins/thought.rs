@@ -213,7 +213,6 @@ impl MatchState {
             })
             .collect();
         scene.shield_keep = ctx.hidden.shield_confidence(attacker);
-        scene.foresight = ctx.hidden.foresight(attacker);
         // How the players he sees are moving, and the teammates he may serve
         // (a player looks at the teammate he plays to: the cone does not
         // filter the pass target, SIM_VERSION 15, the maintainer 2026-11-04):
@@ -770,7 +769,6 @@ impl MatchState {
                 // heavier man he has seen can reach it only if his courage is
                 // at least that man's share of their two weights; against a
                 // man no heavier than him he always goes.
-                let courage = ctx.hidden.courage(id);
                 let my_weight = self.bodies.get(&id).map_or(0.0, |b| b.weight_kg);
                 let brave = against.is_none_or(|d| {
                     other
@@ -781,7 +779,7 @@ impl MatchState {
                             distance_squared(*at, d) <= i64::from(duel.reach_cm).pow(2)
                         })
                         .filter_map(|(q, _)| self.bodies.get(&q).map(|b| b.weight_kg))
-                        .all(|w| goes_up(courage, my_weight, w))
+                        .all(|w| ctx.hidden.goes_up_against(id, my_weight, w))
                 });
                 // The keeper comes for a ball falling in his area if he
                 // believes he gets there before the nearest opponent he has
@@ -792,9 +790,6 @@ impl MatchState {
                 let keeper_first = keeper
                     && drop_in_box
                     && against.is_some_and(|d| {
-                        let pace = ctx
-                            .hidden
-                            .top_speed_now(id, self.bodies.get(&id).map_or(0.0, |b| b.fatigue));
                         #[allow(clippy::cast_precision_loss)] // cm on a pitch
                         let rival = other
                             .players
@@ -804,7 +799,12 @@ impl MatchState {
                             .fold(f64::INFINITY, f64::min);
                         #[allow(clippy::cast_precision_loss)]
                         let mine = distance_squared(me, d).isqrt() as f64;
-                        ds_calculator::thought::ThoughtBalance::load().race(mine, pace, rival) > 0.5
+                        // His call (code audit B2: the engine made it).
+                        ctx.hidden.keeper_comes_for(
+                            id,
+                            (mine, rival),
+                            self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
+                        )
                     });
                 let contests = |rank0: bool| keeper_first || (!keeper && rank0 && brave);
                 let rank_drop = against.map(|d| {

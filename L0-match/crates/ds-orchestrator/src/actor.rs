@@ -65,6 +65,14 @@ impl Actor {
         tick: u64,
     ) -> (crate::ChoiceKind, std::collections::BTreeMap<PlayerId, i64>) {
         let _ = tick;
+        // How far he trusts what he imagines the others will do (ADR-052):
+        // his own game reading, read here by the actor (ADR-112; before, the
+        // engine put it in the scene).
+        let mut own = scene.clone();
+        own.foresight = hidden
+            .custodian(self.player)
+            .value(ds_calculator::Characteristic::GameReading);
+        let scene = &own;
         let preferred_foot = {
             let mut custodian = hidden.custodian(self.player);
             let left = custodian.value(ds_calculator::Characteristic::LeftFoot);

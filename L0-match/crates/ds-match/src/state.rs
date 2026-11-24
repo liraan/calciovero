@@ -109,14 +109,6 @@ pub(crate) fn nearest_on_path(
     ((at(a.0, b.0), at(a.1, b.1)), at(a.2, b.2))
 }
 
-/// Whether a player of `courage` and `weight` goes up for a high ball a
-/// rival of `rival` kilos can reach (ADR-057, OI-109): always against a
-/// man no heavier than him; against a heavier one, if his courage is at
-/// least the rival's share of their two weights. No number of its own.
-pub(crate) fn goes_up(courage: f64, weight: f64, rival: f64) -> bool {
-    rival <= weight || courage >= rival / (rival + weight)
-}
-
 /// Where `id` cuts out a pass on the grass, and how many teammates he
 /// believes get there before him, judged from what he has seen (OI-106):
 /// he goes if he meets it before the receiver, when he has seen the
@@ -2265,9 +2257,9 @@ mod memory_tests {
     /// not; against a lighter rival both go.
     #[test]
     fn the_braver_goes_up_against_the_heavier_man() {
-        assert!(goes_up(0.6, 75.0, 90.0));
-        assert!(!goes_up(0.4, 75.0, 90.0));
-        assert!(goes_up(0.1, 80.0, 70.0));
+        assert!(ds_calculator::duel::goes_up(0.6, 75.0, 90.0));
+        assert!(!ds_calculator::duel::goes_up(0.4, 75.0, 90.0));
+        assert!(ds_calculator::duel::goes_up(0.1, 80.0, 70.0));
     }
 
     /// The twin of the cut-out (OI-106): a teammate nearer the ball's path
