@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `19050bd` - "SIM 205: the high ball is contested by everyone who reaches it in the tick"
+**Last commit verified:** `fd5357f` - "docs(handoff): the first reading of the aerial-duel lead"
 
 ## Mandato attivo (2026-11-16)
 
