@@ -37,9 +37,28 @@ pub fn third(root: f64) -> u8 {
     }
 }
 
+/// A root of his idea moved by his adaptability against a pressure in
+/// `[-1, 1]` (ADR-114, second ring): `idea - adaptability x pressure`, in
+/// `[0, 1)`. With no adaptability he keeps his idea.
+#[must_use]
+pub fn adapted(idea: f64, adaptability: f64, pressure: f64) -> f64 {
+    adaptability
+        .mul_add(-pressure.clamp(-1.0, 1.0), idea)
+        .clamp(0.0, 0.999_999)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{role_fit, third};
+    use super::{adapted, role_fit, third};
+
+    /// Twin: the same idea against a stronger and a weaker side; the more
+    /// adaptable he is, the more his block moves; with none, it stays.
+    #[test]
+    fn an_adaptable_coach_drops_his_block_against_the_stronger() {
+        assert!(adapted(0.6, 0.5, 1.0) < adapted(0.6, 0.5, -1.0));
+        assert!((adapted(0.6, 0.0, 1.0) - adapted(0.6, 0.0, -1.0)).abs() < 1e-12);
+        assert!(adapted(0.6, 0.8, 1.0) < adapted(0.6, 0.2, 1.0));
+    }
 
     /// A keeper fits in goal better than an all-round man short of a
     /// keeper's hands; beyond the profile, more is better.

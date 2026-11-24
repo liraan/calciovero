@@ -6,6 +6,10 @@ This file records every bump of `SEASON_VERSION` (`L1-season/crates/ds-season/sr
 
 ---
 
+## 5 — the human seat and the coach who adapts (DD-70)
+
+`ds-coach`: a club's coach may be the human player (`Coach::with_human`): his line-up for a day is played as given; an invalid one (a banned man, a man not in the squad, a man twice, a plan out of range) is refused with `LineupRefused` and why, and the vice's proposal is played; every `LineupAnnounced` says `by` (human, vice, actor). The AI coaches adapt: the block of their idea moves by a new root, `coach_adaptability`, against the opponent's strength (the points a match gap from the public table, over three); with none they keep their idea. The small golden regenerated.
+
 ## 4 — discipline: cautions, bans, who may not play (DD-69)
 
 `ds-discipline` (recommended, may be switched off): the matchday tells every card of a match by the man's identity (`MatchPlayed`, field `cards`); the plugin counts the cautions over the season, bans for one match at each threshold of `L1-season/balance/discipline.json` (5 and 10 from the Giudice Sportivo's communiqués; 14 and 17 to verify on the text in force of the CGS) and for one match after a red card, serves a ban when the man's club plays, and each morning tells who may not play (`Unavailable`); the coach leaves them out. Tested: no banned man lines up. The small golden regenerated.

@@ -36,11 +36,23 @@ fn season(seed: u64, clubs: usize) -> Season {
 }
 
 fn season_with(seed: u64, clubs: usize, body: bool) -> Season {
+    season_full(seed, clubs, body, None)
+}
+
+fn season_full(
+    seed: u64,
+    clubs: usize,
+    body: bool,
+    human: Option<(u32, Vec<ds_coach::HumanLineup>)>,
+) -> Season {
     let p = pack(clubs);
     let mut plugins: Vec<Box<dyn SeasonPlugin>> = vec![
         Box::new(Standings::default()),
         Box::new(Matchday::new(p.clone())),
-        Box::new(ds_coach::Coach::new(p.clone())),
+        match human {
+            Some((club, inputs)) => Box::new(ds_coach::Coach::with_human(p.clone(), club, inputs)),
+            None => Box::new(ds_coach::Coach::new(p.clone())),
+        },
         Box::new(Calendar::default()),
         Box::new(Roster::new(p.clone())),
         Box::new(World::new(p)),
@@ -55,9 +67,9 @@ fn season_with(seed: u64, clubs: usize, body: bool) -> Season {
     s
 }
 
-/// The fingerprint of the small season at `SEASON_VERSION` 4 and
+/// The fingerprint of the small season at `SEASON_VERSION` 5 and
 /// `SIM_VERSION` 205; regenerate on a bump of either.
-const SMALL_GOLDEN: &str = "fb7b3259018acd15376f8621fdaeb0b9610d027ca3b0e54bd2e9a3d9ffd12989";
+const SMALL_GOLDEN: &str = "5c40f9b6b07024e73116ab92fcf6023b694f4270deb0218dfa4c094495724dc3";
 
 #[test]
 fn a_small_league_is_played_whole_by_the_engine() {
@@ -162,6 +174,60 @@ fn no_banned_man_lines_up(s: &Season) {
 #[test]
 fn a_banned_man_never_lines_up() {
     no_banned_man_lines_up(&season(42, 4));
+}
+
+/// The human player's seat (decision AI): a valid line-up is played as he
+/// gave it; an invalid one is refused, with why, and the vice's proposal is
+/// played instead.
+#[test]
+fn the_human_coach_lines_up_his_side() {
+    let p = pack(4);
+    let mut given = ds_coach::choose(&p, 42, 0, &[], 0.0);
+    given.places.swap(9, 10);
+    let mut twice = given.places.clone();
+    twice[1] = twice[2];
+    let inputs = vec![
+        ds_coach::HumanLineup {
+            day: 1,
+            places: given.places.clone(),
+            block: 0,
+            width: 2,
+        },
+        ds_coach::HumanLineup {
+            day: 8,
+            places: twice,
+            block: 1,
+            width: 1,
+        },
+    ];
+    let s = season_full(42, 4, true, Some((0, inputs)));
+    let lineup = |day: u32| {
+        s.events()
+            .iter()
+            .find(|e| {
+                e.kind == ds_coach::LINEUP_ANNOUNCED
+                    && e.day == day
+                    && ds_coach::lineup_of(e).is_some_and(|l| l.club == 0)
+            })
+            .cloned()
+            .expect("club 0 lines up")
+    };
+    let by = |e: &ds_season_api::SeasonEvent| {
+        e.fields
+            .iter()
+            .find(|(k, _)| k == "by")
+            .map(|(_, v)| v.clone())
+    };
+    let first = lineup(1);
+    assert_eq!(by(&first).as_deref(), Some("human"));
+    let l = ds_coach::lineup_of(&first).expect("a line-up");
+    assert_eq!((l.places, l.block, l.width), (given.places, 0, 2));
+    assert!(
+        s.events()
+            .iter()
+            .any(|e| e.kind == ds_coach::LINEUP_REFUSED && e.day == 8)
+    );
+    assert_eq!(by(&lineup(8)).as_deref(), Some("vice"));
 }
 
 /// The first series of the shipped world: 38 matchdays, 380 matches.

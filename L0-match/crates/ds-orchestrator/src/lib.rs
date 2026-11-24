@@ -201,12 +201,20 @@ impl GroundTruth {
         chosen
     }
 
-    /// The coach's game idea for the plan (ADR-114 §4): the block (0 low, 1
-    /// middle, 2 high) and the width (0 narrow, 1 normal, 2 wide).
+    /// The coach's plan (ADR-114 §4): the block (0 low, 1 middle, 2 high) and
+    /// the width (0 narrow, 1 normal, 2 wide), from his game idea, the block
+    /// moved by his adaptability against the opponent's strength (ADR-114,
+    /// second ring): `pressure` is the opponent's points a match less his own
+    /// side's, over three (the most a match gives), in `[-1, 1]`; against a
+    /// stronger side an adaptable coach drops his block, one who is not keeps
+    /// his idea.
     #[must_use]
-    pub fn coach_intention(&self, coach: ds_core::ids::PlayerId) -> (u8, u8) {
+    pub fn coach_intention(&self, coach: ds_core::ids::PlayerId, pressure: f64) -> (u8, u8) {
+        let idea = self.vault.person_root(coach, "coach_block_height");
+        let adaptability = self.vault.person_root(coach, "coach_adaptability");
+        let block = ds_calculator::coach::adapted(idea, adaptability, pressure);
         (
-            ds_calculator::coach::third(self.vault.person_root(coach, "coach_block_height")),
+            ds_calculator::coach::third(block),
             ds_calculator::coach::third(self.vault.person_root(coach, "coach_width")),
         )
     }
