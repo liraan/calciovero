@@ -1,0 +1,20 @@
+[package]
+name = "ds-world"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The world plugin of Calcio Vero - Deep Simulator: the nation, its series and its invented clubs, from the world pack and the seed (L1, ADR-113)."
+publish = false
+
+[dependencies]
+ds-season-api = { path = "../ds-season-api" }
+blake3.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+ds-season = { path = "../ds-season" }
+
+[lints]
+workspace = true

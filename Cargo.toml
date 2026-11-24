@@ -21,6 +21,8 @@ members = [
     "L0-match/crates/ds-plugin-api",
     "L1-season/crates/ds-season-api",
     "L1-season/crates/ds-season",
+    "L1-season/crates/ds-world",
+    "L1-season/crates/ds-roster",
 ]
 
 [workspace.package]

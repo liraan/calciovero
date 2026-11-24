@@ -1,0 +1,214 @@
+{
+  "_note": "The world pack v1 (ADR-113, decision F): an invented world, credible and with no real name. The nation and the format of its first series are data; the clubs, cities, stadiums, colours and players are generated from the seed with these parts. Real names come only from a user's pack (decisions F-K, L3).",
+  "nation": "Italia",
+  "series": [
+    {
+      "name": "Serie A",
+      "clubs": 20
+    }
+  ],
+  "city_start": [
+    "Ar",
+    "Bel",
+    "Cas",
+    "Del",
+    "Fio",
+    "Gor",
+    "Lan",
+    "Mon",
+    "Nor",
+    "Ol",
+    "Pal",
+    "Quer",
+    "Ros",
+    "San",
+    "Tor",
+    "Val",
+    "Ver",
+    "Vil",
+    "Cor",
+    "Sal",
+    "Mar",
+    "Ped",
+    "Riv",
+    "Bor"
+  ],
+  "city_middle": [
+    "",
+    "an",
+    "el",
+    "or",
+    "il",
+    "ar",
+    "ess",
+    "ign",
+    "ab",
+    "ur"
+  ],
+  "city_end": [
+    "ano",
+    "ena",
+    "ino",
+    "ona",
+    "ese",
+    "ara",
+    "ello",
+    "ate",
+    "ago",
+    "ia",
+    "iano",
+    "ore"
+  ],
+  "club_forms": [
+    "@",
+    "Atletico @",
+    "Unione @",
+    "Sporting @",
+    "Virtus @",
+    "Pro @",
+    "Real @",
+    "@ Calcio"
+  ],
+  "stadium_forms": [
+    "Stadio @",
+    "Stadio Comunale di @",
+    "Arena @",
+    "Campo dei Pini di @",
+    "Stadio del Porto di @"
+  ],
+  "palette": [
+    [
+      200,
+      30,
+      30
+    ],
+    [
+      20,
+      60,
+      160
+    ],
+    [
+      250,
+      250,
+      250
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      240,
+      200,
+      40
+    ],
+    [
+      30,
+      130,
+      60
+    ],
+    [
+      120,
+      40,
+      140
+    ],
+    [
+      250,
+      130,
+      20
+    ],
+    [
+      90,
+      170,
+      230
+    ],
+    [
+      130,
+      20,
+      40
+    ]
+  ],
+  "first_names": [
+    "Luca",
+    "Marco",
+    "Andrea",
+    "Matteo",
+    "Davide",
+    "Simone",
+    "Paolo",
+    "Nicola",
+    "Fabio",
+    "Pietro",
+    "Tommaso",
+    "Enrico",
+    "Giulio",
+    "Leonardo",
+    "Stefano",
+    "Riccardo",
+    "Emanuele",
+    "Lorenzo",
+    "Daniele",
+    "Alessio"
+  ],
+  "surname_start": [
+    "Bar",
+    "Ber",
+    "Car",
+    "Cor",
+    "Fer",
+    "Gal",
+    "Lom",
+    "Mar",
+    "Mor",
+    "Pel",
+    "Ric",
+    "Ros",
+    "Ser",
+    "Tor",
+    "Val",
+    "Vit",
+    "Col",
+    "Bran",
+    "Gian",
+    "Del"
+  ],
+  "surname_end": [
+    "etti",
+    "ini",
+    "oni",
+    "elli",
+    "ucci",
+    "ari",
+    "ato",
+    "esi",
+    "otti",
+    "ardi",
+    "ello",
+    "ani"
+  ],
+  "squad_roles": [
+    "goalkeeper",
+    "goalkeeper",
+    "goalkeeper",
+    "full_back",
+    "full_back",
+    "full_back",
+    "full_back",
+    "centre_back",
+    "centre_back",
+    "centre_back",
+    "centre_back",
+    "wide_midfielder",
+    "wide_midfielder",
+    "wide_midfielder",
+    "central_midfielder",
+    "central_midfielder",
+    "central_midfielder",
+    "central_midfielder",
+    "striker",
+    "striker",
+    "striker",
+    "striker",
+    "striker"
+  ]
+}

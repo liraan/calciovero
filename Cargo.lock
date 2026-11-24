@@ -990,6 +990,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-roster"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "ds-season",
+ "ds-season-api",
+ "ds-world",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ds-season"
 version = "0.1.0"
 dependencies = [
@@ -1034,6 +1046,17 @@ dependencies = [
 [[package]]
 name = "ds-testkit"
 version = "0.1.0"
+
+[[package]]
+name = "ds-world"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "ds-season",
+ "ds-season-api",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "ecolor"
