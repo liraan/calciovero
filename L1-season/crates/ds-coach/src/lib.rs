@@ -187,7 +187,7 @@ pub fn coach_name(pack: &Pack, world_seed: u64, club: u32) -> String {
 
 /// A line-up the human player gives for his club (decision AI): an input
 /// with its day (ADR-060).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct HumanLineup {
     /// The day it is for.
     pub day: u32,
@@ -317,6 +317,51 @@ fn points_a_match(events: &[SeasonEvent]) -> BTreeMap<u32, (u32, u32)> {
     t
 }
 
+/// What `club`'s coach knows on `day` before playing `opponent`.
+///
+/// From the events so far: who may not play (`ds-discipline`), the pressure of the
+/// public table, who started when, and what the bodies carry (`ds-body`'s
+/// morning of `day`; without those plugins, nobody banned and
+/// every man fresh, decision B).
+#[must_use]
+pub fn today_for(events: &[SeasonEvent], club: u32, opponent: u32, day: u32) -> Today {
+    let table = points_a_match(events);
+    let ppg = |c: u32| {
+        table
+            .get(&c)
+            .map_or(0.0, |(p, n)| f64::from(*p) / f64::from((*n).max(1)))
+    };
+    let tired = tired_on(events, day);
+    Today {
+        unavailable: ds_discipline::unavailable_of(events, day),
+        pressure: if table.is_empty() {
+            0.0
+        } else {
+            (ppg(opponent) - ppg(club)) / 3.0
+        },
+        last_started: last_started(events, club),
+        tired,
+    }
+}
+
+/// What the bodies carry on the morning of `day` (`ds-body`), the greater
+/// of fatigue and damage: nobody if that morning told none.
+#[must_use]
+pub fn tired_on(events: &[SeasonEvent], day: u32) -> BTreeMap<u32, f64> {
+    events
+        .iter()
+        .rev()
+        .find(|e| e.kind == ds_body::BODIES_AT_KICK_OFF && e.day == day)
+        .and_then(|e| e.fields.first())
+        .map(|(_, t)| {
+            ds_body::read_bodies(t)
+                .into_iter()
+                .map(|(id, f, d)| (id, f.max(d)))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// The day each man of `club` last started, from the line-ups told.
 fn last_started(events: &[SeasonEvent], club: u32) -> BTreeMap<u32, u32> {
     let mut m = BTreeMap::new();
@@ -362,6 +407,54 @@ impl SeasonPlugin for Coach {
         }
     }
 
+    fn state(&self) -> String {
+        serde_json::to_string(&(self.human, &self.inputs)).unwrap_or_default()
+    }
+
+    fn restore(&mut self, state: &str) -> Result<(), PluginError> {
+        if !state.is_empty() {
+            (self.human, self.inputs) = serde_json::from_str(state)
+                .map_err(|e| PluginError(format!("coach state: {e}")))?;
+        }
+        Ok(())
+    }
+
+    /// `lineup`: the human player's line-up for a day (fields `day`,
+    /// `places` comma-separated, `block`, `width`); the last one given for
+    /// a day wins. Checked when the day comes (`LineupRefused`).
+    fn input(&mut self, kind: &str, fields: &[(String, String)]) -> Result<(), PluginError> {
+        if kind != "lineup" {
+            return Err(PluginError(format!("takes no input {kind}")));
+        }
+        if self.human.is_none() {
+            return Err(PluginError("no club has a human coach".into()));
+        }
+        let get = |k: &str| {
+            fields
+                .iter()
+                .find(|(f, _)| f == k)
+                .map(|(_, v)| v.as_str())
+                .ok_or_else(|| PluginError(format!("lineup without {k}")))
+        };
+        let num = |k: &str| -> Result<u32, PluginError> {
+            get(k)?
+                .parse()
+                .map_err(|_| PluginError(format!("lineup: {k} is not a number")))
+        };
+        let l = HumanLineup {
+            day: num("day")?,
+            places: get("places")?
+                .split(',')
+                .filter_map(|x| x.parse().ok())
+                .collect(),
+            block: u8::try_from(num("block")?).unwrap_or(u8::MAX),
+            width: u8::try_from(num("width")?).unwrap_or(u8::MAX),
+        };
+        self.inputs.retain(|i| i.day != l.day);
+        self.inputs.push(l);
+        Ok(())
+    }
+
     fn run(&mut self, moment: Moment, w: &mut SeasonWorld<'_>) -> Result<(), PluginError> {
         if moment == Moment::DayStarted {
             if w.day() == 0 {
@@ -369,8 +462,6 @@ impl SeasonPlugin for Coach {
             }
             return Ok(());
         }
-        // Who may not play today, if the discipline plugin is on (decision B).
-        let unavailable = ds_discipline::unavailable_of(w.events(), w.day());
         // Each club of today's fixtures, with its opponent.
         let mut clubs: Vec<(u32, u32)> = Vec::new();
         for e in w
@@ -383,38 +474,9 @@ impl SeasonPlugin for Coach {
                 clubs.push((a, h));
             }
         }
-        // What the bodies carry this morning (`ds-body`, decision B: without
-        // it every man is fresh).
-        let tired: BTreeMap<u32, f64> = w
-            .events()
-            .iter()
-            .rev()
-            .find(|e| e.kind == ds_body::BODIES_AT_KICK_OFF && e.day == w.day())
-            .and_then(|e| e.fields.first())
-            .map(|(_, t)| {
-                ds_body::read_bodies(t)
-                    .into_iter()
-                    .map(|(id, f, d)| (id, f.max(d)))
-                    .collect()
-            })
-            .unwrap_or_default();
-        let table = points_a_match(w.events());
-        let ppg = |c: u32| {
-            table
-                .get(&c)
-                .map_or(0.0, |(p, n)| f64::from(*p) / f64::from((*n).max(1)))
-        };
+        let unavailable = ds_discipline::unavailable_of(w.events(), w.day());
         for (club, opponent) in clubs {
-            let today = Today {
-                unavailable: unavailable.clone(),
-                pressure: if table.is_empty() {
-                    0.0
-                } else {
-                    (ppg(opponent) - ppg(club)) / 3.0
-                },
-                last_started: last_started(w.events(), club),
-                tired: tired.clone(),
-            };
+            let today = today_for(w.events(), club, opponent, w.day());
             let vice = choose(&self.pack, w.seed(), club, &today);
             // The human player's club: his line-up for today, if he gave one
             // and it can be played; else the vice's proposal (L1-COACH.md).

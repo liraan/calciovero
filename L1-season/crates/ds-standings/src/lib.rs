@@ -82,6 +82,28 @@ impl Standings {
     }
 }
 
+/// The table from the results told so far (plane B), in order: what any
+/// view reads, without the plugin.
+#[must_use]
+pub fn table_of(events: &[SeasonEvent]) -> Vec<(u32, Row)> {
+    let mut s = Standings::default();
+    for m in events
+        .iter()
+        .filter(|e| e.kind == ds_season_api::MATCH_PLAYED)
+    {
+        if let (Some(h), Some(a), Some(hg), Some(ag)) = (
+            field(m, "home"),
+            field(m, "away"),
+            field(m, "home_goals"),
+            field(m, "away_goals"),
+        ) {
+            s.table.entry(h).or_default().add(hg, ag);
+            s.table.entry(a).or_default().add(ag, hg);
+        }
+    }
+    s.ordered()
+}
+
 fn field(e: &SeasonEvent, key: &str) -> Option<u32> {
     e.fields
         .iter()

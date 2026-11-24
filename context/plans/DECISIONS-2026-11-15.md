@@ -120,3 +120,9 @@ Il maintainer, 2026-11-24: "per quanto riguarda i coach procedi con i consigliat
 8. le pause per le nazionali in L1 (sono calendario); la programmazione della stagione dopo la settimana.
 
 L'ordine degli anelli: `L1-COACH-STUDY.md` §7.
+
+## Decisione BN, 2026-11-24: prima una versione giocabile, Windows e Android
+
+Il maintainer, 2026-11-24: "vorrei avere il prima possibile una versione giocabile del gioco 'completo' per quanto possibile, mi sta bene anche se alcuni moduli non ci sono ma qualcosa che dia l'idea del gioco completo per windows e android come priorità". Un'**anteprima giocabile** viene prima del resto: la carriera di una stagione dalla GUI (scegliere il club, la rosa, la formazione proposta dal vice e cambiata dal giocatore, la giornata, la partita guardata nel 2.5D o solo il risultato, la classifica, il calendario, il salvataggio), con i moduli che ci sono. Android sale di priorità rispetto alla decisione BF (era la 1.1): la stessa app egui (ADR-061), appena c'è la catena di strumenti. L0 continua in parallelo (l'operatore). Il maintainer propone le modifiche della GUI quando l'anteprima è pronta.
+
+Il vincolo (maintainer, 2026-11-24): "non facciamo cose che non ci sono nella versione finale, tutto deve essere un'alpha di quello che sarà il gioco completo, niente codice morto". Ogni pezzo dell'anteprima è il primo anello del pezzo finale: le schermate seguono il design di `tools/ds-gui/DESIGN.md` (la lavagna, i post-it, i temi), non schermate provvisorie; nessuna scorciatoia da buttare, nessuna funzione che nessuno usa.

@@ -6,7 +6,8 @@
 //! `AfterMatch` once for every `MatchPlayed` the day's plugins told.
 
 use ds_season_api::{
-    CardError, MATCH_PLAYED, Moment, PluginError, SeasonEvent, SeasonPlugin, SeasonWorld,
+    CardError, INPUT_GIVEN, MATCH_PLAYED, Moment, PluginError, SeasonEvent, SeasonPlugin,
+    SeasonWorld,
 };
 use serde::{Deserialize, Serialize};
 
@@ -173,6 +174,40 @@ impl Season {
             }
             self.events.extend(out);
         }
+        Ok(())
+    }
+
+    /// Gives an input of the human player to the plugin named `plugin`
+    /// (ADR-060), before the next day is played. It is told as an event
+    /// (`InputGiven`), so it is in the fingerprint and the save, and the
+    /// plugin keeps it in its state.
+    ///
+    /// # Errors
+    ///
+    /// [`SeasonError::Plugin`] if no plugin has that name or it refuses it.
+    pub fn input(
+        &mut self,
+        plugin: &str,
+        kind: &str,
+        fields: &[(String, String)],
+    ) -> Result<(), SeasonError> {
+        let p = self
+            .plugins
+            .iter_mut()
+            .find(|p| p.card().name == plugin)
+            .ok_or_else(|| SeasonError::Plugin("season", format!("no plugin {plugin}")))?;
+        let name = p.card().name;
+        p.input(kind, fields)
+            .map_err(|PluginError(why)| SeasonError::Plugin(name, why))?;
+        let mut all = vec![("input".to_string(), kind.to_string())];
+        all.extend(fields.iter().cloned());
+        self.events.push(SeasonEvent {
+            day: self.day,
+            moment: Moment::DayStarted,
+            plugin: name,
+            kind: INPUT_GIVEN.to_string(),
+            fields: all,
+        });
         Ok(())
     }
 

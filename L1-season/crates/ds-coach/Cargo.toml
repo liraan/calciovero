@@ -16,6 +16,8 @@ ds-discipline = { path = "../ds-discipline" }
 ds-body = { path = "../ds-body" }
 ds-core.workspace = true
 ds-model.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 ds-orchestrator.workspace = true
 
 [lints]

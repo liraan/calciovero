@@ -1,0 +1,26 @@
+[package]
+name = "ds-career"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The career of Calcio Vero - Deep Simulator: a season of the world with the human player as a club's coach, every module on; what the screens read and do, with no screen (L1, the playable preview)."
+publish = false
+
+[dependencies]
+ds-season-api = { path = "../ds-season-api" }
+ds-season = { path = "../ds-season" }
+ds-world = { path = "../ds-world" }
+ds-roster = { path = "../ds-roster" }
+ds-calendar = { path = "../ds-calendar" }
+ds-coach = { path = "../ds-coach" }
+ds-matchday = { path = "../ds-matchday" }
+ds-standings = { path = "../ds-standings" }
+ds-body = { path = "../ds-body" }
+ds-discipline = { path = "../ds-discipline" }
+ds-week = { path = "../ds-week" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

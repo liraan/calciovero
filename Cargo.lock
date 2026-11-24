@@ -877,6 +877,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-career"
+version = "0.1.0"
+dependencies = [
+ "ds-body",
+ "ds-calendar",
+ "ds-coach",
+ "ds-discipline",
+ "ds-matchday",
+ "ds-roster",
+ "ds-season",
+ "ds-season-api",
+ "ds-standings",
+ "ds-week",
+ "ds-world",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ds-coach"
 version = "0.1.0"
 dependencies = [
@@ -889,6 +908,8 @@ dependencies = [
  "ds-roster",
  "ds-season-api",
  "ds-world",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

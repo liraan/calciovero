@@ -77,6 +77,49 @@ pub fn unavailable_of(events: &[SeasonEvent], day: u32) -> Vec<u32> {
         .unwrap_or_default()
 }
 
+/// Who is banned now, from the events told (plane B): a man with a ban told
+/// after the last one he served. The screens read it before the morning
+/// says it.
+#[must_use]
+pub fn banned_now(events: &[SeasonEvent]) -> Vec<u32> {
+    let mut open: BTreeMap<u32, bool> = BTreeMap::new();
+    for e in events {
+        let Some(id) = field(e, "player") else {
+            continue;
+        };
+        if e.kind == SUSPENSION {
+            open.insert(id, true);
+        } else if e.kind == SUSPENSION_SERVED {
+            open.insert(id, false);
+        }
+    }
+    open.into_iter()
+        .filter(|(_, b)| *b)
+        .map(|(id, _)| id)
+        .collect()
+}
+
+/// The cautions of every man this season that count towards a ban (not
+/// those of a second caution), from the events told.
+#[must_use]
+pub fn cautions_of(events: &[SeasonEvent]) -> BTreeMap<u32, u32> {
+    let booked: Vec<(u32, u32, bool)> = events
+        .iter()
+        .filter(|e| e.kind == BOOKING)
+        .filter_map(|e| {
+            let red = e.fields.iter().any(|(k, v)| k == "red" && v == "true");
+            Some((e.day, field(e, "player")?, red))
+        })
+        .collect();
+    let mut n = BTreeMap::new();
+    for &(day, id, red) in &booked {
+        if !red && !booked.iter().any(|&(d, i, r)| d == day && i == id && r) {
+            *n.entry(id).or_insert(0) += 1;
+        }
+    }
+    n
+}
+
 /// The discipline plugin.
 #[derive(Debug, Default)]
 pub struct Discipline {

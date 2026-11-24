@@ -259,6 +259,16 @@ impl Pack {
         .unwrap_or_else(|e| panic!("the shipped world pack: {e}"))
     }
 
+    /// A file of the pack shipped with the game, by name (for a pack made
+    /// from it with some files changed).
+    #[must_use]
+    pub fn v1_file(name: &str) -> Option<String> {
+        V1_FILES
+            .iter()
+            .find(|(n, _)| *n == name)
+            .map(|(_, t)| (*t).to_string())
+    }
+
     /// A pack from a folder (a user's pack, an importer's).
     ///
     /// # Errors

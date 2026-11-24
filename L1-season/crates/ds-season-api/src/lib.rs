@@ -45,6 +45,10 @@ impl Moment {
 /// a day.
 pub type PluginCard = ds_plugin_api::PluginCard<Moment>;
 
+/// The event of an input given to a plugin by the human player (ADR-060):
+/// its kind and fields, in the plugin's name, before the day it is for.
+pub const INPUT_GIVEN: &str = "InputGiven";
+
 /// The kind of the event a matchday plugin emits for every match it plays;
 /// the core calls `AfterMatch` once for each (§1, §6).
 pub const MATCH_PLAYED: &str = "MatchPlayed";
@@ -168,5 +172,16 @@ pub trait SeasonPlugin {
     /// A [`PluginError`] if the text is not a state of this version.
     fn restore(&mut self, _state: &str) -> Result<(), PluginError> {
         Ok(())
+    }
+
+    /// An input of the human player for this plugin (ADR-060: a choice with
+    /// its day), between two days. A plugin keeps it in its state, so the
+    /// save replays it.
+    ///
+    /// # Errors
+    ///
+    /// A [`PluginError`] if it takes no input of this kind, or not this one.
+    fn input(&mut self, kind: &str, _fields: &[(String, String)]) -> Result<(), PluginError> {
+        Err(PluginError(format!("takes no input {kind}")))
     }
 }
