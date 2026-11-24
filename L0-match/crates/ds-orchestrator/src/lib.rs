@@ -509,8 +509,18 @@ impl GroundTruth {
         // the keeper at half its speed.
         let horizontal = dmath::hypot(f64::from(initial_velocity.0), f64::from(initial_velocity.1));
         if horizontal > 0.0 {
-            let flight = dmath::hypot(f64::from(to.0 - ctx.from.0), f64::from(to.1 - ctx.from.1))
-                / horizontal;
+            // The flight's time with the air's drag, as the engine flies it
+            // and as the passer reckons a lofted ball (SIM 198, code audit
+            // B4: it was distance over speed, no drag, and every shot rose
+            // short of the height aimed at).
+            let distance = dmath::hypot(f64::from(to.0 - ctx.from.0), f64::from(to.1 - ctx.from.1));
+            let a = (f64::from(ctx.air_friction_milli) / 1000.0).clamp(0.0, 0.999_999);
+            let remains = 1.0 - distance * (1.0 - a) / horizontal;
+            let flight = if remains > 0.0 {
+                dmath::log(remains, a)
+            } else {
+                distance / horizontal
+            };
             #[allow(clippy::cast_possible_truncation)]
             let lift = (f64::from(ctx.gravity_cm_per_tick2) * flight / 2.0).round() as i16;
             initial_velocity.2 = initial_velocity.2.saturating_add(lift);

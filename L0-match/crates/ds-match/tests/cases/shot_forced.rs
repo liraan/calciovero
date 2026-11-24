@@ -35,6 +35,7 @@ const fn ctx_at(from_y: i32, difficulty: i32) -> ShotContext {
         fatigue: 0.0,
         gait: 0.75,
         gravity_cm_per_tick2: 10,
+        air_friction_milli: 990,
         is_header: false,
     }
 }
@@ -55,6 +56,7 @@ const fn ctx_contact(from_y: i32, difficulty: i32, contact_height: f64) -> ShotC
         fatigue: 0.0,
         gait: 0.75,
         gravity_cm_per_tick2: 10,
+        air_friction_milli: 990,
         is_header: false,
     }
 }

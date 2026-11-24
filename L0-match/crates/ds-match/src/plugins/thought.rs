@@ -1183,6 +1183,7 @@ impl MatchState {
                 .agent(attacker)
                 .map_or(0, |a| i32::from(a.velocity.1)),
             gravity_cm_per_tick2: self.spatial.gravity_cm_per_tick2(),
+            air_friction_milli: self.spatial.air_friction_milli(),
             gait: self
                 .spatial
                 .agent(attacker)

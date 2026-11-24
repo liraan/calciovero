@@ -75,6 +75,10 @@ pub struct ShotContext {
     /// Gravity, cm/tick² (`ball.json`): the shooter strikes the ball so
     /// that it reaches the height he aims at.
     pub gravity_cm_per_tick2: i32,
+    /// The air's friction, thousandths of the speed kept per tick
+    /// (`ball.json`): the shooter reckons the flight's time with the drag,
+    /// as the passer does for a lofted ball (code audit B4).
+    pub air_friction_milli: i32,
     /// How fast he is running when he strikes it, cm/tick (plan L0-CLOSE
     /// 11: a shot on the run is less clean).
     pub run_cm_per_tick: f64,

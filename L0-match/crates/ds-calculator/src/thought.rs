@@ -51,9 +51,30 @@ pub struct ThoughtBalance {
     /// Gravity, cm/tick² (`balance/ball.json`, the engine's own).
     #[serde(skip)]
     pub gravity_cm_per_tick2: f64,
+    /// The share of its speed the air leaves a ball each tick (`ball.json`
+    /// `air_friction_milli`): the thought flies the ball through the same
+    /// air as the engine (code audit B4).
+    #[serde(skip)]
+    pub air_keep: f64,
 }
 
 impl ThoughtBalance {
+    /// How many ticks a ball struck at `v` cm/tick takes to cover `distance`
+    /// cm through the air, which keeps `air_keep` of its speed a tick: the
+    /// engine's flight (code audit B4: the thought flew it at constant
+    /// speed). A ball the air stops short takes the time without drag.
+    #[must_use]
+    pub fn flight_ticks(&self, distance: f64, v: f64) -> f64 {
+        let v = v.max(1.0);
+        let a = self.air_keep;
+        let left = 1.0 - distance * (1.0 - a) / v;
+        if a > 0.0 && left > 0.0 {
+            dmath::log(left, a)
+        } else {
+            distance / v
+        }
+    }
+
     /// How sure he is that a man `run_cm` away gets there in time, running at
     /// the pace he believes: `another` man reacts after the reaction he
     /// believes; he himself is already deciding. The one measure of "in
@@ -136,11 +157,13 @@ impl ThoughtBalance {
         #[derive(Deserialize)]
         struct Ball {
             gravity_cm_per_tick2: f64,
+            air_friction_milli: i32,
         }
         let mut t: Self =
             serde_json::from_str(THOUGHT_JSON).expect("embedded thought file is valid JSON");
         let ball: Ball = serde_json::from_str(BALL_JSON).expect("embedded ball file is valid JSON");
         t.gravity_cm_per_tick2 = ball.gravity_cm_per_tick2;
+        t.air_keep = (f64::from(ball.air_friction_milli) / 1000.0).clamp(0.0, 0.999_999);
         t.goal_width_cm = 2 * crate::laws::law1().goal_half_width_cm;
         t
     }
@@ -299,7 +322,7 @@ pub fn chance_with(
     let meet = (distance_cm - keeper_off_cm.clamp(0.0, distance_cm)).max(1.0);
     let share = meet / distance_cm.max(1.0);
     let speed = kick.speed(0.85, 0.5).max(1.0);
-    let flight = meet / speed;
+    let flight = t.flight_ticks(meet, speed);
     let standing = save.standing_reach_cm(save.reference_keeper_height_cm);
     let reach = save.reach_cm(standing, 0.5, 0.5, flight);
     // `keeper_shift_cm`: how far the keeper leans towards the post aimed at
@@ -329,14 +352,14 @@ pub fn lob_chance(
     t: &ThoughtBalance,
 ) -> f64 {
     let v = kick.speed(power, 0.5).max(1.0);
-    let flight = distance_cm / v;
+    let flight = t.flight_ticks(distance_cm, v);
     // The arc the engine gives it (ADR-052: the same physics): it reaches
     // the height he aims at on the line, lifted against gravity for the
     // whole flight. Over the keeper it must pass above his reach, or he
     // takes it over his head (2026-11-13: before, the thought ignored it
     // and four shots in five were lobs the keepers caught).
     let to_keeper = (distance_cm - keeper_off_cm).max(0.0);
-    let at_keeper = to_keeper / v;
+    let at_keeper = t.flight_ticks(to_keeper, v);
     let height = f64::from(kick.aim_high_cm).mul_add(
         to_keeper / distance_cm.max(1.0),
         t.gravity_cm_per_tick2 / 2.0 * at_keeper * (flight - at_keeper),

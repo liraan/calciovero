@@ -272,6 +272,7 @@ impl MatchState {
             contact_height,
             momentum_y: 0,
             gravity_cm_per_tick2: self.spatial.gravity_cm_per_tick2(),
+            air_friction_milli: self.spatial.air_friction_milli(),
             gait: 0.5,
             run_cm_per_tick: 0.0,
             across: 0.0,

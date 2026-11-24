@@ -8,6 +8,14 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 198 — Il pallone vola nella stessa aria per chi calcia e per chi pensa (DD-58)
+
+Audit del codice B4: il tiro alzava il pallone calcolando il volo senza l'attrito dell'aria (la palla saliva meno del previsto), la probabilità del tiro e del pallonetto immaginati lo facevano volare a velocità costante. Ora `resolve_shot` e `ThoughtBalance::flight_ticks` usano il tempo di volo con l'aria di `ball.json`, come il passaggio alzato dal SIM 110.
+
+Con LUNA: dito = un tempo di volo; luna = quello che prevede è quello che succede (ADR-052).
+
+Golden rigenerati; semi coppa 48, pari al 90' 48, decisa 42, colpo 45. ds-reference 42..101: **7 su 22** (penalties, ground_duels, take_ons_won, fouls, red_cards, goal_kicks, saves); gol 6.95, autogol 0.83, tiri 43.63, in porta 20.15, passaggi 1829.75, falli 30.68, gialli 1.42, rossi 0.7, parate 12.72, fuorigioco 12.78, recupero 8.4/8.78.
+
 ## 197 — Una misura per "in tempo", la pressione dal tiratore, la stessa testa alla ricezione (DD-57)
 
 Dall'audit del codice: (1) "ci arriva in tempo" è una sola misura, `ThoughtBalance::in_time`: per un altro uomo con il tempo di reazione che gli si crede, per sé no; `left_by_nearer` leggeva i compagni senza reazione. (2) La pressione sul calcio si misura dal tiratore, come la legge lui e come la legge la difficoltà del tiro; il motore la misurava dalla palla. (3) A8: la scelta alla ricezione (`Actor::first_time`) pensa con la stessa testa di `decide` (`own_scene`): il suo errore, il piede migliore, il tocco dei compagni come li conosce; prima un tiro perfetto di destro e ogni controllo sicuro.
