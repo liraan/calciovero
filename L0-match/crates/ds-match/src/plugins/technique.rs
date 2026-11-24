@@ -255,17 +255,32 @@ impl MatchState {
         // ball crossing a man's head between two ticks went past him.
         // Below the band of the header it is the feet's.
         let (length, width) = pitch_cm(ctx);
-        let Some(((bx, by, bz), contenders)) = self
+        let path: Vec<(usize, (i32, i32, i32))> = self
             .spatial
             .ball_path()
             .into_iter()
             .enumerate()
             .filter(|(_, b)| b.2 >= FEET_BAND_CM)
-            .map(|(s, b)| (b, self.aerial_contenders(ctx, tick, b, s)))
+            .collect();
+        let Some(((bx, by, bz), mut contenders)) = path
+            .iter()
+            .map(|&(s, b)| (b, self.aerial_contenders(ctx, tick, b, s)))
             .find(|(_, c)| !c.is_empty())
         else {
             return;
         };
+        // Everyone who reaches it along its way in this tick contests it, at
+        // the point the first man meets it (SIM 205, T29 second half: before,
+        // only a man who reached it in the very same small step, a fiftieth
+        // of a second: one a step later never contested, and aerial duels
+        // were six a match against thirty-eight).
+        for &(s, b) in &path {
+            for c in self.aerial_contenders(ctx, tick, b, s) {
+                if !contenders.iter().any(|x| x.0 == c.0) {
+                    contenders.push(c);
+                }
+            }
+        }
         let m = ctx.match_;
         let Some(winner) = ctx.hidden.resolve_aerial(&contenders) else {
             return;

@@ -55,8 +55,8 @@ fn season_with(seed: u64, clubs: usize, body: bool) -> Season {
 }
 
 /// The fingerprint of the small season at `SEASON_VERSION` 3 and
-/// `SIM_VERSION` 204; regenerate on a bump of either.
-const SMALL_GOLDEN: &str = "4c128c1b6200f9333aae2de34f7402054fdee9563b4687afe0fcf822fc0a39fd";
+/// `SIM_VERSION` 205; regenerate on a bump of either.
+const SMALL_GOLDEN: &str = "1227ee7861a475cc5feff44bdbcbf783cf6e0bb51146304b5f6dd9ba63192bd6";
 
 #[test]
 fn a_small_league_is_played_whole_by_the_engine() {

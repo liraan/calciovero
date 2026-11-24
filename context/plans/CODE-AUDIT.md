@@ -191,7 +191,7 @@ Stessi 8 analisti in sola lettura, a HEAD `5eafc14` (SIM 202), con la tabella de
 **Blocco 5 — quello che il giocatore prevede è quello che il motore esegue (ADR-052)**
 - T27. La spazzata pensata scende a 40 m in un volo lineare; quella eseguita è sempre a potenza piena (circa 50 m in volo, poi rimbalzi) (orchestratore, dati).
 - T28. ✅ (SIM 203) Il tiro pensato ha sempre la velocità del tiro forte (`speed(0.85, 0.5)`): il piazzato sopravvalutato (orchestratore, dati).
-- T29. 🟡 (SIM 204: la spazzata di testa solo sul pallone loro; nessun tiro di testa d'ufficio; resta il duello nello stesso piccolo passo) Il colpo di testa a velocità di tiro di piede; ogni pallone alto vinto in area avversaria diventa un tiro (nessuna sponda); nella propria metà ogni pallone alto è spazzato, anche il passaggio di un compagno (orchestratore, motore).
+- T29. ✅ (SIM 204: la spazzata di testa solo sul pallone loro; nessun tiro di testa d'ufficio; SIM 205: contende chi arriva nel tick) Il colpo di testa a velocità di tiro di piede; ogni pallone alto vinto in area avversaria diventa un tiro (nessuna sponda); nella propria metà ogni pallone alto è spazzato, anche il passaggio di un compagno (orchestratore, motore).
 - T30. `first_time` sceglie su una scena più povera di `decide` (niente conduzione, `Hold`, filtranti, altezze): A8 chiuso a metà (orchestratore).
 - T31. ✅ (SIM 203) Con tutte le opzioni filtrate vince lo slot più basso (il portiere): `NEG_INFINITY` e tie-break per slot (orchestratore).
 - T32. ✅ (SIM 203) Il ricevitore fermo decide subito, senza il suo tempo di decisione (motore).

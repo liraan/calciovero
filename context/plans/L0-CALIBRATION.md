@@ -131,6 +131,10 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 1.35 | 5.54 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 4.51 | 2.5–5.7 | sì | — |
 
+## La misura del 205 (2026-11-24, DD-68)
+
+Stesso comando e banda. **10 su 22** (shots_on_target, penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.48, autogol 0.9, tiri 42.92, in porta 11.13, passaggi 1628.97, duelli aerei 7.92, duelli a terra 210.83, dribbling 25.98, spazzate 22.77, rimesse 17.82, fuorigioco 9.25, recupero 7.22/6.75. Nessun numero adattato. I duelli aerei 6.15 → 7.92: la contesa nel tick c'è, ma i palloni alti giocati sono pochi (i cross 8.7 contro 33.8 reali, la metrica che `ds-reference` non confronta): **indizio nuovo, la scelta del pallone alto** (lancio, cross) va cercata come bug nel pensiero di chi passa.
+
 ## La misura del 204 (2026-11-24, DD-65)
 
 Stesso comando e banda. **10 su 22** (shots_on_target, penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.43, autogol 0.83, tiri 42.37, in porta 11.32, passaggi 1626.17, duelli aerei 6.15, duelli a terra 213.62, dribbling 27.23, spazzate 22.5, rimesse 17.73, fuorigioco 9.2, recupero 7.17/6.74. Nessun numero adattato. Rientrano i tiri in porta; le spazzate scendono da 36.5 a 22.5 (in banda). Restano fuori, con le cause della misura del 203: gol, autogol, tiri, passaggi, duelli aerei (la contesa solo nello stesso piccolo passo), duelli a terra e dribbling, rimesse, fuorigioco, recupero (taratura dichiarata). Nuovo sintomo dei gol in eccesso: in coppa i rigori arrivano una partita su circa 150 (il calcio vero circa una su otto).

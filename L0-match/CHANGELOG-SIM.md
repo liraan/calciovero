@@ -8,6 +8,12 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 205 — il pallone alto lo contende chi ci arriva nel tick (DD-68)
+
+T29, seconda metà (`CODE-AUDIT.md`): contendono il pallone alto tutti quelli che lo raggiungono lungo il suo percorso nel tick, al punto in cui lo incontra il primo; prima solo chi arrivava nello stesso piccolo passo (un cinquantesimo di secondo). Nessun numero cambiato. I duelli aerei salgono poco (6.15 → 7.92): la causa grande è altrove, i palloni alti giocati sono pochi (i cross 8.7 contro 33.8), un indizio nuovo.
+
+Golden rigenerati; semi coppa 127, pari al 90' 49, decisa 42, colpo di testa in fuorigioco 46. ds-reference 42..101: **10 su 22** (shots_on_target, penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.48, autogol 0.9, tiri 42.92, in porta 11.13, passaggi 1628.97, duelli aerei 7.92, duelli a terra 210.83, dribbling 25.98, spazzate 22.77, rimesse 17.82, fuorigioco 9.25, recupero 7.22/6.75.
+
 ## 204 — il pallone alto è una scelta del giocatore (DD-65)
 
 T29, prima metà (`CODE-AUDIT.md`): nella propria metà il pallone alto del passaggio di un compagno si stoppa, non si spazza d'ufficio (prima anche il rinvio corto del portiere finiva lontano); nell'area avversaria, se la sua scelta di testa non trova un tiro, il pallone gli scende ai piedi (prima il motore tirava d'ufficio al centro della porta; `header_at_goal` tolto). Nessun numero cambiato. Aperta l'altra metà: il duello aereo nasce solo se due uomini arrivano nello stesso piccolo passo.
