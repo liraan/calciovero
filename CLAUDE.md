@@ -17,4 +17,4 @@ Rispondi in italiano. Lavora in autonomia; chiedi solo per scelte che toccano la
 - Commit con `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Mai segreti nei commit.
 
 ## Come si chiude L0
-Almeno 16 metriche su 22 in banda (media ± 1 DS di ds-reference), e ogni metrica fuori banda spiegata come bug corretto o come taratura dichiarata. Ogni metrica fuori banda si indaga prima come possibile bug. Poi L1 (`context/plans/L1.md`).
+Almeno 22 metriche su 22 in banda (media ± 1 DS di ds-reference), e ogni metrica fuori banda spiegata come bug corretto o come taratura dichiarata. Ogni metrica fuori banda si indaga prima come possibile bug. Poi L1 (`context/plans/L1.md`).
