@@ -82,6 +82,18 @@ impl Vault {
         self.keys.extend(keys);
     }
 
+    /// A root of a person who is not a player (a coach, ADR-114 §2): derived
+    /// by key from the world seed and his identity, in `[0, 1)`; stays in
+    /// the vault and is read only by the actor.
+    #[must_use]
+    pub fn person_root(&self, person: PlayerId, name: &str) -> f64 {
+        f64::from(ds_core::hash::unit_from_key(
+            self.identity.world_seed,
+            person,
+            name,
+        ))
+    }
+
     /// Returns the match identity the vault was built with.
     #[must_use]
     pub const fn identity(&self) -> Identity {

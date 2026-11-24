@@ -867,6 +867,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-coach"
+version = "0.1.0"
+dependencies = [
+ "ds-calendar",
+ "ds-core",
+ "ds-orchestrator",
+ "ds-roster",
+ "ds-season-api",
+ "ds-world",
+]
+
+[[package]]
 name = "ds-core"
 version = "0.1.0"
 dependencies = [
@@ -957,6 +969,7 @@ name = "ds-matchday"
 version = "0.1.0"
 dependencies = [
  "ds-calendar",
+ "ds-coach",
  "ds-core",
  "ds-match",
  "ds-model",
@@ -1049,6 +1062,7 @@ name = "ds-standings"
 version = "0.1.0"
 dependencies = [
  "ds-calendar",
+ "ds-coach",
  "ds-matchday",
  "ds-roster",
  "ds-season",

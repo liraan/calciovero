@@ -150,6 +150,67 @@ impl GroundTruth {
         g
     }
 
+    /// The ground truth of a season's world (ADR-114): the vault of
+    /// `world_seed`, with each player's role, read by the coaches.
+    #[must_use]
+    pub fn for_world(world_seed: u64, players: &[(ds_core::ids::PlayerId, String)]) -> Self {
+        let mut g = Self::new(world_seed, MatchId::new(0, 0));
+        g.vault.register_roles(players.iter().cloned());
+        g
+    }
+
+    /// The coach's eleven and bench (ADR-114 §3): for every place, in order,
+    /// the man of `squad` not yet chosen who fits its role best, by the
+    /// role's profile; ties to the lower identity. His estimate of his own
+    /// men is narrow and keeps their order: it is the fit itself.
+    pub fn choose_lineup(
+        &mut self,
+        _coach: ds_core::ids::PlayerId,
+        squad: &[ds_core::ids::PlayerId],
+        places: &[&str],
+    ) -> Vec<ds_core::ids::PlayerId> {
+        let profiles = ds_db::profiles::Profiles::load();
+        let mut chosen: Vec<ds_core::ids::PlayerId> = Vec::with_capacity(places.len());
+        for role in places {
+            let profile: Vec<(String, f64, f64)> = profiles
+                .roles
+                .get(*role)
+                .map(|p| {
+                    p.characteristics
+                        .iter()
+                        .map(|(n, mv)| (n.clone(), f64::from(mv[0]), f64::from(mv[1])))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let mut best: Option<((f64, f64), ds_core::ids::PlayerId)> = None;
+            for &p in squad.iter().filter(|p| !chosen.contains(p)) {
+                let triples: Vec<(f64, f64, f64)> = profile
+                    .iter()
+                    .filter_map(|(n, m, s)| self.characteristic(p, n).map(|v| (*m, *s, v)))
+                    .collect();
+                let fit = ds_calculator::coach::role_fit(&triples);
+                let better = |b: (f64, f64)| fit.0.total_cmp(&b.0).then(fit.1.total_cmp(&b.1));
+                if best.is_none_or(|(b, bp)| better(b).then(bp.cmp(&p)).is_gt()) {
+                    best = Some((fit, p));
+                }
+            }
+            if let Some((_, p)) = best {
+                chosen.push(p);
+            }
+        }
+        chosen
+    }
+
+    /// The coach's game idea for the plan (ADR-114 §4): the block (0 low, 1
+    /// middle, 2 high) and the width (0 narrow, 1 normal, 2 wide).
+    #[must_use]
+    pub fn coach_intention(&self, coach: ds_core::ids::PlayerId) -> (u8, u8) {
+        (
+            ds_calculator::coach::third(self.vault.person_root(coach, "coach_block_height")),
+            ds_calculator::coach::third(self.vault.person_root(coach, "coach_width")),
+        )
+    }
+
     /// Returns the world seed.
     #[must_use]
     pub const fn world_seed(&self) -> u64 {

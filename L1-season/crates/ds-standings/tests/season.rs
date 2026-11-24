@@ -36,6 +36,7 @@ fn season(seed: u64, clubs: usize) -> Season {
     let plugins: Vec<Box<dyn SeasonPlugin>> = vec![
         Box::new(Standings::default()),
         Box::new(Matchday::new(p.clone())),
+        Box::new(ds_coach::Coach::new(p.clone())),
         Box::new(Calendar::default()),
         Box::new(Roster::new(p.clone())),
         Box::new(World::new(p)),
@@ -46,16 +47,23 @@ fn season(seed: u64, clubs: usize) -> Season {
     s
 }
 
-/// The fingerprint of the small season at `SEASON_VERSION` 1 and
+/// The fingerprint of the small season at `SEASON_VERSION` 2 and
 /// `SIM_VERSION` 204; regenerate on a bump of either.
-const SMALL_GOLDEN: &str = "c4a31309af9e892a380464806839b95824625e32c892ee8af319b90b3b13d092";
+const SMALL_GOLDEN: &str = "5ee9b9c6e7a581c6a916c093afc1a9030713c513cadf34c06dd3258faf21bdab";
 
 #[test]
 fn a_small_league_is_played_whole_by_the_engine() {
     let s = season(42, 4);
     assert_eq!(
         s.order(),
-        ["world", "calendar", "roster", "matchday", "standings"]
+        [
+            "world",
+            "calendar",
+            "roster",
+            "coach",
+            "matchday",
+            "standings"
+        ]
     );
     let played: Vec<_> = s
         .events()

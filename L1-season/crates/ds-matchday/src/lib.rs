@@ -8,66 +8,24 @@
 //! read the season as it is before them and not one another, so they are
 //! played side by side; their results are told in the order of the match id.
 //!
-//! Until the coach (step 5) every side lines up its squad's first men for
-//! the roles of a 4-4-2, five on the bench. Until `ds-db` holds the squads
+//! Every side as its coach announced it (`ds-coach`, ADR-114): the eleven,
+//! the bench, the block and the width. Until `ds-db` holds the squads
 //! (decision AD), the squads are made again from the pack and the seed by
 //! `ds_roster::make_squad`, the same men the roster made.
 
 use ds_calendar::{FIXTURE_SCHEDULED, Fixture};
+use ds_coach::{LINEUP_ANNOUNCED, Lineup, PLACES, lineup_of};
 use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
 use ds_model::{
-    FormationId, Match, MatchRules, MatchSeed, PhysicalStateMinimal, Pitch, Player as MatchPlayer,
-    PsychologicalStateMinimal, Referee, RoleId, Squad,
+    BlockHeight, FormationId, Instruction, Intention, Match, MatchRules, MatchSeed, Order,
+    PhysicalStateMinimal, Pitch, Player as MatchPlayer, PsychologicalStateMinimal, Referee, RoleId,
+    Squad, Width,
 };
 use ds_roster::Player;
 use ds_season_api::{
     MATCH_PLAYED, Moment, PluginCard, PluginError, SeasonPlugin, SeasonWorld, Tier,
 };
 use ds_world::Pack;
-
-/// The roles of the 4-4-2, in the order of the formation grid.
-const STARTERS: [&str; 11] = [
-    "goalkeeper",
-    "full_back",
-    "centre_back",
-    "centre_back",
-    "full_back",
-    "wide_midfielder",
-    "central_midfielder",
-    "central_midfielder",
-    "wide_midfielder",
-    "striker",
-    "striker",
-];
-
-/// The bench: one per line.
-const BENCH: [&str; 5] = [
-    "goalkeeper",
-    "centre_back",
-    "central_midfielder",
-    "wide_midfielder",
-    "striker",
-];
-
-/// The men of `squad` for `roles`, each the first of his role not yet taken.
-fn pick<'a>(
-    squad: &'a [Player],
-    roles: &[&str],
-    taken: &mut Vec<u32>,
-) -> Result<Vec<&'a Player>, PluginError> {
-    roles
-        .iter()
-        .map(|role| {
-            let p = squad
-                .iter()
-                .find(|p| p.role == *role && !taken.contains(&p.id))
-                .or_else(|| squad.iter().find(|p| !taken.contains(&p.id)))
-                .ok_or_else(|| PluginError(format!("no one left for {role}")))?;
-            taken.push(p.id);
-            Ok(p)
-        })
-        .collect()
-}
 
 fn to_match_player(p: &Player, slot: u32, role: &str) -> Result<MatchPlayer, PluginError> {
     MatchPlayer::try_new(
@@ -82,37 +40,42 @@ fn to_match_player(p: &Player, slot: u32, role: &str) -> Result<MatchPlayer, Plu
     .map_err(|e| PluginError(e.to_string()))
 }
 
-/// The side of `squad` for a match, at the places from `base` (0 home,
-/// 100 away), and the identity each place stands for.
+/// The side of `club` for a match, as its coach lined it up, at the places
+/// from `base` (0 home, 100 away), and the identity each place stands for.
 fn side(
     squad: &[Player],
-    club: u32,
+    lineup: &Lineup,
     base: u32,
 ) -> Result<(Squad, Vec<(PlayerId, PlayerId)>), PluginError> {
-    let mut taken = Vec::new();
-    let starters = pick(squad, &STARTERS, &mut taken)?;
-    let bench = pick(squad, &BENCH, &mut taken)?;
     let mut keys = Vec::new();
-    let mut place = |i: usize, p: &Player, role: &str| -> Result<MatchPlayer, PluginError> {
+    let mut xi = Vec::with_capacity(11);
+    let mut subs = Vec::with_capacity(5);
+    for (i, (id, role)) in lineup.places.iter().zip(PLACES).enumerate() {
+        let p = squad
+            .iter()
+            .find(|p| p.id == *id)
+            .ok_or_else(|| PluginError(format!("player {id} is not in club {}", lineup.club)))?;
         let slot = base + u32::try_from(i).unwrap_or(0);
         keys.push((PlayerId::new(slot, 0), PlayerId::new(p.id, 0)));
-        to_match_player(p, slot, role)
-    };
-    let mut xi = Vec::with_capacity(11);
-    for (i, (p, role)) in starters.iter().zip(STARTERS).enumerate() {
-        xi.push(place(i, p, role)?);
+        let mp = to_match_player(p, slot, role)?;
+        if i < 11 { xi.push(mp) } else { subs.push(mp) }
     }
-    let mut subs = Vec::with_capacity(5);
-    for (i, (p, role)) in bench.iter().zip(BENCH).enumerate() {
-        subs.push(place(11 + i, p, role)?);
-    }
+    let block =
+        [BlockHeight::Low, BlockHeight::Mid, BlockHeight::High][usize::from(lineup.block.min(2))];
+    let width = [Width::Narrow, Width::Normal, Width::Wide][usize::from(lineup.width.min(2))];
     let squad = Squad::try_new(
-        SquadId::new(club + 1, 0),
+        SquadId::new(lineup.club + 1, 0),
         xi,
         subs,
         FormationId::new("4-4-2").map_err(|e| PluginError(e.to_string()))?,
     )
-    .map_err(|e| PluginError(e.to_string()))?;
+    .map_err(|e| PluginError(e.to_string()))?
+    // The coach's plan from the kick-off (ADR-059, ADR-114 §4).
+    .with_instructions(vec![Instruction {
+        tick: 0,
+        order: Order::Intention(Intention { block, width }),
+        channel: None,
+    }]);
     Ok((squad, keys))
 }
 
@@ -121,11 +84,16 @@ fn side(
 /// # Errors
 ///
 /// A [`PluginError`] if a side cannot be lined up.
-pub fn play(pack: &Pack, world_seed: u64, f: &Fixture) -> Result<(u16, u16), PluginError> {
+pub fn play(
+    pack: &Pack,
+    world_seed: u64,
+    f: &Fixture,
+    lineups: (&Lineup, &Lineup),
+) -> Result<(u16, u16), PluginError> {
     let home_squad = ds_roster::make_squad(pack, world_seed, f.home);
     let away_squad = ds_roster::make_squad(pack, world_seed, f.away);
-    let (home, mut keys) = side(&home_squad, f.home, 0)?;
-    let (away, away_keys) = side(&away_squad, f.away, 100)?;
+    let (home, mut keys) = side(&home_squad, lineups.0, 0)?;
+    let (away, away_keys) = side(&away_squad, lineups.1, 100)?;
     keys.extend(away_keys);
     let m = Match::new(
         MatchId::new(f.id + 1, 0),
@@ -173,8 +141,8 @@ impl SeasonPlugin for Matchday {
             name: "matchday",
             version: "1",
             steps: &[Moment::BeforeMatches],
-            depends: &["roster", "calendar"],
-            reads: &["roster.squad", "calendar.fixture"],
+            depends: &["coach", "roster", "calendar"],
+            reads: &["coach.lineup", "roster.squad", "calendar.fixture"],
             optional_reads: &[],
             writes: &["matchday.result"],
             tier: Tier::Core,
@@ -198,6 +166,21 @@ impl SeasonPlugin for Matchday {
                 })
             })
             .collect();
+        let lineups: Vec<Lineup> = w
+            .events()
+            .iter()
+            .filter(|e| e.kind == LINEUP_ANNOUNCED && e.day == w.day())
+            .filter_map(lineup_of)
+            .collect();
+        let of = |club: u32| {
+            lineups.iter().find(|l| l.club == club).ok_or_else(|| {
+                PluginError(format!("club {club} has no line-up for day {}", w.day()))
+            })
+        };
+        let pairs: Vec<(&Lineup, &Lineup)> = today
+            .iter()
+            .map(|f| Ok((of(f.home)?, of(f.away)?)))
+            .collect::<Result<_, PluginError>>()?;
         let seed = w.seed();
         let pack = &self.pack;
         // Side by side (ADR-113 §7): each match reads only the season before it.
@@ -207,7 +190,8 @@ impl SeasonPlugin for Matchday {
         let results: Vec<Result<(u16, u16), PluginError>> = std::thread::scope(|s| {
             let handles: Vec<_> = today
                 .iter()
-                .map(|f| s.spawn(move || play(pack, seed, f)))
+                .zip(pairs.iter().copied())
+                .map(|(f, l)| s.spawn(move || play(pack, seed, f, l)))
                 .collect();
             handles
                 .into_iter()

@@ -12,6 +12,7 @@ ds-season-api = { path = "../ds-season-api" }
 ds-world = { path = "../ds-world" }
 ds-roster = { path = "../ds-roster" }
 ds-calendar = { path = "../ds-calendar" }
+ds-coach = { path = "../ds-coach" }
 ds-core.workspace = true
 ds-model.workspace = true
 ds-match.workspace = true
