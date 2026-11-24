@@ -16,13 +16,14 @@ Un solo scrittore alla volta (decisione O). Quando Claude Code non c'è e il mai
 
 - **C2 verde prima di ogni push:** `cargo build --release`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --all --check`, `cargo test --workspace`, `cargo run --release -p ds-test-runner -- --check`, `bash context/scripts/gates.sh`.
 - **A5-bis:** mai scegliere un numero guardando la metrica. **Una metrica fuori banda è un bug da trovare**, nel modo in cui un giocatore vede, pensa, si muove, o in come si applicano le Leggi, o nella misura stessa. L0 si chiude davvero a 22 su 22 (maintainer, 2026-11-24).
+- **Mai cambiare la soglia di un test esistente.** Se un guardiano scatta dopo una correzione, è un indizio: si indaga e si scrive, non si allenta (l'esame del 2026-11-24 l'ha fatto: è l'errore da non ripetere).
 - **Niente dadi** (ADR-035), niente `f64::powf`/`powi` (non deterministici fra piattaforme: `ds_core::dmath::powf`), il caveau chiuso (ADR-112: le caratteristiche le legge solo l'attore in `ds-orchestrator`).
 - **Commit in due passi:** prima il lavoro *senza* `context/STATE.md` (con `Delegated-Decision: DD-n` se c'è una decisione delegata, e `Co-Authored-By`), poi il commit del bookmark che porta "Last commit verified" a quell'hash, con `Verified: docs-only`. Niente force-push, niente tag. Se il push è rifiutato perché su `origin` c'è un commit nuovo (il maintainer modifica dal sito), si ribasano i propri commit non pubblicati: `git reset --soft HEAD~1` (il bookmark), `git stash` di STATE.md, `git rebase origin/main`, `git stash pop`, bookmark rifatto con l'hash nuovo.
 
 ## 4. La coda, in ordine di priorità
 
-**A. L0 verso 22 su 22** (`context/plans/CODE-AUDIT.md`, "Terza passata"; la misura in `L0-CALIBRATION.md`, "La misura del 204"). Al SIM 204: 10 su 22. Aperti, con il punto del codice:
-1. **T29, seconda metà — i duelli aerei** (6 contro 38): il duello nasce solo se due uomini arrivano nello stesso piccolo passo (`ds-match/src/plugins/technique.rs`, `meet_ball_in_air`, `contenders`).
+**A. L0 verso 22 su 22** (`context/plans/CODE-AUDIT.md`, "Terza passata"; la misura in `L0-CALIBRATION.md`, "La misura del 204"). Al SIM 205: 10 su 22. Aperti, con il punto del codice:
+1. **I duelli aerei** (7.9 contro 38): dal SIM 205 contende chi arriva nel tick; la causa grande è che i palloni alti si giocano poco (i cross 8.7 contro 33.8): cercare perché chi passa sceglie poco il lancio e il cross (`ds-orchestrator/src/read.rs`, i candidati `Loft` e il cross).
 2. **T23 — il fuorigioco nel blocco** (9.2 contro 4.3): le punte del blocco alla pari della linea per costruzione (`ds-match/src/shape.rs`, `place`).
 3. **T17 — le riprese come palla in movimento** (passaggi ×1.8, rimesse ×0.4): il battitore conduce, spazza, tira; la rimessa è calciata (`plugins/thought.rs`, la scena senza la ripresa).
 4. **T9 — il primo tocco verso la propria porta** (autogol ×8) (`spatial.rs`, ramo `won` del primo tocco).
@@ -68,3 +69,4 @@ Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'opera
 | Data | Chi | Cosa | Commit |
 |---|---|---|---|
 | 2026-11-24 | Claude Code | SIM 203-204 (10 su 22); L1 passi 1-4, primi anelli di 5 e 6; mondo modificabile; pulizia della documentazione; questo file | `db5221b` |
+| 2026-11-24 | Claude Code | SIM 205 (T29 chiuso); l'esame di opencode (7/10: buona disciplina, si ferma alla prima causa, aveva allentato una soglia); la regola sulle soglie | `19050bd` |

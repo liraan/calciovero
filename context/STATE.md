@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `db5221b` - "docs: the state of today everywhere; the handoff for an operator"
+**Last commit verified:** `19050bd` - "SIM 205: the high ball is contested by everyone who reaches it in the tick"
 
 ## Mandato attivo (2026-11-16)
 
@@ -19,6 +19,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 
 ## Dove siamo (2026-11-24)
 
+- **SIM 205 — il pallone alto lo contende chi ci arriva nel tick (2026-11-24, DD-68).** T29 chiuso. `ds-reference 42..101`: **10 su 22**; duelli aerei 6.15 → 7.92. Indizio nuovo: i palloni alti giocati sono pochi (cross 8.7 contro 33.8).
 - **SIM 204 — il pallone alto è una scelta del giocatore (2026-11-24, DD-65).** T29, prima metà: il passaggio alto di un compagno nella propria metà si stoppa; nessun tiro di testa d'ufficio in area. `ds-reference 42..101`: **10 su 22** (shots_on_target, penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.43, autogol 0.83, tiri 42.37, in porta 11.32, passaggi 1626.17, duelli aerei 6.15, duelli a terra 213.62, dribbling 27.23, spazzate 22.5, rimesse 17.73, fuorigioco 9.2, recupero 7.17/6.74. Aperto: il duello aereo solo nello stesso piccolo passo.
 - **L1, passi 1-4 fatti (2026-11-24, DD-64):** ADR-113; `ds-plugin-api`, `ds-season-api`, `ds-season`; `ds-world`, `ds-roster` (il mondo come cartella modificabile); `ds-calendar`, `ds-matchday` (le partite giocate dal motore con `simulate_keyed`), `ds-standings`. Golden piccolo: 4 squadre, 12 partite. Passo 5, primo anello (ADR-114, DD-66): `ds-coach`, l'undici per adattamento al ruolo, il piano dall'idea di gioco, `LineupAnnounced`. Passo 6, primo anello (DD-67): `ds-body`, fatica e danno portati fra le partite e recuperati con le fonti; `SEASON_VERSION` 3. **Prossimo:** gli anelli rimasti del 5 e del 6 (`context/HANDOFF.md` §4 B). Aperti: le squadre da `ds-db` (SQLite, decisione AD), gli spareggi veri.
 - **L0 virtualmente chiuso (2026-11-24, decisione del maintainer).** Si passa a L1 con le metriche di L0 aperte: ogni metrica fuori banda resta un indizio con la sua causa o il bug che la cerca (`L0-CALIBRATION.md`, "La misura del 203"), e il ciclo audit → correzione sul motore continua in parallelo (opencode indaga, Claude Code corregge). Costo noto: L1 si chiude sulle medie di stagione (decisione Y), quindi L1 si comincia ora ma si chiude solo con le metriche in banda. La chiusura vera di L0 ora vuole 22 metriche su 22 in banda (CLAUDE.md, il maintainer, 2026-11-24, `db47d52`): "virtualmente chiuso" vuol dire che si lavora a L1 mentre il motore va verso 22 su 22.
@@ -141,13 +142,14 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | DD-65 | SIM 204: nella propria metà il pallone alto di un compagno si stoppa, la spazzata di testa solo sul pallone loro; in area avversaria senza un tiro scelto il pallone scende ai piedi | ADR-052: sceglie il giocatore, non il motore; nessun numero nuovo | lasciare la spazzata e il tiro di testa d'ufficio (spazzate 36.5, rinvii corti del portiere persi) |
 | DD-66 | ADR-114: l'allenatore è un attore come il giocatore (radici nel caveau, abilità come formule, scelta in `ds-orchestrator`); l'undici per adattamento al ruolo (prima quanto manca rispetto al profilo del ruolo, poi quanto lo supera); blocco e ampiezza dall'idea di gioco in terzi; i ruoli come dati, il primo `coach` | Decisioni AH, AI; i profili dei ruoli esistono già, nessun peso nuovo | un'IA a parte; la media pesata dal profilo (un centrocampista in porta) |
 | DD-67 | L1 passo 6, primo anello: `ds-body` porta fatica e danno a fine partita (`MatchResult.bodies`, osservato) alla partita dopo e li recupera ogni mattina; la quota del giorno lascia il 10% dopo 72 h (fatica, Nédélec et al. 2012) e 120 h (danno, Ispirlidis et al. 2008); spegnibile | Decisione AB, ADR-067; le fonti in `L1-season/balance/body.json` | un recupero lineare o a soglia; lasciare ogni partita da freschi |
+| DD-68 | SIM 205: contendono il pallone alto tutti quelli che lo raggiungono lungo il suo percorso nel tick, al punto in cui lo incontra il primo | Il tick è l'unità in cui il motore fa decidere ogni giocatore; nessuna finestra nuova | solo chi arriva nello stesso piccolo passo (un cinquantesimo di secondo) |
 
 ## Plan
 
 | Pr. | # | Cosa | Dipende da | Prima azione |
 |---|---|---|---|---|
 | [next] | L1 | **La stagione** (`plans/L1.md`, ADR-113, ADR-114). Fatti i passi 1-4 (contratto, nucleo, mondo modificabile, rose, calendario, Giornata, classifiche); il 5 (allenatore) e il 6 (corpo) al primo anello. Ordine: gli anelli rimasti del 5 e del 6, la disciplina (7), la settimana (8), SQLite dietro `ds-db` (decisione AD), la piramide (9), la GUI e la 0.1 (10). La coda dettagliata è in `context/HANDOFF.md` §4 B. | L0 virtualmente chiuso (maintainer, 2026-11-24) | L'allenatore legge la freschezza che `ds-body` porta: la condizione e la rotazione (`L1-COACH.md`, "Come sceglie, senza dadi"). |
-| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 204: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | T29, seconda metà: il duello aereo fra chi arriva in piccoli passi diversi (`technique.rs`, `meet_ball_in_air`). |
+| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 205: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | I palloni alti giocati sono pochi (cross 8.7 contro 33.8): perché chi passa sceglie poco il lancio e il cross (`read.rs`). |
 | [done] | BENCH | La panchina in partita (decisione T) e i passi di L0-CLOSE: fatti fino al SIM 204; il resto della storia in `captures/STATE-ARCHIVE-2026-11-24.md` e in `git log`. | — | — |
 | [deferred] | 11 | **Ruleset GitHub (fase 2).** Disattivo; si riattiva quando c'è un secondo revisore, il progetto esce, o un agente riceve un token di scrittura. | — | Rileggere `RULES.md` §C quando una delle tre condizioni si presenta. |
 
