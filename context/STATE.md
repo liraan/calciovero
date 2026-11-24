@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `cc9748a` - "L1 step 5 (third ring): the coaches told, the bench from the rule, the tie-break"
+**Last commit verified:** `c2a1f2a` - "L1 step 5 (fourth ring): the rotation, the coach reads the body"
 
 ## Mandato attivo (2026-11-16)
 
@@ -151,7 +151,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | Pr. | # | Cosa | Dipende da | Prima azione |
 |---|---|---|---|---|
 | [next] | L1 | **La stagione** (`plans/L1.md`, ADR-113, ADR-114). Fatti i passi 1-4 (contratto, nucleo, mondo modificabile, rose, calendario, Giornata, classifiche); il 5 (allenatore) e il 6 (corpo) al primo anello. Ordine: gli anelli rimasti del 5 e del 6, la disciplina (7), la settimana (8), SQLite dietro `ds-db` (decisione AD), la piramide (9), la GUI e la 0.1 (10). La coda dettagliata è in `context/HANDOFF.md` §4 B. | L0 virtualmente chiuso (maintainer, 2026-11-24) | L'allenatore legge la freschezza che `ds-body` porta: la condizione e la rotazione (`L1-COACH.md`, "Come sceglie, senza dadi"). |
-| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 205: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | L1, gli anelli di `L1-COACH-STUDY.md` §7 (decisione BM): fatto l'1 (allenatori, panchina, spareggio); prossimo il 2, la rotazione dalla freschezza di `ds-body`. L0 all'operatore su ramo (dal SIM 206 pronto, HANDOFF §4 A0). |
+| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 205: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | L1, gli anelli di `L1-COACH-STUDY.md` §7 (decisione BM): fatti l'1 (allenatori, panchina, spareggio) e il 2 (la rotazione); prossimo il 3, `ds-week` minimo con `balance/sessions.json`. L0 all'operatore su ramo (dal SIM 206 pronto, HANDOFF §4 A0). |
 | [done] | BENCH | La panchina in partita (decisione T) e i passi di L0-CLOSE: fatti fino al SIM 204; il resto della storia in `captures/STATE-ARCHIVE-2026-11-24.md` e in `git log`. | — | — |
 | [deferred] | 11 | **Ruleset GitHub (fase 2).** Disattivo; si riattiva quando c'è un secondo revisore, il progetto esce, o un agente riceve un token di scrittura. | — | Rileggere `RULES.md` §C quando una delle tre condizioni si presenta. |
 
