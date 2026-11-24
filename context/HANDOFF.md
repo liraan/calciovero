@@ -37,7 +37,7 @@ Un solo scrittore alla volta (decisione O). Quando Claude Code non c'è e il mai
 **B. L1** (`context/plans/L1.md`, `L1-COACH.md`). Fatti i passi 1-4; il 5 (allenatore) e il 6 (corpo) al primo anello. Dopo:
 1. il passo 5: la condizione e la rotazione (l'allenatore legge la freschezza che `ds-body` porta), il piano gara sull'avversario, il modulo (la lavagna, decisione AL), rigoristi e battitori, `coaches.json` nel pacchetto del mondo;
 2. il passo 6: condizione e ritmo partita, poi gli infortuni con il loro ADR (l'infortunio senza dadi, `L1.md` "Domande aperte");
-3. il passo 7, la disciplina (cartellini → squalifiche, le soglie dal regolamento citato in `SOURCES.md`); il passo 8, la settimana;
+3. il passo 7, la disciplina: primo anello fatto (`ds-discipline`, DD-69); da fare la verifica delle soglie 14ª e 17ª sul testo vigente del CGS (art. 19 c. 9), la squalifica lunga per condotta violenta, la Coppa Italia come conteggio a parte; il passo 8, la settimana;
 4. SQLite dietro `ds-db` (decisione AD): oggi le rose sono rifatte dal pacchetto e dal seme;
 5. il passo 9, la piramide intera.
 
@@ -72,3 +72,4 @@ Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'opera
 |---|---|---|---|
 | 2026-11-24 | Claude Code | SIM 203-204 (10 su 22); L1 passi 1-4, primi anelli di 5 e 6; mondo modificabile; pulizia della documentazione; questo file | `db5221b` |
 | 2026-11-24 | Claude Code | SIM 205 (T29 chiuso); l'esame di opencode (7/10: buona disciplina, si ferma alla prima causa, aveva allentato una soglia); la regola sulle soglie | `19050bd` |
+| 2026-11-24 | Claude Code | il SIM 206 come patch per l'operatore (L0 a opencode, maintainer); L1 passo 7, primo anello (la disciplina) | `be3273b` |
