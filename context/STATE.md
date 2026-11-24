@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `85111e0` - "docs(handoff): the operator as the only writer while Claude Code is away"
+**Last commit verified:** `02cea7b` - "chore: remove what is no longer needed"
 
 ## Mandato attivo (2026-11-16)
 
@@ -151,7 +151,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | Pr. | # | Cosa | Dipende da | Prima azione |
 |---|---|---|---|---|
 | [next] | L1 | **La stagione** (`plans/L1.md`, ADR-113, ADR-114). Fatti i passi 1-4 (contratto, nucleo, mondo modificabile, rose, calendario, Giornata, classifiche); il 5 (allenatore) e il 6 (corpo) al primo anello. Ordine: gli anelli rimasti del 5 e del 6, la disciplina (7), la settimana (8), SQLite dietro `ds-db` (decisione AD), la piramide (9), la GUI e la 0.1 (10). La coda dettagliata è in `context/HANDOFF.md` §4 B. | L0 virtualmente chiuso (maintainer, 2026-11-24) | L'allenatore legge la freschezza che `ds-body` porta: la condizione e la rotazione (`L1-COACH.md`, "Come sceglie, senza dadi"). |
-| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 205: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | L'operatore è l'unico scrittore (Claude Code fermo): `context/prompts/OPENCODE.md`, prima la coda A (dal SIM 206 pronto) poi la B; ogni commit in `context/REVIEW-QUEUE.md`. Claude Code riparte da `context/prompts/CLAUDE-RESUME.md`. |
+| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 205: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | Claude Code su L1: lo studio dell'allenatore (`context/plans/L1-COACH-STUDY.md`, proposta per il maintainer), poi la coda B di HANDOFF. L0 all'operatore su ramo (dal SIM 206 pronto, HANDOFF §4 A0). |
 | [done] | BENCH | La panchina in partita (decisione T) e i passi di L0-CLOSE: fatti fino al SIM 204; il resto della storia in `captures/STATE-ARCHIVE-2026-11-24.md` e in `git log`. | — | — |
 | [deferred] | 11 | **Ruleset GitHub (fase 2).** Disattivo; si riattiva quando c'è un secondo revisore, il progetto esce, o un agente riceve un token di scrittura. | — | Rileggere `RULES.md` §C quando una delle tre condizioni si presenta. |
 
