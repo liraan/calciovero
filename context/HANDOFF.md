@@ -67,4 +67,4 @@ Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'opera
 
 | Data | Chi | Cosa | Commit |
 |---|---|---|---|
-| 2026-11-24 | Claude Code | SIM 203-204 (10 su 22); L1 passi 1-4, primi anelli di 5 e 6; mondo modificabile; questo file | `0608b33` |
+| 2026-11-24 | Claude Code | SIM 203-204 (10 su 22); L1 passi 1-4, primi anelli di 5 e 6; mondo modificabile; pulizia della documentazione; questo file | `db5221b` |
