@@ -884,7 +884,6 @@ impl MatchState {
                         ),
                     )
                 });
-                let line_misread = ctx.hidden.offside_line_misread_cm(id);
                 let partner_intesa = if ball_loose {
                     let nearest_mate = squad
                         .players
@@ -992,29 +991,31 @@ impl MatchState {
                         let place = if keeper {
                             zone
                         } else {
-                            view.choose_place(
-                                (me, zone),
-                                (c, ball),
-                                self.spatial.back_line(id, ball),
-                                off.onside_margin_cm,
-                                (length, width),
-                                // Strato 3: how well this man knows his
-                                // teammates; drives the complementary
-                                // movement (predicted positions).
-                                {
-                                    let mut sum = 0.0;
-                                    let mut n = 0u32;
-                                    for q in &squad.players {
-                                        if q.id != id {
-                                            if let Some(v) = self.intesa.get(&(id, q.id)) {
-                                                sum += v;
-                                                n += 1;
+                            ctx.hidden.choose_offer_place(
+                                id,
+                                &view.offer_place_scene(
+                                    (me, zone),
+                                    (c, ball),
+                                    self.spatial.back_line(id, ball),
+                                    off.onside_margin_cm,
+                                    (length, width),
+                                    // Strato 3: how well this man knows his
+                                    // teammates; drives the complementary
+                                    // movement (predicted positions).
+                                    {
+                                        let mut sum = 0.0;
+                                        let mut n = 0u32;
+                                        for q in &squad.players {
+                                            if q.id != id {
+                                                if let Some(v) = self.intesa.get(&(id, q.id)) {
+                                                    sum += v;
+                                                    n += 1;
+                                                }
                                             }
                                         }
-                                    }
-                                    if n > 0 { sum / f64::from(n) } else { 0.5 }
-                                },
-                                line_misread,
+                                        if n > 0 { sum / f64::from(n) } else { 0.5 }
+                                    },
+                                ),
                             )
                         };
                         held.push((id, place));

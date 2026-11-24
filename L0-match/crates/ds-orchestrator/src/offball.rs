@@ -644,6 +644,184 @@ pub fn choose_closed_place(scene: &ClosedPlaceScene<'_>) -> (i32, i32) {
         .1
 }
 
+/// What a man of the side with the ball has before him to choose his place.
+///
+/// ADR-071, SIM 152: the facts the engine gives (ADR-043
+/// Option B). Moved here with `choose_offer_place` from the engine, where
+/// the choice was made (code audit B2).
+#[derive(Debug, Clone, Copy)]
+pub struct OfferPlaceScene<'a> {
+    /// Where he stands.
+    pub me: (i32, i32),
+    /// His role's zone in the shape.
+    pub anchor: (i32, i32),
+    /// The man on the ball.
+    pub carrier: (i32, i32),
+    /// Where the ball is.
+    pub ball: (i32, i32),
+    /// Whether he is of the back line (it stays behind the ball).
+    pub back_line: bool,
+    /// The block's depth with the ball, cm.
+    pub block_depth: i32,
+    /// How far short of the offside line he stops, cm.
+    pub onside_margin_cm: i32,
+    /// Pitch length and width, cm.
+    pub pitch: (i32, i32),
+    /// How well he knows his teammates (strato 3).
+    pub intesa: f64,
+    /// `1` attacking to the right, `-1` to the left.
+    pub forward: i32,
+    /// The goal line he attacks, cm.
+    pub their_goal_x: i32,
+    /// Their last line as his side reads it.
+    pub last_line: Option<i32>,
+    /// Their three lines (ADR-052).
+    pub lines: crate::read::Lines,
+    /// Where the opponents stand.
+    pub opponents: &'a [(i32, i32)],
+    /// Where his teammates stand.
+    pub ours: &'a [(i32, i32)],
+    /// Their velocity this tick, parallel to `ours`.
+    pub ours_vel: &'a [(i32, i32)],
+}
+
+/// The place a man of the side with the ball holds.
+///
+/// ADR-071, SIM 152: from his role's zone `anchor` (the shape), the space worth most to
+/// his side among his corridor and the two beside it (the pitch in five
+/// corridors), on his line and one line ahead or behind (a line, a
+/// third of the block's depth with the ball), never beyond the offside
+/// line. A space is worth what the game measures (ADR-052): its value
+/// to the side, as free as he would be there, by how clean the line
+/// from the carrier is and how plausible a pass that far is (ADR-040). Never two in the same corridor on the same
+/// line; a man of the back line stays behind the ball. Staying in his
+/// zone is his discipline: within it he chooses (ADR-071 §4). `me` is
+/// himself, `carrier` the man on the ball, `ball` where it is.
+#[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
+#[must_use]
+pub fn choose_offer_place(scene: &OfferPlaceScene<'_>, line_misread_cm: i32) -> (i32, i32) {
+    const PREDICT_TICKS: i32 = 5;
+    let OfferPlaceScene {
+        me,
+        anchor,
+        carrier,
+        ball,
+        back_line,
+        block_depth,
+        onside_margin_cm,
+        pitch: (length, width),
+        intesa,
+        ..
+    } = *scene;
+    // OI-98: the offside line is not read perfectly. A poor reader
+    // sees it further forward (more room) than it is, so he may offer
+    // beyond the real line and be caught offside: how far is his own
+    // reading (`GroundTruth::offside_line_misread_cm`, ADR-112).
+    let perceived_last = scene.last_line.map(|l| l + scene.forward * line_misread_cm);
+    let corridor = (width / 5).max(1);
+    let line = (block_depth / 3).max(1);
+    let goal = (scene.their_goal_x, width / 2);
+    let other = (length - scene.their_goal_x, width / 2);
+    let value = |p: (i32, i32)| {
+        let free = 1.0
+            - scene
+                .opponents
+                .iter()
+                .copied()
+                .min_by_key(|o| distance_squared(*o, p))
+                .map_or(0.0, |o| crate::read::soon(o, p));
+        // Within the reach of a pass from the carrier (the plausible
+        // distance of ADR-040): a space he cannot be played into gives
+        // his side nothing now.
+        let reach = crate::read::distance_plausible(distance_squared(carrier, p).isqrt());
+        crate::read::space_value(p, goal, other)
+            // ADR-052: a place a pass can reach past their lines is
+            // worth what those lines must recover from (the pocket).
+            * crate::read::line_break(carrier, p, &scene.lines, scene.forward)
+            * free
+            * crate::read::line_quality(carrier, p, scene.opponents)
+            * reach
+    };
+    // Never two in the same corridor on the same line. Strato 3: a
+    // teammate I know (intesa high enough) is also predicted where he is
+    // going, so the space he will occupy counts as crowded for me too.
+    let predicted: Vec<(i32, i32)> = if intesa >= 0.5 {
+        scene
+            .ours
+            .iter()
+            .zip(scene.ours_vel.iter())
+            .filter(|(m, _)| **m != me)
+            .map(|(m, v)| (m.0 + v.0 * PREDICT_TICKS, m.1 + v.1 * PREDICT_TICKS))
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let crowded =
+        |p: (i32, i32)| {
+            scene.ours.iter().any(|m| {
+                *m != me && (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2
+            }) || predicted
+                .iter()
+                .any(|m| (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2)
+        };
+    let onside = |x: i32| {
+        perceived_last.map_or(x, |l| {
+            let edge = l - scene.forward * onside_margin_cm;
+            if (x - edge) * scene.forward > 0 {
+                edge
+            } else {
+                x
+            }
+        })
+    };
+    let k0 = (anchor.1 / corridor).clamp(0, 4);
+    // Besides the depths of his own block, the spaces between their
+    // lines are places to look at (ADR-052 §5): the pocket between the
+    // midfield and the last line is where a man receives and turns.
+    // Only where his zone reaches, never a charge up the pitch.
+    let mut depths = vec![
+        anchor.0,
+        anchor.0 + line * scene.forward,
+        anchor.0 - line * scene.forward,
+    ];
+    let their_lines: Vec<i32> = [scene.lines.first, scene.lines.middle, scene.lines.last]
+        .into_iter()
+        .flatten()
+        .collect();
+    for pair in their_lines.windows(2) {
+        let between = (pair[0] + pair[1]) / 2;
+        if pair[0] != pair[1] && (between - anchor.0).abs() <= line {
+            depths.push(between);
+        }
+    }
+    let mut options: Vec<(f64, (i32, i32))> = Vec::new();
+    for k in (k0 - 1).max(0)..=(k0 + 1).min(4) {
+        let y = if k == k0 {
+            anchor.1
+        } else {
+            k * corridor + corridor / 2
+        };
+        for d in &depths {
+            let x = onside(*d).clamp(0, length);
+            let p = (x, y.clamp(0, width));
+            let behind_ball = (p.0 - ball.0) * scene.forward <= 0;
+            let v = if (back_line && !behind_ball) || crowded(p) {
+                0.0
+            } else {
+                value(p)
+            };
+            options.push((v, p));
+        }
+    }
+    // The zone of his role, first: the coach's ask (ADR-059 §4).
+    let zone = (value(anchor), anchor);
+    let best = options
+        .iter()
+        .copied()
+        .fold(zone, |b, o| if o.0 > b.0 { o } else { b });
+    best.1
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

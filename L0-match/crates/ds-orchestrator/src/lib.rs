@@ -1285,11 +1285,23 @@ impl GroundTruth {
         })
     }
 
+    /// Where `player`, of the side with the ball, holds his place (ADR-071):
+    /// his choice from the engine's facts, with his own misreading of the
+    /// offside line (code audit B2: the engine chose it).
+    #[must_use]
+    pub fn choose_offer_place(
+        &mut self,
+        player: PlayerId,
+        scene: &offball::OfferPlaceScene<'_>,
+    ) -> (i32, i32) {
+        let misread = self.offside_line_misread_cm(player);
+        offball::choose_offer_place(scene, misread)
+    }
+
     /// How far forward `player` misreads the offside line, cm (OI-98): ~2 m
     /// at game reading 0, none at 1 (SIM 192; arbitrary, declared, OI-098).
     /// His perception, so read here (ADR-112).
-    #[must_use]
-    pub fn offside_line_misread_cm(&mut self, player: PlayerId) -> i32 {
+    fn offside_line_misread_cm(&mut self, player: PlayerId) -> i32 {
         const OFFSIDE_PERCEPTION_ERROR_CM: i32 = 200;
         let game_reading = f64::from(self.latents_for(player).cognitive.game_reading);
         #[allow(clippy::cast_possible_truncation)]

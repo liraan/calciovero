@@ -625,19 +625,12 @@ impl TeamView {
         }
     }
 
-    /// The place a man of the side with the ball holds (ADR-071, SIM 152):
-    /// from his role's zone `anchor` (the shape), the space worth most to
-    /// his side among his corridor and the two beside it (the pitch in five
-    /// corridors), on his line and one line ahead or behind (a line, a
-    /// third of the block's depth with the ball), never beyond the offside
-    /// line. A space is worth what the game measures (ADR-052): its value
-    /// to the side, as free as he would be there, by how clean the line
-    /// from the carrier is and how plausible a pass that far is (ADR-040). Never two in the same corridor on the same
-    /// line; a man of the back line stays behind the ball. Staying in his
-    /// zone is his discipline: within it he chooses (ADR-071 §4). `me` is
-    /// himself, `carrier` the man on the ball, `ball` where it is.
-    #[allow(clippy::too_many_arguments, clippy::cast_precision_loss)]
-    pub(crate) fn choose_place(
+    /// The facts a man of the side with the ball has when he chooses the
+    /// place he holds; the choice is the actor's
+    /// (`ds_orchestrator::offball::choose_offer_place`, code audit B2: it was
+    /// made here).
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn offer_place_scene(
         &self,
         (me, anchor): ((i32, i32), (i32, i32)),
         (carrier, ball): ((i32, i32), (i32, i32)),
@@ -645,112 +638,25 @@ impl TeamView {
         onside_margin_cm: i32,
         (length, width): (i32, i32),
         intesa: f64,
-        line_misread_cm: i32,
-    ) -> (i32, i32) {
-        const PREDICT_TICKS: i32 = 5;
-        // OI-98: the offside line is not read perfectly. A poor reader
-        // sees it further forward (more room) than it is, so he may offer
-        // beyond the real line and be caught offside: how far is his own
-        // reading (`GroundTruth::offside_line_misread_cm`, ADR-112).
-        let perceived_last = self.last_line.map(|l| l + self.forward * line_misread_cm);
-        let corridor = (width / 5).max(1);
-        let line = (block_depth / 3).max(1);
-        let goal = (self.their_goal_x, width / 2);
-        let other = (length - self.their_goal_x, width / 2);
-        let value = |p: (i32, i32)| {
-            let free = 1.0
-                - self
-                    .marker(p)
-                    .map_or(0.0, |o| ds_orchestrator::read::soon(o, p));
-            // Within the reach of a pass from the carrier (the plausible
-            // distance of ADR-040): a space he cannot be played into gives
-            // his side nothing now.
-            let reach =
-                ds_orchestrator::read::distance_plausible(distance_squared(carrier, p).isqrt());
-            ds_orchestrator::read::space_value(p, goal, other)
-                // ADR-052: a place a pass can reach past their lines is
-                // worth what those lines must recover from (the pocket).
-                * ds_orchestrator::read::line_break(carrier, p, &self.lines, self.forward)
-                * free
-                * ds_orchestrator::read::line_quality(carrier, p, &self.opponents)
-                * reach
-        };
-        // Never two in the same corridor on the same line. Strato 3: a
-        // teammate I know (intesa high enough) is also predicted where he is
-        // going, so the space he will occupy counts as crowded for me too.
-        let predicted: Vec<(i32, i32)> = if intesa >= 0.5 {
-            self.ours
-                .iter()
-                .zip(self.ours_vel.iter())
-                .filter(|(m, _)| **m != me)
-                .map(|(m, v)| (m.0 + v.0 * PREDICT_TICKS, m.1 + v.1 * PREDICT_TICKS))
-                .collect()
-        } else {
-            Vec::new()
-        };
-        let crowded = |p: (i32, i32)| {
-            self.ours.iter().any(|m| {
-                *m != me && (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2
-            }) || predicted
-                .iter()
-                .any(|m| (m.1 / corridor == p.1 / corridor) && (m.0 - p.0).abs() < line / 2)
-        };
-        let onside = |x: i32| {
-            perceived_last.map_or(x, |l| {
-                let edge = l - self.forward * onside_margin_cm;
-                if (x - edge) * self.forward > 0 {
-                    edge
-                } else {
-                    x
-                }
-            })
-        };
-        let k0 = (anchor.1 / corridor).clamp(0, 4);
-        // Besides the depths of his own block, the spaces between their
-        // lines are places to look at (ADR-052 §5): the pocket between the
-        // midfield and the last line is where a man receives and turns.
-        // Only where his zone reaches, never a charge up the pitch.
-        let mut depths = vec![
-            anchor.0,
-            anchor.0 + line * self.forward,
-            anchor.0 - line * self.forward,
-        ];
-        let their_lines: Vec<i32> = [self.lines.first, self.lines.middle, self.lines.last]
-            .into_iter()
-            .flatten()
-            .collect();
-        for pair in their_lines.windows(2) {
-            let between = (pair[0] + pair[1]) / 2;
-            if pair[0] != pair[1] && (between - anchor.0).abs() <= line {
-                depths.push(between);
-            }
+    ) -> ds_orchestrator::offball::OfferPlaceScene<'_> {
+        ds_orchestrator::offball::OfferPlaceScene {
+            me,
+            anchor,
+            carrier,
+            ball,
+            back_line,
+            block_depth,
+            onside_margin_cm,
+            pitch: (length, width),
+            intesa,
+            forward: self.forward,
+            their_goal_x: self.their_goal_x,
+            last_line: self.last_line,
+            lines: self.lines,
+            opponents: &self.opponents,
+            ours: &self.ours,
+            ours_vel: &self.ours_vel,
         }
-        let mut options: Vec<(f64, (i32, i32))> = Vec::new();
-        for k in (k0 - 1).max(0)..=(k0 + 1).min(4) {
-            let y = if k == k0 {
-                anchor.1
-            } else {
-                k * corridor + corridor / 2
-            };
-            for d in &depths {
-                let x = onside(*d).clamp(0, length);
-                let p = (x, y.clamp(0, width));
-                let behind_ball = (p.0 - ball.0) * self.forward <= 0;
-                let v = if (back_line && !behind_ball) || crowded(p) {
-                    0.0
-                } else {
-                    value(p)
-                };
-                options.push((v, p));
-            }
-        }
-        // The zone of his role, first: the coach's ask (ADR-059 §4).
-        let zone = (value(anchor), anchor);
-        let best = options
-            .iter()
-            .copied()
-            .fold(zone, |b, o| if o.0 > b.0 { o } else { b });
-        best.1
     }
 
     /// The facts the actor needs to value the place he would hold (ADR-043
@@ -2048,25 +1954,28 @@ mod marking_tests {
         let mate = (4000, 3400);
         let mut v = block_view(vec![me, mate], vec![carrier], carrier);
         v.ours_vel = vec![(0, 0), (0, 400)];
-        let high = v.choose_place(
-            (me, anchor),
-            (carrier, carrier),
-            (false, 4500),
-            50,
-            (PITCH_LENGTH, PITCH_WIDTH),
-            0.8,
-            // The misread of a reader of 0.5 (ADR-112).
+        let high = ds_orchestrator::offball::choose_offer_place(
+            &v.offer_place_scene(
+                (me, anchor),
+                (carrier, carrier),
+                (false, 4500),
+                50,
+                (PITCH_LENGTH, PITCH_WIDTH),
+                0.8,
+            ),
             100,
         );
         let mut v2 = block_view(vec![me, mate], vec![carrier], carrier);
         v2.ours_vel = vec![(0, 0), (0, 400)];
-        let low = v2.choose_place(
-            (me, anchor),
-            (carrier, carrier),
-            (false, 4500),
-            50,
-            (PITCH_LENGTH, PITCH_WIDTH),
-            0.1,
+        let low = ds_orchestrator::offball::choose_offer_place(
+            &v2.offer_place_scene(
+                (me, anchor),
+                (carrier, carrier),
+                (false, 4500),
+                50,
+                (PITCH_LENGTH, PITCH_WIDTH),
+                0.1,
+            ),
             100,
         );
         // With intesa the prediction is active: the two results need not
@@ -2130,13 +2039,15 @@ mod marking_tests {
             last: Some(8500),
         };
         let place = |v: &TeamView| {
-            v.choose_place(
-                (me, anchor),
-                (carrier, carrier),
-                (false, 4500),
-                50,
-                (PITCH_LENGTH, PITCH_WIDTH),
-                0.5,
+            ds_orchestrator::offball::choose_offer_place(
+                &v.offer_place_scene(
+                    (me, anchor),
+                    (carrier, carrier),
+                    (false, 4500),
+                    50,
+                    (PITCH_LENGTH, PITCH_WIDTH),
+                    0.5,
+                ),
                 100,
             )
         };
