@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `bb9b00c` - "docs(handoff): the aerial duel picks the strongest only (confirmed)"
+**Last commit verified:** `fc2df49` - "docs(handoff): SIM 206 ready as a patch for the operator"
 
 ## Mandato attivo (2026-11-16)
 
@@ -149,7 +149,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | Pr. | # | Cosa | Dipende da | Prima azione |
 |---|---|---|---|---|
 | [next] | L1 | **La stagione** (`plans/L1.md`, ADR-113, ADR-114). Fatti i passi 1-4 (contratto, nucleo, mondo modificabile, rose, calendario, Giornata, classifiche); il 5 (allenatore) e il 6 (corpo) al primo anello. Ordine: gli anelli rimasti del 5 e del 6, la disciplina (7), la settimana (8), SQLite dietro `ds-db` (decisione AD), la piramide (9), la GUI e la 0.1 (10). La coda dettagliata è in `context/HANDOFF.md` §4 B. | L0 virtualmente chiuso (maintainer, 2026-11-24) | L'allenatore legge la freschezza che `ds-body` porta: la condizione e la rotazione (`L1-COACH.md`, "Come sceglie, senza dadi"). |
-| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 205: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | Il duello aereo sceglie sempre il più forte (`resolve_aerial`): un ADR perché dipenda anche dall'arrivo e dalla posizione; poi il lancio pensato con la stessa misura. |
+| [next-parallel] | L0-22 | **L0 a 22 su 22** (`CLAUDE.md`; ogni metrica fuori banda è un bug). Al SIM 205: 10 su 22. La coda dei bug è in `plans/CODE-AUDIT.md` ("Terza passata") e in `context/HANDOFF.md` §4 A; opencode indaga in loop (`target/claude-checkpoint.txt`). | — | Applicare il SIM 206 pronto (`context/plans/patches/sim206-loft-lookahead.patch`, HANDOFF §4 A0), poi l'indizio degli angoli. L0 è di opencode (maintainer, 2026-11-24); Claude Code su L1. |
 | [done] | BENCH | La panchina in partita (decisione T) e i passi di L0-CLOSE: fatti fino al SIM 204; il resto della storia in `captures/STATE-ARCHIVE-2026-11-24.md` e in `git log`. | — | — |
 | [deferred] | 11 | **Ruleset GitHub (fase 2).** Disattivo; si riattiva quando c'è un secondo revisore, il progetto esce, o un agente riceve un token di scrittura. | — | Rileggere `RULES.md` §C quando una delle tre condizioni si presenta. |
 
