@@ -14,6 +14,8 @@ ds-roster = { path = "../ds-roster" }
 ds-calendar = { path = "../ds-calendar" }
 ds-coach = { path = "../ds-coach" }
 ds-body = { path = "../ds-body" }
+ds-discipline = { path = "../ds-discipline" }
+ds-stats.workspace = true
 ds-core.workspace = true
 ds-model.workspace = true
 ds-match.workspace = true

@@ -21,6 +21,7 @@ ds-calendar = { path = "../ds-calendar" }
 ds-matchday = { path = "../ds-matchday" }
 ds-coach = { path = "../ds-coach" }
 ds-body = { path = "../ds-body" }
+ds-discipline = { path = "../ds-discipline" }
 
 [lints]
 workspace = true

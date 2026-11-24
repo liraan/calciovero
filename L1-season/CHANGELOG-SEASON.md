@@ -6,6 +6,10 @@ This file records every bump of `SEASON_VERSION` (`L1-season/crates/ds-season/sr
 
 ---
 
+## 4 — discipline: cautions, bans, who may not play (DD-69)
+
+`ds-discipline` (recommended, may be switched off): the matchday tells every card of a match by the man's identity (`MatchPlayed`, field `cards`); the plugin counts the cautions over the season, bans for one match at each threshold of `L1-season/balance/discipline.json` (5 and 10 from the Giudice Sportivo's communiqués; 14 and 17 to verify on the text in force of the CGS) and for one match after a red card, serves a ban when the man's club plays, and each morning tells who may not play (`Unavailable`); the coach leaves them out. Tested: no banned man lines up. The small golden regenerated.
+
 ## 3 — the body between matches (DD-67)
 
 `ds-body` (recommended, may be switched off): every man's fatigue and muscle damage at the final whistle (the engine's new observed `MatchResult.bodies`) are carried to the next kick-off, where the matchday gives them to the engine as his starting state (decision AB, ADR-067); each morning they recover by the share of what is left that the sources give (`L1-season/balance/body.json`: Nédélec et al. 2012, 72 h; Ispirlidis et al. 2008, 120 h; "recovered" read as 90%). Switched off, every man starts fresh. The small golden regenerated.

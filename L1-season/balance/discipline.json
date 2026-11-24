@@ -1,0 +1,12 @@
+{
+  "_note": "Discipline in the league (ds-discipline, L1 step 7): yellow cards counted over the season, a one-match ban at each threshold, a one-match ban after a red card (the minimum; a longer one is the judge's call, not modelled yet). Data, so anyone can correct it without touching code.",
+  "yellow_ban_at": [
+    5,
+    10,
+    14,
+    17
+  ],
+  "_yellow_ban_at_source": "5 and 10: the Giudice Sportivo di Serie A's communiqués (a player 'diffidato' at his 4th and 9th caution, banned at the 5th and the 10th). 14 and 17: reported by the press, NOT verified on the text in force of the FIGC Codice di Giustizia Sportiva (art. 19 c. 9 states the general rule, a ban at the 4th caution; Serie A and B have their own progression): to verify before 0.1.",
+  "red_ban_matches": 1,
+  "_red_ban_matches_source": "the minimum ban for a sending-off (CGS); a longer one, for violent conduct, is the judge's call."
+}

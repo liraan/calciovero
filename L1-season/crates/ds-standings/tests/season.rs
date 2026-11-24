@@ -47,6 +47,7 @@ fn season_with(seed: u64, clubs: usize, body: bool) -> Season {
     ];
     if body {
         plugins.push(Box::new(ds_body::Body::default()));
+        plugins.push(Box::new(ds_discipline::Discipline::default()));
     }
     let days = ds_calendar::season_days(u32::try_from(clubs).unwrap_or(0));
     let mut s = Season::new(seed, days, plugins).expect("valid cards");
@@ -54,9 +55,9 @@ fn season_with(seed: u64, clubs: usize, body: bool) -> Season {
     s
 }
 
-/// The fingerprint of the small season at `SEASON_VERSION` 3 and
+/// The fingerprint of the small season at `SEASON_VERSION` 4 and
 /// `SIM_VERSION` 205; regenerate on a bump of either.
-const SMALL_GOLDEN: &str = "1227ee7861a475cc5feff44bdbcbf783cf6e0bb51146304b5f6dd9ba63192bd6";
+const SMALL_GOLDEN: &str = "fb7b3259018acd15376f8621fdaeb0b9610d027ca3b0e54bd2e9a3d9ffd12989";
 
 #[test]
 fn a_small_league_is_played_whole_by_the_engine() {
@@ -65,6 +66,7 @@ fn a_small_league_is_played_whole_by_the_engine() {
         s.order(),
         [
             "body",
+            "discipline",
             "world",
             "calendar",
             "roster",
@@ -139,6 +141,29 @@ fn the_season_runs_with_the_body_switched_off() {
     );
 }
 
+/// No banned man in a line-up (`L1.md`, the invariants): every man told
+/// unavailable in the morning is out of that day's line-ups.
+fn no_banned_man_lines_up(s: &Season) {
+    for e in s
+        .events()
+        .iter()
+        .filter(|e| e.kind == ds_coach::LINEUP_ANNOUNCED)
+    {
+        let out = ds_discipline::unavailable_of(s.events(), e.day);
+        let l = ds_coach::lineup_of(e).expect("a line-up");
+        assert!(
+            l.places.iter().all(|p| !out.contains(p)),
+            "a banned man lines up on day {}",
+            e.day
+        );
+    }
+}
+
+#[test]
+fn a_banned_man_never_lines_up() {
+    no_banned_man_lines_up(&season(42, 4));
+}
+
 /// The first series of the shipped world: 38 matchdays, 380 matches.
 #[test]
 #[ignore = "380 matches: run with --ignored"]
@@ -154,4 +179,11 @@ fn the_first_series_is_played_whole() {
         .find(|e| e.kind == FINAL_TABLE)
         .expect("a final table");
     println!("{}", table.fields[0].1);
+    no_banned_man_lines_up(&s);
+    assert!(
+        s.events()
+            .iter()
+            .any(|e| e.kind == ds_discipline::SUSPENSION),
+        "a season with no ban"
+    );
 }

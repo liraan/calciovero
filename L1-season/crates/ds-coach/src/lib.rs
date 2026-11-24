@@ -54,10 +54,12 @@ pub struct Lineup {
     pub width: u8,
 }
 
-/// The line-up `club`'s coach chooses from his squad (ADR-114 §3-4).
+/// The line-up `club`'s coach chooses from his squad (ADR-114 §3-4), but
+/// for the men who may not play (banned: `ds-discipline`).
 #[must_use]
-pub fn choose(pack: &Pack, world_seed: u64, club: u32) -> Lineup {
-    let squad = ds_roster::make_squad(pack, world_seed, club);
+pub fn choose(pack: &Pack, world_seed: u64, club: u32, unavailable: &[u32]) -> Lineup {
+    let mut squad = ds_roster::make_squad(pack, world_seed, club);
+    squad.retain(|p| !unavailable.contains(&p.id));
     let players: Vec<(PlayerId, String)> = squad
         .iter()
         .map(|p| (PlayerId::new(p.id, 0), p.role.clone()))
@@ -134,7 +136,10 @@ impl SeasonPlugin for Coach {
             steps: &[Moment::BeforeMatches],
             depends: &["roster", "calendar"],
             reads: &["roster.squad", "calendar.fixture"],
-            optional_reads: &[],
+            optional_reads: &[ds_season_api::OptionalRead {
+                what: "discipline.bans",
+                without: "nobody is ever banned",
+            }],
             writes: &["coach.lineup"],
             tier: Tier::Core,
             cost_us: 0,
@@ -143,6 +148,8 @@ impl SeasonPlugin for Coach {
     }
 
     fn run(&mut self, _: Moment, w: &mut SeasonWorld<'_>) -> Result<(), PluginError> {
+        // Who may not play today, if the discipline plugin is on (decision B).
+        let unavailable = ds_discipline::unavailable_of(w.events(), w.day());
         let mut clubs: Vec<u32> = Vec::new();
         for e in w
             .events()
@@ -158,7 +165,7 @@ impl SeasonPlugin for Coach {
             }
         }
         for club in clubs {
-            let l = choose(&self.pack, w.seed(), club);
+            let l = choose(&self.pack, w.seed(), club, &unavailable);
             let places = l
                 .places
                 .iter()
@@ -189,7 +196,7 @@ mod tests {
     #[test]
     fn the_coach_lines_up_his_squad_the_same_from_the_same_world() {
         let pack = ds_world::Pack::v1();
-        let l = choose(&pack, 42, 3);
+        let l = choose(&pack, 42, 3, &[]);
         assert_eq!(l.places.len(), PLACES.len());
         let mut ids = l.places.clone();
         ids.sort_unstable();
@@ -204,6 +211,6 @@ mod tests {
                 .unwrap_or_default()
         };
         assert_eq!(role(l.places[0]), "goalkeeper");
-        assert_eq!(l, choose(&pack, 42, 3));
+        assert_eq!(l, choose(&pack, 42, 3, &[]));
     }
 }

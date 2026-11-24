@@ -1,0 +1,16 @@
+[package]
+name = "ds-discipline"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The discipline plugin of Calcio Vero - Deep Simulator: cautions counted over the season, bans, who may not play (L1 step 7)."
+publish = false
+
+[dependencies]
+ds-season-api = { path = "../ds-season-api" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

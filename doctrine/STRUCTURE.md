@@ -169,6 +169,7 @@ The dependency order is the reading order, from the inside out:
 | `ds-matchday` | the only plugin that calls the engine: the day's matches, side by side |
 | `ds-standings` | the table |
 | `ds-body` | fatigue and muscle damage between matches, and their recovery (may be switched off) |
+| `ds-discipline` | cautions counted over the season, bans and who may not play (may be switched off) |
 
 ### Naming
 

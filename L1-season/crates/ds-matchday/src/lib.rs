@@ -35,9 +35,9 @@ use ds_world::Pack;
 /// The bodies at the kick-off, by identity: (fatigue, damage).
 pub type Start = BTreeMap<u32, (f64, f64)>;
 
-/// A match played: the goals, home and away, and every man's body at the
-/// final whistle by his identity.
-pub type Played = (u16, u16, Vec<(u32, f64, f64)>);
+/// A match played: the goals, home and away, every man's body at the final
+/// whistle by his identity, and the cards shown (identity, red).
+pub type Played = (u16, u16, Vec<(u32, f64, f64)>, Vec<(u32, bool)>);
 
 fn to_match_player(
     p: &Player,
@@ -148,7 +148,28 @@ pub fn play(
             Some((id, f64::from(b.fatigue), f64::from(b.damage)))
         })
         .collect();
-    Ok((u16::from(r.score.home), u16::from(r.score.away), bodies))
+    // The cards shown, by identity (Law 12; the discipline plugin counts
+    // them over the season).
+    let cards = r
+        .events
+        .events()
+        .iter()
+        .filter(|e| e.event_type == ds_stats::EventType::Card)
+        .filter_map(|e| {
+            let Some(ds_core::ids::ActorId::Player(slot)) = e.actor else {
+                return None;
+            };
+            let id = keys.iter().find(|(s, _)| *s == slot)?.1.slot();
+            let red = e.fields.get("color").and_then(|c| c.as_str()) == Some("red");
+            Some((id, red))
+        })
+        .collect();
+    Ok((
+        u16::from(r.score.home),
+        u16::from(r.score.away),
+        bodies,
+        cards,
+    ))
 }
 
 /// The matchday plugin.
@@ -264,7 +285,7 @@ impl SeasonPlugin for Matchday {
                 .collect()
         });
         for (f, r) in today.iter().zip(results) {
-            let (hg, ag, bodies) = r?;
+            let (hg, ag, bodies, cards) = r?;
             w.emit(
                 MATCH_PLAYED,
                 &[
@@ -275,6 +296,10 @@ impl SeasonPlugin for Matchday {
                     ("home_goals", hg.to_string()),
                     ("away_goals", ag.to_string()),
                     (BODIES_FIELD, write_bodies(&bodies)),
+                    (
+                        ds_discipline::CARDS_FIELD,
+                        ds_discipline::write_cards(&cards),
+                    ),
                 ],
             );
         }

@@ -882,6 +882,7 @@ version = "0.1.0"
 dependencies = [
  "ds-calendar",
  "ds-core",
+ "ds-discipline",
  "ds-orchestrator",
  "ds-roster",
  "ds-season-api",
@@ -920,6 +921,15 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "ds-discipline"
+version = "0.1.0"
+dependencies = [
+ "ds-season-api",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -982,10 +992,12 @@ dependencies = [
  "ds-calendar",
  "ds-coach",
  "ds-core",
+ "ds-discipline",
  "ds-match",
  "ds-model",
  "ds-roster",
  "ds-season-api",
+ "ds-stats",
  "ds-world",
 ]
 
@@ -1075,6 +1087,7 @@ dependencies = [
  "ds-body",
  "ds-calendar",
  "ds-coach",
+ "ds-discipline",
  "ds-matchday",
  "ds-roster",
  "ds-season",
