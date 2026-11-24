@@ -502,7 +502,7 @@ impl MatchState {
             } else {
                 self.possession
             };
-            self.mark_offside_at_pass(ctx, attacker, from.0);
+            self.mark_offside_at_pass(ctx, tick, attacker, from.0);
             self.pending = Some(Pending {
                 launched: tick,
                 due_tick: tick + FLIGHT_TICKS,

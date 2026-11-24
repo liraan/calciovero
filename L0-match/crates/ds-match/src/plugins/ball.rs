@@ -23,20 +23,32 @@ impl MatchState {
     ///
     /// Pure geometry, no state: `Some(0)` a post, `Some(2)` the crossbar,
     /// `None` nothing (the ball goes in or out, the caller decides).
+    ///
+    /// Law 1: 7.32 m between the inner edges of the posts, 2.44 m to the
+    /// lower edge of the crossbar, posts and crossbar of the same width. So a
+    /// post's axis is a post radius outside `half_w`, the bar's a radius
+    /// above `height`, and the ball meets either when its own radius
+    /// reaches it. `z_at` is the height of the ball's lowest point (the
+    /// physics bounces it at 0), its centre a radius higher. Before SIM 202
+    /// the post stood on the inner edge and the ball was a point: a ball
+    /// whose centre passed 10 cm inside the post, its side over it, was a
+    /// goal (code audit, third phase, seed 48).
     #[must_use]
     pub(crate) const fn obstacle_hit(
         y_at: i32,
         z_at: i32,
         center_y: i32,
-        half_w: i32,
-        height: i32,
-        post_r: i32,
-        bar_t: i32,
+        b: &crate::balance::ObstacleBalance,
     ) -> Option<u8> {
-        let lateral_edge = (y_at - center_y).abs() - half_w;
-        let vertical_edge = z_at - height;
-        let hit_post = lateral_edge.abs() <= post_r && z_at <= height;
-        let hit_bar = vertical_edge.abs() <= bar_t && (y_at - center_y).abs() < half_w;
+        #[allow(clippy::cast_possible_truncation)]
+        let r = ds_orchestrator::read::BALL_RADIUS_CM as i32;
+        let lateral = (y_at - center_y).abs();
+        let centre_z = z_at + r;
+        let post_axis = b.goal_half_width_cm + b.post_radius_cm;
+        let bar_axis = b.goal_height_cm + b.post_radius_cm;
+        let reach = b.post_radius_cm + r;
+        let hit_post = (lateral - post_axis).abs() <= reach && centre_z <= bar_axis;
+        let hit_bar = (centre_z - bar_axis).abs() <= reach && lateral <= post_axis;
         if hit_post {
             Some(0)
         } else if hit_bar {
@@ -44,6 +56,23 @@ impl MatchState {
         } else {
             None
         }
+    }
+
+    /// Law 10: the whole ball between the posts and under the crossbar, at
+    /// the goal plane (`z_at` its lowest point, as in `obstacle_hit`). The
+    /// one reading of the goal mouth for a shot and for every other ball.
+    #[must_use]
+    pub(crate) const fn in_the_goal_mouth(
+        y_at: i32,
+        z_at: i32,
+        center_y: i32,
+        b: &crate::balance::ObstacleBalance,
+    ) -> bool {
+        #[allow(clippy::cast_possible_truncation)]
+        let r = ds_orchestrator::read::BALL_RADIUS_CM as i32;
+        (y_at - center_y).abs() + r < b.goal_half_width_cm
+            && z_at >= 0
+            && z_at + 2 * r < b.goal_height_cm
     }
 
     /// The ball's velocity after it meets the woodwork at `impact` on the
@@ -59,15 +88,7 @@ impl MatchState {
         velocity: (i16, i16, i16),
         b: &crate::balance::ObstacleBalance,
     ) -> Option<(i16, i16, i16)> {
-        let hit = Self::obstacle_hit(
-            impact.1,
-            impact.2,
-            center_y,
-            b.goal_half_width_cm,
-            b.goal_height_cm,
-            b.post_radius_cm,
-            b.crossbar_thickness_cm,
-        )?;
+        let hit = Self::obstacle_hit(impact.1, impact.2, center_y, b)?;
         Some(if hit == 0 {
             b.post_reflection().reflect(velocity)
         } else {
@@ -132,10 +153,8 @@ impl MatchState {
         let t_num = i64::from(plane_x - prev.0);
         let y_at = prev.1 + i32::try_from((i64::from(curr.1 - prev.1) * t_num) / dx).unwrap_or(0);
         let z_at = prev.2 + i32::try_from((i64::from(curr.2 - prev.2) * t_num) / dx).unwrap_or(0);
-        let goal_half_w = self.obstacle_balance.goal_half_width_cm;
-        let goal_h = self.obstacle_balance.goal_height_cm;
         let goal_center_y = width / 2;
-        let inside = (y_at - goal_center_y).abs() < goal_half_w && (0..goal_h).contains(&z_at);
+        let inside = Self::in_the_goal_mouth(y_at, z_at, goal_center_y, &self.obstacle_balance);
 
         // ADR-048 §1: the ball meets the post or the crossbar. If it does,
         // the ball is deflected and keeps flying from the impact point, no
@@ -261,9 +280,7 @@ impl MatchState {
         let t_num = i64::from(plane_x - prev.0);
         let y_at = prev.1 + i32::try_from((i64::from(curr.1 - prev.1) * t_num) / dx).unwrap_or(0);
         let z_at = prev.2 + i32::try_from((i64::from(curr.2 - prev.2) * t_num) / dx).unwrap_or(0);
-        let half = self.obstacle_balance.goal_half_width_cm;
-        let inside = (y_at - width / 2).abs() < half
-            && (0..self.obstacle_balance.goal_height_cm).contains(&z_at);
+        let inside = Self::in_the_goal_mouth(y_at, z_at, width / 2, &self.obstacle_balance);
         // Who scored (Law 10 gives the goal to the side; the scorer is who
         // put it there): the man on it; else the last who only touched it on
         // its way, unless it was a shot (a parried or blocked shot is the

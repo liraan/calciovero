@@ -369,8 +369,6 @@ pub struct ObstacleBalance {
     /// Post radius, in cm (Law 1, as above).
     #[serde(skip)]
     pub post_radius_cm: i32,
-    /// Crossbar thickness, in cm (prototype).
-    pub crossbar_thickness_cm: i32,
     /// Elasticity numerator (prototype 0.8).
     pub elasticity_num: i32,
     /// Elasticity denominator.

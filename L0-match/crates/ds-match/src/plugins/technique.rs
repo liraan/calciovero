@@ -1059,7 +1059,8 @@ impl MatchState {
         if pass.is_none() {
             if self.offside_at_pass.contains(&id) {
                 let offender_home = home(id);
-                self.call_offside(ctx, tick, id, offender_home, (ball, None));
+                let played = self.offside_played;
+                self.call_offside(ctx, tick, id, offender_home, (ball, played));
                 return;
             }
             self.offside_at_pass.clear();

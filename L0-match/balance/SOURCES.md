@@ -258,7 +258,6 @@ The quick instructions move the block by a step that is the coach's choice shown
 
 | Parameter | Value | Status | What the file says about it |
 |---|---|---|---|
-| `crossbar_thickness_cm` | 6 | arbitrary (grade 3) | Half-thickness of the crossbar for the reflection; Law 1 gives only a maximum of 12 cm, prototype 6 cm. Higher = more balls hit the bar. |
 | `elasticity_num` | 8 | arbitrary (grade 3) | Numerator of the post/crossbar elasticity (8/10 = 0.8, the share of the normal velocity returned); declared arbitrary, prototype. Higher = livelier rebounds off the woodwork. |
 | `elasticity_den` | 10 | arbitrary (grade 3) | Denominator of the post/crossbar elasticity (8/10 = 0.8); declared arbitrary, prototype. Higher = deader rebounds off the woodwork. |
 

@@ -131,6 +131,31 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 1.35 | 5.54 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 4.51 | 2.5–5.7 | sì | — |
 
+## La misura del 202 (2026-11-24, DD-62)
+
+Stesso comando e banda. **6 su 22** (penalties, ground_duels, fouls, red_cards, goal_kicks, saves); gol 7.38, autogol 1.03, tiri 43.45, in porta 20.3, passaggi 1832.7, falli 29.87, gialli 1.37, rossi 0.53, parate 11.62, fuorigioco 15.38, recupero 8.86/8.48. Nessun numero adattato. Rispetto al 201 la porta ha la misura della palla (pali e traversa a un raggio fuori, Legge 1): gol 7.78 → 7.38, parate 13.3 → 11.62 (di nuovo in banda). I controlli delle Leggi (`laws_hold`, 100 partite) sono puliti.
+
+Ogni riga fuori banda è un indizio da seguire negli eventi delle partite più lontane (Terza fase, punto 3). Dove la colonna dice "da indagare", la catena causale non è ancora stata cercata su questo motore: la causa scritta è l'ipotesi o l'OI che la copre, non una conclusione.
+
+| Metrica | Reale ± | Motore 202 | Fuori banda | Causa | Bug o taratura |
+|---|---|---|---|---|---|
+| gol | 2.68 ± 1.65 | 7.38 | sopra (×2.8) | la catena dei troppi tiri e il tiro troppo preciso (OI-100) | da indagare |
+| autogol | 0.10 ± 0.31 | 1.03 | sopra (×10) | la spazzata sotto pressione e le deviazioni verso la propria porta (OI-100) | da indagare, primo candidato bug |
+| tiri | 24.6 ± 5.46 | 43.45 | sopra | troppi tiri dalla catena dei passaggi e delle ripartenze (OI-100) | da indagare |
+| tiri in porta | 8.69 ± 3.22 | 20.3 | sopra | segue i tiri; quota nello specchio 47% (reale 35%) | da indagare |
+| passaggi | 887.7 ± 122.8 | 1832.7 | sopra (×2.1) | troppi passaggi e troppi intercettati (OI-100) | da indagare |
+| passaggi riusciti | 739.2 ± 124.8 | 1512.2 | sopra | segue i passaggi (quota 82.5%, reale 83.3%) | segue i passaggi |
+| duelli aerei | 38.14 ± 12.98 | 13.2 | sotto | pochi palloni alti contesi (OI-102, causa chiusa, divario aperto) | da indagare |
+| dribbling riusciti | 16.03 ± 5.67 | 22.02 | sopra, al bordo | il portatore punta l'uomo troppo spesso (OI-103) | da indagare |
+| gialli | 3.97 ± 1.96 | 1.37 | sotto | il fallo tattico che ferma un'azione promettente non è ammonito (Legge 12) | da indagare, candidato bug |
+| angoli | 10.3 ± 3.58 | 15.77 | sopra | la catena dei troppi tiri (OI-100) | da indagare |
+| rimesse laterali | 42.72 ± 8.92 | 13.83 | sotto (×0.3) | duelli e passaggi sbagliati che non mandano la palla fuori; dal 200 fuori solo a palla intera | da indagare |
+| punizioni | 29.45 ± 6.81 | 42.87 | sopra | falli + fuorigioco: i 15 fuorigioco diventano punizioni (OI-112) | segue i fuorigioco |
+| fuorigioco | 4.26 ± 2.40 | 15.38 | sopra (×3.6) | la linea letta senza l'errore di percezione (OI-098/104) | da indagare |
+| spazzate | 29.53 ± 8.65 | 46.63 | sopra | la spazzata di testa resta una regola (ADR-064, passo 2) | da indagare |
+| recupero, primo tempo | 1.49 ± 1.35 | 8.86 | sopra | il motore aggiunge tutto il tempo perso, gli arbitri circa metà (OI-101) | da indagare |
+| recupero, secondo tempo | 4.08 ± 1.61 | 8.48 | sopra | come sopra (OI-101) | da indagare |
+
 ## La misura del 201 (2026-11-24, DD-61)
 
 Stesso comando e banda. **5 su 22** (penalties, ground_duels, fouls, red_cards, goal_kicks); gol 7.78, autogol 1.13, tiri 43.58, in porta 21.17, passaggi 1830.32, falli 30.63, gialli 1.38, rossi 0.48, parate 13.3, fuorigioco 14.1, recupero 9.33/8.66. Nessun numero adattato.

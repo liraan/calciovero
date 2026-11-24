@@ -466,10 +466,12 @@ impl MatchState {
     pub(crate) fn mark_offside_at_pass(
         &mut self,
         ctx: &MatchContext<'_>,
+        tick: u64,
         passer: PlayerId,
         ball_x: i32,
     ) {
         self.offside_at_pass.clear();
+        self.offside_played = Some(tick);
         let restart = self.restart_pass.take();
         if crate::rules::offside_exempt(restart) {
             return;

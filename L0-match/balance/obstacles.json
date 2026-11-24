@@ -1,7 +1,6 @@
 {
-  "crossbar_thickness_cm": 6,
   "elasticity_num": 8,
   "elasticity_den": 10,
   "_note": "ADR-048: the static obstacle (post, crossbar). The ball's trajectory meets the obstacle's geometry; the effect is a declared reflection (the normal component of the velocity is reversed, scaled by the elasticity). No die.",
-  "_source": "The goal's width and height and the post's radius are Law 1's, read from laws.json (2026-11-23 and 2026-11-24, code audit C1 and S18). The crossbar is as wide as the posts, max 12 cm; prototype thickness 6 cm. Elasticity: arbitrary, declared, prototype 0.8 (a metal post returns most of the normal velocity, a wooden one less). The two radii are prototype values until a cited source is chosen (L3)."
+  "_source": "The goal's width and height and the post's radius are Law 1's, read from laws.json (2026-11-23 and 2026-11-24, code audit C1 and S18). The crossbar is as wide and deep as the posts (Law 1): its half-thickness is the post's radius, no key of its own (SIM 202; before, crossbar_thickness_cm 6, the same value under another name). Elasticity: arbitrary, declared, prototype 0.8 (a metal post returns most of the normal velocity, a wooden one less). The two radii are prototype values until a cited source is chosen (L3)."
 }

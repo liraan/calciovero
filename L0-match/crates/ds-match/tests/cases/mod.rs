@@ -11,6 +11,7 @@ mod golden_l0;
 mod golden_scenes;
 mod instructions;
 mod knock;
+mod laws_hold;
 mod narrative_fields;
 mod plugins_off;
 mod repertoire;

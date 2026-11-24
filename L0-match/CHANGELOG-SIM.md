@@ -8,6 +8,12 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 202 — le Leggi su molte partite; la porta con la misura della palla (DD-62)
+
+Terza fase dell'audit (`CODE-AUDIT.md`): `tests/cases/laws_hold.rs` controlla le Leggi a ogni tick del record su molti semi (Legge 3: al più undici e sempre un portiere; nessun espulso in gioco; Leggi 1 e 10: gol solo a palla intera fra i pali e sotto la traversa; Leggi 15-17: ogni ripresa alla squadra e del tipo giusti; cambi entro il limite; Legge 11: fuorigioco solo su chi riceve). Seme 42 nel gate, 42..142 con `--ignored`. Due violazioni trovate e corrette: (a) la porta senza la misura della palla: `obstacle_hit` metteva il palo sul bordo interno e la palla era un punto (seme 48: gol con il centro a 356 cm, il fianco sul palo); ora gli assi di pali e traversa stanno a un raggio fuori dalla luce della porta, il raggio della palla conta, `in_the_goal_mouth` è l'unico giudice per il tiro e per ogni palla, `crossbar_thickness_cm` tolto (Legge 1: la traversa come i pali); guardia `the_ball_has_a_size_at_the_goal`; (b) il fuorigioco sulla palla sciolta (S12) non diceva il tick del passaggio: `MatchState::offside_played`. Dopo: 100 partite su 100 pulite.
+
+Golden rigenerati; semi coppa 58, pari al 90' 43, decisa 42. ds-reference 42..101: **6 su 22** (penalties, ground_duels, fouls, red_cards, goal_kicks, saves); gol 7.38, autogol 1.03, tiri 43.45, in porta 20.3, passaggi 1832.7, falli 29.87, gialli 1.37, rossi 0.53, parate 11.62, fuorigioco 15.38, recupero 8.86/8.48.
+
 ## 201 — resto della seconda passata (DD-61)
 
 Resto della seconda passata dell'audit (`CODE-AUDIT.md`): un compagno prende i guanti quando il portiere esce o è espulso (S8, Legge 3); la palla che rotola rimbalza sul palo come quella in volo (S9); fuori e gol leggono lo stesso ultimo tocco, deviazioni comprese (S13); l'attore legge da sé orizzonte e nervi (S7); il test di ADR-112 legge tutti i file del motore e vuole un nome letterale, `PlayerLatents` senza `Debug` (S6); un solo parser della Legge 1 e il raggio del palo in `laws.json` (S18, S22); nove chiavi mai lette tolte (S17, S23). I gol salgono e le parate escono dalla banda: da indagare come indizio (Terza fase), nessun numero toccato.

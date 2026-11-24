@@ -261,6 +261,10 @@ pub struct MatchState {
     /// Law 11: the passer's teammates in an offside position when the
     /// ball was played; one who then plays it commits the offence.
     pub(crate) offside_at_pass: BTreeSet<PlayerId>,
+    /// The tick the ball was played when `offside_at_pass` was marked: the
+    /// moment the position is judged, told with a call on a ball that ran
+    /// loose from the pass (SIM 202; before, that call told no tick).
+    pub(crate) offside_played: Option<u64>,
     /// The restart that put the ball back in play, until its first pass:
     /// there is no offside from a throw-in, a goal kick or a corner.
     pub(crate) restart_pass: Option<crate::rules::RestartKind>,
@@ -898,6 +902,7 @@ impl MatchState {
                 m
             },
             offside_at_pass: BTreeSet::new(),
+            offside_played: None,
             restart_pass: None,
             shootout_taker: None,
             bodies: {
@@ -1563,37 +1568,73 @@ mod intercept_tests {
         assert_eq!(v.1, SHOT_V.1);
     }
 
+    fn frame() -> crate::balance::ObstacleBalance {
+        let b = crate::balance::ObstacleBalance::load();
+        assert_eq!(
+            (b.goal_half_width_cm, b.goal_height_cm, b.post_radius_cm),
+            (366, 244, 6),
+            "the numbers below are Law 1's"
+        );
+        b
+    }
+
     #[test]
     fn obstacle_hit_detects_the_post() {
         // Right post's edge: a post, not a goal.
         assert_eq!(
-            MatchState::obstacle_hit(3400 + 366, 100, 3400, 366, 244, 6, 6),
+            MatchState::obstacle_hit(3400 + 366, 100, 3400, &frame()),
             Some(0)
         );
     }
 
     #[test]
     fn obstacle_hit_does_not_fire_inside_the_goal() {
-        assert_eq!(
-            MatchState::obstacle_hit(3400, 100, 3400, 366, 244, 6, 6),
-            None
-        );
+        assert_eq!(MatchState::obstacle_hit(3400, 100, 3400, &frame()), None);
     }
 
     #[test]
     fn obstacle_hit_detects_the_crossbar() {
-        assert_eq!(
-            MatchState::obstacle_hit(3400, 244, 3400, 366, 244, 6, 6),
-            Some(2)
-        );
+        assert_eq!(MatchState::obstacle_hit(3400, 244, 3400, &frame()), Some(2));
     }
 
     #[test]
     fn obstacle_hit_does_not_fire_outside_the_post() {
         assert_eq!(
-            MatchState::obstacle_hit(3400 + 366 + 100, 100, 3400, 366, 244, 6, 6),
+            MatchState::obstacle_hit(3400 + 366 + 100, 100, 3400, &frame()),
             None
         );
+    }
+
+    /// Law 1 and Law 10 (P1, SIM 202): the ball has a size. Its centre 10 cm
+    /// inside the post's inner edge, its side (11 cm) is over the post: the
+    /// post, not a goal (seed 48 scored it before). 12 cm inside, the whole
+    /// ball passes between the posts. The same under the bar: its top at
+    /// 2.44 m meets the bar.
+    #[test]
+    fn the_ball_has_a_size_at_the_goal() {
+        let b = frame();
+        assert_eq!(MatchState::obstacle_hit(3400 + 356, 100, 3400, &b), Some(0));
+        assert!(!MatchState::in_the_goal_mouth(3400 + 356, 100, 3400, &b));
+        assert_eq!(MatchState::obstacle_hit(3400 + 354, 100, 3400, &b), None);
+        assert!(MatchState::in_the_goal_mouth(3400 + 354, 100, 3400, &b));
+        assert_eq!(MatchState::obstacle_hit(3400, 222, 3400, &b), Some(2));
+        assert!(!MatchState::in_the_goal_mouth(3400, 222, 3400, &b));
+        assert!(MatchState::in_the_goal_mouth(3400, 221, 3400, &b));
+        // Inside the mouth and touching nothing are one reading: no ball is
+        // both, and none at the plane is neither unless it is wide or over.
+        for lateral in (0..400).step_by(1) {
+            for z in (0..260).step_by(1) {
+                let (y, inside) = (
+                    3400 + lateral,
+                    MatchState::in_the_goal_mouth(3400 + lateral, z, 3400, &b),
+                );
+                let hit = MatchState::obstacle_hit(y, z, 3400, &b).is_some();
+                assert!(!(inside && hit), "({lateral}, {z}) is in and on the frame");
+                if lateral < 340 && z < 200 {
+                    assert!(inside, "({lateral}, {z}) is a goal");
+                }
+            }
+        }
     }
 }
 
