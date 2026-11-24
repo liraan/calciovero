@@ -40,8 +40,7 @@ impl MatchState {
         center_y: i32,
         b: &crate::balance::ObstacleBalance,
     ) -> Option<u8> {
-        #[allow(clippy::cast_possible_truncation)]
-        let r = ds_orchestrator::read::BALL_RADIUS_CM as i32;
+        let r = ds_calculator::laws::BALL_RADIUS;
         let lateral = (y_at - center_y).abs();
         let centre_z = z_at + r;
         let post_axis = b.goal_half_width_cm + b.post_radius_cm;
@@ -68,11 +67,12 @@ impl MatchState {
         center_y: i32,
         b: &crate::balance::ObstacleBalance,
     ) -> bool {
-        #[allow(clippy::cast_possible_truncation)]
-        let r = ds_orchestrator::read::BALL_RADIUS_CM as i32;
-        (y_at - center_y).abs() + r < b.goal_half_width_cm
-            && z_at >= 0
-            && z_at + 2 * r < b.goal_height_cm
+        ds_calculator::laws::in_the_goal_mouth(
+            y_at - center_y,
+            z_at,
+            b.goal_half_width_cm,
+            b.goal_height_cm,
+        )
     }
 
     /// The ball's velocity after it meets the woodwork at `impact` on the
@@ -137,11 +137,10 @@ impl MatchState {
         // The whole ball over the line (Law 10), as for every other ball
         // (`check_goal_line`): beyond it by its radius (SIM 196). Before, a
         // shot crossed with its centre on the line, any other ball whole.
-        #[allow(clippy::cast_possible_truncation)]
-        let r = ds_orchestrator::read::BALL_RADIUS_CM as i32;
-        let (plane_x, defending) = if prev.0 <= pitch_length && curr.0 > pitch_length + r {
+        let r = ds_calculator::laws::BALL_RADIUS;
+        let (plane_x, defending) = if prev.0 <= pitch_length + r && curr.0 > pitch_length + r {
             (pitch_length, Possession::Away)
-        } else if prev.0 >= 0 && curr.0 < -r {
+        } else if prev.0 >= -r && curr.0 < -r {
             (0, Possession::Home)
         } else {
             return;
@@ -248,6 +247,7 @@ impl MatchState {
     /// a goal for the side attacking that goal, whoever played it last; the
     /// woodwork turns it back as for a shot. Played last by the defending
     /// side, it is an own goal. A shot on its way is `check_shot_crossing`'s.
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn check_goal_line(
         &mut self,
         ctx: &mut MatchContext<'_>,
@@ -264,11 +264,14 @@ impl MatchState {
         }
         let (length, width) = pitch_cm(ctx);
         // The whole ball over the line (Law 10): beyond it by its radius.
-        #[allow(clippy::cast_possible_truncation)]
-        let r = ds_orchestrator::read::BALL_RADIUS_CM as i32;
-        let (plane_x, defending) = if prev.0 <= length && curr.0 > length + r {
+        // Seen from the tick before whenever the ball was not yet wholly
+        // over, its centre past the line or not (SIM 203, T4: before, a ball
+        // whose centre ended a tick within a radius past the line was never
+        // a goal, and the next tick gave a goal kick or a corner).
+        let r = ds_calculator::laws::BALL_RADIUS;
+        let (plane_x, defending) = if prev.0 <= length + r && curr.0 > length + r {
             (length, Possession::Away)
-        } else if prev.0 >= 0 && curr.0 < -r {
+        } else if prev.0 >= -r && curr.0 < -r {
             (0, Possession::Home)
         } else {
             return;
@@ -311,6 +314,31 @@ impl MatchState {
         }
         if !inside {
             return;
+        }
+        // His keeper meets it first, as he meets a shot, unless he is the
+        // man on it (SIM 203, T3).
+        let keeper_of = match defending {
+            Possession::Home => &ctx.match_.home,
+            Possession::Away => &ctx.match_.away,
+        };
+        if let Some(gk) = keeper_of.players.first().map(|p| p.id) {
+            let course = self.ball_course;
+            if self.spatial.carrier() != Some(gk)
+                && self.spatial.agent(gk).is_some()
+                && self.keeper_meets_the_ball(
+                    ctx,
+                    tick,
+                    gk,
+                    (course.from, course.since),
+                    impact,
+                    width / 2,
+                    false,
+                )
+            {
+                self.pending = None;
+                self.possession = defending;
+                return;
+            }
         }
         let home = |p: PlayerId| ctx.match_.home.players.iter().any(|q| q.id == p);
         let own_goal = crate::rules::own_goal(last.map(&home), defending == Possession::Home);

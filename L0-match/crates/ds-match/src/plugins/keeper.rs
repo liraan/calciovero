@@ -30,6 +30,34 @@ impl MatchState {
         (plane_x, y_at, z_at): (i32, i32, i32),
         goal_center_y: i32,
     ) -> bool {
+        self.keeper_meets_the_ball(
+            ctx,
+            tick,
+            gk,
+            (from, struck),
+            (plane_x, y_at, z_at),
+            goal_center_y,
+            true,
+        )
+    }
+
+    /// The keeper meets any ball going into his goal (SIM 203, T3; Law 12:
+    /// in his area he may use his hands on any ball): a shot, or a back
+    /// pass, a deflection, a clearance gone wrong, with the time it has been
+    /// on its way from `from` at `struck`. Before, only a shot met him:
+    /// every other ball rolled past him into the net. A ball that was not a
+    /// shot is told as taken (`claim`), not as a save of a shot.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn keeper_meets_the_ball(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        gk: PlayerId,
+        (from, struck): ((i32, i32, i32), u64),
+        (plane_x, y_at, z_at): (i32, i32, i32),
+        goal_center_y: i32,
+        shot: bool,
+    ) -> bool {
         // ADR-051, the family "in goal": the keeper reacts, dives in the
         // time the ball takes, and holds or parries what he reaches. He
         // meets the ball where it passes him, not on the goal line: off his
@@ -69,10 +97,22 @@ impl MatchState {
                 tick,
                 Some(ActorId::Player(gk)),
                 EventType::Save,
-                serde_json::json!({ "x": plane_x, "y": y_at, "z": z_at, "held": o.held }),
+                if shot {
+                    serde_json::json!({ "x": plane_x, "y": y_at, "z": z_at, "held": o.held })
+                } else {
+                    serde_json::json!({
+                        "x": plane_x, "y": y_at, "z": z_at, "held": o.held, "claim": true
+                    })
+                },
             );
             if o.held {
-                // In his hands: the ball is his.
+                // In his hands: the ball is his, where he holds it, in front
+                // of his line (SIM 203, T5: before, the ball stayed where the
+                // tick had carried it, past the line, and in the same tick the
+                // referee gave a corner for every shot he held).
+                if let Some(at) = self.spatial.agent(gk).map(|a| a.position) {
+                    self.spatial.deflect_ball((at.0, at.1, 0), (0, 0, 0));
+                }
                 self.spatial.set_carrier(Some(gk));
                 self.in_hands = Some(gk);
             } else {

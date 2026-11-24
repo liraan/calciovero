@@ -577,13 +577,6 @@ impl MatchState {
             laws.law1.penalty_area_half_width_cm,
         );
         facts.denial = self.denial(ctx, offender, fouled_home, (spot, goal), in_area);
-        self.emit_event(
-            ctx,
-            tick,
-            Some(ActorId::Player(offender)),
-            EventType::Foul,
-            serde_json::json!({ "against": fouled.slot(), "x": spot.0, "y": spot.1, "slide": facts.slide, "from_behind": facts.from_behind }),
-        );
         // The knock (decision Y, ADR-066): a contact this strong on this
         // body, and the fouled man cannot go on.
         // The force on his body, read by the actor (ADR-112); the Law
@@ -591,6 +584,20 @@ impl MatchState {
         let force = ctx.hidden.contact_force_milli(fouled, facts.approach_milli);
         let knocked =
             crate::balance::KnockBalance::load().knocks(force) && self.knocked.insert(fouled);
+        // Advantage: the side that suffered it keeps the ball in the
+        // opponents' half, outside the area; play goes on. Not with a man
+        // down (Law 5, SIM 196): the referee stops play for him.
+        let advantage =
+            !knocked && crate::rules::play_advantage(kept, in_area, depth(spot), length);
+        // The foul tells whether play went on (SIM 203, T15): the time lost
+        // to it (Law 7) is only that of a foul that stopped play.
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(offender)),
+            EventType::Foul,
+            serde_json::json!({ "against": fouled.slot(), "x": spot.0, "y": spot.1, "slide": facts.slide, "from_behind": facts.from_behind, "advantage": advantage }),
+        );
         if knocked {
             // The man down stops play: a pause for the bench (ADR-068).
             self.pauses += 1;
@@ -602,11 +609,6 @@ impl MatchState {
                 serde_json::json!({ "by": offender.slot(), "force_milli": facts.approach_milli }),
             );
         }
-        // Advantage: the side that suffered it keeps the ball in the
-        // opponents' half, outside the area; play goes on. Not with a man
-        // down (Law 5, SIM 196): the referee stops play for him.
-        let advantage =
-            !knocked && crate::rules::play_advantage(kept, in_area, depth(spot), length);
         // Law 12: with the advantage played the chance is not denied, and the
         // offender is cautioned, not sent off (SIM 200, code audit S14;
         // before, the red for the denial and play went on).

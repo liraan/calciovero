@@ -48,6 +48,10 @@ impl MatchState {
         if self.last_carrier != Some(attacker) {
             self.last_carrier = Some(attacker);
             self.carrier_decided = false;
+            // A clock set by another man's reception is not his.
+            if self.clock_from_reception != Some(attacker) {
+                self.clock_from_reception = None;
+            }
         }
 
         // IDEA-DESIGN-011 (R.1-latency): the actor decides when he is due,
@@ -61,7 +65,12 @@ impl MatchState {
         // is all that holds him. He reads once now, then his choice (even
         // `Hold`) stands for the rest of the clock. A moving carrier keeps
         // his pace (SIM 184).
+        // Not a clock his reception has just set (SIM 203, T32): having
+        // controlled it he decides after his own time, standing or not
+        // (ADR-044 §6). Before, a receiver standing still decided on the
+        // tick he had it, and the game ran at twice its pace.
         if !self.carrier_decided
+            && self.clock_from_reception != Some(attacker)
             && tick < due_at
             && self.spatial.ball_at_feet()
             && self.spatial.carry_target().is_none()
@@ -497,16 +506,9 @@ impl MatchState {
             } else {
                 find_interceptor(&self.spatial, &unseen, (from.0, from.1), (to.0, to.1))
             };
-            let expected = if interceptor.is_some() {
-                Self::other(self.possession)
-            } else {
-                self.possession
-            };
             self.mark_offside_at_pass(ctx, tick, attacker, from.0);
             self.pending = Some(Pending {
                 launched: tick,
-                due_tick: tick + FLIGHT_TICKS,
-                outcome: expected,
                 interceptor,
                 passer: Some(attacker),
                 receiver: Some(receiver),
@@ -1252,10 +1254,12 @@ impl MatchState {
                 self.shots.1 += 1;
             }
         }
+        // Law 11: a shot is a teammate playing the ball too; who is offside
+        // then and plays the rebound off the keeper or the woodwork is
+        // penalised (SIM 203, T21: before, only a pass marked anyone).
+        self.mark_offside_at_pass(ctx, tick, attacker, from.0);
         self.pending = Some(Pending {
             launched: tick,
-            due_tick: tick + FLIGHT_TICKS,
-            outcome: Self::other(self.possession),
             interceptor: None,
             passer: None,
             receiver: None,

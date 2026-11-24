@@ -1192,6 +1192,11 @@ impl SpatialState {
                 stopped = fine.tick(&kick);
             }
             let ((x, y, z), (_, _, vz)) = fine.to_cm();
+            // Not beyond a goal line (SIM 203, T1b): a ball he cannot reach
+            // before it crosses is met where it crosses, not in the net.
+            if x < 0 || x > self.pitch_cm.0 {
+                return Some((x.clamp(0, self.pitch_cm.0), y));
+            }
             let vz = if stopped { 0 } else { vz };
             // Within his height: coming down to his head or lower, or on the
             // grass; a ball still climbing is not his yet.
@@ -1933,17 +1938,29 @@ impl SpatialState {
             // run cross, not where it is (the maintainer, 2026-11-13: players
             // circled the ball instead of winning it; a keeper chasing a
             // back pass let it roll past him into his goal).
-            let mut target = if to_the_ball
+            //
+            // SIM 203 (T1, ADR-052): he foresees the meeting at the pace he
+            // runs into a contest (`contest_pace_share`), and runs to it
+            // without braking to a stop there: a moving ball is met running,
+            // as a man is challenged. Before, he foresaw it at his full top
+            // speed and braked to arrive, so he was always late, aimed
+            // further along each tick, and a keeper met a back pass on his
+            // own goal line as it went in (seed 49).
+            let meeting = if to_the_ball
                 && act != Some(ds_orchestrator::OffBallAct::Press)
                 && Some(entry.0) != self.carrier
             {
                 let reach = f64::from(BODY_RADIUS_CM) * 2.0;
                 let head = head_of(bodies, entry.0);
-                self.intercept(entry.1, (v_prev, accel, top), (reach, head))
-                    .unwrap_or(target)
+                self.intercept(
+                    entry.1,
+                    (v_prev, accel, top * outcome.contest_pace_share),
+                    (reach, head),
+                )
             } else {
-                target
+                None
             };
+            let mut target = meeting.unwrap_or(target);
             // SIM 181: he still aims at the opponent, but takes the lane
             // goal-side of him — the gap a marker keeps, not a new number.
             if act == Some(ds_orchestrator::OffBallAct::Press) && sent.is_none() {
@@ -2068,7 +2085,9 @@ impl SpatialState {
                                 // and past it: with the acceleration of a
                                 // real player he ran past the man he pressed
                                 // and back again, metres each way.
-                                if act == Some(ds_orchestrator::OffBallAct::Challenge) {
+                                if act == Some(ds_orchestrator::OffBallAct::Challenge)
+                                    || meeting.is_some()
+                                {
                                     contest_top
                                 } else {
                                     let arrive = f64::from(BODY_RADIUS_CM);
@@ -2523,6 +2542,19 @@ mod tests {
 
     fn make_state() -> SpatialState {
         SpatialState::from_squads(&Pitch::default(), &make_squad(0), &make_squad(100))
+    }
+
+    /// SIM 203 (T1b): a ball he cannot reach before it crosses his goal line
+    /// is met where it crosses, not in the net.
+    #[test]
+    fn a_ball_into_the_goal_is_met_on_the_line() {
+        let mut s = make_state();
+        let len = s.pitch_cm.0;
+        s.set_ball_in_flight((len - 300, 3400, 0), (120, 0, 0));
+        let at = s
+            .intercept((len - 3000, 1000), ((0.0, 0.0), 2.0, 40.0), (0.0, 180))
+            .expect("met");
+        assert!(at.0 <= len, "{at:?}");
     }
 
     #[test]

@@ -245,8 +245,14 @@ fn how_it_began(m: &Match, goal: &MatchEvent, before: &[MatchEvent], l: usize) -
         (_, Some(EventType::Tackle)) => format!("{them} won the ball from {mine}"),
         (EventType::Clearance, _) => format!("{mine} cleared it, and they won it back"),
         (EventType::Shot, _) => format!("after {mine}'s shot, they had the ball"),
-        (_, Some(EventType::Duel)) | (EventType::Duel, _) => {
+        (_, Some(EventType::Duel)) | (EventType::Duel, _) if !them.is_empty() => {
             format!("{mine} lost a duel to {them}")
+        }
+        // A loose ball contested, nobody of theirs named as winning it (code
+        // audit, third pass, strumenti 10): told as what it was, not as a
+        // duel lost to nobody ("lost a duel to .").
+        (_, Some(EventType::Duel)) | (EventType::Duel, _) => {
+            format!("{mine} could not keep a loose ball")
         }
         _ if them.is_empty() => {
             format!("{mine} lost it and they broke straight down the other end")

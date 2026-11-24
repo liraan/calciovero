@@ -148,3 +148,59 @@ Stato al momento della scrittura: SIM 200 e 201 su main; SIM 202 (punti 1-2) chi
 **SIM 202 (2026-11-24, DD-62).** Punto 1 fatto: `tests/cases/laws_hold.rs` (seme 42 nel gate, 42..142 con `--ignored`, `LAWS_FROM`/`LAWS_TO`). Due violazioni trovate e corrette: (a) la porta senza la misura della palla (assi di pali e traversa a un raggio fuori, il raggio della palla conta, `in_the_goal_mouth` unico giudice, `crossbar_thickness_cm` tolto; guardia `the_ball_has_a_size_at_the_goal`); (b) il fuorigioco sulla palla sciolta con il tick del passaggio (`MatchState::offside_played`). Dopo: 100 partite su 100 pulite. Misura: **6 su 22**, con la tabella degli indizi in `L0-CALIBRATION.md` ("La misura del 202"). **Prossimo:** punto 3, seguire gli indizi della tabella, a partire dagli autogol (×10) e dai gialli (candidati bug).
 
 5. **Test più veloci** (chiesto dal maintainer il 2026-11-24): misurare il tempo di ogni test e trovare i più lenti; riusare le partite simulate (cache `tests/support`); partite più corte dove la regola lo consente; raggruppare golden e semi in una corsa release; `opt-level` delle dipendenze nel profilo di test. Vincolo: nessuna copertura persa.
+
+
+## Terza passata (2026-11-24, mattina)
+
+Stessi 8 analisti in sola lettura, a HEAD `5eafc14` (SIM 202), con la tabella degli scarti del 202 come indizi: ogni metrica fuori banda trattata come bug da trovare, mai come numero da ritoccare (maintainer, 2026-11-24). Accorpati i doppioni; fra parentesi le aree che l'hanno trovato. Le sonde sugli autogol (62 autogol su 42..101): in 42 il portiere era entro 2 m dalla palla negli ultimi 15 tick, in 61 entro 5 m; quasi sempre un pallone rasoterra lento (4-6 m/s).
+
+**Blocco 1 — la porta e i palloni verso la porta (autogol ×10, gol, angoli)**
+- T1. ✅ (SIM 203) `intercept` prevede l'incontro con la velocità massima piena e senza frenata; il movimento corre al 75/90 (`contest_pace_share`) e frena per arrivare: chi va sulla palla punta un punto troppo avanti, arriva tardi, ripunta più avanti; il portiere finisce sulla linea mentre la palla entra (seme 49, tick 44309-44325). ADR-052 (spazio; sonda).
+- T2. ✅ (SIM 203) Il controllo fallito lascia la palla attraversare il corpo a metà velocità (`receives_loose`, tocco pesante, `deflects_the_pass`); solo `off_the_body` la fa rimbalzare: un difensore che sbaglia la accompagna verso la sua porta (spazio, motore).
+- T3. ✅ (SIM 203) Il portiere non incontra mai una palla che non sia un tiro: `check_goal_line` dà il gol senza `keeper_meets_the_shot` (motore; sessione interrotta).
+- T4. ✅ (SIM 203) Gol perso con la palla lenta: l'incrocio vuole `prev.0 <= length` ma la palla intera è oltre solo a `length + r`; fra i due il gol sparisce e diventa fondo o angolo (S1 chiusa a metà) (regole, spazio, motore).
+- T5. ✅ (SIM 203) La parata trattenuta lascia la palla oltre la linea: nello stesso tick `restart_if_out` dà l'angolo (regole).
+- T6. ✅ (SIM 203) Il muro sul tiro guarda solo la palla a fine tick, non i piccoli passi: un tiro a 25 m/s attraversa il difensore (confini, motore).
+- T7. ✅ (SIM 203) `play_clearance` (spazzata di prima) non registra chi calcia: ultimo tocco stantio per fondo, laterale, gol/autogol (motore; sessione interrotta).
+- T8. ✅ (SIM 203) "Tiro in porta" giudicato sul punto mirato e senza il raggio della palla (`resolve_shot` `on_target`, `header_at_goal`); `in_the_goal_mouth` non è l'unico giudice come il 202 dichiara (tutti).
+- T9. Il primo tocco "nella corsa" può portare la palla verso la propria porta e lui non decide finché non la raggiunge (spazio).
+- T10. Nel tick porta e linee sono giudicate prima dei contatti: nell'ultimo tratto nessun salvataggio sulla linea (confini). Tocca l'ordine delle fasi (B9): con un ADR.
+
+**Blocco 2 — la misura (ds-reference)**
+- T11. Parate reali: l'evento Wyscout 9 conta anche i tentativi sui gol (9.37 parate contro 8.69 tiri in porta: impossibile); la banda è gonfiata e "saves in banda" è falso (strumenti).
+- T12. Passaggi: il motore conta come passaggio anche rimesse, punizioni, angoli e rinvii, Wyscout no (circa 90 a partita) (strumenti).
+- T13. Falli e gialli reali contano offese che il motore non conosce (simulazione, perdite di tempo, proteste) (strumenti).
+- T14. Gli eventi della serie dei rigori entrano nei conteggi (motore).
+
+**Blocco 3 — le Leggi**
+- T15. ✅ (SIM 203) Legge 7: il fallo con il vantaggio aggiunge 20 s; cambi e infortuni 0 (tutti).
+- T16. Legge 12: giallo solo per la scivolata da dietro e la chiara occasione; mancano l'azione promettente interrotta, l'imprudenza in piedi, la reiterazione (tutti). Il rosso per vigoria non può scattare (soglia 103.5 cm/tick contro una corsa massima di circa 83 in contesa) (dati).
+- T17. Leggi 13, 15-17: le riprese si giocano come palla in movimento (il battitore conduce, spazza, tira; la rimessa è calciata; gol diretto da rimessa); nessuna punizione indiretta (regole, motore).
+- T18. ✅ (SIM 203) Legge 16: al rinvio gli avversari restano in area; Legge 15: niente 2 m alla rimessa (regole, motore).
+- T19. ✅ (SIM 203) Legge 8: il calcio d'inizio del secondo tempo e dei supplementari con i giocatori dove sono; non si cambia campo (regole, motore, strumenti, test).
+- T20. ✅ (SIM 203) L'intercetto "a orologio" (`FLIGHT_TICKS`): `Interception` senza tocco, possesso girato, segni del fuorigioco che restano (regole, motore).
+- T21. ✅ (SIM 203) Legge 11: al tiro non si marca il fuorigioco (la ribattuta di chi era oltre non è punita) (test).
+- T22. Minori: lato della ripresa vicino alla bandierina (y prima di x); retropassaggio preso con le mani; portiere espulso fino alla sosta (S8 a metà); `denial` e muro e spazzata col portiere per slot; il secondo giallo non contato fra i gialli.
+
+**Blocco 4 — il fuorigioco nelle posizioni**
+- T23. `shape.rs`: le punte del blocco alla pari della linea per costruzione (+1500 da entrambe le parti), oltre la linea negli ultimi 25 m e con il blocco alto; a ogni cambio di possesso tutti tornano al blocco (spazio).
+- T24. ✅ (SIM 203) `Hold`: il posto del ruolo (`anchor`) non è riportato in gioco; l'errore di lettura della linea sempre in avanti (200 cm scritti) contro un margine di 50 (orchestratore).
+- T25. ✅ (SIM 203) `foresee` rialza verso 0.5 una fiducia zero che viene da un fatto certo (fuorigioco, palla nella propria porta) (orchestratore).
+- T26. Il filtrante non è limitato al campo e non ha controllo né errore (orchestratore).
+
+**Blocco 5 — quello che il giocatore prevede è quello che il motore esegue (ADR-052)**
+- T27. La spazzata pensata scende a 40 m in un volo lineare; quella eseguita è sempre a potenza piena (circa 50 m in volo, poi rimbalzi) (orchestratore, dati).
+- T28. ✅ (SIM 203) Il tiro pensato ha sempre la velocità del tiro forte (`speed(0.85, 0.5)`): il piazzato sopravvalutato (orchestratore, dati).
+- T29. Il colpo di testa a velocità di tiro di piede; ogni pallone alto vinto in area avversaria diventa un tiro (nessuna sponda); nella propria metà ogni pallone alto è spazzato, anche il passaggio di un compagno (orchestratore, motore).
+- T30. `first_time` sceglie su una scena più povera di `decide` (niente conduzione, `Hold`, filtranti, altezze): A8 chiuso a metà (orchestratore).
+- T31. ✅ (SIM 203) Con tutte le opzioni filtrate vince lo slot più basso (il portiere): `NEG_INFINITY` e tie-break per slot (orchestratore).
+- T32. ✅ (SIM 203) Il ricevitore fermo decide subito, senza il suo tempo di decisione (motore).
+- T33. Il resto: solo il passaggio guarda un passo avanti; il minimo di 11 m della dispersione non è nel pensiero; `Advance` pensato oltre il limite dell'area; il lancio con la velocità del rasoterra; `Hold` senza la perdita (S17 a metà); spazzata e lancio pensati con un calciatore medio e `keeper_off` 3000/400/200 (S18 a metà); il passaggio nella corsa di un compagno non visto; tiro dal corpo, non dalla palla; pressione della spazzata dalla palla; discretizzazione di rotolamento e volo diversa da quella pensata (2,6%) (orchestratore, spazio, motore).
+
+**Blocco 6 — guardie e documenti**
+- T34. `laws_hold` non controlla ciò che dichiara (portiere per tick, chi batte la rimessa, angolo contro ultimo tocco, fuorigioco su chi riceve), salta supplementari e rigori (S5 ancora coperto da un seme scelto), manca il controllo inverso "ogni palla intera fra i pali è gol" (test, regole).
+- T35. `anti_leak` taglia `balance.rs` al primo `#[cfg(test)]` (righe 357-725 non lette); cerca solo `.resolve_choice(`; liste di file a mano (confini, test).
+- T36. Test che non possono fallire (seme diverso con fixture diversa nel test-runner, `verify` tautologico, `functional_l0` e altri); commenti dei test e README fermi (test, strumenti).
+- T37. Ridondanze: `ball.json`, `laws.json`, `movement.json`, `profiles.json` letti due volte (B8); il raggio della palla preso da `ds_orchestrator::read`; `World::characteristic` silenzioso in release; schede che non dicono chi scrive punteggio e fuorigioco (confini, dati).
+
+**Stato (SIM 203):** fatte T1-T8, T15 (vantaggio; cambi e infortuni a 0 s restano: serve una fonte per i secondi), T18 (rinvio; i 2 m della rimessa no), T19, T20, T21, T24, T25, T28, T31, T32. Aperte le altre. **Ordine:** blocco 1 (SIM 203), poi il 2 (misura onesta, senza SIM), poi 3, 5, 4, 6; una SIM per blocco o per gruppo coerente, ognuna con la sua guardia, C2 e misura con la tabella. Poi una quarta passata.

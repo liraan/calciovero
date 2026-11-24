@@ -307,6 +307,7 @@ impl MatchState {
     /// ball; at a penalty everyone but the taker and the defending keeper
     /// leaves the penalty area, and the keeper stands on his line between
     /// the posts.
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn clear_the_spot(
         &mut self,
         ctx: &mut MatchContext<'_>,
@@ -399,7 +400,33 @@ impl MatchState {
                     }
                 }
             }
-            RestartKind::KickOff | RestartKind::ThrowIn | RestartKind::GoalKick => {}
+            RestartKind::GoalKick => {
+                // Law 16: the opponents stay outside the penalty area until
+                // the ball is in play (SIM 203, T18: before, they stood by
+                // the keeper and took his first pass in the area).
+                let own_goal_x = if restarting_home { 0 } else { length };
+                let depth = self.laws.law1.penalty_area_depth_cm;
+                let half_w = self.laws.law1.penalty_area_half_width_cm;
+                let edge = if restarting_home {
+                    depth + 100
+                } else {
+                    length - depth - 100
+                };
+                for (id, home) in ids {
+                    if home == restarting_home {
+                        continue;
+                    }
+                    let Some(p) = self.spatial.agent(id).map(|a| a.position) else {
+                        continue;
+                    };
+                    let inside =
+                        (p.0 - own_goal_x).abs() <= depth && (p.1 - width / 2).abs() <= half_w;
+                    if inside {
+                        self.place_for_restart(id, (edge, p.1), walk);
+                    }
+                }
+            }
+            RestartKind::KickOff | RestartKind::ThrowIn => {}
         }
     }
 

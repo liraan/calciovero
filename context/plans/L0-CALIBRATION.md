@@ -131,6 +131,21 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 1.35 | 5.54 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 4.51 | 2.5–5.7 | sì | — |
 
+## La misura del 203 (2026-11-24, DD-63)
+
+Stesso comando e banda. **9 su 22** (penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.5, autogol 0.78, tiri 45.02, in porta 11.92, passaggi 1583.57, duelli aerei 6.08, duelli a terra 214.63, dribbling 26.53, falli 27.27, gialli 3.1, rossi 0.45, angoli 8.67, rimesse 18.37, punizioni 34.9, fuorigioco 9.77, spazzate 36.53, parate 7.47, recupero 7.16/6.83. Nessun numero adattato. Le parate restano "in banda" con la riserva di T11 (la banda reale conta anche i tentativi sui gol).
+
+| Metrica | Motore 203 | Fuori banda | Causa | Bug o taratura |
+|---|---|---|---|---|
+| gol, tiri, in porta | 5.5, 45.02, 11.92 | sopra | T29 (ogni pallone alto vinto in area avversaria è un tiro), T30 (la scelta di prima su una scena più povera) | bug aperti |
+| autogol | 0.78 | sopra (×7) | dopo T1-T3 resta da cercare: controllo fallito e conduzione verso la propria porta (T9) | bug da indagare |
+| passaggi, riusciti | 1583.57, 1434.38 | sopra (×1.8) | T17 (le riprese giocate come palla in movimento), T12 (la misura conta i passaggi delle riprese) | bug aperti |
+| duelli aerei | 6.08 | sotto (×0.14) | T29 (la spazzata di testa imposta, anche sul passaggio del compagno), il duello solo nello stesso piccolo passo | bug aperti |
+| duelli a terra, dribbling | 214.63, 26.53 | sopra | dal 203 (T32) il portatore resta sulla palla il suo tempo di decisione e subisce più contrasti | da indagare |
+| rimesse laterali | 18.37 | sotto (×0.46) | i corpi fermi dentro il campo, il rinvio di testa sempre dritto | bug da indagare |
+| fuorigioco | 9.77 | sopra (×2.5) | T23 (le punte del blocco sulla linea per costruzione) | bug aperto |
+| recupero | 7.16/6.83 | sopra | T15 corretto; resta il modello: il motore recupera tutto il tempo perso, l'arbitro circa metà (OI-101) | taratura dichiarata |
+
 ## La misura del 202 (2026-11-24, DD-62)
 
 Stesso comando e banda. **6 su 22** (penalties, ground_duels, fouls, red_cards, goal_kicks, saves); gol 7.38, autogol 1.03, tiri 43.45, in porta 20.3, passaggi 1832.7, falli 29.87, gialli 1.37, rossi 0.53, parate 11.62, fuorigioco 15.38, recupero 8.86/8.48. Nessun numero adattato. Rispetto al 201 la porta ha la misura della palla (pali e traversa a un raggio fuori, Legge 1): gol 7.78 → 7.38, parate 13.3 → 11.62 (di nuovo in banda). I controlli delle Leggi (`laws_hold`, 100 partite) sono puliti.
@@ -140,7 +155,7 @@ Ogni riga fuori banda è un indizio da seguire negli eventi delle partite più l
 | Metrica | Reale ± | Motore 202 | Fuori banda | Causa | Bug o taratura |
 |---|---|---|---|---|---|
 | gol | 2.68 ± 1.65 | 7.38 | sopra (×2.8) | la catena dei troppi tiri e il tiro troppo preciso (OI-100) | da indagare |
-| autogol | 0.10 ± 0.31 | 1.03 | sopra (×10) | la spazzata sotto pressione e le deviazioni verso la propria porta (OI-100) | da indagare, primo candidato bug |
+| autogol | 0.10 ± 0.31 | 1.03 | sopra (×10) | la spazzata sotto pressione e le deviazioni verso la propria porta (OI-100) | audit 2026-11-24: bug (a) `check_goal_line` non chiama `keeper_meets_the_shot` per palle non-tiro; bug (b) `play_clearance` senza `played_by` attribuisce male ultimo tocco. Fix (a) candidato principale; occhio a `saves` limite alto |
 | tiri | 24.6 ± 5.46 | 43.45 | sopra | troppi tiri dalla catena dei passaggi e delle ripartenze (OI-100) | da indagare |
 | tiri in porta | 8.69 ± 3.22 | 20.3 | sopra | segue i tiri; quota nello specchio 47% (reale 35%) | da indagare |
 | passaggi | 887.7 ± 122.8 | 1832.7 | sopra (×2.1) | troppi passaggi e troppi intercettati (OI-100) | da indagare |

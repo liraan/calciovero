@@ -22,10 +22,6 @@ pub(crate) enum Possession {
     Away,
 }
 
-/// How many ticks a ball stays in flight before the pending resolves even
-/// if it has not landed (MD-37). Arbitrary, declared: 15 ticks = 1.5 s.
-pub(crate) const FLIGHT_TICKS: u64 = 15;
-
 /// Radius within which an opponent counts as crowding, in cm. Arbitrary,
 /// declared (ADR-044 §6: the duration of the chain is in the relation).
 pub(crate) const CROWD_RADIUS_CM: i32 = 1500;
@@ -159,10 +155,6 @@ pub(crate) struct Pending {
     /// F.3-b3: if this pending is a shot, the info needed to detect
     /// a goal-line crossing during the flight.
     pub shot: Option<ShotPending>,
-    /// The tick at which the pending resolves even if not landed.
-    pub due_tick: u64,
-    /// Which team has the ball once the flight resolves.
-    pub outcome: Possession,
     /// The opponent who intercepts the pass, if any.
     pub interceptor: Option<PlayerId>,
     /// The passer, for the Interception event (None for a shot).
@@ -186,6 +178,19 @@ pub(crate) struct Pending {
 }
 /// A substitution ordered during the match: off, on (decision T).
 pub(crate) type Ordered = (PlayerId, PlayerId);
+
+/// Where and when the ball began its present course (SIM 203, T3): the
+/// point and tick it left a foot, a head or a body, and who had touched it
+/// then. A new touch, or a man with it at his feet, starts a new course.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct BallCourse {
+    /// Where it began.
+    pub(crate) from: (i32, i32, i32),
+    /// The tick it began.
+    pub(crate) since: u64,
+    /// The carrier, the last who played it and the last it touched.
+    pub(crate) touches: (Option<PlayerId>, Option<PlayerId>, Option<PlayerId>),
+}
 
 /// The in-progress state of a match.
 pub struct MatchState {
@@ -301,6 +306,14 @@ pub struct MatchState {
     /// The keeper holding the ball in his hands (plan L0-CLOSE 10d): he
     /// throws it, and nobody may challenge him for it (Law 12).
     pub(crate) in_hands: Option<PlayerId>,
+    /// Where and when the ball began its present course, and whose touches
+    /// it carried then (SIM 203, T3): a ball that is not a shot, met by the
+    /// keeper at his goal, gives him the time it has been on its way, as a
+    /// shot does from its strike.
+    pub(crate) ball_course: BallCourse,
+    /// The man whose decision clock his reception has just set (SIM 203,
+    /// T32): he decides after his own time, standing or not.
+    pub(crate) clock_from_reception: Option<PlayerId>,
     /// The substitutions made, by the player who came off (plan L0-CLOSE
     /// 10f), and those still to announce: `(outgoing, incoming)`.
     pub(crate) substituted: BTreeSet<PlayerId>,
@@ -916,6 +929,8 @@ impl MatchState {
             coverage_possession: Possession::Home,
             latencies: BTreeMap::new(),
             in_hands: None,
+            ball_course: BallCourse::default(),
+            clock_from_reception: None,
             substituted: BTreeSet::new(),
             to_announce: Vec::new(),
             stoppage: false,
@@ -969,30 +984,11 @@ impl MatchState {
         // wherever he was, the pass was told complete, and the ball rolled
         // on with nobody going for it (OI-98).
         self.lose_a_missed_pass(ctx, tick);
-        // An opponent the passer did not see on the line (F.4-d) still
-        // takes it at `due_tick` (MD-37), declared as it is.
-        if let Some(p) = &self.pending {
-            if tick >= p.due_tick && p.interceptor.is_some() {
-                let outcome = p.outcome;
-                let interceptor = p.interceptor;
-                let passer = p.passer;
-                self.pending = None;
-                self.possession = outcome;
-                self.spatial.set_carrier(None);
-                if let (Some(who), Some(by)) = (interceptor, passer) {
-                    self.emit_event(
-                        ctx,
-                        tick,
-                        Some(ActorId::Player(who)),
-                        EventType::Interception,
-                        serde_json::json!({
-                            "from": by.slot(),
-                            "to": who.slot(),
-                        }),
-                    );
-                }
-            }
-        }
+        // SIM 203 (T20, ADR-058): an opponent the passer did not see on the
+        // line takes the pass only if he reaches it, as anyone does. Before,
+        // at `due_tick` (MD-37) he was told to have intercepted it without
+        // touching it: possession turned, the ball flew on, the marks of
+        // offside stayed, and the real receiver took it "loose".
         // A restart called and not yet taken (SIM 150): the ball is out of
         // play; the men go to their places, the clock runs, nobody plays.
         if self.waiting.is_some() {
@@ -1004,6 +1000,15 @@ impl MatchState {
         }
         let prev_ball = self.spatial.ball_3d();
         self.ball_from = prev_ball;
+        let seen = self.spatial.touches();
+        let touches = (self.spatial.carrier(), seen.played, seen.deflected);
+        if touches.0.is_some() || touches != self.ball_course.touches {
+            self.ball_course = BallCourse {
+                from: prev_ball,
+                since: tick,
+                touches,
+            };
+        }
         self.spatial.advance_ball();
         let curr_ball = self.spatial.ball_3d();
         self.check_shot_crossing(ctx, tick, prev_ball, curr_ball);
@@ -1120,7 +1125,35 @@ impl MatchState {
         // whistle is gone (SIM 150).
         self.waiting = None;
         self.spatial.clear_sent();
-        let _ = self.apply_restart(ctx, crate::rules::kick_off(side, pitch_cm(ctx)));
+        let restart = crate::rules::kick_off(side, pitch_cm(ctx));
+        if half != Half::First {
+            // Law 8: every half starts with each player in his own half;
+            // after the break they line up in their block for the kick-off
+            // (SIM 203, T19: before, the second half and extra time started
+            // with the men where the last half had left them, some in the
+            // opponents' half). The first half starts from the line-up.
+            let restarting_home = restart.side == crate::rules::Side::Home;
+            let ids: Vec<(PlayerId, bool)> = ctx
+                .match_
+                .home
+                .players
+                .iter()
+                .map(|p| (p.id, true))
+                .chain(ctx.match_.away.players.iter().map(|p| (p.id, false)))
+                .collect();
+            for (id, home) in ids {
+                if self.spatial.agent(id).is_none() {
+                    continue;
+                }
+                if let Some(place) =
+                    self.spatial
+                        .block_target(id, restart.spot, home == restarting_home, true)
+                {
+                    self.spatial.set_position(id, place);
+                }
+            }
+        }
+        let _ = self.apply_restart(ctx, restart);
     }
 
     /// What the pitch looks like after `tick` (the tick record,
@@ -2004,6 +2037,8 @@ mod marking_tests {
                 0.8,
             ),
             100,
+            // His own best only (discipline 0), as these tests were written.
+            0.0,
         );
         let mut v2 = block_view(vec![me, mate], vec![carrier], carrier);
         v2.ours_vel = vec![(0, 0), (0, 400)];
@@ -2017,6 +2052,8 @@ mod marking_tests {
                 0.1,
             ),
             100,
+            // His own best only (discipline 0), as these tests were written.
+            0.0,
         );
         // With intesa the prediction is active: the two results need not
         // coincide (complementarity may move him); without, the prediction
@@ -2089,6 +2126,8 @@ mod marking_tests {
                     0.5,
                 ),
                 100,
+                // His own best only (discipline 0), as these tests were written.
+                0.0,
             )
         };
         let (plain, between) = (place(&plain), place(&reading));
@@ -2134,8 +2173,6 @@ mod reaction_tests {
             s.pending = Some(Pending {
                 launched: 100,
                 shot: None,
-                due_tick: 1_000,
-                outcome: Possession::Home,
                 interceptor: None,
                 passer: Some(passer),
                 receiver: Some(mate),
@@ -2190,8 +2227,6 @@ mod body_block_tests {
             s.pending = Some(Pending {
                 launched: 100,
                 shot: None,
-                due_tick: 1_000,
-                outcome: Possession::Home,
                 interceptor: None,
                 passer: Some(passer),
                 receiver: Some(mate),

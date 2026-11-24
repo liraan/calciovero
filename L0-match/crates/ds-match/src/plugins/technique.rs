@@ -160,14 +160,14 @@ impl MatchState {
         let on_target = self
             .spatial
             .ball_at_line((bx, by, bz), v, goal.0)
-            .is_some_and(|(y, z)| (y - goal.1).abs() < half && (0..bar).contains(&z));
+            .is_some_and(|(y, z)| ds_calculator::laws::in_the_goal_mouth(y - goal.1, z, half, bar));
         self.spatial.deflect_ball((bx, by, bz), v);
         self.spatial.played_by(winner);
         self.spatial.struck_shot();
+        // Law 11 at a header at goal too (SIM 203, T21).
+        self.mark_offside_at_pass(ctx, tick, winner, bx);
         self.pending = Some(Pending {
             launched: tick,
-            due_tick: tick + FLIGHT_TICKS,
-            outcome: Self::other(self.possession),
             interceptor: None,
             passer: None,
             receiver: None,
@@ -284,10 +284,10 @@ impl MatchState {
             .deflect_ball((bx, by, bz), outcome.initial_velocity);
         self.spatial.played_by(winner);
         self.spatial.struck_shot();
+        // Law 11 at a header at goal too (SIM 203, T21).
+        self.mark_offside_at_pass(ctx, tick, winner, bx);
         self.pending = Some(Pending {
             launched: tick,
-            due_tick: tick + FLIGHT_TICKS,
-            outcome: Self::other(self.possession),
             interceptor: None,
             passer: None,
             receiver: None,
@@ -541,6 +541,10 @@ impl MatchState {
         );
         self.spatial.set_carrier(None);
         self.spatial.set_ball_in_flight((from.0, from.1, 0), v);
+        // He played it (SIM 203, T7): first time he was never its carrier, so
+        // the last touch the referee reads (Laws 9, 10, 15-17) stayed the
+        // attacker's pass or an older deflection.
+        self.spatial.played_by(kicker);
         self.pending = None;
         // A clearance is not a pass: nobody receives his own (ADR-051,
         // ADR-072). The kicker needs a moment before he plays it again,
@@ -569,34 +573,49 @@ impl MatchState {
     ) {
         let Some(shooter) = shooter else { return };
         let off = ctx.hidden.offball_balance();
-        let (bx, by, bz) = self.spatial.ball_3d();
-        if bz > off.block_height_cm {
-            return;
-        }
         let m = ctx.match_;
         let shooter_home = m.home.players.iter().any(|p| p.id == shooter);
         let defenders = if shooter_home { &m.away } else { &m.home };
         let keeper = defenders.players.first().map(|p| p.id);
         let radius = self.reception_balance.loose_control_radius_cm;
-        let blocker = defenders
-            .players
-            .iter()
-            .map(|p| p.id)
-            .filter(|id| Some(*id) != keeper)
-            .find(|id| {
-                self.spatial.agent(*id).is_some_and(|a| {
-                    let reach = ctx.hidden.ball_reach_cm(*id, radius);
-                    distance_squared(a.position, (bx, by)) <= reach * reach
-                })
+        // Along the ball's way this tick, in the small steps it moved in
+        // (ADR-069), as a high ball is met (SIM 148): the first point below
+        // his block height within an outfield man's reach, the nearest of
+        // them there (SIM 203, T6: before, only where the tick ended, so a
+        // shot at 25 m/s, 2.5 m a tick, went through the man in its way;
+        // and the first of the squad's order, not the nearest).
+        let in_its_way = self
+            .spatial
+            .ball_path()
+            .into_iter()
+            .find_map(|(bx, by, bz)| {
+                if bz > off.block_height_cm {
+                    return None;
+                }
+                defenders
+                    .players
+                    .iter()
+                    .map(|p| p.id)
+                    .filter(|id| Some(*id) != keeper)
+                    .filter_map(|id| {
+                        let a = self.spatial.agent(id)?;
+                        let reach = ctx.hidden.ball_reach_cm(id, radius);
+                        let d = distance_squared(a.position, (bx, by));
+                        (d <= reach * reach).then_some((d, id))
+                    })
+                    .min()
+                    .map(|(_, id)| (id, (bx, by, bz)))
             });
-        let Some(blocker) = blocker else { return };
+        let Some((man, (bx, by, bz))) = in_its_way else {
+            return;
+        };
         let vel = self.spatial.ball_velocity();
-        let body = self.spatial.agent(blocker).map_or((bx, by), |a| a.position);
+        let body = self.spatial.agent(man).map_or((bx, by), |a| a.position);
         self.spatial.deflect_ball(
             (bx, by, bz),
             ds_calculator::obstacle::reflect_off_body(vel, body, (bx, by), off.block_rebound_milli),
         );
-        self.spatial.deflected_by(blocker);
+        self.spatial.deflected_by(man);
         self.pending = None;
         self.possession = if shooter_home {
             Possession::Away
@@ -606,7 +625,7 @@ impl MatchState {
         self.emit_event(
             ctx,
             tick,
-            Some(ActorId::Player(blocker)),
+            Some(ActorId::Player(man)),
             EventType::Block,
             serde_json::json!({ "from": shooter.slot(), "x": bx, "y": by }),
         );
@@ -798,9 +817,27 @@ impl MatchState {
     /// body's centre to the ball, at the half speed of a ball nobody
     /// masters; the pass is already over.
     fn off_the_body(&mut self, ctx: &mut MatchContext<'_>, tick: u64, id: PlayerId, by: PlayerId) {
-        // It comes off his body (OI-119): reflected about the
-        // line from his body's centre to the ball, at the half
-        // speed of a ball nobody masters (the heavy touch).
+        self.comes_off(id);
+        let retry = ctx.hidden.duel_balance().retry_ticks;
+        self.challenges.insert(id, tick + retry);
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(id)),
+            EventType::Block,
+            serde_json::json!({ "pass": true, "from": by.slot() }),
+        );
+    }
+
+    /// A ball `id` does not master comes off his body (OI-119): reflected
+    /// about the line from his body's centre to the ball, at the half speed
+    /// of a ball nobody masters (the heavy touch); a ball already going away
+    /// from him goes on. The one contact for a pass he had not reacted to,
+    /// a touch that fails, a pass he only gets a foot to (SIM 203, T2:
+    /// before, a failed touch let the ball run through him at half speed,
+    /// on its way: a defender who missed a ball rolling at his goal walked
+    /// it in).
+    fn comes_off(&mut self, id: PlayerId) {
         let v = self.spatial.ball_velocity();
         let ball = self.spatial.ball();
         let body = self.spatial.agent(id).map_or(ball, |a| a.position);
@@ -824,15 +861,6 @@ impl MatchState {
             ((rx / 2.0) as i16, (ry / 2.0) as i16, 0),
         );
         self.spatial.deflected_by(id);
-        let retry = ctx.hidden.duel_balance().retry_ticks;
-        self.challenges.insert(id, tick + retry);
-        self.emit_event(
-            ctx,
-            tick,
-            Some(ActorId::Player(id)),
-            EventType::Block,
-            serde_json::json!({ "pass": true, "from": by.slot() }),
-        );
     }
 
     /// A moving ball nobody played to `id` (SIM 130, ADR-058; ADR-064):
@@ -852,10 +880,7 @@ impl MatchState {
             return false;
         }
         if !controls {
-            let v = self.spatial.ball_velocity();
-            self.spatial
-                .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
-            self.spatial.deflected_by(id);
+            self.comes_off(id);
             let retry = ctx.hidden.duel_balance().retry_ticks;
             self.challenges.insert(id, tick + retry);
             return false;
@@ -890,9 +915,14 @@ impl MatchState {
         let reach = f64::from(crate::spatial::BODY_RADIUS_CM) * 2.0;
         #[allow(clippy::cast_possible_truncation)]
         let head = body.height_cm.round() as i32;
+        // At the pace he runs into a contest, as he will run (SIM 203, T1).
         self.spatial.intercept(
             a.position,
-            (velocity, o.acceleration * o.stride, o.v_max * o.stride),
+            (
+                velocity,
+                o.acceleration * o.stride,
+                o.v_max * o.stride * o.contest_pace_share,
+            ),
             (reach, head),
         )
     }
@@ -1109,11 +1139,9 @@ impl MatchState {
                     self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
                 }
                 if !rec.controlled {
-                    // A heavy touch: the ball runs on, slower, for whoever.
-                    let v = self.spatial.ball_velocity();
-                    self.spatial
-                        .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
-                    self.spatial.deflected_by(id);
+                    // A heavy touch: the ball comes off him, slower, for
+                    // whoever.
+                    self.comes_off(id);
                     let retry = ctx.hidden.duel_balance().retry_ticks;
                     self.challenges.insert(id, tick + retry);
                     return;
@@ -1165,6 +1193,7 @@ impl MatchState {
         };
         let wait = self.decision_time(ctx, id, opponents);
         self.latencies.insert(id, tick.saturating_add(wait));
+        self.clock_from_reception = Some(id);
     }
 
     /// An opponent the pass reaches controls it by the same touch as a
@@ -1188,10 +1217,7 @@ impl MatchState {
         if rec.controlled {
             return false;
         }
-        let v = self.spatial.ball_velocity();
-        self.spatial
-            .deflect_ball(self.spatial.ball_3d(), (v.0 / 2, v.1 / 2, 0));
-        self.spatial.deflected_by(id);
+        self.comes_off(id);
         let retry = ctx.hidden.duel_balance().retry_ticks;
         self.challenges.insert(id, tick + retry);
         self.emit_event(

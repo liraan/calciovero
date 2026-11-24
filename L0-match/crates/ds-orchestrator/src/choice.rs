@@ -215,7 +215,21 @@ impl GroundTruth {
         // the result is pure argmax; with `decision_making = 0` the factor
         // is `1 + decision_bias` and a 20%-worse option is still accepted.
         let mut chosen_index = order[0];
-        if n > 1 {
+        // Every option below his read (SIM 203, T31): he plays the one he
+        // sees best, the clearest. Before, all scores were -inf and the tie
+        // went to the lowest slot: the keeper, at any distance.
+        if effective[chosen_index] == f64::NEG_INFINITY {
+            chosen_index = (0..n)
+                .max_by(|&a, &b| {
+                    ctx.candidates[a]
+                        .visibility
+                        .total_cmp(&ctx.candidates[b].visibility)
+                        .then(scores[a].total_cmp(&scores[b]))
+                        .then(tiebreaks[b].cmp(&tiebreaks[a]))
+                })
+                .unwrap_or(chosen_index);
+        }
+        if n > 1 && effective[chosen_index].is_finite() && chosen_index == order[0] {
             // Within `(1 - decision_making) * decision_bias` of the top, as a
             // share of its size, a weak decider takes the next one.
             let top_score = effective[chosen_index];

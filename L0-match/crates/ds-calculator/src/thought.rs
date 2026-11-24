@@ -299,7 +299,7 @@ pub fn chance(
     chance_with(
         position,
         goal_cone,
-        (kick, kick.error_rad(0.5, 0.75, 0.85, 0.0)),
+        (kick, kick.error_rad(0.5, 0.75, 0.85, 0.0), 0.85),
         save,
         t,
     )
@@ -308,12 +308,15 @@ pub fn chance(
 /// The chance of his own shot (ADR-052, he knows his own foot; ADR-031).
 ///
 /// As [`chance`], with the spread of his own kick, `spread_rad`, instead of
-/// an average shooter's: the foot he strikes with, the power, the pressure.
+/// an average shooter's: the foot he strikes with, the power, the pressure;
+/// and the ball at the speed of the `power` he strikes it with (SIM 203,
+/// T28: before, every shot was thought at the strong shot's speed, so a
+/// placed one, slower, gave the keeper the time of a strong one).
 #[must_use]
 pub fn chance_with(
     (distance_cm, keeper_off_cm, keeper_shift_cm): (f64, f64, f64),
     goal_cone: f64,
-    (kick, spread_rad): (&KickBalance, f64),
+    (kick, spread_rad, power): (&KickBalance, f64, f64),
     save: &SaveBalance,
     t: &ThoughtBalance,
 ) -> f64 {
@@ -321,7 +324,7 @@ pub fn chance_with(
     // goal looks narrower and the ball has had less time.
     let meet = (distance_cm - keeper_off_cm.clamp(0.0, distance_cm)).max(1.0);
     let share = meet / distance_cm.max(1.0);
-    let speed = kick.speed(0.85, 0.5).max(1.0);
+    let speed = kick.speed(power, 0.5).max(1.0);
     let flight = t.flight_ticks(meet, speed);
     let standing = save.standing_reach_cm(save.reference_keeper_height_cm);
     let reach = save.reach_cm(standing, 0.5, 0.5, flight);
@@ -503,5 +506,20 @@ mod tests {
             "spot {spot}, far {far}, tight {tight}"
         );
         assert!(far >= 0.0);
+    }
+
+    /// SIM 203 (T28): a placed shot, slower, gives the keeper more time
+    /// than a strong one from the same spot with the same spread; the
+    /// shooter thinks it at its own speed.
+    #[test]
+    fn a_slower_shot_is_thought_at_its_speed() {
+        let (k, s, t) = (
+            KickBalance::load(),
+            SaveBalance::load(),
+            ThoughtBalance::load(),
+        );
+        let strong = chance_with((1600.0, 0.0, 0.0), 0.5, (&k, 0.02, 0.85), &s, &t);
+        let placed = chance_with((1600.0, 0.0, 0.0), 0.5, (&k, 0.02, 0.35), &s, &t);
+        assert!(placed < strong, "placed {placed}, strong {strong}");
     }
 }

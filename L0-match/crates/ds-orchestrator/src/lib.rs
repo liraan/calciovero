@@ -478,12 +478,16 @@ impl GroundTruth {
             k.aim_height_cm(ctx.contact_height) + dz,
         );
 
-        // on_target: geometric, arrival inside the goal mouth. Derived,
-        // not a field of the strike (unchanged).
+        // on_target: geometric, the whole ball inside the goal mouth where
+        // it is struck to, by the one judge of the goal (Law 10; SIM 203:
+        // before, the ball's centre, a radius inside the woodwork).
         let law = ds_calculator::laws::law1();
-        let (goal_half_width_cm, goal_height_cm) = (law.goal_half_width_cm, law.goal_height_cm);
-        let on_target =
-            (to.1 - ctx.to.1).abs() < goal_half_width_cm && to.2 < goal_height_cm && to.2 >= 0;
+        let on_target = ds_calculator::laws::in_the_goal_mouth(
+            to.1 - ctx.to.1,
+            to.2,
+            law.goal_half_width_cm,
+            law.goal_height_cm,
+        );
 
         // shot_type: geometric, derived from the shot position. Unchanged.
         let dist_cm = (ctx.to.0 - ctx.from.0).abs();
@@ -494,7 +498,7 @@ impl GroundTruth {
             ShotType::Lob
         } else if dist_cm > 2000 {
             ShotType::Power
-        } else if (to.1 - ctx.to.1).abs() > goal_half_width_cm / 2 {
+        } else if (to.1 - ctx.to.1).abs() > law.goal_half_width_cm / 2 {
             ShotType::Placed
         } else {
             ShotType::Normal
@@ -1380,7 +1384,10 @@ impl GroundTruth {
         scene: &offball::OfferPlaceScene<'_>,
     ) -> (i32, i32) {
         let misread = self.offside_line_misread_cm(player);
-        offball::choose_offer_place(scene, misread)
+        // His discipline, his own (ADR-112): how much of his own best he
+        // gives up for the place his coach asks (SIM 203, ADR-059 §4).
+        let discipline = f64::from(self.latents_for(player).psychological.discipline);
+        offball::choose_offer_place(scene, misread, discipline)
     }
 
     /// How far forward `player` misreads the offside line, cm (OI-98): ~2 m

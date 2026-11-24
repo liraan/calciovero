@@ -699,7 +699,11 @@ pub struct OfferPlaceScene<'a> {
 /// himself, `carrier` the man on the ball, `ball` where it is.
 #[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
 #[must_use]
-pub fn choose_offer_place(scene: &OfferPlaceScene<'_>, line_misread_cm: i32) -> (i32, i32) {
+pub fn choose_offer_place(
+    scene: &OfferPlaceScene<'_>,
+    line_misread_cm: i32,
+    discipline: f64,
+) -> (i32, i32) {
     const PREDICT_TICKS: i32 = 5;
     let OfferPlaceScene {
         me,
@@ -813,13 +817,26 @@ pub fn choose_offer_place(scene: &OfferPlaceScene<'_>, line_misread_cm: i32) -> 
             options.push((v, p));
         }
     }
-    // The zone of his role, first: the coach's ask (ADR-059 §4).
+    // The zone of his role, first: the coach's ask (ADR-059 §4); kept onside
+    // like every other place he weighs (SIM 203, T24, Law 11: before, the
+    // place of his role was taken as it was, beyond the line, and near their
+    // goal it was worth most, so the man holding it stood offside).
+    let anchor = (onside(anchor.0).clamp(0, length), anchor.1);
     let zone = (value(anchor), anchor);
     let best = options
         .iter()
         .copied()
         .fold(zone, |b, o| if o.0 > b.0 { o } else { b });
-    best.1
+    // The coach's ask against his own best, as for every act he is asked
+    // (`obey`, ADR-059 §4): he holds his zone if it is worth at least
+    // `1 - discipline` of his best (SIM 203: before, only a tie kept it,
+    // and with his zone onside the central spaces always won, so a team
+    // asked to play wide played narrower than one asked to play narrow).
+    if zone.0 >= best.0 * (1.0 - discipline.clamp(0.0, 1.0)) {
+        zone.1
+    } else {
+        best.1
+    }
 }
 
 #[cfg(test)]

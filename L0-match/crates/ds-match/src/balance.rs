@@ -84,8 +84,21 @@ impl StoppageTime {
 /// when the contribution is zero (ADR-026 §2).
 #[must_use]
 pub fn stoppage_for(events: &[ds_stats::MatchEvent], table: &StoppageTime) -> u32 {
-    // One sum (code audit D: it was written here and in `total`).
-    table.total(events.iter().map(|e| e.event_type))
+    // One sum (code audit D: it was written here and in `total`). A foul on
+    // which the advantage was played stopped nothing (Law 7: the time lost),
+    // so it adds none (SIM 203, T15: before, 20 s for it too).
+    table.total(
+        events
+            .iter()
+            .filter(|e| {
+                !(e.event_type == EventType::Foul
+                    && e.fields
+                        .get("advantage")
+                        .and_then(serde_json::Value::as_bool)
+                        == Some(true))
+            })
+            .map(|e| e.event_type),
+    )
 }
 
 /// The embedded influence file: the pressure's radius and hysteresis.
@@ -302,6 +315,18 @@ mod tests {
             make_event(EventType::Foul),
         ];
         assert_eq!(stoppage_for(&events, &table), 140);
+    }
+
+    /// SIM 203 (T15, Law 7): a foul on which the advantage was played
+    /// stopped nothing, so it adds no time; one that stopped play does.
+    #[test]
+    fn a_foul_played_on_adds_no_stoppage() {
+        let table = StoppageTime::load();
+        let mut on = make_event(EventType::Foul);
+        on.fields = serde_json::json!({ "advantage": true });
+        let stopped = make_event(EventType::Foul);
+        assert_eq!(stoppage_for(&[on], &table), table.base);
+        assert_eq!(stoppage_for(&[stopped], &table), table.base + table.foul);
     }
 
     #[test]

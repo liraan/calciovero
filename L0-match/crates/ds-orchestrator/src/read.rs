@@ -767,7 +767,12 @@ fn foresee(scene: &PerceivedScene, confidence: f64, at: (i32, i32)) -> f64 {
         return confidence;
     };
     let d = distance_squared(me, at).isqrt() as f64;
-    if d <= scene.horizon_cm {
+    // A nothing he knows now stays nothing (SIM 203, T25): the mate offside
+    // as the ball is played (Law 11), the ball that would end in his own
+    // net, a touch no one could make. The horizon blurs how a play goes on,
+    // not a fact of this moment. Before, beyond it a zero rose towards a
+    // half, and long balls to men offside were worth playing.
+    if d <= scene.horizon_cm || confidence <= 0.0 {
         return confidence;
     }
     let seen = (scene.horizon_cm / d.max(1.0)).clamp(0.0, 1.0);
@@ -875,7 +880,7 @@ fn shot_candidates(
                 let chance = ds_calculator::thought::chance_with(
                     (goal_dist as f64, off, shift),
                     goal_cone(pos, goal),
-                    (&m.kick, spread),
+                    (&m.kick, spread, power),
                     &m.save,
                     &m.thought,
                 );
