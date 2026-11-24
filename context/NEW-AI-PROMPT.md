@@ -77,7 +77,23 @@ Hai già eseguito `bash context/scripts/session.sh start` all'inizio: se non l'h
 - **I piani** (`context/plans/`) si scrivono in italiano; il codice, i commit e i documenti di `L0-match/design/` in inglese; gli ADR, dal 112, in italiano.
 - **La stagione:** `cargo test --release -p ds-standings` gioca il golden piccolo (4 squadre, 12 partite); `-- --ignored the_first_series_is_played_whole` la Serie A intera (circa 14 minuti). Un cambio della stagione alza `SEASON_VERSION` (`L1-season/crates/ds-season/src/lib.rs`) con la sua voce in `L1-season/CHANGELOG-SEASON.md`.
 
-## 8. Onestà
+## 8. Se puoi usare più processi e subagenti insieme
+
+Usali: il lavoro qui è fatto di attese lunghe (compilazioni, il workspace di test, le 60 partite di `ds-reference`, la stagione intera). Le regole perché il parallelo non rompa niente:
+
+- **Uno solo scrive su `main`, uno solo committa.** I subagenti leggono, misurano e propongono: rispondono con un rapporto compatto (file:riga, la catena causa → effetto, quanto ne sono certi, la patch proposta come diff), non con file modificati. Sei tu a scegliere, ad applicare e a fare il commit in due passi.
+- **Una cartella di build per processo.** Due `cargo` sulla stessa `target/` si aspettano a vicenda, e su Windows un `.exe` aperto blocca il linker (LNK1104). Dai a ogni processo la sua: `CARGO_TARGET_DIR=target-a`, `target-b`, … (la prima compilazione di ognuna costa qualche minuto, poi è incrementale). `target-claude/` è di Claude Code: non usarla.
+- **Un subagente che cambia codice lavora in un worktree suo** (`git worktree add ../cv-<nome> main`), su un ramo `fix/<nome>`, con la sua cartella di build. Tu porti in `main` la sua patch dopo averla letta; due patch che toccano lo stesso file non vanno in parallelo.
+- **Cosa conviene in parallelo:**
+  - la lettura iniziale (§3), divisa fra subagenti per aree (motore, regole, orchestratore, stagione, documenti), ognuno con il suo riassunto in 20 righe;
+  - le indagini sulle metriche fuori banda, una per subagente, ognuna con la sua sonda (`tools/ds-reference/examples/`) e i suoi semi;
+  - il C2 in due processi: `clippy` e `test` in due cartelle di build, `fmt --check` e `gates.sh` subito (costano secondi);
+  - la misura su 60 semi in sottofondo mentre scrivi i documenti (CHANGELOG-SIM, L0-CALIBRATION, HANDOFF).
+- **Cosa non si fa in parallelo:** due cambiamenti di comportamento insieme (ogni `SIM_VERSION` ha una causa sola e una misura sola); rigenerare il golden e i semi mentre un altro processo cambia il motore; misurare un ramo che non è quello che committerai.
+- **A5-bis vale anche per i subagenti:** chi propone un numero non guarda la metrica che produce. Se un subagente misura e un altro corregge, la correzione si giustifica con la catena causa → effetto, non con la misura.
+- **Il rapporto di ogni subagente entra nel log di `HANDOFF.md`** (una riga: chi, cosa, l'esito), così chi riprende sa cosa è già stato guardato.
+
+## 9. Onestà
 
 Se non hai letto un file, dillo. Non inventare mai numeri, hash, contenuti di file o output di strumenti: "non lo so" è meglio di un'invenzione. Dopo ogni modifica verifica che sia avvenuta (`git diff`, `grep -c`), non solo che il comando sia uscito senza errori. Un test che non può fallire è peggio di nessun test. "Deciso" non vuol dire "fatto": di' quale dei due.
 

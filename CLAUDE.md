@@ -3,8 +3,8 @@
 Rispondi in italiano. Lavora in autonomia; chiedi solo per scelte che toccano la dottrina o che il maintainer deve prendere.
 
 ## Per prima cosa, a ogni ripresa
-1. Leggi `context/STATE.md`: il bookmark ("Last commit verified"), "Dove siamo", il **Prossimo**, la tabella DD.
-2. Leggi il piano in corso in `context/plans/` (oggi `CODE-AUDIT.md`, in fondo la "Terza fase").
+1. Leggi `context/REVIEW-QUEUE.md` (le righe "aperto": il lavoro fatto dall'operatore senza di te) e la coda di `context/HANDOFF.md` §4 con il suo registro. Il prompt corto per ripartire è `context/prompts/CLAUDE-RESUME.md`.
+2. Leggi in `context/STATE.md` il bookmark ("Last commit verified") e il **Prossimo**; il resto dei piani solo se una riga lo chiede.
 3. `git status` e `git log --oneline -5`: lavoro su disco non committato va prima verificato e chiuso.
 
 ## Regole del progetto (non negoziabili)
