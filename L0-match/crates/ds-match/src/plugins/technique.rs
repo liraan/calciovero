@@ -892,10 +892,12 @@ impl MatchState {
             });
         let velocity = (f64::from(a.velocity.0), f64::from(a.velocity.1));
         let reach = f64::from(crate::spatial::BODY_RADIUS_CM) * 2.0;
+        #[allow(clippy::cast_possible_truncation)]
+        let head = body.height_cm.round() as i32;
         self.spatial.intercept(
             a.position,
             (velocity, o.acceleration * o.stride, o.v_max * o.stride),
-            reach,
+            (reach, head),
         )
     }
 

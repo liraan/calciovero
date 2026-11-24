@@ -8,6 +8,14 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 199 — Ognuno incontra il pallone alto con la sua testa; la panchina legge l'orologio della trasmissione (DD-59)
+
+Audit del codice C5: il pallone alto si incontrava a 180 cm per tutti; ora all'altezza di ciascuno (`intercept`, `drop_point`), e dove serve un uomo medio con `movement.json` `height_ref`. Trovato durante il lavoro: la panchina confrontava il minuto di un cambio pianificato e delle pause per l'acqua con l'orologio che corre nel recupero; un primo tempo con un recupero lungo arrivava al "60'" e faceva lì il cambio del secondo tempo. Ora nel recupero l'orologio resta a "45'+".
+
+Con LUNA: dito = 180 cm, un minuto; luna = il corpo di ciascuno e l'orologio della partita.
+
+Golden rigenerati; semi coppa 96, pari al 90' 43, decisa 42, colpo 48. ds-reference 42..101: **5 su 22** (penalties, ground_duels, fouls, red_cards, goal_kicks); gol 7.17, autogol 0.87, tiri 45.03, in porta 20.78, passaggi 1843.65, falli 32.33, gialli 1.22, rossi 0.67, parate 13.48, fuorigioco 12.52, recupero 8.87/9.08.
+
 ## 198 — Il pallone vola nella stessa aria per chi calcia e per chi pensa (DD-58)
 
 Audit del codice B4: il tiro alzava il pallone calcolando il volo senza l'attrito dell'aria (la palla saliva meno del previsto), la probabilità del tiro e del pallonetto immaginati lo facevano volare a velocità costante. Ora `resolve_shot` e `ThoughtBalance::flight_ticks` usano il tempo di volo con l'aria di `ball.json`, come il passaggio alzato dal SIM 110.

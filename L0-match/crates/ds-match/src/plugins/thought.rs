@@ -624,7 +624,16 @@ impl MatchState {
             .pending
             .as_ref()
             .filter(|p| p.shot.is_none())
-            .and_then(|_| self.spatial.drop_point(180));
+            // Where it comes down to an average man's head (`movement.json`
+            // `height_ref`; the literal 180 until SIM 199): the reading of
+            // who is nearest, before each man's own.
+            .and_then(|_| {
+                #[allow(clippy::cast_possible_truncation)]
+                let head = ds_calculator::movement::MovementBalance::load()
+                    .height_ref_cm
+                    .round() as i32;
+                self.spatial.drop_point(head)
+            });
         let passing_home = self.possession == Possession::Home;
         let meets_pass = self
             .pending
@@ -767,8 +776,13 @@ impl MatchState {
                 // the men around him do. A ball nobody plays to is anyone's
                 // where it comes down (a clearance, a goal kick, a header
                 // away). The keeper reads the flight, not the ball's now.
-                let against =
-                    air_drop.or_else(|| ball_loose.then(|| self.spatial.drop_point(180)).flatten());
+                let against = air_drop.or_else(|| {
+                    // To his own head (SIM 199).
+                    let own_head = crate::spatial::head_of(&self.bodies, id);
+                    ball_loose
+                        .then(|| self.spatial.drop_point(own_head))
+                        .flatten()
+                });
                 let drop_in_box =
                     against.is_some_and(|d| in_keeper_box(d, home, (length, width), &off));
                 // Courage (ADR-057, OI-109): he goes up for a high ball where a

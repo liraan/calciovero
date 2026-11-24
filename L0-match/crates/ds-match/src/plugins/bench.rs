@@ -229,8 +229,7 @@ impl MatchState {
             return;
         }
         let tps = u64::from(ticks_per_second).max(1);
-        let in_half = tick.saturating_sub(self.half_start_tick) / tps / 60;
-        let minute = in_half + u64::from(self.half.offset_minutes());
+        let minute = self.broadcast_minute(tick, tps);
         let mut bench = std::mem::take(&mut self.bench_plugin);
         let mut world = StateWorld {
             state: self,
@@ -242,6 +241,16 @@ impl MatchState {
         self.bench_plugin = bench;
     }
 
+    /// The broadcast clock's minute: in the stoppage of a period it stays at
+    /// its end ("45'+"), so a change planned for the 60th minute, or a
+    /// water break, comes in the second half (SIM 199; before, a first half
+    /// with a long stoppage reached "60'" and made the change there).
+    fn broadcast_minute(&self, tick: u64, tps: u64) -> u64 {
+        let in_half = (tick.saturating_sub(self.half_start_tick) / tps / 60)
+            .min(u64::from(self.half.regulation_minutes()));
+        in_half + u64::from(self.half.offset_minutes())
+    }
+
     /// The water breaks of the competition (ADR-068; FIFA's cooling
     /// breaks): at the first stoppage after each one's minute the referee
     /// stops play, and it is a pause for the bench.
@@ -250,8 +259,7 @@ impl MatchState {
             return;
         }
         let tps = u64::from(ctx.config.ticks_per_second).max(1);
-        let in_half = tick.saturating_sub(self.half_start_tick) / tps / 60;
-        let minute = in_half + u64::from(self.half.offset_minutes());
+        let minute = self.broadcast_minute(tick, tps);
         let Some(at) =
             crate::rules::water_break_at(&ctx.match_.rules, self.water_breaks_done, minute)
         else {

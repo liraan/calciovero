@@ -36,8 +36,21 @@ use ds_core::geometry::distance_squared;
 use ds_core::ids::PlayerId;
 use ds_model::{Pitch, Squad};
 
-/// The height a ball in the air is met at, cm: a player's head.
-const HEAD_HEIGHT_CM: i32 = 180;
+/// The height a ball in the air is met at by a man of `height_cm`: his head
+/// (SIM 199, code audit C5: it was 180 cm for everyone).
+#[allow(clippy::cast_possible_truncation)]
+fn head_cm(height_cm: f64) -> i32 {
+    height_cm.round() as i32
+}
+
+/// The head of `id`, or of the median professional (`movement.json`
+/// `height_ref`) for a man with no body on record.
+pub(crate) fn head_of(bodies: &BTreeMap<PlayerId, PlayerBody>, id: PlayerId) -> i32 {
+    bodies.get(&id).map_or_else(
+        || head_cm(ds_calculator::movement::MovementBalance::load().height_ref_cm),
+        |b| head_cm(b.height_cm),
+    )
+}
 
 /// A carrier's touch (plan L0-CLOSE 11): where he played the ball from,
 /// which way, how hard, and when he meets it again.
@@ -1126,7 +1139,7 @@ impl SpatialState {
         &self,
         from: (i32, i32),
         (velocity, accel, top): ((f64, f64), f64, f64),
-        reach: f64,
+        (reach, head): (f64, i32),
     ) -> Option<(i32, i32)> {
         if matches!(self.ball, BallState::Possessed) {
             return None;
@@ -1154,7 +1167,7 @@ impl SpatialState {
             let vz = if stopped { 0 } else { vz };
             // Within his height: coming down to his head or lower, or on the
             // grass; a ball still climbing is not his yet.
-            if z > HEAD_HEIGHT_CM || (z > 0 && vz > 0) {
+            if z > head || (z > 0 && vz > 0) {
                 continue;
             }
             at = Some((x, y));
@@ -1749,7 +1762,6 @@ impl SpatialState {
             let ty = (y_target.round() as i32).clamp(0, pitch_width_cm);
             keeper_targets.push((gk, (tx, ty)));
         }
-        let drop = self.drop_point(HEAD_HEIGHT_CM);
         #[allow(clippy::cast_precision_loss)]
         let overdue = self
             .touch
@@ -1816,7 +1828,9 @@ impl SpatialState {
                 // player, not at the ball that can lie ahead of his foot:
                 // he is the target, the ball is only contested (SIM 181).
                 if act == Some(ds_orchestrator::OffBallAct::GoToBall) {
-                    drop.unwrap_or(ball)
+                    // Where it comes down to his own head (SIM 199).
+                    let head = head_of(bodies, entry.0);
+                    self.drop_point(head).unwrap_or(ball)
                 } else if act == Some(ds_orchestrator::OffBallAct::Press) {
                     self.carrier
                         .and_then(|c| self.agents.get(&c))
@@ -1896,7 +1910,8 @@ impl SpatialState {
                 && Some(entry.0) != self.carrier
             {
                 let reach = f64::from(BODY_RADIUS_CM) * 2.0;
-                self.intercept(entry.1, (v_prev, accel, top), reach)
+                let head = head_of(bodies, entry.0);
+                self.intercept(entry.1, (v_prev, accel, top), (reach, head))
                     .unwrap_or(target)
             } else {
                 target
@@ -3018,17 +3033,17 @@ mod tests {
         let mut s = make_state();
         s.set_ball_in_flight((3000, 3400, 0), (60, 0, 0));
         let fast = s
-            .intercept((4000, 2400), ((0.0, 0.0), 5.0, 90.0), 0.0)
+            .intercept((4000, 2400), ((0.0, 0.0), 5.0, 90.0), (0.0, 180))
             .expect("rolling");
         let slow = s
-            .intercept((4000, 2400), ((0.0, 0.0), 2.0, 40.0), 0.0)
+            .intercept((4000, 2400), ((0.0, 0.0), 2.0, 40.0), (0.0, 180))
             .expect("rolling");
         assert!(fast.0 > 3000 && slow.0 > fast.0, "{fast:?} {slow:?}");
         // In the air (SIM_VERSION 111): met where it comes down within his
         // height, ahead of where it is now, not chased.
         s.set_ball_in_flight((3000, 3400, 0), (60, 0, 50));
         let lofted = s
-            .intercept((4000, 2400), ((0.0, 0.0), 5.0, 90.0), 0.0)
+            .intercept((4000, 2400), ((0.0, 0.0), 5.0, 90.0), (0.0, 180))
             .expect("met on its path");
         assert!(lofted.0 > 3000, "{lofted:?}");
     }
@@ -3040,9 +3055,9 @@ mod tests {
     fn a_man_running_away_meets_the_ball_no_sooner_than_one_standing() {
         let mut s = make_state();
         s.set_ball_in_flight((3000, 3400, 0), (60, 0, 0));
-        let still = s.intercept((4000, 2400), ((0.0, 0.0), 3.0, 80.0), 0.0);
-        let away = s.intercept((4000, 2400), ((0.0, -60.0), 3.0, 80.0), 0.0);
-        let toward = s.intercept((4000, 2400), ((0.0, 60.0), 3.0, 80.0), 0.0);
+        let still = s.intercept((4000, 2400), ((0.0, 0.0), 3.0, 80.0), (0.0, 180));
+        let away = s.intercept((4000, 2400), ((0.0, -60.0), 3.0, 80.0), (0.0, 180));
+        let toward = s.intercept((4000, 2400), ((0.0, 60.0), 3.0, 80.0), (0.0, 180));
         let (still, away, toward) = (
             still.expect("met"),
             away.expect("met"),
