@@ -90,9 +90,9 @@ fn season_full(
     s
 }
 
-/// The fingerprint of the small season at `SEASON_VERSION` 6 and
+/// The fingerprint of the small season at `SEASON_VERSION` 7 and
 /// `SIM_VERSION` 205; regenerate on a bump of either.
-const SMALL_GOLDEN: &str = "5c40f9b6b07024e73116ab92fcf6023b694f4270deb0218dfa4c094495724dc3";
+const SMALL_GOLDEN: &str = "03618dc9205e348f5ab41ad26e57214ce89d0d1d860f4232bbc92f3616630b21";
 
 #[test]
 fn a_small_league_is_played_whole_by_the_engine() {
@@ -112,6 +112,14 @@ fn a_small_league_is_played_whole_by_the_engine() {
     );
     let played: Vec<_> = s.events.iter().filter(|e| e.kind == MATCH_PLAYED).collect();
     assert_eq!(played.len(), 12, "4 clubs, home and away");
+    assert_eq!(
+        s.events
+            .iter()
+            .filter(|e| e.kind == ds_coach::COACH_APPOINTED)
+            .count(),
+        4,
+        "a coach for every club, on the first morning"
+    );
     let get = |e: &SeasonEvent, k: &str| -> u32 {
         e.fields
             .iter()
@@ -199,7 +207,7 @@ fn a_banned_man_never_lines_up() {
 #[test]
 fn the_human_coach_lines_up_his_side() {
     let p = pack(4);
-    let mut given = ds_coach::choose(&p, 42, 0, &[], 0.0);
+    let mut given = ds_coach::choose(&p, 42, 0, &ds_coach::Today::default());
     given.places.swap(9, 10);
     let mut twice = given.places.clone();
     twice[1] = twice[2];

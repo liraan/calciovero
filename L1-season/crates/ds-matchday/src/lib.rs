@@ -19,7 +19,7 @@ use std::collections::BTreeMap;
 
 use ds_body::{BODIES_AT_KICK_OFF, BODIES_FIELD, read_bodies, write_bodies};
 use ds_calendar::{FIXTURE_SCHEDULED, Fixture};
-use ds_coach::{LINEUP_ANNOUNCED, Lineup, PLACES, lineup_of};
+use ds_coach::{LINEUP_ANNOUNCED, Lineup, lineup_of};
 use ds_core::ids::{MatchId, PlayerId, RefereeId, SquadId};
 use ds_model::{
     BlockHeight, FormationId, Instruction, Intention, Match, MatchRules, MatchSeed, Order,
@@ -74,8 +74,8 @@ fn side(
 ) -> Result<(Squad, Vec<(PlayerId, PlayerId)>), PluginError> {
     let mut keys = Vec::new();
     let mut xi = Vec::with_capacity(11);
-    let mut subs = Vec::with_capacity(5);
-    for (i, (id, role)) in lineup.places.iter().zip(PLACES).enumerate() {
+    let mut subs = Vec::with_capacity(lineup.places.len().saturating_sub(11));
+    for (i, (id, role)) in lineup.places.iter().zip(lineup.roles()).enumerate() {
         let p = squad
             .iter()
             .find(|p| p.id == *id)

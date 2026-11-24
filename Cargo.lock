@@ -883,6 +883,7 @@ dependencies = [
  "ds-calendar",
  "ds-core",
  "ds-discipline",
+ "ds-model",
  "ds-orchestrator",
  "ds-roster",
  "ds-season-api",

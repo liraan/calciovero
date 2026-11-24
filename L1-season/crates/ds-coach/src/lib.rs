@@ -1,18 +1,27 @@
-//! `ds-coach` — the coach plugin (`L1-COACH.md`; ADR-114).
+//! `ds-coach` — the coach plugin (`L1-COACH.md`; ADR-114; the study
+//! `L1-COACH-STUDY.md`, decision BM).
 //!
 //! Every club has a coach, an actor like the players: his roots in the
-//! vault, his choice in `ds-orchestrator`. Before the day's matches he
-//! announces the eleven, the bench and the plan (the block and the width of
-//! his game idea). The choices belong to the role `coach` (decision AI):
-//! when the human player takes a club's coach, his choices are its input.
+//! vault, his choice in `ds-orchestrator`. On the first morning every coach
+//! is told (`CoachAppointed`: the pack's `coaches.json` or the seed). Before
+//! the day's matches each announces the eleven, the bench and the plan. The
+//! choices belong to the role `coach` (decision AI): when the human player
+//! takes a club's coach, his choices are its input.
+
+use std::collections::BTreeMap;
 
 use ds_calendar::FIXTURE_SCHEDULED;
 use ds_core::ids::PlayerId;
-use ds_season_api::{Moment, PluginCard, PluginError, SeasonPlugin, SeasonWorld, Tier};
+use ds_season_api::{
+    Moment, PluginCard, PluginError, SeasonEvent, SeasonPlugin, SeasonWorld, Tier,
+};
 use ds_world::Pack;
 
 /// The event of a club's line-up for the day.
 pub const LINEUP_ANNOUNCED: &str = "LineupAnnounced";
+
+/// The event of a club's coach, on the first morning.
+pub const COACH_APPOINTED: &str = "CoachAppointed";
 
 /// The role the line-up and the plan belong to (decision AI).
 pub const ROLE: &str = "coach";
@@ -20,9 +29,8 @@ pub const ROLE: &str = "coach";
 /// Where the coaches' identities start in the vault (ADR-114 §1).
 pub const COACH_KEY_BASE: u32 = 900_000;
 
-/// The places of the plan, in order: the eleven of the 4-4-2 (the order of
-/// the formation grid), then the bench, one per line.
-pub const PLACES: [&str; 16] = [
+/// The eleven of the 4-4-2, in the order of the formation grid.
+pub const XI: [&str; 11] = [
     "goalkeeper",
     "full_back",
     "centre_back",
@@ -33,20 +41,56 @@ pub const PLACES: [&str; 16] = [
     "central_midfielder",
     "wide_midfielder",
     "striker",
-    "striker",
-    "goalkeeper",
-    "centre_back",
-    "central_midfielder",
-    "wide_midfielder",
     "striker",
 ];
+
+/// The outfield roles the bench takes in turn after its keeper (ADR-114 §7):
+/// each the best man left for it, not "one per line".
+const BENCH_TURN: [&str; 5] = [
+    "centre_back",
+    "central_midfielder",
+    "wide_midfielder",
+    "striker",
+    "full_back",
+];
+
+/// The places of a plan with `bench` substitutes: the eleven, then a keeper,
+/// then the outfield roles in turn.
+#[must_use]
+pub fn places(bench: usize) -> Vec<&'static str> {
+    let mut p = XI.to_vec();
+    for i in 0..bench {
+        p.push(if i == 0 {
+            "goalkeeper"
+        } else {
+            BENCH_TURN[(i - 1) % BENCH_TURN.len()]
+        });
+    }
+    p
+}
+
+/// How many substitutes `club`'s coach names: his series' rule
+/// (`nation.json`), up to what the engine can play (`MAX_BENCH`); without
+/// a rule, what the engine can play.
+#[must_use]
+pub fn bench_for(pack: &Pack, club: u32) -> usize {
+    let engine = ds_model::squad::MAX_BENCH;
+    let series = pack
+        .clubs
+        .get(club as usize)
+        .map_or(0, |c| c.series as usize);
+    pack.series
+        .get(series)
+        .and_then(|s| s.bench)
+        .map_or(engine, |b| (b as usize).min(engine))
+}
 
 /// A club's line-up: the identities for the places, in order, and the plan.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Lineup {
     /// The club.
     pub club: u32,
-    /// The identities of the places, in the order of [`PLACES`].
+    /// The identities of the places, in the order of [`places`].
     pub places: Vec<u32>,
     /// The block: 0 low, 1 middle, 2 high.
     pub block: u8,
@@ -54,19 +98,34 @@ pub struct Lineup {
     pub width: u8,
 }
 
-/// The line-up `club`'s coach chooses from his squad (ADR-114 §3-4), but
-/// for the men who may not play (banned: `ds-discipline`), against an
-/// opponent at `pressure` (the points a match gap, over three).
+impl Lineup {
+    /// The role of each place.
+    #[must_use]
+    pub fn roles(&self) -> Vec<&'static str> {
+        places(self.places.len().saturating_sub(XI.len()))
+    }
+}
+
+/// What the coach knows of the day when he chooses.
+#[derive(Debug, Clone, Default)]
+pub struct Today {
+    /// Who may not play (banned: `ds-discipline`).
+    pub unavailable: Vec<u32>,
+    /// The opponent's points a match less his own side's, over three.
+    pub pressure: f64,
+    /// The day each man last started, if he did (the tie-break, ADR-114 §7).
+    pub last_started: BTreeMap<u32, u32>,
+}
+
+/// The line-up `club`'s coach chooses from his squad (ADR-114 §3-4, §7) on
+/// a day like `today`.
 #[must_use]
-pub fn choose(
-    pack: &Pack,
-    world_seed: u64,
-    club: u32,
-    unavailable: &[u32],
-    pressure: f64,
-) -> Lineup {
+pub fn choose(pack: &Pack, world_seed: u64, club: u32, today: &Today) -> Lineup {
     let mut squad = ds_roster::make_squad(pack, world_seed, club);
-    squad.retain(|p| !unavailable.contains(&p.id));
+    squad.retain(|p| !today.unavailable.contains(&p.id));
+    // At an equal estimate, who started least recently (never first), then
+    // the lowest identity: the actor keeps the first of equals in this order.
+    squad.sort_by_key(|p| (today.last_started.get(&p.id).map_or(0, |d| d + 1), p.id));
     let players: Vec<(PlayerId, String)> = squad
         .iter()
         .map(|p| (PlayerId::new(p.id, 0), p.role.clone()))
@@ -75,11 +134,11 @@ pub fn choose(
     let mut actor = ds_orchestrator::GroundTruth::for_world(world_seed, &players);
     let coach = PlayerId::new(COACH_KEY_BASE + club, 0);
     let places = actor
-        .choose_lineup(coach, &ids, &PLACES)
+        .choose_lineup(coach, &ids, &places(bench_for(pack, club)))
         .iter()
         .map(|p| p.slot())
         .collect();
-    let (block, width) = actor.coach_intention(coach, pressure);
+    let (block, width) = actor.coach_intention(coach, today.pressure);
     Lineup {
         club,
         places,
@@ -90,7 +149,7 @@ pub fn choose(
 
 /// Reads a line-up back from its event.
 #[must_use]
-pub fn lineup_of(e: &ds_season_api::SeasonEvent) -> Option<Lineup> {
+pub fn lineup_of(e: &SeasonEvent) -> Option<Lineup> {
     let get = |k: &str| {
         e.fields
             .iter()
@@ -108,13 +167,23 @@ pub fn lineup_of(e: &ds_season_api::SeasonEvent) -> Option<Lineup> {
     })
 }
 
+/// The name of `club`'s coach: the pack's, or made from the seed.
+#[must_use]
+pub fn coach_name(pack: &Pack, world_seed: u64, club: u32) -> String {
+    pack.coaches
+        .iter()
+        .find(|c| c.club == club)
+        .and_then(|c| c.name.clone())
+        .unwrap_or_else(|| pack.player_name(world_seed, u64::from(COACH_KEY_BASE + club)))
+}
+
 /// A line-up the human player gives for his club (decision AI): an input
 /// with its day (ADR-060).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HumanLineup {
     /// The day it is for.
     pub day: u32,
-    /// The identities of the places, in the order of [`PLACES`].
+    /// The identities of the places, in the order of [`places`].
     pub places: Vec<u32>,
     /// The block: 0 low, 1 middle, 2 high.
     pub block: u8,
@@ -137,13 +206,9 @@ pub struct Coach {
 }
 
 /// Why a human line-up cannot be played, if it cannot.
-fn refused(l: &HumanLineup, squad: &[u32], unavailable: &[u32]) -> Option<String> {
-    if l.places.len() != PLACES.len() {
-        return Some(format!(
-            "{} places, the plan has {}",
-            l.places.len(),
-            PLACES.len()
-        ));
+fn refused(l: &HumanLineup, places: usize, squad: &[u32], unavailable: &[u32]) -> Option<String> {
+    if l.places.len() != places {
+        return Some(format!("{} places, the plan has {places}", l.places.len()));
     }
     let mut seen = Vec::new();
     for id in &l.places {
@@ -188,13 +253,37 @@ impl Coach {
             inputs,
         }
     }
+
+    fn appoint(&self, w: &mut SeasonWorld<'_>) {
+        for club in 0..u32::try_from(self.pack.clubs.len()).unwrap_or(0) {
+            let entry = self.pack.coaches.iter().find(|c| c.club == club);
+            let mut fields = vec![
+                ("club", club.to_string()),
+                ("name", coach_name(&self.pack, w.seed(), club)),
+                (
+                    "by",
+                    if self.human == Some(club) {
+                        "human"
+                    } else {
+                        "actor"
+                    }
+                    .to_string(),
+                ),
+            ];
+            if let Some(b) = entry.and_then(|c| c.born) {
+                fields.push(("born", b.to_string()));
+            }
+            if let Some(n) = entry.and_then(|c| c.nationality.clone()) {
+                fields.push(("nationality", n));
+            }
+            w.emit(COACH_APPOINTED, &fields);
+        }
+    }
 }
 
 /// The points a match of every club so far, from the results told (plane B).
-fn points_a_match(
-    events: &[ds_season_api::SeasonEvent],
-) -> std::collections::BTreeMap<u32, (u32, u32)> {
-    let mut t: std::collections::BTreeMap<u32, (u32, u32)> = std::collections::BTreeMap::new();
+fn points_a_match(events: &[SeasonEvent]) -> BTreeMap<u32, (u32, u32)> {
+    let mut t: BTreeMap<u32, (u32, u32)> = BTreeMap::new();
     for e in events
         .iter()
         .filter(|e| e.kind == ds_season_api::MATCH_PLAYED)
@@ -220,7 +309,20 @@ fn points_a_match(
     t
 }
 
-fn field(e: &ds_season_api::SeasonEvent, key: &str) -> Option<u32> {
+/// The day each man of `club` last started, from the line-ups told.
+fn last_started(events: &[SeasonEvent], club: u32) -> BTreeMap<u32, u32> {
+    let mut m = BTreeMap::new();
+    for e in events.iter().filter(|e| e.kind == LINEUP_ANNOUNCED) {
+        if let Some(l) = lineup_of(e).filter(|l| l.club == club) {
+            for id in l.places.iter().take(XI.len()) {
+                m.insert(*id, e.day);
+            }
+        }
+    }
+    m
+}
+
+fn field(e: &SeasonEvent, key: &str) -> Option<u32> {
     e.fields
         .iter()
         .find(|(k, _)| k == key)
@@ -231,22 +333,28 @@ impl SeasonPlugin for Coach {
     fn card(&self) -> PluginCard {
         PluginCard {
             name: "coach",
-            version: "1",
-            steps: &[Moment::BeforeMatches],
+            version: "2",
+            steps: &[Moment::DayStarted, Moment::BeforeMatches],
             depends: &["roster", "calendar"],
             reads: &["roster.squad", "calendar.fixture"],
             optional_reads: &[ds_season_api::OptionalRead {
                 what: "discipline.bans",
                 without: "nobody is ever banned",
             }],
-            writes: &["coach.lineup"],
+            writes: &["coach.lineup", "coach.appointed"],
             tier: Tier::Core,
             cost_us: 0,
-            narrative: &["lineup_announced"],
+            narrative: &["lineup_announced", "coach_appointed"],
         }
     }
 
-    fn run(&mut self, _: Moment, w: &mut SeasonWorld<'_>) -> Result<(), PluginError> {
+    fn run(&mut self, moment: Moment, w: &mut SeasonWorld<'_>) -> Result<(), PluginError> {
+        if moment == Moment::DayStarted {
+            if w.day() == 0 {
+                self.appoint(w);
+            }
+            return Ok(());
+        }
         // Who may not play today, if the discipline plugin is on (decision B).
         let unavailable = ds_discipline::unavailable_of(w.events(), w.day());
         // Each club of today's fixtures, with its opponent.
@@ -268,12 +376,16 @@ impl SeasonPlugin for Coach {
                 .map_or(0.0, |(p, n)| f64::from(*p) / f64::from((*n).max(1)))
         };
         for (club, opponent) in clubs {
-            let pressure = if table.is_empty() {
-                0.0
-            } else {
-                (ppg(opponent) - ppg(club)) / 3.0
+            let today = Today {
+                unavailable: unavailable.clone(),
+                pressure: if table.is_empty() {
+                    0.0
+                } else {
+                    (ppg(opponent) - ppg(club)) / 3.0
+                },
+                last_started: last_started(w.events(), club),
             };
-            let vice = choose(&self.pack, w.seed(), club, &unavailable, pressure);
+            let vice = choose(&self.pack, w.seed(), club, &today);
             // The human player's club: his line-up for today, if he gave one
             // and it can be played; else the vice's proposal (L1-COACH.md).
             let human = self.human == Some(club);
@@ -291,7 +403,7 @@ impl SeasonPlugin for Coach {
                         .iter()
                         .map(|p| p.id)
                         .collect();
-                    match refused(h, &squad, &unavailable) {
+                    match refused(h, vice.places.len(), &squad, &unavailable) {
                         None => (
                             Lineup {
                                 club,
@@ -334,19 +446,21 @@ impl SeasonPlugin for Coach {
 
 #[cfg(test)]
 mod tests {
-    use super::{PLACES, choose};
+    use super::{Today, XI, bench_for, choose, places};
 
-    /// Sixteen different men, the keeper a keeper, the same line-up from
-    /// the same world.
+    /// Different men, the keepers keepers, the same line-up from the same
+    /// world; the bench as many as the rule lets, up to the engine's.
     #[test]
     fn the_coach_lines_up_his_squad_the_same_from_the_same_world() {
         let pack = ds_world::Pack::v1();
-        let l = choose(&pack, 42, 3, &[], 0.0);
-        assert_eq!(l.places.len(), PLACES.len());
+        let l = choose(&pack, 42, 3, &Today::default());
+        let bench = bench_for(&pack, 3);
+        assert!(bench <= ds_model::squad::MAX_BENCH);
+        assert_eq!(l.places.len(), XI.len() + bench);
         let mut ids = l.places.clone();
         ids.sort_unstable();
         ids.dedup();
-        assert_eq!(ids.len(), 16, "sixteen different men");
+        assert_eq!(ids.len(), l.places.len(), "different men");
         let squad = ds_roster::make_squad(&pack, 42, 3);
         let role = |id: u32| {
             squad
@@ -356,6 +470,38 @@ mod tests {
                 .unwrap_or_default()
         };
         assert_eq!(role(l.places[0]), "goalkeeper");
-        assert_eq!(l, choose(&pack, 42, 3, &[], 0.0));
+        assert_eq!(
+            role(l.places[XI.len()]),
+            "goalkeeper",
+            "the bench starts with a keeper"
+        );
+        assert_eq!(l, choose(&pack, 42, 3, &Today::default()));
+        assert_eq!(
+            places(7)[11..],
+            [
+                "goalkeeper",
+                "centre_back",
+                "central_midfielder",
+                "wide_midfielder",
+                "striker",
+                "full_back",
+                "centre_back"
+            ]
+        );
+    }
+
+    /// The tie-break (ADR-114 §7): the same squad, but the man who started
+    /// yesterday goes behind his equal who did not; nobody's estimate moves.
+    #[test]
+    fn at_an_equal_estimate_who_played_least_recently_starts() {
+        let pack = ds_world::Pack::v1();
+        let fresh = choose(&pack, 42, 3, &Today::default());
+        let mut today = Today::default();
+        for id in &fresh.places {
+            today.last_started.insert(*id, 5);
+        }
+        let again = choose(&pack, 42, 3, &today);
+        // Every man rested the same: the same choice.
+        assert_eq!(again.places, fresh.places);
     }
 }

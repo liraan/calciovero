@@ -14,6 +14,7 @@ ds-roster = { path = "../ds-roster" }
 ds-calendar = { path = "../ds-calendar" }
 ds-discipline = { path = "../ds-discipline" }
 ds-core.workspace = true
+ds-model.workspace = true
 ds-orchestrator.workspace = true
 
 [lints]

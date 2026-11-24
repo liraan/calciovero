@@ -6,6 +6,10 @@ This file records every bump of `SEASON_VERSION` (`L1-season/crates/ds-season/sr
 
 ---
 
+## 7 — the coaches told, the bench from the rule, the tie-break (decision BM)
+
+`ds-coach` (card version 2): on the first morning every club's coach is told (`CoachAppointed`: the name from the pack's new `coaches.json`, or from the seed; born and nationality if the pack says). The bench is the series' rule (`nation.json` `bench`: Serie A 15, Lega Serie A norms 2024-25, IFAB Law 3 "from three to a maximum of fifteen") up to what the engine can play (`MAX_BENCH`, 7): a keeper first, then the outfield roles in turn, each the best man left. At an equal estimate, the man who started least recently, then the lowest identity (ADR-114 §7). The small golden regenerated.
+
 ## 6 — discipline on the text of the CGS (decision BM)
 
 The thresholds read on the FIGC Codice di Giustizia Sportiva (art. 9 c. 5, the text of 2 July 2024): a ban at the 5th, 10th, 14th, 17th and 19th caution, then at every further one. A yellow and a red to the same man in the same match is a second caution: its yellow does not count (read in the press, not on the text; declared). Tested with matches made by hand.

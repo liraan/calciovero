@@ -23,6 +23,14 @@ Una lista; la somma dei `clubs` delle serie è la sua lunghezza.
 | `name` | testo, facoltativo | unico fra i club; se manca, inventato dal seme |
 | `stadium` | testo, facoltativo | se manca, dalle forme di `names/stadium_forms.json` |
 
+## `coaches.json` (facoltativo)
+
+Una lista di allenatori scritti a mano, ognuno con `club` (il numero del club in `clubs.json`, da 0) e i campi che si vogliono fissare: `name`, `born` (1930-2000), `nationality`. Un club per voce. Quello che manca lo fa il seme. Le disposizioni dell'allenatore (l'idea di gioco, l'adattabilità e le altre, ADR-114) non si scrivono qui: sono nascoste, come le caratteristiche dei giocatori.
+
+## In `nation.json`, per ogni serie: `bench` (facoltativo)
+
+Quanti sostituti una squadra può mettere in distinta (la regola della competizione). L'allenatore ne nomina fino a quanti il motore sa giocarne (oggi 7); senza `bench`, quanti il motore ne sa giocare.
+
 ## `players.json` (facoltativo)
 
 Una lista di giocatori che vincono sul generatore.

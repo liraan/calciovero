@@ -20,7 +20,11 @@ pub const FORMAT_VERSION: u32 = 1;
 pub const CLUB_CREATED: &str = "ClubCreated";
 
 /// The files of a pack, by name, as text.
-const V1_FILES: [(&str, &str); 9] = [
+const V1_FILES: [(&str, &str); 10] = [
+    (
+        "coaches.json",
+        include_str!("../../../world/v1/coaches.json"),
+    ),
     ("nation.json", include_str!("../../../world/v1/nation.json")),
     ("clubs.json", include_str!("../../../world/v1/clubs.json")),
     (
@@ -91,6 +95,11 @@ pub struct SeriesSpec {
     pub name: String,
     /// How many clubs play in it.
     pub clubs: u32,
+    /// How many substitutes a side may name for a match (its competition's
+    /// rule), if the pack says; the coach names up to what the engine can
+    /// play.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bench: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -167,6 +176,23 @@ pub struct PlayerEntry {
     pub born: Option<u32>,
 }
 
+/// A coach as the pack writes it (`coaches.json`): what it fixes by hand.
+/// His dispositions are not here: they are the vault's (plane A, ADR-114).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CoachEntry {
+    /// His club, its index in `clubs.json`.
+    pub club: u32,
+    /// His name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// His year of birth.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub born: Option<u32>,
+    /// His nationality.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nationality: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Parts3 {
     start: Vec<String>,
@@ -191,6 +217,8 @@ pub struct Pack {
     pub clubs: Vec<ClubEntry>,
     /// The players it fixes by hand.
     pub players: Vec<PlayerEntry>,
+    /// The coaches it fixes by hand.
+    pub coaches: Vec<CoachEntry>,
     /// The squad, one role for each place.
     pub squad_roles: Vec<String>,
     words: Parts3,
@@ -372,11 +400,44 @@ impl Pack {
             }
             seen.push((p.club, p.number));
         }
+        let coaches: Vec<CoachEntry> = match read("coaches.json") {
+            Some(t) => parse("coaches.json", &t)?,
+            None => Vec::new(),
+        };
+        let mut with_coach = Vec::new();
+        for (i, c) in coaches.iter().enumerate() {
+            if c.club as usize >= clubs.len() {
+                return Err(err(
+                    "coaches.json",
+                    Some(i),
+                    "club",
+                    "non è un club di clubs.json",
+                ));
+            }
+            if with_coach.contains(&c.club) {
+                return Err(err(
+                    "coaches.json",
+                    Some(i),
+                    "club",
+                    "due allenatori per lo stesso club",
+                ));
+            }
+            with_coach.push(c.club);
+            if c.born.is_some_and(|b| !(1930..=2000).contains(&b)) {
+                return Err(err("coaches.json", Some(i), "born", "fuori da 1930-2000"));
+            }
+        }
+        for (i, s) in nation.series.iter().enumerate() {
+            if s.bench == Some(0) {
+                return Err(err("nation.json", Some(i), "bench", "almeno un sostituto"));
+            }
+        }
         let pack = Self {
             nation: nation.name,
             series: nation.series,
             clubs,
             players,
+            coaches,
             squad_roles,
             words: parse("names/word_parts.json", &need("names/word_parts.json")?)?,
             club_forms: parse("names/club_forms.json", &need("names/club_forms.json")?)?,
@@ -445,6 +506,7 @@ impl Pack {
             ("nation.json".into(), j(&nation)),
             ("clubs.json".into(), j(&clubs)),
             ("players.json".into(), j(&players)),
+            ("coaches.json".into(), j(&self.coaches)),
             ("names/word_parts.json".into(), j(&self.words)),
             ("names/club_forms.json".into(), j(&self.club_forms)),
             ("names/stadium_forms.json".into(), j(&self.stadium_forms)),
@@ -640,6 +702,30 @@ mod tests {
                     .map(|(_, t)| (*t).to_string())
             }
         })
+    }
+
+    /// `coaches.json` fixes what it says and is checked like the others;
+    /// `nation.json` carries the bench rule.
+    #[test]
+    fn the_coaches_and_the_bench_are_checked() {
+        let p = Pack::v1();
+        assert_eq!(p.series[0].bench, Some(15));
+        let fixed = v1_with(
+            "coaches.json",
+            r#"[{ "club": 2, "name": "Aldo Ferri", "born": 1968 }]"#,
+        )
+        .expect("valid");
+        assert_eq!(fixed.coaches[0].name.as_deref(), Some("Aldo Ferri"));
+        let e = v1_with("coaches.json", r#"[{ "club": 2 }, { "club": 2 }]"#)
+            .expect_err("two for one club");
+        assert_eq!(
+            (e.file.as_str(), e.field.as_str()),
+            ("coaches.json", "club")
+        );
+        let e = v1_with("coaches.json", r#"[{ "club": 99 }]"#).expect_err("no such club");
+        assert_eq!(e.entry, Some(0));
+        let e = v1_with("coaches.json", r#"[{ "club": 1, "born": 1890 }]"#).expect_err("born");
+        assert_eq!(e.field, "born");
     }
 
     /// The shipped pack: 20 clubs, a name each, never with its city; the

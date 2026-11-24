@@ -190,7 +190,9 @@ impl GroundTruth {
                     .collect();
                 let fit = ds_calculator::coach::role_fit(&triples);
                 let better = |b: (f64, f64)| fit.0.total_cmp(&b.0).then(fit.1.total_cmp(&b.1));
-                if best.is_none_or(|(b, bp)| better(b).then(bp.cmp(&p)).is_gt()) {
+                // Of equals the first in the squad's order: the coach orders his
+                // squad (ADR-114 §7, the tie-break).
+                if best.is_none_or(|(b, _)| better(b).is_gt()) {
                     best = Some((fit, p));
                 }
             }
