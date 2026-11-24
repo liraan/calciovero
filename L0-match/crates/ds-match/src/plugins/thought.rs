@@ -303,7 +303,13 @@ impl MatchState {
         // (`shot_choice.json` `kick_pressure_radius_cm`). Their keeper does
         // not press the kicker; a dead ball is kicked unchallenged.
         let kick_pressure = {
-            let at = self.spatial.ball();
+            // From the kicker, as he reckons it and as the shot's difficulty
+            // reads it (SIM 197; before, from the ball, a step ahead of his
+            // foot: he reckoned one pressure and the kick met another).
+            let at = self
+                .spatial
+                .agent(attacker)
+                .map_or_else(|| self.spatial.ball(), |a| a.position);
             let r = ctx
                 .hidden
                 .shot_choice_balance()

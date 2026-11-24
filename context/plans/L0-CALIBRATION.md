@@ -193,6 +193,10 @@ Stesso comando e stesse tre tranche del 190 (42..61, 62..81, 82..101; 60 partite
 
 **In banda: 191 → 6 su 22**, come 190 e 188. Gol 10.98 → 9.78, fuori banda. Sonda temporanea su 10 partite (42..51): in difesa "restare" 74% → 72%, pressing 7.923 → 8.491 decisioni (il secondo uomo 1.289, il terzo 469: prima 0), marcatura 32.749 → 38.141. Il terzo uomo e oltre restano al posto nel 97% dei casi: con lo stesso passo creduto, chi è più vicino arriva prima, quindi il pericolo che gli resta è piccolo; è la lettura giusta della zona, non un taglio. La leva di OI-100 non è qui: resta il 42% di decisioni con la palla in volo, dove l'unica opzione è restare (prossimo, SIM 192).
 
+## La misura del 197 (2026-11-24, DD-57)
+
+Stesso comando e banda. **5 su 22** (penalties, ground_duels, fouls, red_cards, goal_kicks); gol 7.75, autogol 0.78, tiri 47.83, passaggi 1833.95, falli 31.75, gialli 1.28, rossi 0.65, fuorigioco 12.15, recupero 9.12/9.22. Nessun numero adattato.
+
 ## La misura del 196 (2026-11-23, DD-55)
 
 Stesso comando e banda. I difetti della sezione A dell'audit del codice, nessun numero nuovo. **In banda: 196 → 6 su 22** (rigori, duelli a terra, dribbling riusciti, falli 30.08, rossi 0.73, rinvii). Gol 9.28 → 7.65, autogol 1.25 → 0.95, tiri 46.95 → 44.57, fuorigioco 10.55 → 12.03 (ora anche di testa), gialli 1.23, recupero 9.18 / 8.49.

@@ -82,9 +82,11 @@ pub fn left_by_nearer(nearer_cm: &[i64]) -> f64 {
     nearer_cm
         .iter()
         .map(|d| {
+            // A teammate: another man, with the reaction he believes (SIM
+            // 197; before, without it, unlike every other reading of a man).
             #[allow(clippy::cast_precision_loss)] // cm on a pitch
-            let run = (*d).max(0) as f64 / t.believed_speed_cm_per_tick.max(1.0);
-            1.0 - t.confidence(t.trust_ticks - run)
+            let run = (*d).max(0) as f64;
+            1.0 - t.in_time(run, true)
         })
         .product()
 }
@@ -299,10 +301,8 @@ impl crate::GroundTruth {
             Place::Keeper { ball_in_area } => ball_in_area,
         };
         #[allow(clippy::cast_precision_loss)]
-        let in_time = |d: i64| {
-            let run = d.max(0) as f64 / t.believed_speed_cm_per_tick.max(1.0);
-            t.confidence(t.trust_ticks - run)
-        };
+        // His own run: he is already deciding, no reaction to wait.
+        let in_time = |d: i64| t.in_time(d.max(0) as f64, false);
         // Discipline (plan L0-CLOSE 10c) colours how much the place he holds
         // in the team's shape weighs for him (VISION §3: the psychology
         // interprets).

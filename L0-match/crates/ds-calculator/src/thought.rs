@@ -54,6 +54,23 @@ pub struct ThoughtBalance {
 }
 
 impl ThoughtBalance {
+    /// How sure he is that a man `run_cm` away gets there in time, running at
+    /// the pace he believes: `another` man reacts after the reaction he
+    /// believes; he himself is already deciding. The one measure of "in
+    /// time" (code audit D: three formulas, one of them reading his
+    /// teammates without their reaction).
+    #[must_use]
+    pub fn in_time(&self, run_cm: f64, another: bool) -> f64 {
+        let react = if another {
+            self.believed_reaction_ticks
+        } else {
+            0.0
+        };
+        self.confidence(
+            self.trust_ticks - react - run_cm / self.believed_speed_cm_per_tick.max(1.0),
+        )
+    }
+
     /// How far ahead a player of this `anticipation` imagines, cm (plan
     /// L0-CLOSE 10b): between the shortest and the longest horizon. Moved
     /// here from the orchestrator (code audit B3).

@@ -59,11 +59,8 @@ pub fn instinct(base: f64, gain: f64, characteristic: f64) -> f64 {
 /// trust of a forecast), running at the speed he believes.
 #[must_use]
 pub fn soon(from: (i32, i32), to: (i32, i32)) -> f64 {
-    let t = &mind().thought;
     let run = ds_core::dmath::hypot(f64::from(from.0 - to.0), f64::from(from.1 - to.1));
-    t.confidence(
-        t.trust_ticks - t.believed_reaction_ticks - run / t.believed_speed_cm_per_tick.max(1.0),
-    )
+    mind().thought.in_time(run, true)
 }
 
 /// What a space is worth to the side attacking `goal` (ADR-052 §3), in

@@ -8,6 +8,12 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 197 — Una misura per "in tempo", la pressione dal tiratore, la stessa testa alla ricezione (DD-57)
+
+Dall'audit del codice: (1) "ci arriva in tempo" è una sola misura, `ThoughtBalance::in_time`: per un altro uomo con il tempo di reazione che gli si crede, per sé no; `left_by_nearer` leggeva i compagni senza reazione. (2) La pressione sul calcio si misura dal tiratore, come la legge lui e come la legge la difficoltà del tiro; il motore la misurava dalla palla. (3) A8: la scelta alla ricezione (`Actor::first_time`) pensa con la stessa testa di `decide` (`own_scene`): il suo errore, il piede migliore, il tocco dei compagni come li conosce; prima un tiro perfetto di destro e ogni controllo sicuro.
+
+Con LUNA: dito = una formula, un punto, una scena; luna = lo stesso giocatore pensa con la stessa testa in ogni scelta. Golden rigenerati; semi coppa 122, pari al 90' 44, decisa 42, colpo 48. ds-reference 42..101: **5 su 22** (penalties, ground_duels, fouls, red_cards, goal_kicks); gol 7.75, autogol 0.78, tiri 47.83, passaggi 1833.95, falli 31.75, gialli 1.28, rossi 0.65, fuorigioco 12.15, recupero 9.12/9.22.
+
 ## 196 — I difetti dell'audit del codice (DD-55)
 
 I bug della sezione A di `context/plans/CODE-AUDIT.md`, ognuno con il suo guardiano:

@@ -11,7 +11,8 @@
 //! SIM 194 (a man running to a point brakes to arrive: fewer contacts at
 //! full speed) to seed 109; at SIM 195 (the braking of the source, the knock
 //! threshold refixed on the slower fouls) to seed 49; at SIM 196 (the audit's
-//! bugs) to seed 46: the range follows it.
+//! bugs) to seed 46; at SIM 197 (one "in time", the kick's pressure, the
+//! reception's head) to seed 48: the range follows it.
 
 use crate::ds_match::simulate_from_seed_recorded;
 use ds_fixtures::{first_seed, match_fixture};

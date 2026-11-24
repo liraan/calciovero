@@ -17,7 +17,7 @@ Analisi in sola lettura di ~44.000 righe Rust (15 crate) da 8 analisti paralleli
 | A5 | Rigori e calcio d'inizio dopo i cambi: `on_pitch_count`, `shootout_order` e `kick_off` leggono la rosa iniziale (`ctx.match_`), non quella viva: dopo 3 cambi i tiratori possibili scendono a 8, i subentrati non calciano | simulate.rs:135,154,200-206; set_pieces.rs:248,414,437 | ✔ (lettura) |
 | A6 | Cambi durante la serie dei rigori (Legge 10 lo vieta) e tiratore sostituibile dopo che l'ordine è fissato | set_pieces.rs:36/467 + simulate.rs:97 | plausibile |
 | A7 | I cambi pianificati ignorano `subs_allowed` (solo quelli ordinati hanno `take(left)`); e il limite esiste due volte (`MAX_SUBSTITUTIONS=5` e `MatchRules.subs_allowed`) | bench.rs:52-60 vs 63-72; squad.rs:412 | ✔ |
-| A8 | `Actor::first_time` valuta "controllare" con tiratore perfetto, piede destro fisso, `first_touch` vuoto (controlla sempre) → il gioco di prima è sottovalutato | actor.rs:206-207 | analista |
+| A8 | ✅ SIM 197: `first_time` usa `own_scene`, la stessa testa di `decide`. Prima: `Actor::first_time` valuta "controllare" con tiratore perfetto, piede destro fisso, `first_touch` vuoto (controlla sempre) → il gioco di prima è sottovalutato | actor.rs:206-207 | analista |
 | A9 | `tick_steps` dichiara la palla ferma al primo rimbalzo di una palla quasi verticale: le previsioni (`intercept`, `drop_point`) smettono lì, la fisica vera continua | spatial.rs:322-336 | analista |
 | A10 | Gol: due regole di superamento della linea (centro palla per un tiro, palla intera per il resto) | ball.rs:112-114 vs 234-236 | analista |
 | A11 | Vantaggio + colpo: il commento dice "l'uomo a terra ferma il gioco", il codice conta la pausa e lascia giocare | referee.rs:559-607 | analista |

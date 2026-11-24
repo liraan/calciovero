@@ -65,6 +65,24 @@ impl Actor {
         tick: u64,
     ) -> (crate::ChoiceKind, std::collections::BTreeMap<PlayerId, i64>) {
         let _ = tick;
+        let (scene, preferred_foot, risk_appetite, own_error) = self.own_scene(scene, hidden);
+        let balance = hidden.shot_choice_balance();
+        let (ctx, freedoms) =
+            crate::read::build_choice(&scene, preferred_foot, risk_appetite, own_error, balance);
+        (hidden.resolve_choice(&ctx).chosen, freedoms)
+    }
+
+    /// The scene as this player reads it, with what he knows of himself
+    /// and of his teammates (ADR-052): his game reading, his better foot,
+    /// his appetite for risk, his own miss, his teammates' touch and worth
+    /// in the air. The same head for every choice he makes (code audit A8:
+    /// the choice at the reception was made with none of it).
+    #[allow(clippy::trivially_copy_pass_by_ref)] // as the other methods of Actor
+    fn own_scene(
+        &self,
+        scene: &crate::read::PerceivedScene,
+        hidden: &mut GroundTruth,
+    ) -> (crate::read::PerceivedScene, crate::Side, f64, f64) {
         // How far he trusts what he imagines the others will do (ADR-052):
         // his own game reading, read here by the actor (ADR-112; before, the
         // engine put it in the scene).
@@ -179,10 +197,7 @@ impl Actor {
             };
             scene.reception.aerial.insert(*id, f64::from(force));
         }
-        let balance = hidden.shot_choice_balance();
-        let (ctx, freedoms) =
-            crate::read::build_choice(&scene, preferred_foot, risk_appetite, own_error, balance);
-        (hidden.resolve_choice(&ctx).chosen, freedoms)
+        (scene, preferred_foot, risk_appetite, own_error)
     }
 
     /// The choice at the reception (ADR-064): before his touch, from the
@@ -206,13 +221,16 @@ impl Actor {
         hidden: &mut GroundTruth,
         (controls, kept): (bool, f64),
     ) -> Option<(i32, i32)> {
-        let risk_appetite = hidden
-            .custodian(self.player)
-            .value(ds_calculator::Characteristic::RiskManagement);
+        // The same head as in `decide` (SIM 197, code audit A8): his own
+        // miss, his better foot, his teammates' touch as he knows them.
+        // Before, a perfect strike off the right foot, and every teammate's
+        // touch sure.
+        let (scene, preferred_foot, risk_appetite, own_error) = self.own_scene(scene, hidden);
+        let scene = &scene;
         let at = scene.positions.get(&self.player).copied()?;
         let balance = hidden.shot_choice_balance();
         let (ctx, _) =
-            crate::read::build_choice(scene, crate::Side::Right, risk_appetite, 0.0, balance);
+            crate::read::build_choice(scene, preferred_foot, risk_appetite, own_error, balance);
         let clear = ctx.candidates.iter().find_map(|c| match c.kind {
             crate::ChoiceKind::Clear { to } => Some((c.geometric, to)),
             _ => None,
