@@ -36,7 +36,19 @@ pub struct Pack {
     city_end: Vec<String>,
     club_forms: Vec<String>,
     stadium_forms: Vec<String>,
-    palette: Vec<[u8; 3]>,
+    clubs: Vec<ClubSeat>,
+}
+
+/// Where a club of the pack has its seat, and its colours: real geography
+/// and the real colours (decision of 2026-11-24); its name is invented.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct ClubSeat {
+    /// Its city.
+    pub city: String,
+    /// Its region.
+    pub region: String,
+    /// Its two colours.
+    pub colours: [[u8; 3]; 2],
 }
 
 impl Pack {
@@ -58,8 +70,10 @@ pub struct Club {
     pub id: u32,
     /// Its name.
     pub name: String,
-    /// Its city.
+    /// Its city (real).
     pub city: String,
+    /// Its region (real).
+    pub region: String,
     /// Its stadium.
     pub stadium: String,
     /// Its two colours.
@@ -81,44 +95,47 @@ pub fn pick(seed: u64, label: &str, key: u64, choices: usize) -> usize {
     usize::try_from(u64::from_le_bytes(word) % (choices.max(1) as u64)).unwrap_or(0)
 }
 
-/// The clubs of the world from `seed`: the first series' clubs, each with
-/// a city of its own.
+/// The clubs of the world from `seed`: one for each seat of the pack, in
+/// the order of the pack, the first series' first; each with a name of its
+/// own, invented, that never contains its city.
 #[must_use]
 pub fn make_clubs(pack: &Pack, seed: u64) -> Vec<Club> {
-    let mut clubs = Vec::new();
-    let mut cities: Vec<String> = Vec::new();
+    let mut clubs: Vec<Club> = Vec::new();
+    let mut words: Vec<String> = Vec::new();
+    let mut seats = pack.clubs.iter();
     let mut id = 0u32;
     for (series, spec) in pack.series.iter().enumerate() {
         for _ in 0..spec.clubs {
-            // A city no other club has: the next keyed attempt otherwise.
-            // At most a thousand keyed attempts; the pack has far more cities.
-            let city = (0u64..1000)
+            let Some(seat) = seats.next() else {
+                return clubs;
+            };
+            // An invented word no other club has (at most a thousand keyed
+            // attempts; the parts give far more).
+            let word = (0u64..1000)
                 .map(|attempt| {
                     let k = u64::from(id) * 1000 + attempt;
                     format!(
                         "{}{}{}",
-                        pack.city_start[pick(seed, "city_start", k, pack.city_start.len())],
-                        pack.city_middle[pick(seed, "city_middle", k, pack.city_middle.len())],
-                        pack.city_end[pick(seed, "city_end", k, pack.city_end.len())],
+                        pack.city_start[pick(seed, "word_start", k, pack.city_start.len())],
+                        pack.city_middle[pick(seed, "word_middle", k, pack.city_middle.len())],
+                        pack.city_end[pick(seed, "word_end", k, pack.city_end.len())],
                     )
                 })
-                .find(|c| !cities.contains(c))
+                .find(|w| !words.contains(w) && !w.eq_ignore_ascii_case(&seat.city))
                 .unwrap_or_default();
-            cities.push(city.clone());
+            words.push(word.clone());
             let k = u64::from(id);
             let name = pack.club_forms[pick(seed, "club_form", k, pack.club_forms.len())]
-                .replace('@', &city);
+                .replace('@', &word);
             let stadium = pack.stadium_forms[pick(seed, "stadium", k, pack.stadium_forms.len())]
-                .replace('@', &city);
-            let first = pick(seed, "colour_1", k, pack.palette.len());
-            let second = (first + 1 + pick(seed, "colour_2", k, pack.palette.len() - 1))
-                % pack.palette.len();
+                .replace("{city}", &seat.city);
             clubs.push(Club {
                 id,
                 name,
-                city,
+                city: seat.city.clone(),
+                region: seat.region.clone(),
                 stadium,
-                colours: [pack.palette[first], pack.palette[second]],
+                colours: seat.colours,
                 series: u32::try_from(series).unwrap_or(0),
             });
             id += 1;
@@ -169,6 +186,7 @@ impl SeasonPlugin for World {
                     ("id", c.id.to_string()),
                     ("name", c.name.clone()),
                     ("city", c.city.clone()),
+                    ("region", c.region.clone()),
                     ("stadium", c.stadium.clone()),
                     ("series", c.series.to_string()),
                 ],
@@ -202,10 +220,13 @@ mod tests {
         let pack = Pack::v1();
         let a = make_clubs(&pack, 11);
         assert_eq!(a.len(), 20);
-        let mut cities: Vec<_> = a.iter().map(|c| c.city.clone()).collect();
-        cities.sort();
-        cities.dedup();
-        assert_eq!(cities.len(), 20, "a city each");
+        let mut names: Vec<_> = a.iter().map(|c| c.name.clone()).collect();
+        names.sort();
+        names.dedup();
+        assert_eq!(names.len(), 20, "a name each");
+        // The name is invented: it never contains the city (decision F,
+        // 2026-11-24).
+        assert!(a.iter().all(|c| !c.name.contains(&c.city)));
         assert!(a.iter().all(|c| c.colours[0] != c.colours[1]));
         assert_eq!(a, make_clubs(&pack, 11));
         assert_ne!(a, make_clubs(&pack, 12));
