@@ -6,6 +6,10 @@ This file records every bump of `SEASON_VERSION` (`L1-season/crates/ds-season/sr
 
 ---
 
+## 8 — the rotation: the coach reads the body (decision BM)
+
+`ds-coach` (card version 3) reads this morning's bodies (`ds-body`, optional: without it every man is fresh). A man carried tired is read against his role as the engine will make him run: his fatigue the greater of what he carries, his top speed dimmed by the engine's `v_max_factor`, brought back to the scale of `max_speed`. The coach heeds it as far as his new root `coach_rotation` says: 0, always the same men; towards 1, the body's true effect. No weight of its own. Twin test: a worn-out eleven is changed by a coach who heeds the body, kept by one who does not. The small golden is the same: in four clubs with a week between matches nobody is carried tired enough to change a choice.
+
 ## 7 — the coaches told, the bench from the rule, the tie-break (decision BM)
 
 `ds-coach` (card version 2): on the first morning every club's coach is told (`CoachAppointed`: the name from the pack's new `coaches.json`, or from the seed; born and nationality if the pack says). The bench is the series' rule (`nation.json` `bench`: Serie A 15, Lega Serie A norms 2024-25, IFAB Law 3 "from three to a maximum of fifteen") up to what the engine can play (`MAX_BENCH`, 7): a keeper first, then the outfield roles in turn, each the best man left. At an equal estimate, the man who started least recently, then the lowest identity (ADR-114 §7). The small golden regenerated.

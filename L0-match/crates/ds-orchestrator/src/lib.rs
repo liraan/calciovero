@@ -165,10 +165,17 @@ impl GroundTruth {
     /// men is narrow and keeps their order: it is the fit itself.
     pub fn choose_lineup(
         &mut self,
-        _coach: ds_core::ids::PlayerId,
+        coach: ds_core::ids::PlayerId,
         squad: &[ds_core::ids::PlayerId],
         places: &[&str],
+        tired: &[(ds_core::ids::PlayerId, f64)],
     ) -> Vec<ds_core::ids::PlayerId> {
+        // The rotation (ADR-114 §7, decision BM; L1-COACH-STUDY §2.1): a man
+        // carried tired runs slower, by the engine's own filter (his fatigue
+        // the greater of what he carries, the top speed dimmed by
+        // `v_max_factor`); the coach heeds it as far as his rotation root
+        // says (0: always the same men; towards 1: the body's true effect).
+        let rotation = self.vault.person_root(coach, "coach_rotation");
         let profiles = ds_db::profiles::Profiles::load();
         let mut chosen: Vec<ds_core::ids::PlayerId> = Vec::with_capacity(places.len());
         for role in places {
@@ -186,7 +193,19 @@ impl GroundTruth {
             for &p in squad.iter().filter(|p| !chosen.contains(p)) {
                 let triples: Vec<(f64, f64, f64)> = profile
                     .iter()
-                    .filter_map(|(n, m, s)| self.characteristic(p, n).map(|v| (*m, *s, v)))
+                    .filter_map(|(n, m, s)| {
+                        let v = self.characteristic(p, n)?;
+                        let seen = tired
+                            .iter()
+                            .find(|(id, _)| *id == p)
+                            .map_or(0.0, |(_, f)| f * rotation);
+                        let v = if n == "max_speed" && seen > 0.0 {
+                            self.max_speed_when_tired(v, seen)
+                        } else {
+                            v
+                        };
+                        Some((*m, *s, v))
+                    })
                     .collect();
                 let fit = ds_calculator::coach::role_fit(&triples);
                 let better = |b: (f64, f64)| fit.0.total_cmp(&b.0).then(fit.1.total_cmp(&b.1));
@@ -201,6 +220,13 @@ impl GroundTruth {
             }
         }
         chosen
+    }
+
+    /// A root of `coach` (ADR-114): for the season's tests and the coach's
+    /// own formulas; the roots stay in the vault.
+    #[must_use]
+    pub fn coach_root(&self, coach: ds_core::ids::PlayerId, name: &str) -> f64 {
+        self.vault.person_root(coach, name)
     }
 
     /// The coach's plan (ADR-114 §4): the block (0 low, 1 middle, 2 high) and
@@ -1384,6 +1410,18 @@ impl GroundTruth {
         let balance = &self.movement_balance;
         (balance.top_speed_max_cm_per_tick - balance.top_speed_min_cm_per_tick)
             .mul_add(f64::from(max_speed), balance.top_speed_min_cm_per_tick)
+    }
+
+    /// The `max_speed` characteristic that would give, fresh, the top speed
+    /// a man of `max_speed` has as tired as `fatigue` (the top speed is
+    /// affine in it): how the coach reads a tired man against the role.
+    fn max_speed_when_tired(&self, max_speed: f64, fatigue: f64) -> f64 {
+        let b = &self.movement_balance;
+        #[allow(clippy::cast_possible_truncation)]
+        let tired =
+            self.top_speed_base(max_speed as f32) * self.fatigue_balance.v_max_factor(fatigue);
+        (tired - b.top_speed_min_cm_per_tick)
+            / (b.top_speed_max_cm_per_tick - b.top_speed_min_cm_per_tick).max(1e-9)
     }
 
     /// How fast `player` can run now, cm a tick, as tired as `fatigue`: the

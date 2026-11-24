@@ -880,6 +880,7 @@ dependencies = [
 name = "ds-coach"
 version = "0.1.0"
 dependencies = [
+ "ds-body",
  "ds-calendar",
  "ds-core",
  "ds-discipline",

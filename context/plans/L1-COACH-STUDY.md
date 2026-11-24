@@ -125,7 +125,7 @@ La base del genere è questa: la posta al centro, l'allenamento, gli osservatori
 | Partita | i cambi dell'AI per cause, la lavagna in partita, l'intervallo | — |
 | Flusso | l'agenda, il vice che propone, il tempo che fermi tu, la conferenza (0.2) | la stampa, i tifosi (1.1) |
 
-## 7. L'ordine proposto degli anelli di L1 (dopo le risposte)
+## 7. L'ordine degli anelli di L1 (deciso, BM; ✅ 1 e 2 il 2026-11-24)
 1. `coaches.json` e le radici dell'allenatore (§3), con il vault che le tiene; l'emendamento di ADR-114 (§4.2).
 2. La rotazione: l'allenatore legge la freschezza (stimata) che `ds-body` porta, e lo spareggio diventa "chi ha giocato meno".
 3. `ds-week` minimo: la settimana tipo con i tipi di seduta in `balance/sessions.json`, il carico, il compensativo.

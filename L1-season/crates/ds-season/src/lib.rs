@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 /// A season that comes out different for the same seed and choices, by a
 /// change of a season plugin, is a new `SEASON_VERSION`, with its entry in
 /// `CHANGELOG-SEASON.md`. A change of the match engine is `SIM_VERSION`.
-pub const SEASON_VERSION: u32 = 7;
+pub const SEASON_VERSION: u32 = 8;
 
 /// Why a season stops or does not load.
 #[derive(Debug, Clone, PartialEq, Eq)]

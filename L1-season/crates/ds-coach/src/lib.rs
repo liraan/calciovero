@@ -115,6 +115,9 @@ pub struct Today {
     pub pressure: f64,
     /// The day each man last started, if he did (the tie-break, ADR-114 §7).
     pub last_started: BTreeMap<u32, u32>,
+    /// What each man carries this morning, the greater of his fatigue and
+    /// his damage (`ds-body`; nobody if the body is off).
+    pub tired: BTreeMap<u32, f64>,
 }
 
 /// The line-up `club`'s coach chooses from his squad (ADR-114 §3-4, §7) on
@@ -131,10 +134,15 @@ pub fn choose(pack: &Pack, world_seed: u64, club: u32, today: &Today) -> Lineup 
         .map(|p| (PlayerId::new(p.id, 0), p.role.clone()))
         .collect();
     let ids: Vec<PlayerId> = players.iter().map(|(id, _)| *id).collect();
+    let tired: Vec<(PlayerId, f64)> = today
+        .tired
+        .iter()
+        .map(|(id, f)| (PlayerId::new(*id, 0), *f))
+        .collect();
     let mut actor = ds_orchestrator::GroundTruth::for_world(world_seed, &players);
     let coach = PlayerId::new(COACH_KEY_BASE + club, 0);
     let places = actor
-        .choose_lineup(coach, &ids, &places(bench_for(pack, club)))
+        .choose_lineup(coach, &ids, &places(bench_for(pack, club)), &tired)
         .iter()
         .map(|p| p.slot())
         .collect();
@@ -333,14 +341,20 @@ impl SeasonPlugin for Coach {
     fn card(&self) -> PluginCard {
         PluginCard {
             name: "coach",
-            version: "2",
+            version: "3",
             steps: &[Moment::DayStarted, Moment::BeforeMatches],
             depends: &["roster", "calendar"],
             reads: &["roster.squad", "calendar.fixture"],
-            optional_reads: &[ds_season_api::OptionalRead {
-                what: "discipline.bans",
-                without: "nobody is ever banned",
-            }],
+            optional_reads: &[
+                ds_season_api::OptionalRead {
+                    what: "discipline.bans",
+                    without: "nobody is ever banned",
+                },
+                ds_season_api::OptionalRead {
+                    what: "body.state",
+                    without: "every man is fresh",
+                },
+            ],
             writes: &["coach.lineup", "coach.appointed"],
             tier: Tier::Core,
             cost_us: 0,
@@ -369,6 +383,21 @@ impl SeasonPlugin for Coach {
                 clubs.push((a, h));
             }
         }
+        // What the bodies carry this morning (`ds-body`, decision B: without
+        // it every man is fresh).
+        let tired: BTreeMap<u32, f64> = w
+            .events()
+            .iter()
+            .rev()
+            .find(|e| e.kind == ds_body::BODIES_AT_KICK_OFF && e.day == w.day())
+            .and_then(|e| e.fields.first())
+            .map(|(_, t)| {
+                ds_body::read_bodies(t)
+                    .into_iter()
+                    .map(|(id, f, d)| (id, f.max(d)))
+                    .collect()
+            })
+            .unwrap_or_default();
         let table = points_a_match(w.events());
         let ppg = |c: u32| {
             table
@@ -384,6 +413,7 @@ impl SeasonPlugin for Coach {
                     (ppg(opponent) - ppg(club)) / 3.0
                 },
                 last_started: last_started(w.events(), club),
+                tired: tired.clone(),
             };
             let vice = choose(&self.pack, w.seed(), club, &today);
             // The human player's club: his line-up for today, if he gave one
@@ -447,6 +477,46 @@ impl SeasonPlugin for Coach {
 #[cfg(test)]
 mod tests {
     use super::{Today, XI, bench_for, choose, places};
+
+    /// Twin (ADR-114 §7): the same squad, the eleven worn out; a coach who
+    /// heeds the body changes men, one with no rotation keeps them.
+    #[test]
+    fn a_worn_out_eleven_is_rotated_by_a_coach_who_heeds_the_body() {
+        let pack = ds_world::Pack::v1();
+        let mut checked = 0;
+        for club in 0..20 {
+            let fresh = choose(&pack, 42, club, &Today::default());
+            let mut today = Today::default();
+            for id in fresh.places.iter().take(XI.len()) {
+                today.tired.insert(*id, 0.9);
+            }
+            let worn = choose(&pack, 42, club, &today);
+            let changed = fresh.places[..XI.len()] != worn.places[..XI.len()];
+            let players: Vec<(ds_core::ids::PlayerId, String)> =
+                ds_roster::make_squad(&pack, 42, club)
+                    .iter()
+                    .map(|p| (ds_core::ids::PlayerId::new(p.id, 0), p.role.clone()))
+                    .collect();
+            let rotation = ds_orchestrator::GroundTruth::for_world(42, &players).coach_root(
+                ds_core::ids::PlayerId::new(super::COACH_KEY_BASE + club, 0),
+                "coach_rotation",
+            );
+            if rotation < 1e-9 {
+                assert!(!changed, "club {club}: no rotation, the same men");
+            }
+            if rotation > 0.5 {
+                assert!(
+                    changed,
+                    "club {club}: rotation {rotation:.2}, the same worn-out eleven"
+                );
+                checked += 1;
+            }
+        }
+        assert!(
+            checked > 0,
+            "no coach in the world heeds the body enough to test"
+        );
+    }
 
     /// Different men, the keepers keepers, the same line-up from the same
     /// world; the bench as many as the rule lets, up to the engine's.
