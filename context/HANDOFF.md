@@ -74,6 +74,8 @@ Un solo scrittore alla volta (decisione O). Quando Claude Code non c'è e il mai
 
 ## 7. Il protocollo con Claude Code presente
 
+Dal 2026-11-25: il ciclo a oltranza di [`context/prompts/OPENCODE-LOOP.md`](prompts/OPENCODE-LOOP.md). Claude Code scrive gli ordini in `target/opencode-orders.md`; l'operatore appende i rapporti in `target/opencode-log.md`, uno sotto l'altro. Il vecchio scambio a checkpoint (`claude-checkpoint.txt`, `opencode-run.txt`) è superato.
+
 Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'operatore prova quel commit nel suo worktree `C:\Users\liraan\calciovero-oc` e scrive il rapporto in `target/opencode-run.txt` (`RUN <n>`). `BUSY`: aspetta. `STOP`: fermati.
 
 ## Registro
