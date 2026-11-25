@@ -8,6 +8,10 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 212 — a knock and his forced change are one stoppage (opencode RUN 31, DD-75)
+
+`stoppage_for` added an injury (60 s) and the substitution that follows it one tick later (30 s) as if they were two interruptions. Law 7.3 recovers time lost, not events: the knocked man leaving is the same stoppage. Now a substitution whose `out` is the player injured at the previous tick adds no time; a tactical change still does. Guard: `the_knock_and_his_change_are_one_stoppage` (RUN 31: 56 of 56 injury→substitution pairs had the same slot and a one-tick gap). Golden and seeds regenerated. `ds-reference 42..101`: first-half stoppage 3.45 → 3.17 min, second-half 5.92 → 5.81 min (still above the real bands); 9 of 22 in band, unchanged.
+
 ## 211 — the man who played the ball waits for his rebound (opencode RUN 32, DD-74)
 
 A pass blocked by a defender, a pass that comes off a man's body, and a shot blocked on its way all leave the ball loose. Only the man who met it had to wait `retry_ticks` before he could take it back; the man who played it could be the carrier again one or two ticks later (RUN 32: 645 of 1084 blocks had him back on the ball at +1, 728 at +2; 37 shots repeated within two ticks). Now both men wait with the same clock already used after a failed touch and a clearance — no new number. Guard: `the_shooter_waits_after_a_block`, on the recorded ticks of seed 42. Golden and seeds regenerated. `ds-reference 42..101`: shots 38.73 → 30.50, throw-ins 17.77 → 33.32, corners 7.73 → 18.08, saves 6.75 → 5.08; 9 of 22 in band (the two metrics the reference declares not comparable stay excluded). No number was chosen from these measures.

@@ -143,6 +143,20 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 212 (2026-11-25, DD-75)
+
+Stesso comando, stessa banda; confronto con la misura del 211.
+
+| metrica | 211 | 212 | reale | nota |
+|---|---|---|---|---|
+| stoppage_first_half_min | 3.45 | 3.17 | 1.49 ± 1.35 | migliora, ancora fuori (2.84 il limite) |
+| stoppage_second_half_min | 5.92 | 5.81 | 4.08 ± 1.61 | migliora, ancora fuori (5.69 il limite) |
+| goals | 5.23 | 5.38 | 2.68 ± 1.65 | resta fuori |
+| corners | 18.08 | 18.02 | 10.30 ± 3.58 | resta fuori, indizio aperto |
+| saves | 5.08 | 5.27 | 9.37 ± 3.37 | resta fuori |
+
+**In banda: 212 → 9 su 22**, come al 211. La causa è una regola (Law 7.3), non una taratura; il guard `the_knock_and_his_change_are_one_stoppage` chiude il doppio conteggio. Il recupero resta sopra la banda: la causa successiva è OI-101 (l'arbitro vero recupera circa metà del tempo perso), da modellare con la sua fonte, non da tarare.
+
 ## La misura del 211 (2026-11-25, DD-74)
 
 Stesso comando, stessa banda; il confronto è con la misura del 209 (`target/opencode/run23-g-base209.txt`), perché il 210 non era stato misurato a sé prima della correzione del rimbalzo.

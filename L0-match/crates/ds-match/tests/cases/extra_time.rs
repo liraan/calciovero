@@ -18,7 +18,7 @@ use ds_stats::{EventType, Half};
 /// A level and a decisive friendly of the range under SIM 208, found once
 /// with `ds_fixtures::first_seed`. Asserted below, so a change in the engine
 /// fails here instead of silently scanning again.
-const LEVEL_AT_90_SEED: u64 = 44;
+const LEVEL_AT_90_SEED: u64 = 43;
 const DECIDED_AT_90_SEED: u64 = 42;
 
 /// A SIM 208 shoot-out whose kicks are all shots (Law 10/14), found on real

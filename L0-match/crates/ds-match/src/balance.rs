@@ -101,11 +101,30 @@ pub fn stoppage_for(events: &[ds_stats::MatchEvent], table: &StoppageTime) -> u3
         events
             .iter()
             .filter(|e| {
-                !(e.event_type == EventType::Foul
+                let foul_played_on = e.event_type == EventType::Foul
                     && e.fields
                         .get("advantage")
                         .and_then(serde_json::Value::as_bool)
-                        == Some(true))
+                        == Some(true);
+                // Law 7.3 recovers the time lost, not the number of events:
+                // the knocked man who leaves at the next tick is the same
+                // stoppage, not an injury plus a substitution (SIM 212).
+                let forced_change = e.event_type == EventType::Substitution
+                    && e.fields
+                        .get("out")
+                        .and_then(serde_json::Value::as_u64)
+                        .is_some_and(|out| {
+                            events.iter().any(|i| {
+                                i.event_type == EventType::Injury
+                                    && i.created_at.raw() + 1 == e.created_at.raw()
+                                    && matches!(
+                                        i.actor,
+                                        Some(ds_core::ids::ActorId::Player(p))
+                                            if u64::from(p.slot()) == out
+                                    )
+                            })
+                        });
+                !(foul_played_on || forced_change)
             })
             .map(|e| e.event_type),
     )
@@ -344,6 +363,25 @@ mod tests {
         assert_eq!(stoppage_for(&[on], &table), 0);
         assert_eq!(stoppage_for(&[stopped], &table), 0);
         assert_eq!(stoppage_for(&[make_event(EventType::Injury)], &table), 60);
+    }
+
+    /// SIM 212: the substitution forced by a knock is the same stoppage as
+    /// the injury, not 30 more seconds; a tactical change still costs 30.
+    #[test]
+    fn the_knock_and_his_change_are_one_stoppage() {
+        let table = StoppageTime::load();
+        let mut hurt = make_event(EventType::Injury);
+        hurt.actor = Some(ds_core::ids::ActorId::Player(ds_core::ids::PlayerId::new(
+            1, 0,
+        )));
+        hurt.created_at = ds_core::time::GameInstant::from_raw(100);
+        let mut forced = make_event(EventType::Substitution);
+        forced.fields = serde_json::json!({ "in": 12, "out": 1 });
+        forced.created_at = ds_core::time::GameInstant::from_raw(101);
+        let mut tactical = forced.clone();
+        tactical.created_at = ds_core::time::GameInstant::from_raw(200);
+        assert_eq!(stoppage_for(&[hurt.clone(), forced], &table), 60);
+        assert_eq!(stoppage_for(&[hurt, tactical], &table), 90);
     }
 
     #[test]
