@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `3d9d845` - "SIM 209: a header worth less than nothing is no header at goal"
+**Last commit verified:** `4a97817` - "SIM 210: the lofted pass looks one step ahead (T33, OI-116 A)"
 
 ## Mandato attivo (2026-11-16)
 
@@ -17,8 +17,9 @@ Il mandato di autonomia del maintainer del 16 novembre 2026: Claude Code continu
 
 L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1 con coppe e nazionali come settimane vuote, le decisioni F-K del 16 novembre su dati reali e asset, `tools/ds-gui/DESIGN.md`, con la prima scheda del giocatore come base), con C2 verde; poi `docs/readme-tables` (il README con lo stato in tabelle, al SIM 133, il motore di main).
 
-## Dove siamo (2026-11-24)
+## Dove siamo (2026-11-25)
 
+- **SIM 210 — il lancio guarda un passo avanti (DD-73).** Il pallone alto vale la migliore giocata successiva del ricevitore, come il passaggio a terra (ADR-052, OI-116 A, T33). `ds-reference 42..101`: **10 su 22** (12 al 207); gol 4.98 → 6.93, angoli 7.23 → 18.97, tiri 42.7 → 49.4, duelli aerei 6.6 → 11.0, rimesse 19.1 → 33.4. Indizio aperto: troppi palloni alti finiscono sul fondo (angoli) o in propria porta (autogol 0.23 → 0.47); opencode RUN 17 ha già smentito la spiegazione del doppio conteggio dei passaggi (RUN 33).
 - **SIM 205 — il pallone alto lo contende chi ci arriva nel tick (2026-11-24, DD-68).** T29 chiuso. `ds-reference 42..101`: **10 su 22**; duelli aerei 6.15 → 7.92. Indizio nuovo: i palloni alti giocati sono pochi (cross 8.7 contro 33.8).
 - **SIM 204 — il pallone alto è una scelta del giocatore (2026-11-24, DD-65).** T29, prima metà: il passaggio alto di un compagno nella propria metà si stoppa; nessun tiro di testa d'ufficio in area. `ds-reference 42..101`: **10 su 22** (shots_on_target, penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.43, autogol 0.83, tiri 42.37, in porta 11.32, passaggi 1626.17, duelli aerei 6.15, duelli a terra 213.62, dribbling 27.23, spazzate 22.5, rimesse 17.73, fuorigioco 9.2, recupero 7.17/6.74. Aperto: il duello aereo solo nello stesso piccolo passo.
 - **L1, passi 1-4 fatti (2026-11-24, DD-64):** ADR-113; `ds-plugin-api`, `ds-season-api`, `ds-season`; `ds-world`, `ds-roster` (il mondo come cartella modificabile); `ds-calendar`, `ds-matchday` (le partite giocate dal motore con `simulate_keyed`), `ds-standings`. Golden piccolo: 4 squadre, 12 partite. Passo 5, primo anello (ADR-114, DD-66): `ds-coach`, l'undici per adattamento al ruolo, il piano dall'idea di gioco, `LineupAnnounced`. Passo 5, secondo anello (DD-70): il posto umano e l'adattabilità degli allenatori AI; `SEASON_VERSION` 5. Passo 6, primo anello (DD-67): `ds-body`, fatica e danno portati fra le partite e recuperati con le fonti. Passo 7, primo anello (DD-69): `ds-discipline`, ammonizioni, squalifiche, l'allenatore non schiera gli squalificati; `SEASON_VERSION` 4. **Prossimo:** gli anelli rimasti del 5 e del 6 (`context/HANDOFF.md` §4 B). Aperti: le squadre da `ds-db` (SQLite, decisione AD), gli spareggi veri.
@@ -147,6 +148,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | DD-70 | L1 passo 5, secondo anello: il club umano dà la formazione per giorno, rifiutata con il perché (squalificato, fuori rosa, doppione, piano fuori scala) e sostituita dalla proposta del vice; gli allenatori AI spostano il blocco con la radice `coach_adaptability` contro la pressione (punti a partita dell'avversario meno i propri, diviso 3, dalla classifica pubblica) | ADR-114, decisione AI; il piano B per la classifica | la forza dell'avversario dal piano A (vietato); un peso inventato per l'adattamento |
 | DD-71 | SIM 206: il dribbling riuscito è il portatore che supera l'uomo (l'uomo non più goal-side, il portatore più vicino alla porta che attacca), non il contatto vinto | La definizione Wyscout del take-on riuscito; opencode RUN 15 sulle registrazioni | il superamento solo lungo il campo (non conta il dribbling verso il centro); una distanza fissa inventata |
 | DD-72 | SIM 207: nella propria area di rigore il primo controllo non accompagna il pallone verso la propria linea di porta: lo porta di lato (verso dove andava, o lontano dal centro della porta) | La regola della conduzione (nessuno porta palla dentro una porta); l'area della Regola 1; opencode RUN 10 | ovunque nel campo (cambierebbe le aperture del gioco); una distanza dalla porta inventata |
+| DD-73 | SIM 210: il lancio guarda un passo avanti e vale la migliore giocata che il ricevitore potrà fare, con la stessa misura del passaggio a terra; nessun peso nuovo | ADR-052 (la misura unica), OI-116 A, T33; HANDOFF §4 A0 | contare i lanci del ricevitore come sua giocata successiva (opencode RUN 17); un numero scelto dalla metrica |
 
 ## Plan
 
