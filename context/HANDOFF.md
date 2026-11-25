@@ -90,3 +90,4 @@ Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'opera
 | 2026-11-24 | Claude Code | la settimana, primo anello (`ds-week`) | `f95fc57` |
 | 2026-11-24 | Claude Code | decisione BN; `ds-career`, `Season::input` | `969c35b` |
 | 2026-11-24 | Claude Code | decisione BO; `Career::watch`; la catena Android installata | `89902d5` |
+| 2026-11-25 | Claude Code | SIM 206, il dribbling è superare l'uomo (dal rapporto 15 di opencode); la GUI BP sul ramo `feat/career-gui` | `1dfb1ea` |
