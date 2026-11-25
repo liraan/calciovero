@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `b619af3` - "SIM 211: the man who played the ball waits for his rebound"
+**Last commit verified:** `8bf5962` - "SIM 212: a knock and his forced change are one stoppage"
 
 ## Mandato attivo (2026-11-16)
 
@@ -19,6 +19,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 
 ## Dove siamo (2026-11-25)
 
+- **SIM 212 — infortunio e cambio forzato sono un solo recupero (DD-75).** Law 7.3: il tempo perso, non il numero di eventi. Guard `the_knock_and_his_change_are_one_stoppage`; golden e semi rigenerati (pari al 90′ 43). `ds-reference 42..101`: **9 su 22**; recupero primo tempo 3.45 → 3.17 min, secondo 5.92 → 5.81, ancora fuori banda (OI-101).
 - **SIM 211 — il rimbalzo dopo un blocco non torna subito a chi ha giocato (DD-74).** Il passatore e lo shooter aspettano lo stesso `retry_ticks` già usato dopo un controllo fallito. Guard `the_shooter_waits_after_a_block`; golden e semi rigenerati. `ds-reference 42..101`: **9 su 22**; tiri 38.73 → 30.50, rimesse 17.77 → 33.32, angoli 7.73 → 18.08, parate 6.75 → 5.08. Indizio aperto: angoli e parate.
 - **SIM 210 — il lancio guarda un passo avanti (DD-73).** Il pallone alto vale la migliore giocata successiva del ricevitore, come il passaggio a terra (ADR-052, OI-116 A, T33). `ds-reference 42..101`: **10 su 22** (12 al 207); gol 4.98 → 6.93, angoli 7.23 → 18.97, tiri 42.7 → 49.4, duelli aerei 6.6 → 11.0, rimesse 19.1 → 33.4. Indizio aperto: troppi palloni alti finiscono sul fondo (angoli) o in propria porta (autogol 0.23 → 0.47); opencode RUN 17 ha già smentito la spiegazione del doppio conteggio dei passaggi (RUN 33).
 - **SIM 205 — il pallone alto lo contende chi ci arriva nel tick (2026-11-24, DD-68).** T29 chiuso. `ds-reference 42..101`: **10 su 22**; duelli aerei 6.15 → 7.92. Indizio nuovo: i palloni alti giocati sono pochi (cross 8.7 contro 33.8).
@@ -151,6 +152,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | DD-72 | SIM 207: nella propria area di rigore il primo controllo non accompagna il pallone verso la propria linea di porta: lo porta di lato (verso dove andava, o lontano dal centro della porta) | La regola della conduzione (nessuno porta palla dentro una porta); l'area della Regola 1; opencode RUN 10 | ovunque nel campo (cambierebbe le aperture del gioco); una distanza dalla porta inventata |
 | DD-73 | SIM 210: il lancio guarda un passo avanti e vale la migliore giocata che il ricevitore potrà fare, con la stessa misura del passaggio a terra; nessun peso nuovo | ADR-052 (la misura unica), OI-116 A, T33; HANDOFF §4 A0 | contare i lanci del ricevitore come sua giocata successiva (opencode RUN 17); un numero scelto dalla metrica |
 | DD-74 | SIM 211: dopo un passaggio o un tiro bloccato, anche chi lo ha giocato aspetta lo stesso `retry_ticks` di chi lo ha respinto prima di riprendere il rimbalzo | ADR-051 (il blocco dà il possesso agli avversari); la stessa regola del controllo fallito e della spazzata; opencode RUN 32 sulle registrazioni | un tempo nuovo scelto guardando i tiri ripetuti; impedire al giocatore di scegliere (il gate è solo fisico, non cognitivo) |
+| DD-75 | SIM 212: la sostituzione forzata dell'uomo caduto un tick prima non aggiunge 30 s all'infortunio già contato; una sostituzione tattica sì | Regola 7.3 (il recupero compensa il tempo perso, non il numero di eventi); opencode RUN 31: 56/56 coppie con stesso slot e gap 1 tick | una soglia di tempo nuova; contare come una sola anche la sostituzione tattica successiva a un infortunio |
 
 ## Plan
 
