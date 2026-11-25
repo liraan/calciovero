@@ -143,6 +143,21 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 211 (2026-11-25, DD-74)
+
+Stesso comando, stessa banda; il confronto è con la misura del 209 (`target/opencode/run23-g-base209.txt`), perché il 210 non era stato misurato a sé prima della correzione del rimbalzo.
+
+| metrica | 209 | 211 | reale | nota |
+|---|---|---|---|---|
+| shots | 38.73 | 30.50 | 24.60 ± 5.46 | appena fuori (30.06 il limite) |
+| throw_ins | 17.77 | 33.32 | 42.72 ± 8.92 | appena fuori (33.80 il limite) |
+| corners | 7.73 | 18.08 | 10.30 ± 3.58 | l'indizio degli angoli resta aperto |
+| saves | 6.75 | 5.08 | 9.37 ± 3.37 | esce dalla banda (6.00 il limite) |
+| goals | 4.87 | 5.23 | 2.68 ± 1.65 | resta fuori |
+| aerial_duels | 6.82 | 8.97 | 38.14 ± 12.98 | resta fuori |
+
+**In banda: 211 → 9 su 22** (le due metriche che il riferimento dichiara non confrontabili, cross e intercetti, restano escluse). La causa di SIM 211 non è una taratura ma una regola: il blocco dà il possesso ai difensori; il guard sulle registrazioni (`the_shooter_waits_after_a_block`) chiude il doppio possesso. L'indizio degli angoli e delle parate resta per il passo successivo.
+
 ## La misura del 210 (2026-11-25, DD-71)
 
 Lo stesso comando e la stessa banda; la misura è quella presa sopra il 207 (HANDOFF §4 A0, opencode RUN 17), sul motore 210.

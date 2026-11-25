@@ -8,7 +8,11 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
-## 210 — the lofted pass looks one step ahead (ADR-052, OI-116 A, T33; DD-71)
+## 211 — the man who played the ball waits for his rebound (opencode RUN 32, DD-74)
+
+A pass blocked by a defender, a pass that comes off a man's body, and a shot blocked on its way all leave the ball loose. Only the man who met it had to wait `retry_ticks` before he could take it back; the man who played it could be the carrier again one or two ticks later (RUN 32: 645 of 1084 blocks had him back on the ball at +1, 728 at +2; 37 shots repeated within two ticks). Now both men wait with the same clock already used after a failed touch and a clearance — no new number. Guard: `the_shooter_waits_after_a_block`, on the recorded ticks of seed 42. Golden and seeds regenerated. `ds-reference 42..101`: shots 38.73 → 30.50, throw-ins 17.77 → 33.32, corners 7.73 → 18.08, saves 6.75 → 5.08; 9 of 22 in band (the two metrics the reference declares not comparable stay excluded). No number was chosen from these measures.
+
+## 210 — the lofted pass looks one step ahead (ADR-052, OI-116 A, T33; DD-73)
 
 A lofted pass was worth only the space where the ball came down, while a ground pass was worth the best pass the receiver would then have. Now the loft uses the same measure (`receiver_best_pass` through `worth_of`) as the ground pass, so a man he reaches in the air is worth his next option too. No number was chosen from a metric. Twin test: `a_long_ball_to_a_man_with_a_free_pass_is_worth_more`. Golden and seeds regenerated. `ds-reference 42..101`: goals 4.98 → 6.93, own goals 0.23 → 0.47, corners 7.23 → 18.97, shots 42.7 → 49.4, crosses 7.8 → 14.2, aerial duels 6.6 → 11.0, throw-ins 19.1 → 33.4; 12 → 10 of 22 in band. Open lead: the corners (too many high balls go out for a corner) and the own goals; `receiver_best_pass` also counts the receiver's own lofts (opencode RUN 17).
 

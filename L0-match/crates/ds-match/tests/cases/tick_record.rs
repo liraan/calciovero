@@ -9,6 +9,7 @@
 use crate::ds_match::{simulate_from_seed, simulate_from_seed_recorded};
 use ds_fixtures::match_fixture;
 use ds_match::{MatchConfig, TickRecord};
+use ds_stats::EventType;
 
 const SEED: u64 = 42;
 
@@ -58,6 +59,54 @@ fn one_record_per_tick_in_order() {
         (90..=120).contains(&minutes),
         "a match is about ninety minutes plus stoppage: {minutes}'"
     );
+}
+
+/// SIM 211: a blocked pass or shot is a loose ball for the defenders. The
+/// man who played it still needs his moment before he takes the rebound;
+/// before, he was the carrier again one or two ticks after his own block
+/// (opencode RUN 32: 645 of 1084 blocks had him back on the ball at +1).
+#[test]
+fn the_shooter_waits_after_a_block() {
+    let (result, records) = recorded();
+    let mut blocks = 0;
+    for (i, rec) in records.iter().enumerate() {
+        let blocked = (rec.events.start..rec.events.end).any(|k| {
+            result.events.events()[k].event_type == EventType::Block
+                && result.events.events()[k]
+                    .fields
+                    .get("from")
+                    .and_then(serde_json::Value::as_u64)
+                    .is_some()
+        });
+        if !blocked {
+            continue;
+        }
+        blocks += 1;
+        let shooter_slot = (rec.events.start..rec.events.end)
+            .find_map(|k| {
+                let e = &result.events.events()[k];
+                (e.event_type == EventType::Block)
+                    .then(|| e.fields.get("from")?.as_u64())
+                    .flatten()
+            })
+            .expect("the man whose ball was blocked");
+        let shooter = rec
+            .agents
+            .iter()
+            .find_map(|a| (u64::from(a.id.slot()) == shooter_slot).then_some(a.id));
+        if let Some(shooter) = shooter {
+            for next in records.iter().skip(i + 1).take(10) {
+                assert_ne!(
+                    next.carrier,
+                    Some(shooter),
+                    "tick {} (block at {}): the man whose ball was blocked took the rebound",
+                    next.tick,
+                    rec.tick
+                );
+            }
+        }
+    }
+    assert!(blocks > 0, "a block to guard");
 }
 
 #[test]

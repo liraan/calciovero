@@ -540,6 +540,11 @@ impl MatchState {
             ds_calculator::obstacle::reflect_off_body(vel, body, (bx, by), off.block_rebound_milli),
         );
         self.spatial.deflected_by(man);
+        // The block gives the ball to the defenders: the man who shot needs
+        // the same moment a failed touch does before he takes it back
+        // (SIM 211; before, it could come back to his own foot at +1).
+        let retry = ctx.hidden.duel_balance().retry_ticks;
+        self.challenges.insert(shooter, tick + retry);
         self.pending = None;
         self.possession = if shooter_home {
             Possession::Away
@@ -744,6 +749,10 @@ impl MatchState {
         self.comes_off(id);
         let retry = ctx.hidden.duel_balance().retry_ticks;
         self.challenges.insert(id, tick + retry);
+        // The pass is over and the rebound is loose: the man who played it
+        // needs the same moment as a failed touch before he takes it back
+        // (SIM 211). Before, only the man it hit had to wait.
+        self.challenges.insert(by, tick + retry);
         self.emit_event(
             ctx,
             tick,
@@ -1144,6 +1153,10 @@ impl MatchState {
         self.comes_off(id);
         let retry = ctx.hidden.duel_balance().retry_ticks;
         self.challenges.insert(id, tick + retry);
+        // The pass is over and the rebound is loose: the man who played it
+        // needs the same moment as a failed touch before he takes it back
+        // (SIM 211). Before, only the man it hit had to wait.
+        self.challenges.insert(by, tick + retry);
         self.emit_event(
             ctx,
             tick,
