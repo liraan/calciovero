@@ -95,3 +95,4 @@ Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'opera
 | 2026-11-25 | Claude Code | SIM 206, il dribbling è superare l'uomo (dal rapporto 15 di opencode); la GUI BP sul ramo `feat/career-gui` | `1dfb1ea` |
 | 2026-11-25 | Claude Code | SIM 207, T9: autogol in banda (0.90 → 0.23); 12 su 22 | `3980dd4` |
 | 2026-11-25 | Claude Code | SIM 208, il recupero della Regola 7.3: 14 su 22; il 209 (lancio lungo) aspetta una scelta (RUN 17) | `89de419` |
+| 2026-11-25 | Claude Code | SIM 209, il colpo di testa sotto zero (RUN 18) | `3d9d845` |
