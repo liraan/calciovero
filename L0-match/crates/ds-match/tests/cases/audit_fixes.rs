@@ -116,7 +116,7 @@ fn no_substitution_during_the_shootout() {
 /// scanned; with the rarer aerial duels of SIM 203 none of 42..52 had one).
 #[test]
 fn a_header_from_offside_is_called() {
-    const HEADER_OFFSIDE_SEED: u64 = 42;
+    const HEADER_OFFSIDE_SEED: u64 = 43;
     let called: usize =
         ds_fixtures::each_seed(HEADER_OFFSIDE_SEED..HEADER_OFFSIDE_SEED + 1, |seed| {
             let m = match_fixture(seed).expect("fixture");

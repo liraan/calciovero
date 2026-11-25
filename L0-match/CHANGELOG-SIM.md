@@ -8,6 +8,10 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 210 — the lofted pass looks one step ahead (ADR-052, OI-116 A, T33; DD-71)
+
+A lofted pass was worth only the space where the ball came down, while a ground pass was worth the best pass the receiver would then have. Now the loft uses the same measure (`receiver_best_pass` through `worth_of`) as the ground pass, so a man he reaches in the air is worth his next option too. No number was chosen from a metric. Twin test: `a_long_ball_to_a_man_with_a_free_pass_is_worth_more`. Golden and seeds regenerated. `ds-reference 42..101`: goals 4.98 → 6.93, own goals 0.23 → 0.47, corners 7.23 → 18.97, shots 42.7 → 49.4, crosses 7.8 → 14.2, aerial duels 6.6 → 11.0, throw-ins 19.1 → 33.4; 12 → 10 of 22 in band. Open lead: the corners (too many high balls go out for a corner) and the own goals; `receiver_best_pass` also counts the receiver's own lofts (opencode RUN 17).
+
 ## 209 — a header worth less than nothing is no header at goal (opencode RUN 18)
 
 `header_shot` played the best of the headers at goal he read even when every one was worth less than nothing: every high ball won in the opponents' box was a shot. Now a header worth less than zero is not played; he brings the ball down, the branch the engine already had. Zero is the line every other choice of this reading uses. `ds-reference 42..101`: shots 38.85 → 38.73, the rest within a decimal; 14 of 22. What makes shots ×1.6 is elsewhere (RUN 18: rebounds, 685 shots within 6 s of another; the 35 m range, which needs a source and a choice). The lofted pass's look ahead is now the patch for 210.

@@ -143,6 +143,21 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 210 (2026-11-25, DD-71)
+
+Lo stesso comando e la stessa banda; la misura è quella presa sopra il 207 (HANDOFF §4 A0, opencode RUN 17), sul motore 210.
+
+| metrica | 207 | 210 | reale | causa | bug o taratura |
+|---|---|---|---|---|---|
+| corners | 7.23 | 18.97 | 10.31 ± 3.58 | il lancio guarda un passo avanti: più palloni alti finiscono sul fondo; chi li manda e chi li tocca per ultimo è l'indizio aperto (RUN 17: `receiver_best_pass` conta anche i lanci del ricevitore) | bug a valle, da indagare |
+| goals | 4.98 | 6.93 | 2.68 ± 1.65 | ogni pallone alto in area diventa un tiro (T29 chiuso, resta la scelta) | resta fuori |
+| own_goals | 0.23 | 0.47 | 0.10 ± 0.31 | più palloni alti in area propria | resta fuori |
+| shots | 42.7 | 49.4 | 24.60 ± 5.46 | come sopra | resta fuori |
+| aerial_duels | 6.6 | 11.0 | 38.14 ± 12.98 | più palloni alti giocati, ma la contesa resta nel tick | resta fuori |
+| throw_ins | 19.1 | 33.4 | 42.72 ± 8.92 | più palloni che escono sul fondo | ai limiti della banda |
+
+**In banda: 210 → 10 su 22** (12 al 207). Nessun numero scelto guardando la metrica: il lookahead del lancio usa la stessa misura del passaggio a terra (ADR-052, OI-116 A). L'indizio successivo è l'angolo: troppi palloni alti finiscono fuori, e la catena va cercata nelle registrazioni prima di toccare il motore.
+
 ## La misura del 207 (2026-11-25)
 
 Nella propria area il primo controllo va di lato (T9, opencode RUN 10).

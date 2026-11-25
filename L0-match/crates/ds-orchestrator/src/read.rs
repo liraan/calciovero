@@ -1601,14 +1601,24 @@ fn pass_candidates(
             } else {
                 0.0
             };
-            let geom = worth(
+            // The same measure as the ground pass (ADR-052, OI-116 A; SIM 206,
+            // code audit T33): a man he reaches in the air is worth the best
+            // pass he will then have, not only the space where it comes down.
+            // Before, only the ground pass looked a step ahead, and a long ball
+            // was always worth less than a short one to the same space.
+            let space = space_value(tpos, scene.goal, scene.own_goal);
+            let gain = if lookahead && sure > 0.0 {
+                space.max(receiver_best_pass(scene, *id, tpos, risk_appetite, balance))
+            } else {
+                space
+            };
+            let geom = worth_of(
                 scene,
-                pos,
                 sure,
                 tpos,
+                gain * line_break(pos, tpos, &opponent_lines.0, opponent_lines.1),
                 lofted_missed_at(scene, pos, tpos, flight),
                 risk_appetite,
-                &opponent_lines,
             );
             candidates.push(ChoiceCandidate {
                 kind: ChoiceKind::Loft(*id),
@@ -2583,6 +2593,41 @@ mod shot_perception_tests {
             let weak = loft_salience(&s);
             assert!(strong > 0.0, "strong {strong}");
             assert!(weak < strong, "weak {weak}, strong {strong}");
+        }
+
+        fn loft_salience_to(s: &PerceivedScene, target: PlayerId) -> f64 {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let (ctx, _) = build_choice(s, Side::Right, 0.5, 0.04, &b);
+            ctx.candidates
+                .iter()
+                .find(|c| matches!(c.kind, ChoiceKind::Loft(id) if id == target))
+                .map_or(0.0, |c| c.geometric)
+        }
+
+        /// Twin test (ADR-052, OI-116 A; SIM 210, code audit T33): the same
+        /// long ball to the same target man, and only the pass that man will
+        /// have where it comes down changes — his next mate free, or that
+        /// mate marked. The lofted pass looks one step ahead as the ground
+        /// pass does; before, it was worth only the space it reached.
+        #[test]
+        fn a_long_ball_to_a_man_with_a_free_pass_is_worth_more() {
+            let target = PlayerId::new(7, 0);
+            let next = PlayerId::new(8, 0);
+            let cover = PlayerId::new(105, 0);
+            let marker = PlayerId::new(106, 0);
+            // The defender at the target man's shoulder, the same in both.
+            let mut open = scene((8000, 3400), Some((8000, 3700)));
+            open.reception.aerial.insert(target, 0.9);
+            open.reception.aerial.insert(cover, 0.4);
+            open.teammates.push(next);
+            open.positions.insert(next, (9000, 4400));
+            // Only the man on the next landing point changes.
+            let mut closed = open.clone();
+            closed.opponents.push(marker);
+            closed.positions.insert(marker, (9060, 4400));
+            let free = loft_salience_to(&open, target);
+            let guarded = loft_salience_to(&closed, target);
+            assert!(free > guarded, "free next pass {free}, guarded {guarded}");
         }
 
         /// ADR-050 (P1): a pass forward is more salient than the same pass back,
