@@ -99,4 +99,4 @@ Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'opera
 | 2026-11-25 | Claude Code | SIM 208, il recupero della Regola 7.3: 14 su 22; il 209 (lancio lungo) aspetta una scelta (RUN 17) | `89de419` |
 | 2026-11-25 | Claude Code | SIM 209, il colpo di testa sotto zero (RUN 18) | `3d9d845` |
 | 2026-11-25 | opencode | SIM 210 (A0): il lancio guarda un passo avanti; golden e semi rigenerati; misura 12 → 10 su 22 | `4a97817` |
-| 2026-11-25 | opencode | SIM 211: il rimbalzo dopo un blocco non torna subito a chi ha giocato; golden, semi, guard; misura 9 su 22 | TBD |
+| 2026-11-25 | opencode | SIM 211: il rimbalzo dopo un blocco non torna subito a chi ha giocato; golden, semi, guard; misura 9 su 22 | `b619af3` |

@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `4a97817` - "SIM 210: the lofted pass looks one step ahead (T33, OI-116 A)"
+**Last commit verified:** `b619af3` - "SIM 211: the man who played the ball waits for his rebound"
 
 ## Mandato attivo (2026-11-16)
 
@@ -19,6 +19,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 
 ## Dove siamo (2026-11-25)
 
+- **SIM 211 — il rimbalzo dopo un blocco non torna subito a chi ha giocato (DD-74).** Il passatore e lo shooter aspettano lo stesso `retry_ticks` già usato dopo un controllo fallito. Guard `the_shooter_waits_after_a_block`; golden e semi rigenerati. `ds-reference 42..101`: **9 su 22**; tiri 38.73 → 30.50, rimesse 17.77 → 33.32, angoli 7.73 → 18.08, parate 6.75 → 5.08. Indizio aperto: angoli e parate.
 - **SIM 210 — il lancio guarda un passo avanti (DD-73).** Il pallone alto vale la migliore giocata successiva del ricevitore, come il passaggio a terra (ADR-052, OI-116 A, T33). `ds-reference 42..101`: **10 su 22** (12 al 207); gol 4.98 → 6.93, angoli 7.23 → 18.97, tiri 42.7 → 49.4, duelli aerei 6.6 → 11.0, rimesse 19.1 → 33.4. Indizio aperto: troppi palloni alti finiscono sul fondo (angoli) o in propria porta (autogol 0.23 → 0.47); opencode RUN 17 ha già smentito la spiegazione del doppio conteggio dei passaggi (RUN 33).
 - **SIM 205 — il pallone alto lo contende chi ci arriva nel tick (2026-11-24, DD-68).** T29 chiuso. `ds-reference 42..101`: **10 su 22**; duelli aerei 6.15 → 7.92. Indizio nuovo: i palloni alti giocati sono pochi (cross 8.7 contro 33.8).
 - **SIM 204 — il pallone alto è una scelta del giocatore (2026-11-24, DD-65).** T29, prima metà: il passaggio alto di un compagno nella propria metà si stoppa; nessun tiro di testa d'ufficio in area. `ds-reference 42..101`: **10 su 22** (shots_on_target, penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.43, autogol 0.83, tiri 42.37, in porta 11.32, passaggi 1626.17, duelli aerei 6.15, duelli a terra 213.62, dribbling 27.23, spazzate 22.5, rimesse 17.73, fuorigioco 9.2, recupero 7.17/6.74. Aperto: il duello aereo solo nello stesso piccolo passo.
@@ -149,6 +150,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | DD-71 | SIM 206: il dribbling riuscito è il portatore che supera l'uomo (l'uomo non più goal-side, il portatore più vicino alla porta che attacca), non il contatto vinto | La definizione Wyscout del take-on riuscito; opencode RUN 15 sulle registrazioni | il superamento solo lungo il campo (non conta il dribbling verso il centro); una distanza fissa inventata |
 | DD-72 | SIM 207: nella propria area di rigore il primo controllo non accompagna il pallone verso la propria linea di porta: lo porta di lato (verso dove andava, o lontano dal centro della porta) | La regola della conduzione (nessuno porta palla dentro una porta); l'area della Regola 1; opencode RUN 10 | ovunque nel campo (cambierebbe le aperture del gioco); una distanza dalla porta inventata |
 | DD-73 | SIM 210: il lancio guarda un passo avanti e vale la migliore giocata che il ricevitore potrà fare, con la stessa misura del passaggio a terra; nessun peso nuovo | ADR-052 (la misura unica), OI-116 A, T33; HANDOFF §4 A0 | contare i lanci del ricevitore come sua giocata successiva (opencode RUN 17); un numero scelto dalla metrica |
+| DD-74 | SIM 211: dopo un passaggio o un tiro bloccato, anche chi lo ha giocato aspetta lo stesso `retry_ticks` di chi lo ha respinto prima di riprendere il rimbalzo | ADR-051 (il blocco dà il possesso agli avversari); la stessa regola del controllo fallito e della spazzata; opencode RUN 32 sulle registrazioni | un tempo nuovo scelto guardando i tiri ripetuti; impedire al giocatore di scegliere (il gate è solo fisico, non cognitivo) |
 
 ## Plan
 
