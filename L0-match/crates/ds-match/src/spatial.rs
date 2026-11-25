@@ -1430,6 +1430,33 @@ impl SpatialState {
         }
     }
 
+    /// The way a first touch runs, kept off the receiver's own goal line in
+    /// his own penalty area (Law 1): across, to the side the ball was going,
+    /// or away from the goal's middle.
+    fn first_touch_across(&self, from: (f64, f64), dir: (f64, f64)) -> (f64, f64) {
+        let law = ds_calculator::laws::law1();
+        let (length, width) = (f64::from(self.pitch_cm.0), f64::from(self.pitch_cm.1));
+        // The side with the ball is the receiver's; home defends x = 0.
+        let (own_line, towards_line) = if self.home_in_possession {
+            (0.0, dir.0 < 0.0)
+        } else {
+            (length, dir.0 > 0.0)
+        };
+        let in_box = (from.0 - own_line).abs() <= f64::from(law.penalty_area_depth_cm)
+            && (from.1 - width / 2.0).abs() <= f64::from(law.penalty_area_half_width_cm);
+        if !(in_box && towards_line) {
+            return dir;
+        }
+        let side = if dir.1 > 0.0 {
+            1.0
+        } else if dir.1 < 0.0 || from.1 < width / 2.0 {
+            -1.0
+        } else {
+            1.0
+        };
+        (0.0, side)
+    }
+
     /// The carrier chose to carry the ball towards `target` (IDEA-DESIGN-010).
     /// The target is forgotten when the carrier changes.
     pub const fn set_carry_target(&mut self, target: Option<(i32, i32)>) {
@@ -1522,6 +1549,14 @@ impl SpatialState {
                 } else {
                     ((vx / incoming, vy / incoming), spill, 0.0)
                 };
+                // In his own penalty area his first touch never runs on
+                // towards his goal line (SIM 207, code audit T9, opencode
+                // RUN 10): what he does not kill he takes across, as a keeper
+                // or a defender opens his body to a pass played back to him.
+                // The same rule as the carry's (nobody dribbles into a goal);
+                // the area is Law 1's. Before, a pass back that he did not
+                // kill rolled on into his own net while he chased it.
+                let dir = self.first_touch_across(from, dir);
                 self.touch = Some(Touch {
                     from,
                     dir,
@@ -2956,6 +2991,36 @@ mod tests {
         assert_eq!(later, at, "a dead ball under his foot in a step");
         let (_, first, later) = won(10.0);
         assert!(first.0 > at.0 && later.0 > first.0, "a poor touch runs on");
+    }
+
+    /// SIM 207 (T9): in his own penalty area a first touch he does not kill
+    /// goes across, not on into his goal; the same touch out of the area
+    /// runs on the way the ball came (the twin).
+    #[test]
+    fn in_his_own_area_the_first_touch_goes_across() {
+        let id = PlayerId::new(1, 0);
+        let receive = |x: i32| {
+            let mut s = make_state();
+            s.set_home_in_possession(true, 0, 0);
+            let y = s.pitch_cm.1 / 2;
+            s.set_position(id, (x, y));
+            s.set_ball_in_flight((x + 80, y, 0), (-60, 0, 0));
+            s.set_carrier(Some(id));
+            s.follow_carrier(1, false, |_, _| 2.5, |_, _| 10.0, 45);
+            s.follow_carrier(4, false, |_, _| 2.5, |_, _| 10.0, 45);
+            ((x, y), s.ball())
+        };
+        let (at, ball) = receive(600);
+        assert!(
+            ball.0 >= at.0 - BODY_RADIUS_CM,
+            "not on towards his line: {at:?} {ball:?}"
+        );
+        assert_ne!(ball.1, at.1, "across");
+        let (at, ball) = receive(5000);
+        assert!(
+            ball.0 < at.0 + 80 && ball.1 == at.1,
+            "out of the area it runs on the way it came: {at:?} {ball:?}"
+        );
     }
 
     /// OI-123 (ADR-058 §5), SIM 177: the first touch is the receiver's. Running

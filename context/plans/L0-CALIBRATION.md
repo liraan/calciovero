@@ -131,6 +131,18 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 1.35 | 5.54 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 4.51 | 2.5–5.7 | sì | — |
 
+## La misura del 207 (2026-11-25)
+
+Nella propria area il primo controllo va di lato (T9, opencode RUN 10).
+
+| metrica | 206 | 207 | reale | causa | bug o taratura |
+|---|---|---|---|---|---|
+| own_goals | 0.90 | 0.23 | 0.10 ± 0.31 | il pallone non smorzato correva verso la propria linea (corretto) | bug, corretto: in banda |
+| goals | 5.48 | 4.98 | 2.68 ± 1.65 | una parte erano autogol; il resto: tiri ×1.7 (T30, OI-100) | resta fuori |
+| corners | 10.88 | 7.23 | 10.30 ± 3.58 | meno palloni giocati sul fondo dai propri difensori | in banda |
+
+**In banda: 207 → 12 su 22** (contate come al 206, intercettazioni comprese: 11 al 206).
+
 ## La misura del 206 (2026-11-25)
 
 Il dribbling è superare l'uomo (opencode RUN 15). Su 42..101 cambia solo il conteggio dei dribbling riusciti, ogni altra metrica è identica alla cifra.
