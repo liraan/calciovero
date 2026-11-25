@@ -91,3 +91,4 @@ Claude Code scrive `READY <n> <hash>` in `target/claude-checkpoint.txt`; l'opera
 | 2026-11-24 | Claude Code | decisione BN; `ds-career`, `Season::input` | `969c35b` |
 | 2026-11-24 | Claude Code | decisione BO; `Career::watch`; la catena Android installata | `89902d5` |
 | 2026-11-25 | Claude Code | SIM 206, il dribbling è superare l'uomo (dal rapporto 15 di opencode); la GUI BP sul ramo `feat/career-gui` | `1dfb1ea` |
+| 2026-11-25 | Claude Code | SIM 207, T9: autogol in banda (0.90 → 0.23); 12 su 22 | `3980dd4` |

@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `1dfb1ea` - "SIM 206: the dribble is getting past the man (opencode RUN 15)"
+**Last commit verified:** `3980dd4` - "SIM 207: in his own area the first touch goes across (code audit T9)"
 
 ## Mandato attivo (2026-11-16)
 
@@ -146,6 +146,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | DD-69 | L1 passo 7, primo anello: ammonizioni contate nella stagione; una giornata di squalifica a ogni soglia di `discipline.json` (5ª, 10ª dai comunicati del Giudice Sportivo; 14ª, 17ª da verificare sul CGS) e dopo un rosso (il minimo); scontata quando la squadra gioca; spegnibile | I comunicati ufficiali; il CGS art. 19 c. 9 per la regola generale | la soglia del CGS generale (4ª) senza la progressione della Serie A; la squalifica lunga inventata |
 | DD-70 | L1 passo 5, secondo anello: il club umano dà la formazione per giorno, rifiutata con il perché (squalificato, fuori rosa, doppione, piano fuori scala) e sostituita dalla proposta del vice; gli allenatori AI spostano il blocco con la radice `coach_adaptability` contro la pressione (punti a partita dell'avversario meno i propri, diviso 3, dalla classifica pubblica) | ADR-114, decisione AI; il piano B per la classifica | la forza dell'avversario dal piano A (vietato); un peso inventato per l'adattamento |
 | DD-71 | SIM 206: il dribbling riuscito è il portatore che supera l'uomo (l'uomo non più goal-side, il portatore più vicino alla porta che attacca), non il contatto vinto | La definizione Wyscout del take-on riuscito; opencode RUN 15 sulle registrazioni | il superamento solo lungo il campo (non conta il dribbling verso il centro); una distanza fissa inventata |
+| DD-72 | SIM 207: nella propria area di rigore il primo controllo non accompagna il pallone verso la propria linea di porta: lo porta di lato (verso dove andava, o lontano dal centro della porta) | La regola della conduzione (nessuno porta palla dentro una porta); l'area della Regola 1; opencode RUN 10 | ovunque nel campo (cambierebbe le aperture del gioco); una distanza dalla porta inventata |
 
 ## Plan
 
