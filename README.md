@@ -146,7 +146,7 @@ classic Italian ones. The longer version is in
 the first season is being built: twenty invented clubs (real cities and
 colours, invented names), their squads, a calendar, every match played by
 the engine, the standings, a coach who picks his eleven and his plan, the
-body carried from one match to the next, cautions and bans. Engine version **208**; **645
+body carried from one match to the next, cautions and bans. Engine version **209**; **645
 tests** and a health check run on every commit.
 
 ### The road, level by level

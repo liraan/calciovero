@@ -970,6 +970,12 @@ pub fn header_shot(
         } => Some((c.geometric, aim_y, power, contact_height)),
         _ => None,
     })
+    // A header he reads as worth less than nothing is no header at goal
+    // (SIM 209, opencode RUN 18): he brings the ball down instead, the
+    // branch the engine already has. Zero is the line every other choice
+    // of this reading uses; before, the best of bad headers was always
+    // played, and every high ball won in the box was a shot.
+    .filter(|(worth, _, _, _)| *worth > 0.0)
     .max_by(|a, b| a.0.total_cmp(&b.0))?;
     Some((best.1, best.2, best.3))
 }

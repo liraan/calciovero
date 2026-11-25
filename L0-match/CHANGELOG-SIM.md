@@ -8,6 +8,10 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 209 — a header worth less than nothing is no header at goal (opencode RUN 18)
+
+`header_shot` played the best of the headers at goal he read even when every one was worth less than nothing: every high ball won in the opponents' box was a shot. Now a header worth less than zero is not played; he brings the ball down, the branch the engine already had. Zero is the line every other choice of this reading uses. `ds-reference 42..101`: shots 38.85 → 38.73, the rest within a decimal; 14 of 22. What makes shots ×1.6 is elsewhere (RUN 18: rebounds, 685 shots within 6 s of another; the 35 m range, which needs a source and a choice). The lofted pass's look ahead is now the patch for 210.
+
 ## 208 — the added time of Law 7.3 (OI-101; first tried on the branch sim-193, DD-53)
 
 The referee added 20 s for every foul. Law 7.3 lists the causes of time lost (substitutions, injuries, wasting time, disciplinary sanctions, medical and drinks breaks, VAR, any significant delay to a restart); a foul as such is not among them: foul 20 → 0. Substitutions and injuries now add the traditional allowance of the reference season: 30 s and one minute (Collina, FIFA 2022; an IFAB board member to AFP, 2018). The SIM 203 guard that read a stopped foul as time lost is replaced by `a_foul_adds_no_stoppage_an_injury_does`. `ds-reference 42..101`: added time 6.86 / 6.75 → 3.75 / 5.40 minutes (real 1.49 / 4.08; the second half now in the band), and with the shorter halves ground duels 211.8 → 201.2 (in the band); 14 of 22 in the band (12 at 207). Open: cards and wasting time have no measured allowance (OI-101). Seeds: level at 90' 49, the cup's shoot-out 129. The lofted pass's look ahead is now the patch for 209 (opencode RUN 17: it needs a choice, see HANDOFF).
