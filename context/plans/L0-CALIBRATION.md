@@ -131,6 +131,16 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 1.35 | 5.54 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 4.51 | 2.5–5.7 | sì | — |
 
+## La misura del 206 (2026-11-25)
+
+Il dribbling è superare l'uomo (opencode RUN 15). Su 42..101 cambia solo il conteggio dei dribbling riusciti, ogni altra metrica è identica alla cifra.
+
+| metrica | 205 | 206 | reale | causa | bug o taratura |
+|---|---|---|---|---|---|
+| take_ons_won | 25.98 | 9.73 | 16.03 ± 5.67 | contato al contatto, non al superamento (corretto); resta quante volte si prova a saltare l'uomo | bug, corretto; il resto da indagare |
+
+**In banda: 206 → 10 su 22**, come il 205.
+
 ## La misura del 205 (2026-11-24, DD-68)
 
 Stesso comando e banda. **10 su 22** (shots_on_target, penalties, fouls, yellow_cards, red_cards, corners, goal_kicks, free_kicks, clearances, saves); gol 5.48, autogol 0.9, tiri 42.92, in porta 11.13, passaggi 1628.97, duelli aerei 7.92, duelli a terra 210.83, dribbling 25.98, spazzate 22.77, rimesse 17.82, fuorigioco 9.25, recupero 7.22/6.75. Nessun numero adattato. I duelli aerei 6.15 → 7.92: la contesa nel tick c'è, ma i palloni alti giocati sono pochi (i cross 8.7 contro 33.8 reali, la metrica che `ds-reference` non confronta): **indizio nuovo, la scelta del pallone alto** (lancio, cross) va cercata come bug nel pensiero di chi passa.

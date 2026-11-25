@@ -8,6 +8,10 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 206 — the dribble is getting past the man (opencode RUN 15)
+
+A take-on won at the contact is no longer a dribble at once: the man taken on is down for his `down` ticks, and the dribble is told when the carrier, the ball still his, is past him, the man no longer goal-side (the carrier nearer the goal he attacks). If he loses the ball first, or the man is up again before he is past, there is no dribble. Before, the dribble was told at the contact, the two still a step apart (opencode RUN 15: 1483 of 1559 within 150 cm); the take-on won of the Wyscout data the metric reads is the dribbler getting past the opponent. Only the event moves: every other metric of 42..101 is the same to the decimal. Guard: `a_dribble_is_told_once_the_man_is_past` (at every dribble, the man is past). `ds-reference 42..101`: take-ons won 25.98 → 9.73 (real 16.03 ± 5.67): out of the band on the other side; what is left is how often a man is taken on, not how it is counted. 10 of 22 in the band, as at 205. The lofted pass's look ahead, ready as SIM 206, is now `context/plans/patches/sim207-loft-lookahead.patch`.
+
 ## 205 — il pallone alto lo contende chi ci arriva nel tick (DD-68)
 
 T29, seconda metà (`CODE-AUDIT.md`): contendono il pallone alto tutti quelli che lo raggiungono lungo il suo percorso nel tick, al punto in cui lo incontra il primo; prima solo chi arrivava nello stesso piccolo passo (un cinquantesimo di secondo). Nessun numero cambiato. I duelli aerei salgono poco (6.15 → 7.92): la causa grande è altrove, i palloni alti giocati sono pochi (i cross 8.7 contro 33.8), un indizio nuovo.

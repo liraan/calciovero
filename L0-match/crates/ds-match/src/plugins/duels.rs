@@ -26,6 +26,7 @@ impl MatchState {
     /// if the challenger wins, the ball is his. The one who lost the ball
     /// does not win it back at once.
     pub(crate) fn challenge_carrier(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        self.settle_take_on(ctx, tick);
         // A restart waiting: the ball is out of play (SIM 150).
         if self.waiting.is_some() {
             return;
@@ -194,11 +195,12 @@ impl MatchState {
         }
     }
 
-    /// Taken on and beaten (ADR-042 step c): the man is left behind for
-    /// `down` ticks, and the dribble is an event.
+    /// Taken on and beaten at the contact (ADR-042 step c): the man is left
+    /// behind for `down` ticks. The dribble is not yet an event: it is one
+    /// when the carrier has got past him (`settle_take_on`).
     pub(crate) fn beaten_by_dribble(
         &mut self,
-        ctx: &mut MatchContext<'_>,
+        _ctx: &mut MatchContext<'_>,
         tick: u64,
         (carrier, challenger): (PlayerId, PlayerId),
         down: u64,
@@ -206,13 +208,49 @@ impl MatchState {
         self.challenges.insert(challenger, tick + down);
         self.spatial
             .set_act(challenger, ds_orchestrator::OffBallAct::Hold);
-        self.emit_event(
-            ctx,
-            tick,
-            Some(ActorId::Player(carrier)),
-            EventType::Dribble,
-            serde_json::json!({ "past": challenger.slot() }),
-        );
+        self.taking_on = Some((carrier, challenger, tick + down));
+    }
+
+    /// The take-on becomes a dribble when the carrier, the ball still his,
+    /// is past the man he took on: the man no longer goal-side of him, the
+    /// carrier nearer the goal he attacks (SIM 206; the take-on won of the Wyscout data the metric
+    /// reads is the dribbler getting past the opponent). If he loses the ball
+    /// first, or the man is up again before he is past, it is no dribble.
+    /// Before, the dribble was told at the contact, the two still a step
+    /// apart (opencode RUN 15: 1483 of 1559 within 150 cm).
+    pub(crate) fn settle_take_on(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
+        let Some((carrier, challenger, until)) = self.taking_on else {
+            return;
+        };
+        if self.spatial.carrier() != Some(carrier) || tick > until {
+            self.taking_on = None;
+            return;
+        }
+        let (Some(c), Some(d)) = (self.spatial.agent(carrier), self.spatial.agent(challenger))
+        else {
+            self.taking_on = None;
+            return;
+        };
+        // Goal-side: the man is no longer between the carrier and the goal
+        // he attacks, the carrier nearer it than him.
+        let home = ctx.match_.home.players.iter().any(|p| p.id == carrier);
+        let (length, width) = pitch_cm(ctx);
+        let goal = if home {
+            (length, width / 2)
+        } else {
+            (0, width / 2)
+        };
+        let past = distance_squared(c.position, goal) < distance_squared(d.position, goal);
+        if past {
+            self.taking_on = None;
+            self.emit_event(
+                ctx,
+                tick,
+                Some(ActorId::Player(carrier)),
+                EventType::Dribble,
+                serde_json::json!({ "past": challenger.slot() }),
+            );
+        }
     }
 
     /// What the carrier imagines is at stake in a challenge (ADR-052 §3):

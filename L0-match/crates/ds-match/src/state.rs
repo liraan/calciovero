@@ -256,6 +256,11 @@ pub struct MatchState {
     pub(crate) carrier_decided: bool,
     /// When a player who lost the ball may challenge again (ADR-042).
     pub(crate) challenges: BTreeMap<PlayerId, u64>,
+    /// A take-on won at the contact, not yet a dribble: the carrier, the man
+    /// he took on, and the tick by which he must have got past him (SIM 206,
+    /// opencode RUN 15: the dribble is getting past the man, not winning
+    /// the contact).
+    pub(crate) taking_on: Option<(PlayerId, PlayerId, u64)>,
     /// When each player without the ball chooses again (ADR-049).
     pub(crate) offball_due: BTreeMap<PlayerId, u64>,
     /// The intesa of each pair of teammates (strato 3): how well one
@@ -896,6 +901,7 @@ impl MatchState {
             last_carrier: None,
             carrier_decided: false,
             challenges: BTreeMap::new(),
+            taking_on: None,
             offball_due: BTreeMap::new(),
             intesa: {
                 let mut m = BTreeMap::new();
