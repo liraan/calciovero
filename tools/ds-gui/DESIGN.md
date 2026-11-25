@@ -4,17 +4,19 @@ Le scelte di design della GUI prese con il maintainer tra il 13 e il 16 novembre
 
 **Regola di lavoro:** il design si discute prima di applicarlo (RULES A1), e **ogni cambio visivo si mostra prima al maintainer con un'anteprima** (maintainer, 16 novembre 2026: "dammi sempre una preview"): un prototipo o uno screenshot, prima di passarlo al codice. I gruppi e i post-it nuovi si decidono quando c'è il contenuto da metterci, non prima.
 
-## Le finestre e la scrivania (decisione BO, maintainer, 2026-11-24)
+## La schermata di gioco (decisione BP, maintainer, 2026-11-25; sostituisce BO)
 
-Sostituisce i post-it qui sotto come contenitori; la lavagna resta lo sfondo.
+Il riferimento è la proposta "Lavagna" dell'artifact *Calcio Vero - Deep Simulator · proposte GUI* (claude.ai, 14 novembre 2026), con le precisazioni del maintainer del 2026-11-25. LUNA e partita vera valgono per ogni pezzo: ogni scelta ha un effetto che si legge nel gioco, niente finestre o pulsanti finti.
 
-- **Finestre, non post-it.** Ogni contenuto è una finestra che si affianca alle altre (tiling), si espande per avere più dati, si chiude. Chi gioca compone la sua schermata; il gioco ne fornisce già una composta, e la schermata si salva.
-- **La colonna di sinistra:** le icone delle finestre, raggruppate (Scrivania: agenda, rosa, tattica, partita; Stagione: classifica, calendario, statistiche; Società: mercato, osservatori, club ed economia, staff). Un clic apre la finestra; la colonna si allarga con le etichette. Compare l'icona di un modulo solo quando il modulo esiste (niente icone morte).
-- **La lavagna come sfondo, con la tattica:** con palla, transizione, senza palla; gli aiuti del vice e degli analisti su come disporre la squadra, sempre dai fatti visti (piano B), mai dalle caratteristiche (piano A).
-- **Le schede giocatore** dettagliate, con le stime (intervalli che si stringono con le partite viste), mai i numeri veri.
-- **La partita in 2.5D si apre in una finestra con la cornice di un tablet**, come se l'allenatore la guardasse da lì; chiuso il tablet si torna alla lavagna.
-- **Android:** una finestra alla volta a tutto schermo, la colonna diventa un cassetto; il tablet è lo schermo stesso, senza cornice.
-- Le prove in immagine del 2026-11-24 (la scrivania, la partita nel tablet) sono il riferimento dell'anteprima.
+- **La base è la lavagna tattica**, a tutto schermo: le linee del campo e i pallini dei giocatori, che si **trascinano** per disegnare la tattica. Da qui si decidono tutte le tattiche. In alto, **pulsanti in trasparenza** per la fase: **in possesso**, **non in possesso**, **transizione** (palla persa, palla recuperata). Tre temi: Lavagna, Notte, Carta.
+- **Sopra la lavagna, una barra come la barra di Start di Windows** (a scomparsa, si può appuntare):
+  - **a sinistra, il pulsante con l'icona del progetto:** apre un menu a tendina con l'elenco delle finestre disponibili; ogni voce apre la sua finestra. Dallo stesso logo le opzioni del gioco: salva, carica, nuova carriera, impostazioni, come si gioca, esci;
+  - **poi il calendario:** il giorno precedente, il giorno corrente, il prossimo. Si cliccano e si espandono nella **scheda calendario** con le attività del giorno (allenamenti, riunioni, colloqui, rapporti degli osservatori, video dell'avversario, conferenza stampa, la scelta dei convocati, la partita). Ogni attività apre la sua finestra: per esempio l'allenamento si gestisce da qui, cliccando l'allenamento e aprendo la **finestra allenamento**;
+  - a destra, il pulsante per andare avanti (al giorno della partita).
+- **Le finestre sono schede stile post-it, magnetiche:** si agganciano l'una all'altra in **tiling** (affiancate o a schede, "rilascia: affianca / a schede") e compongono la schermata, personalizzabile e salvata; il gioco ne propone una di partenza. **Ogni finestra ha una versione piccola** e, cliccandoci, **una più particolareggiata** ("apri alla misura naturale").
+- **Le finestre** (solo quelle dei moduli che esistono): rosa, scheda giocatore, tattica e istruzioni rapide, prossima partita, classifica, calendario, allenamento, osservatori, mercato, club e finanze, statistiche (mappa dei tiri, mappa di calore), il perché dei gol, la cronaca.
+- **La partita in 2.5D** si apre nella cornice di un tablet (la parte di BO che resta: al maintainer è piaciuta), con il pulsante per chiuderla dentro la cornice.
+- **Android:** una finestra alla volta, la barra in basso, il tablet è lo schermo.
 
 ## La lavagna, sfondo di tutto
 

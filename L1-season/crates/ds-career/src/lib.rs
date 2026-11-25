@@ -6,6 +6,7 @@
 //! his coach sees: names, roles, ages, results, the table, the bans, how
 //! tired his men are (plane B); never a characteristic (plane A, ADR-112).
 
+pub use ds_coach::Lineup;
 use ds_season::{Season, SeasonError, SeasonSave};
 use ds_season_api::{MATCH_PLAYED, SeasonEvent, SeasonPlugin};
 use ds_world::{Club, Pack};
@@ -75,6 +76,8 @@ pub struct Watch {
     pub keys: Vec<(ds_core::ids::PlayerId, ds_core::ids::PlayerId)>,
     /// The world's seed.
     pub seed: u64,
+    /// The clubs' names, home and away.
+    pub names: (String, String),
 }
 
 impl Watch {
@@ -392,10 +395,18 @@ impl Career {
             &start,
         )
         .map_err(|e| CareerError(e.0))?;
+        let clubs = self.clubs();
+        let name = |c: u32| {
+            clubs
+                .get(c as usize)
+                .map(|x| x.name.clone())
+                .unwrap_or_default()
+        };
         Ok(Watch {
             match_,
             keys,
             seed: self.seed,
+            names: (name(f.home), name(f.away)),
         })
     }
 

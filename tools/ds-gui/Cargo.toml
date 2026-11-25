@@ -19,6 +19,8 @@ ds-stats.workspace = true
 ds-match.workspace = true
 ds-fixtures.workspace = true
 ds-demo = { path = "../ds-demo" }
+ds-career = { path = "../../L1-season/crates/ds-career" }
+ds-world = { path = "../../L1-season/crates/ds-world" }
 serde.workspace = true
 serde_json.workspace = true
 # ADR-055: pinned to the last version that keeps the workspace's Rust 1.85.

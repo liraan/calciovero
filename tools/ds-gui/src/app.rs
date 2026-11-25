@@ -88,6 +88,9 @@ pub struct Start {
     /// playback, into this folder, this many frames, then close
     /// (`--record DIR --frames N`: the README's animation).
     pub record: Option<(String, usize)>,
+    /// Open the career of this world's seed and club straight away
+    /// (`--career SEED:CLUB`).
+    pub career: Option<(u64, u32)>,
 }
 
 /// How quickly the camera catches up with the ball when it follows it, a
@@ -95,10 +98,23 @@ pub struct Start {
 const FOLLOW_RATE: f32 = 3.0;
 /// The slow motion, a share of the chosen speed (DESIGN.md: about a third).
 const SLOW: f64 = 1.0 / 3.0;
+/// Where the match watched comes from.
+#[derive(Clone)]
+enum MatchSource {
+    /// The friendly of the seed, with the manager's choices and his orders
+    /// while watching (decision T).
+    Friendly,
+    /// A match of the career's season, already played: watched as it was
+    /// (`ds_career::Career::watch`). The orders while watching come with
+    /// the matchday's input (not yet: their menus do not show).
+    Season(Box<ds_career::Watch>),
+}
+
 /// The application state.
 #[derive(Clone)]
 #[allow(clippy::struct_excessive_bools, reason = "the window's switches")]
 pub struct App {
+    source: MatchSource,
     theme: Theme,
     themes: Vec<Theme>,
     laws: LawsBalance,
@@ -158,7 +174,15 @@ impl App {
     ///
     /// If `themes` is empty (`Theme::all` never returns an empty list).
     pub fn new(themes: Vec<Theme>) -> Self {
-        let mut app = Self {
+        let mut app = Self::blank(themes);
+        app.play_match();
+        app
+    }
+
+    /// The window with nothing to watch yet.
+    fn blank(themes: Vec<Theme>) -> Self {
+        Self {
+            source: MatchSource::Friendly,
             theme: themes[0].clone(),
             themes,
             laws: LawsBalance::load(),
@@ -193,9 +217,7 @@ impl App {
             show_shape: false,
             panel_open: false,
             panel_rect: None,
-        };
-        app.play_match();
-        app
+        }
     }
 
     /// The window as the command line asks: the board's theme by name,
@@ -245,63 +267,77 @@ impl App {
             Ok(m) => {
                 let (result, records) =
                     ds_match::simulate_from_seed_recorded(&m, self.seed, MatchConfig::default());
-                let why = friendly::why_conceded(&m, result.events.events());
-                let kept = records.clone();
-                let gestures = gestures(&records, result.events.events());
-                let cheers = cheers(&records, result.events.events());
-                let whistles = whistles(
-                    &records,
-                    result.events.events(),
-                    i32::from(m.pitch.length_m) * 100,
-                );
-                let ticks = ds_demo::narration::narrate_ticks(&m, &result.events, records);
-                let names = m
-                    .home
-                    .players
-                    .iter()
-                    .chain(m.home.bench.iter())
-                    .chain(m.away.players.iter())
-                    .chain(m.away.bench.iter())
-                    .map(|p| (p.id, p.name.clone()))
-                    .collect();
-                let header = ds_match::RecordHeader::current(
-                    MatchConfig::default().ticks_per_second,
-                    (m.pitch.length_m, m.pitch.width_m),
-                );
-                let home = (
-                    m.home.players.iter().map(|p| p.id).collect(),
-                    m.home.bench.iter().map(|p| p.id).collect(),
-                );
-                let pitch = (
-                    i32::from(m.pitch.length_m) * 100,
-                    i32::from(m.pitch.width_m) * 100,
-                );
-                let backdrop = (crate::stadium::city(pitch), crate::stadium::stadium(pitch));
-                self.game = Some(Game {
-                    cheers,
-                    whistles,
-                    backdrop,
-                    home,
-                    header,
-                    ticks,
-                    records: kept,
-                    gestures,
-                    names,
-                    why,
-                    pitch_cm: (
-                        i32::from(m.pitch.length_m) * 100,
-                        i32::from(m.pitch.width_m) * 100,
-                    ),
-                });
-                self.error = None;
-                self.tick = 0;
-                self.carry = 0.0;
-                self.whistle_pause = 0.0;
-                self.last_whistle = None;
-                self.playing = true;
+                self.load(&m, &result, records);
             }
             Err(e) => self.error = Some(e),
         }
+    }
+
+    /// The match played, ready to watch from its kick-off.
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "the records are narrated and kept"
+    )]
+    fn load(
+        &mut self,
+        m: &ds_model::Match,
+        result: &ds_match::MatchResult,
+        records: Vec<ds_match::TickRecord>,
+    ) {
+        let why = friendly::why_conceded(m, result.events.events());
+        let kept = records.clone();
+        let gestures = gestures(&records, result.events.events());
+        let cheers = cheers(&records, result.events.events());
+        let whistles = whistles(
+            &records,
+            result.events.events(),
+            i32::from(m.pitch.length_m) * 100,
+        );
+        let ticks = ds_demo::narration::narrate_ticks(m, &result.events, records);
+        let names = m
+            .home
+            .players
+            .iter()
+            .chain(m.home.bench.iter())
+            .chain(m.away.players.iter())
+            .chain(m.away.bench.iter())
+            .map(|p| (p.id, p.name.clone()))
+            .collect();
+        let header = ds_match::RecordHeader::current(
+            MatchConfig::default().ticks_per_second,
+            (m.pitch.length_m, m.pitch.width_m),
+        );
+        let home = (
+            m.home.players.iter().map(|p| p.id).collect(),
+            m.home.bench.iter().map(|p| p.id).collect(),
+        );
+        let pitch = (
+            i32::from(m.pitch.length_m) * 100,
+            i32::from(m.pitch.width_m) * 100,
+        );
+        let backdrop = (crate::stadium::city(pitch), crate::stadium::stadium(pitch));
+        self.game = Some(Game {
+            cheers,
+            whistles,
+            backdrop,
+            home,
+            header,
+            ticks,
+            records: kept,
+            gestures,
+            names,
+            why,
+            pitch_cm: (
+                i32::from(m.pitch.length_m) * 100,
+                i32::from(m.pitch.width_m) * 100,
+            ),
+        });
+        self.error = None;
+        self.tick = 0;
+        self.carry = 0.0;
+        self.whistle_pause = 0.0;
+        self.last_whistle = None;
+        self.playing = true;
     }
 
     /// An order given while watching (decision T): an input at the tick
@@ -313,6 +349,9 @@ impl App {
         reason = "an order is kept by value in the choices"
     )]
     fn order(&mut self, order: ds_model::Order) {
+        if !matches!(self.source, MatchSource::Friendly) {
+            return;
+        }
         let Some(game) = &self.game else { return };
         let Some(now) = game.records.get(self.tick) else {
             return;
@@ -1017,9 +1056,12 @@ impl App {
     /// The board as the coach has it now: the squad's, with every board
     /// he ordered since.
     fn board_now(&self) -> ds_model::Board {
-        let mut board = ds_fixtures::match_fixture(self.seed)
-            .map(|m| m.home.board)
-            .unwrap_or_default();
+        let mut board = match &self.source {
+            MatchSource::Friendly => ds_fixtures::match_fixture(self.seed)
+                .map(|m| m.home.board)
+                .unwrap_or_default(),
+            MatchSource::Season(w) => w.match_.home.board,
+        };
         for i in &self.choices.live {
             if let ds_model::Order::Board(b) = i.order {
                 board = b;
@@ -1649,8 +1691,26 @@ const fn width_label(w: Width) -> &'static str {
     }
 }
 
-impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+impl App {
+    /// A window watching a match of the career's season (decision BO: the
+    /// tablet), already played and recorded (`ds_career::Watch::recorded`,
+    /// on the career's thread): the same match.
+    #[must_use]
+    pub fn from_season(
+        themes: Vec<Theme>,
+        watch: ds_career::Watch,
+        result: &ds_match::MatchResult,
+        records: Vec<ds_match::TickRecord>,
+    ) -> Self {
+        let mut app = Self::blank(themes);
+        app.load(&watch.match_, result, records);
+        app.source = MatchSource::Season(Box::new(watch));
+        app
+    }
+
+    /// The clock of a frame: the playback moves on (or, recording, frame n
+    /// is exactly n/60 s of playback).
+    fn clock(&mut self, ctx: &egui::Context) {
         let dt = f64::from(ctx.input(|i| i.stable_dt).min(0.1));
         if self.record.is_some() {
             // Recording: frame n is exactly n/60 s of playback, however
@@ -1688,19 +1748,37 @@ impl eframe::App for App {
             self.last_dt = dt32;
             self.advance(dt);
         }
-        ctx.set_visuals(if self.theme.dark {
-            egui::Visuals::dark()
-        } else {
-            egui::Visuals::light()
-        });
-        egui::TopBottomPanel::top("choices").show(ctx, |ui| self.choices_bar(ui));
-        egui::TopBottomPanel::bottom("playback").show(ctx, |ui| self.playback_bar(ui));
+    }
+
+    /// The match view inside `ui`: the whole window for the friendly, the
+    /// tablet's screen for the career (decision BO).
+    pub fn show(&mut self, ui: &mut egui::Ui) {
+        let ctx = ui.ctx().clone();
+        self.clock(&ctx);
+        match &self.source {
+            MatchSource::Friendly => {
+                egui::TopBottomPanel::top("choices").show_inside(ui, |ui| self.choices_bar(ui));
+            }
+            MatchSource::Season(w) => {
+                let (home, away) = w.names.clone();
+                egui::TopBottomPanel::top("season-title").show_inside(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(format!("{home} – {away}")).strong());
+                    });
+                });
+            }
+        }
+        egui::TopBottomPanel::bottom("playback").show_inside(ui, |ui| self.playback_bar(ui));
         // A scomparsa: the right panel opens on hover at the edge and stays
         // while the pointer is over it (or over a menu it opened).
         let pointer = ctx.pointer_hover_pos();
-        let screen = ctx.screen_rect();
-        let at_edge =
-            pointer.is_some_and(|p| p.x >= screen.max.x - 28.0 && p.y > screen.min.y + 40.0);
+        let screen = ui.max_rect();
+        let at_edge = pointer.is_some_and(|p| {
+            p.x >= screen.max.x - 28.0
+                && p.x <= screen.max.x
+                && p.y > screen.min.y + 40.0
+                && p.y < screen.max.y
+        });
         let over_panel = pointer.is_some_and(|p| {
             self.panel_rect.is_some_and(|r| {
                 p.x >= r.min.x - 260.0
@@ -1714,13 +1792,13 @@ impl eframe::App for App {
         if self.panel_open {
             let panel = egui::SidePanel::right("commentary")
                 .default_width(380.0)
-                .show(ctx, |ui| self.commentary(ui));
+                .show_inside(ui, |ui| self.commentary(ui));
             self.panel_rect = Some(panel.response.rect);
         } else {
             egui::SidePanel::right("commentary-handle")
                 .default_width(14.0)
                 .resizable(false)
-                .show(ctx, |ui| {
+                .show_inside(ui, |ui| {
                     ui.vertical_centered(|ui| {
                         ui.label("<");
                     });
@@ -1729,9 +1807,9 @@ impl eframe::App for App {
         }
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE.fill(self.theme.board))
-            .show(ctx, |ui| self.pitch(ui));
+            .show_inside(ui, |ui| self.pitch(ui));
         if self.record.is_none() {
-            self.player_postit(ctx);
+            self.player_postit(&ctx);
         }
         if self.record.is_some() {
             // One screenshot at a time: the next frame is drawn only after
@@ -1744,6 +1822,19 @@ impl eframe::App for App {
         } else if self.playing {
             ctx.request_repaint();
         }
+    }
+}
+
+impl eframe::App for App {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        ctx.set_visuals(if self.theme.dark {
+            egui::Visuals::dark()
+        } else {
+            egui::Visuals::light()
+        });
+        egui::CentralPanel::default()
+            .frame(egui::Frame::NONE)
+            .show(ctx, |ui| self.show(ui));
     }
 }
 

@@ -973,12 +973,14 @@ dependencies = [
 name = "ds-gui"
 version = "0.1.0"
 dependencies = [
+ "ds-career",
  "ds-core",
  "ds-demo",
  "ds-fixtures",
  "ds-match",
  "ds-model",
  "ds-stats",
+ "ds-world",
  "eframe",
  "rodio",
  "serde",

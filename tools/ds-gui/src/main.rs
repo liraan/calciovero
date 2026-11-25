@@ -1,15 +1,19 @@
 //! `ds-gui` — Calcio Vero's desktop GUI (ADR-055).
 //!
-//! The friendly match: the manager chooses, the match is played by the
-//! engine, and he watches it on the tilted board of the 2.5D view with the
-//! commentary and the reasons for every goal conceded.
+//! The game (decision BN): the start, a new career or the saved one, the
+//! desk of the career with its windows (decision BO), the match in the
+//! coach's tablet; and the friendly: the manager chooses, the match is
+//! played by the engine, and he watches it on the tilted board of the 2.5D
+//! view with the commentary and the reasons for every goal conceded.
 //!
-//! `ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--zoom 0..1] [--free] [--slow] [--record DIR --frames N]` It reads Plane B only (ADR-022 §3).
+//! `ds-gui [--career SEED:CLUB] [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--zoom 0..1] [--free] [--slow] [--record DIR --frames N]` It reads Plane B only (ADR-022 §3).
 
 mod animation;
 mod app;
+mod desk;
 mod interp;
 mod scene;
+mod shell;
 mod stadium;
 mod theme;
 
@@ -37,9 +41,17 @@ fn start() -> Result<app::Start, String> {
                 let dir = s.record.take().map_or_else(|| ".".to_string(), |r| r.0);
                 s.record = Some((dir, n));
             }
+            "--career" => {
+                let v = value()?;
+                let (seed, club) = v.split_once(':').ok_or("--career: SEED:CLUB")?;
+                s.career = Some((
+                    seed.parse().map_err(|e| format!("--career: {e}"))?,
+                    club.parse().map_err(|e| format!("--career: {e}"))?,
+                ));
+            }
             "--help" | "-h" => {
                 println!(
-                    "ds-gui [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--zoom 0..1] [--free] [--slow] [--record DIR --frames N]"
+                    "ds-gui [--career SEED:CLUB] [--theme Lavagna|Notte|Carta] [--tilt DEG] [--seed N] [--at TICK] [--speed X] [--zoom 0..1] [--free] [--slow] [--record DIR --frames N]"
                 );
                 std::process::exit(0);
             }
@@ -49,7 +61,30 @@ fn start() -> Result<app::Start, String> {
     Ok(s)
 }
 
+/// The crash report (`GAME.md`, 0.1: "il file di segnalazione"): a panic is
+/// written, with where it happened, to `CalcioVero/crash.log` in the
+/// user's data folder, besides the console.
+fn report_crashes() {
+    let Some(base) = std::env::var_os("APPDATA")
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("HOME").map(|h| std::path::Path::new(&h).join(".local/share"))
+        })
+    else {
+        return;
+    };
+    let dir = base.join("CalcioVero");
+    let default = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let _ = std::fs::create_dir_all(&dir);
+        let text = format!("{info}\n{}\n", std::backtrace::Backtrace::force_capture());
+        let _ = std::fs::write(dir.join("crash.log"), text);
+        default(info);
+    }));
+}
+
 fn main() -> eframe::Result {
+    report_crashes();
     let start = match start() {
         Ok(s) => s,
         Err(e) => {
@@ -70,9 +105,24 @@ fn main() -> eframe::Result {
             .with_inner_size([1400.0, 820.0]),
         ..Default::default()
     };
+    // With no option, the game: the shell (decision BN). With options, the
+    // friendly as the command line asks (the README's recording).
+    let career = start.career;
+    let plain = app::Start {
+        career: None,
+        ..start.clone()
+    } == app::Start::default();
     eframe::run_native(
         "Calcio Vero",
         options,
-        Box::new(move |_cc| Ok(Box::new(app::App::new(theme).with_start(&start)))),
+        Box::new(move |_cc| {
+            if let Some((seed, club)) = career {
+                Ok(Box::new(shell::Shell::with_career(theme, seed, club)))
+            } else if plain {
+                Ok(Box::new(shell::Shell::new(theme)))
+            } else {
+                Ok(Box::new(app::App::new(theme).with_start(&start)))
+            }
+        }),
     )
 }

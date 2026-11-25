@@ -147,7 +147,9 @@ impl<'a> SeasonWorld<'a> {
 }
 
 /// A plugin of the season (ADR-113 §2).
-pub trait SeasonPlugin {
+/// A plugin is `Send`: a season may be played on another thread than the
+/// screen that shows it (the career, decision BN).
+pub trait SeasonPlugin: Send {
     /// Its card.
     fn card(&self) -> PluginCard;
 
