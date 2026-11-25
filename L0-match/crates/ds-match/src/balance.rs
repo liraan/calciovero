@@ -23,6 +23,14 @@ pub struct StoppageTime {
     pub foul: u32,
     /// Per-duel contribution, in seconds.
     pub duel: u32,
+    /// Per-substitution contribution, in seconds (SIM 208, Law 7.3: the
+    /// traditional allowance, 30 s).
+    #[serde(default)]
+    pub substitution: u32,
+    /// Per-injury contribution, in seconds (SIM 208, Law 7.3: the
+    /// traditional allowance, one minute).
+    #[serde(default)]
+    pub injury: u32,
     /// Per-water-break contribution, in seconds (ADR-068: FIFA's cooling
     /// break, three minutes).
     #[serde(default)]
@@ -62,6 +70,8 @@ impl StoppageTime {
             EventType::Foul => self.foul,
             EventType::Duel => self.duel,
             EventType::WaterBreak => self.water_break,
+            EventType::Substitution => self.substitution,
+            EventType::Injury => self.injury,
             _ => 0,
         }
     }
@@ -285,7 +295,9 @@ mod tests {
         let table = StoppageTime::load();
         assert_eq!(table.base, 0);
         assert_eq!(table.goal, 60);
-        assert_eq!(table.foul, 20);
+        assert_eq!(table.foul, 0, "a foul is not time lost (Law 7.3)");
+        assert_eq!(table.substitution, 30);
+        assert_eq!(table.injury, 60);
         assert_eq!(table.duel, 0, "a clean duel does not stop play");
     }
 
@@ -293,7 +305,9 @@ mod tests {
     fn contribution_maps_event_types() {
         let table = StoppageTime::load();
         assert_eq!(table.contribution(EventType::Goal), 60);
-        assert_eq!(table.contribution(EventType::Foul), 20);
+        assert_eq!(table.contribution(EventType::Foul), 0);
+        assert_eq!(table.contribution(EventType::Substitution), 30);
+        assert_eq!(table.contribution(EventType::Injury), 60);
         assert_eq!(table.contribution(EventType::Duel), 0);
         assert_eq!(table.contribution(EventType::Shot), 0);
         assert_eq!(table.contribution(EventType::KickOff), 0);
@@ -302,8 +316,8 @@ mod tests {
     #[test]
     fn total_sums_base_and_events() {
         let table = StoppageTime::load();
-        let total = table.total([EventType::Goal, EventType::Goal, EventType::Foul]);
-        assert_eq!(total, 140); // 60 + 60 + 20
+        let total = table.total([EventType::Goal, EventType::Substitution, EventType::Foul]);
+        assert_eq!(total, 90); // 60 + 30 + 0
     }
 
     #[test]
@@ -311,22 +325,25 @@ mod tests {
         let table = StoppageTime::load();
         let events = vec![
             make_event(EventType::Goal),
-            make_event(EventType::Goal),
+            make_event(EventType::Injury),
             make_event(EventType::Foul),
         ];
-        assert_eq!(stoppage_for(&events, &table), 140);
+        assert_eq!(stoppage_for(&events, &table), 120);
     }
 
-    /// SIM 203 (T15, Law 7): a foul on which the advantage was played
-    /// stopped nothing, so it adds no time; one that stopped play does.
+    /// SIM 208 (Law 7.3; it replaces the SIM 203 guard, which read a foul
+    /// that stopped play as time lost): a foul as such is not among the
+    /// causes of time lost, played on or not; a substitution and an injury
+    /// are.
     #[test]
-    fn a_foul_played_on_adds_no_stoppage() {
+    fn a_foul_adds_no_stoppage_an_injury_does() {
         let table = StoppageTime::load();
         let mut on = make_event(EventType::Foul);
         on.fields = serde_json::json!({ "advantage": true });
         let stopped = make_event(EventType::Foul);
-        assert_eq!(stoppage_for(&[on], &table), table.base);
-        assert_eq!(stoppage_for(&[stopped], &table), table.base + table.foul);
+        assert_eq!(stoppage_for(&[on], &table), 0);
+        assert_eq!(stoppage_for(&[stopped], &table), 0);
+        assert_eq!(stoppage_for(&[make_event(EventType::Injury)], &table), 60);
     }
 
     #[test]

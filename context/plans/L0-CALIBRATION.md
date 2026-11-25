@@ -131,6 +131,18 @@ un gioco simulativo è proprio quello che non può succedere.
 | recupero, primo tempo (min) | 1.49 | 1.35 | 5.54 | 0.1–2.8 | no | OI-101: il motore aggiunge tutto il tempo perso, gli arbitri circa metà (fonte nell'OI) |
 | recupero, secondo tempo (min) | 4.08 | 1.61 | 4.51 | 2.5–5.7 | sì | — |
 
+## La misura del 208 (2026-11-25)
+
+Il recupero della Regola 7.3 (OI-101).
+
+| metrica | 207 | 208 | reale | causa | bug o taratura |
+|---|---|---|---|---|---|
+| stoppage_first_half_min | 6.86 | 3.75 | 1.49 ± 1.35 | 20 s a ogni fallo, che non è tempo perso (corretto); restano cartellini e perdite di tempo senza tolleranza misurata | bug corretto; il resto aperto |
+| stoppage_second_half_min | 6.75 | 5.40 | 4.08 ± 1.61 | idem | in banda |
+| ground_duels | 211.8 | 201.2 | 182.6 ± 27.5 | tempi più corti | in banda |
+
+**In banda: 208 → 14 su 22.**
+
 ## La misura del 207 (2026-11-25)
 
 Nella propria area il primo controllo va di lato (T9, opencode RUN 10).
