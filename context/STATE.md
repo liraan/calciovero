@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `35da33c` - "docs(prompts): the operator's loop, read once and followed on"
+**Last commit verified:** `89de419` - "SIM 208: the added time of Law 7.3 (OI-101)"
 
 ## Mandato attivo (2026-11-16)
 
