@@ -175,6 +175,9 @@ pub(crate) struct Pending {
     pub cross: bool,
     /// The foot the ball was struck with (ADR-031), for the cross's narrative.
     pub foot: Option<ds_orchestrator::Side>,
+    /// Whether this pass is the restart kick itself: the report tells that
+    /// kick once, with the restart event, not again as a `Pass` at landing.
+    pub restart: bool,
 }
 /// A substitution ordered during the match: off, on (decision T).
 pub(crate) type Ordered = (PlayerId, PlayerId);
@@ -2196,6 +2199,7 @@ mod reaction_tests {
                 through: false,
                 cross: false,
                 foot: None,
+                restart: false,
             });
             s.spatial.set_ball_in_flight((at.0, at.1, 0), (20, 0, 0));
             s.ball_from = s.spatial.ball_3d();
@@ -2250,6 +2254,7 @@ mod body_block_tests {
                 through: false,
                 cross: false,
                 foot: None,
+                restart: false,
             });
             s.spatial
                 .set_ball_in_flight((at.0 - 60, at.1, 0), (120, 0, 0));

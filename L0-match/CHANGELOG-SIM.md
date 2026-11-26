@@ -9,6 +9,27 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 218 — a restart kick is told once (opencode RUN 73, DD-90)
+
+A goal kick, corner, throw-in or free kick played to a mate was told twice:
+the restart at the whistle and a `Pass` when the ball landed. In the local
+Wyscout file none of the 37,861 restart events has a `Pass` with the same
+start and end positions; only 354 have any pass by the same player within
+two seconds, and none is the same kick. With LUNA the kicker makes one
+choice and strikes once, so the second label was a counting bug, not a
+different definition. `Pending` now carries whether it is the restart kick
+and the landing tells no second `Pass`; an intercepted restart still emits
+`Interception`, which `ds-reference` no longer counts as a pass too. No
+choice, number or threshold was added, and the ball still flies the same
+way.
+
+Twin `a_restart_kick_is_not_told_as_a_second_pass`: same receiver, same
+ball, same tick; a normal pass is told once, a restart kick is not told
+again. Golden L0 base/instructions/cup (seed 43 unchanged), the L1 golden
+and the GUI seed all still hold. `ds-reference 42..101`: **11/20 comparable
+metrics in band, unchanged**; passes 1175.30 -> 1138.15, accurate
+1092.35 -> 1060.28. No number was chosen from a metric (A5-bis).
+
 ## 217 — a won answer is remembered under pressure too (opencode RUN 66, DD-87)
 
 `resolve_duel` gives the carrier the same `TakeOn` answer whether the opponent

@@ -143,6 +143,19 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 218 (2026-11-26, opencode)
+
+Stesso comando e bande del 217. Un solo bump: il calcio di una ripresa giocato a un compagno era raccontato due volte (`GoalKick`/`Corner`/`ThrowIn`/`FreeKick` al fischio e `Pass` all'atterraggio); il grezzo Wyscout locale non ha nessuna coppia con le stesse posizioni su 37.861 riprese, quindi il secondo evento era un doppio conteggio, non una definizione diversa. Nessun numero scelto guardando la tabella (A5-bis). **11 su 20 confrontabili, invariato rispetto al 217.**
+
+| metrica | 218 | 217 | reale | nota |
+|---|---|---|---|---|
+| passes | 1138,15 | 1175,30 | 887,68 ± 122,81 | fuori, DD?-81/82 (era +287,62, ora +250,47) |
+| passes_accurate | 1060,28 | 1092,35 | 739,17 ± 124,79 | fuori, DD?-81 (era +353,18, ora +321,11) |
+| crosses | 7,13 | 8,40 | 33,83 ± 8,78 | non confrontabile; cala con i passaggi di ripresa |
+| tutte le altre 19 righe | invariate | vedi 217 | — | 11 in banda, 9 fuori |
+
+Il doppio racconto era una delle voci del vecchio OI-100 ("troppi passaggi"): la si chiude qui come errore di evento, non come taratura. Le otto domande aperte (DD?-81..86, 88..89) restano tali.
+
 ## La misura del 217 (2026-11-26, opencode)
 
 Stesso comando e bande del 216. Un solo bump: il ramo jockey non registrava il `TakeOn` vinto dal portatore, mentre lo fa il ramo contrasto; ADR-086 chiede la stessa lettura per ogni atto. Nessun numero adattato (A5-bis). **11 su 20 confrontabili, invariato rispetto al 216.**

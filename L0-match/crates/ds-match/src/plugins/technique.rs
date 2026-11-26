@@ -204,6 +204,7 @@ impl MatchState {
             through: false,
             cross: false,
             foot: None,
+            restart: false,
             shot: Some(ShotPending {
                 attacker: winner,
                 struck: tick,
@@ -1044,10 +1045,12 @@ impl MatchState {
         if let Some((Some(by), through)) = pass {
             // Before the pass is over: whether he had reacted to it (OI-119).
             let struck = self.unready(ctx, tick, Some(by), id);
-            let (cross, foot, played) = self
+            let (cross, foot, played, restart) = self
                 .pending
                 .as_ref()
-                .map_or((false, None, None), |p| (p.cross, p.foot, Some(p.launched)));
+                .map_or((false, None, None, false), |p| {
+                    (p.cross, p.foot, Some(p.launched), p.restart)
+                });
             self.pending = None;
             if home(by) == home(id) && self.offside_at_pass.contains(&id) {
                 self.call_offside(ctx, tick, id, home(id), (ball, played));
@@ -1069,7 +1072,15 @@ impl MatchState {
                         foot,
                     },
                 };
-                for c in crate::fact::classify(&fact) {
+                // One kick, one event: the restart was told at the whistle.
+                // Wyscout records the goal kick, corner, throw-in or free
+                // kick once, not again as a Pass when the ball lands.
+                let told = if restart {
+                    Vec::new()
+                } else {
+                    crate::fact::classify(&fact)
+                };
+                for c in told {
                     self.emit_event(ctx, tick, c.actor, c.event_type, c.fields);
                 }
                 if !rec.controlled {
@@ -1103,12 +1114,19 @@ impl MatchState {
                 if self.deflects_the_pass(ctx, tick, (id, by)) {
                     return;
                 }
+                let mut fields = serde_json::json!({
+                    "from": by.slot(),
+                    "to": id.slot()
+                });
+                if restart {
+                    fields["restart"] = serde_json::json!(true);
+                }
                 self.emit_event(
                     ctx,
                     tick,
                     Some(ActorId::Player(id)),
                     EventType::Interception,
-                    serde_json::json!({ "from": by.slot(), "to": id.slot() }),
+                    fields,
                 );
             }
         }
@@ -1218,5 +1236,56 @@ mod tests {
     fn the_plugin_has_its_card() {
         assert!(super::Technique.card().is_valid());
         assert_eq!(super::Technique.card().name, "technique");
+    }
+
+    /// SIM 218: the kick of a restart and the pass at its landing are one
+    /// act. Same scene, only the origin of the pass changes.
+    #[test]
+    fn a_restart_kick_is_not_told_as_a_second_pass() {
+        use crate::context::MatchContext;
+        use crate::state::{MatchState, Pending, Possession};
+        use ds_stats::{EventChain, EventType};
+
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let passer = m.home.players[6].id;
+        let mate = m.home.players[9].id;
+        let at = (5000, 3400);
+        let told = |restart: bool| {
+            let mut hidden = ds_orchestrator::GroundTruth::for_match(42, &m);
+            let mut chain = EventChain::new();
+            let mut ctx = MatchContext {
+                match_: &m,
+                hidden: &mut hidden,
+                chain: &mut chain,
+                config: crate::context::MatchConfig::default(),
+            };
+            let mut s = MatchState::new(&m);
+            s.spatial.set_position(passer, (at.0 - 150, at.1));
+            s.spatial.set_position(mate, (at.0 + 60, at.1));
+            s.possession = Possession::Home;
+            s.pending = Some(Pending {
+                launched: 100,
+                shot: None,
+                interceptor: None,
+                passer: Some(passer),
+                receiver: Some(mate),
+                closest_cm: None,
+                through: false,
+                cross: false,
+                foot: None,
+                restart,
+            });
+            s.spatial.set_ball_in_flight((at.0, at.1, 0), (20, 0, 0));
+            s.ball_from = s.spatial.ball_3d();
+            s.spatial.advance_ball();
+            s.control_loose_ball(&mut ctx, 110);
+            ctx.chain
+                .events()
+                .iter()
+                .filter(|e| e.event_type == EventType::Pass)
+                .count()
+        };
+        assert_eq!(told(false), 1, "a normal pass is told once");
+        assert_eq!(told(true), 0, "the restart is not told again as a Pass");
     }
 }

@@ -102,7 +102,11 @@ pub fn count(events: &[MatchEvent]) -> MatchCounts {
             // and their accuracy left out every intercepted pass).
             EventType::Interception => {
                 c.add(Metric::Interceptions, 1.0);
-                c.add(Metric::Passes, 1.0);
+                // A cut-out restart kick is still one event in the report:
+                // the engine does not tell it twice, so do not count it twice.
+                if !flag(e, "restart") {
+                    c.add(Metric::Passes, 1.0);
+                }
             }
             // A keeper who claims a cross has not saved a shot: counting him
             // made saves outnumber shots on target (DD-46).
@@ -170,14 +174,19 @@ mod tests {
     }
 
     /// A pass an opponent takes is a pass that failed: it counts among the
-    /// passes, not among the accurate ones (2026-11-16).
+    /// passes, not among the accurate ones (2026-11-16). The kick of a
+    /// restart is told once (SIM 218): when it is cut out, the `Interception`
+    /// carries a `restart` flag and is no extra pass.
     #[test]
     fn an_intercepted_pass_is_a_pass() {
         let ev = &*SEED42;
         let of = |t: EventType| ev.iter().filter(|e| e.event_type == t).count();
         let c = count(ev);
         #[allow(clippy::cast_precision_loss)]
-        let told = (of(EventType::Pass) + of(EventType::Interception)) as f64;
+        let told = (of(EventType::Pass)
+            + ev.iter()
+                .filter(|e| e.event_type == EventType::Interception && !flag(e, "restart"))
+                .count()) as f64;
         assert!(of(EventType::Interception) > 0);
         assert!((c.get(Metric::Passes) - told).abs() < 1e-9);
     }

@@ -518,6 +518,9 @@ impl MatchState {
             } else {
                 find_interceptor(&self.spatial, &unseen, (from.0, from.1), (to.0, to.1))
             };
+            // The kick of a restart is the restart; remember it before
+            // `mark_offside_at_pass` takes the mark.
+            let restart = self.restart_pass.is_some();
             self.mark_offside_at_pass(ctx, tick, attacker, from.0);
             self.pending = Some(Pending {
                 launched: tick,
@@ -529,6 +532,7 @@ impl MatchState {
                 through: at.is_some(),
                 cross,
                 foot: ctx_pass.foot,
+                restart,
             });
             // REC: the Pass event is emitted at landing, in `tick`
             // (resolve_reception), not at launch: `complete` is the
@@ -1280,6 +1284,7 @@ impl MatchState {
             through: false,
             cross: false,
             foot: None,
+            restart: false,
             shot: Some(ShotPending {
                 attacker,
                 struck: tick,
