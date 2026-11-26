@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `53d422b` - "SIM 213: the loft is worth its landing (DD-76)"
+**Last commit verified:** `7fc8554` - "SIM 214: the second man does not erase the first, and the receiver owns his line"
 
 ## Mandato attivo (2026-11-16)
 
