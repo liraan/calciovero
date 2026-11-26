@@ -162,7 +162,7 @@ impl App {
             theme: themes[0].clone(),
             themes,
             laws: LawsBalance::load(),
-            seed: 42,
+            seed: 43,
             choices: Choices::default(),
             game: None,
             error: None,
@@ -2417,7 +2417,7 @@ mod tests {
         assert!(samples.iter().any(|v| *v < -0.2), "both tones swing");
     }
 
-    /// A fresh window on seed 42. The nine tests that only look at the
+    /// A fresh window on seed 43. The nine tests that only look at the
     /// pristine match share one played game and clone it (a memcpy, not a
     /// simulation); only the five tests that change the match by an order
     /// pay for a second run. Before, each of the eight calls replayed it.
@@ -2679,7 +2679,7 @@ mod tests {
         let a = app();
         let game = a.game.as_ref().expect("game");
         let stops: Vec<_> = game.whistles.iter().filter(|w| !w.restart).collect();
-        assert!(!stops.is_empty(), "seed 42 has called fouls");
+        assert!(!stops.is_empty(), "seed 43 has called fouls");
         let mut kinds = BTreeMap::new();
         for stop in stops {
             *kinds.entry(stop.stop).or_insert(0usize) += 1;
@@ -2774,7 +2774,7 @@ mod tests {
             .iter()
             .filter(|w| w.stop == Some(StopKind::Offside))
             .collect();
-        assert!(!flagged.is_empty(), "seed 42 has offsides");
+        assert!(!flagged.is_empty(), "seed 43 has offsides");
         let mut from_pass = false;
         for off in flagged {
             let (line, man, at) = off.offside_lines.expect("the lines");
@@ -2874,7 +2874,7 @@ mod tests {
             .records
             .windows(2)
             .position(|p| p[1].score.home > p[0].score.home || p[1].score.away > p[0].score.away)
-            .expect("seed 42 has a goal")
+            .expect("seed 43 has a goal")
             + 1;
         assert!(
             game.cheers

@@ -1226,7 +1226,7 @@ fn hold_candidate(
     // gives the scene now, every option (ADR-052).
     let mut later = scene.clone();
     later.soon.clear();
-    for (&id, &at) in moving {
+    for &(&id, &at) in &moving {
         if id != scene.actor {
             later.positions.insert(id, at);
         }
@@ -1238,6 +1238,17 @@ fn hold_candidate(
         .candidates
         .iter()
         .max_by(|a, b| a.geometric.total_cmp(&b.geometric))?;
+    // DD-9: the wait must be for a man who goes to that option. A through
+    // ball to a man who is standing still is already there now; waiting for
+    // it while other men wander re-projects the same unrealised scene for
+    // ever (a keeper stood still for 343 ticks, seed 42).
+    if !matches!(
+        best.kind,
+        ChoiceKind::Pass(p) | ChoiceKind::Loft(p) | ChoiceKind::Through { to: p, .. }
+            if moving.iter().any(|(id, _)| **id == p)
+    ) {
+        return None;
+    }
     let (best, seen) = (best.geometric, best.visibility);
     let keep = pressure
         .clamp(0.0, 1.0)
@@ -1330,6 +1341,21 @@ fn clear_candidate(
             let sure = m.thought.confidence(first(false) - first(true) - spread);
             let gain = space_value(landing, goal, own_goal);
             let loss = space_value(landing, own_goal, goal);
+            // DD-8: past his own goal the ball is out, so nobody contests
+            // the landing — the opponents get a corner, not a free ball he
+            // keeps. DD-10: the danger of a corner is not a shot from the
+            // flag: it is the cross into the area. Read the loss at the
+            // penalty area line, a distance the Laws already declare; no
+            // new number.
+            let (sure, gain, loss) = if landing == behind {
+                let arrival = (
+                    own_goal.0 + forward * ds_calculator::laws::law1().penalty_area_depth_cm,
+                    own_goal.1,
+                );
+                (0.0, 0.0, space_value(arrival, own_goal, goal))
+            } else {
+                (sure, gain, loss)
+            };
             // The same measure as every other option (ADR-052 §3, §6): what
             // it gains where it comes down, what it loses if they get there
             // first. Before, a clearance also earned the danger of losing
@@ -2563,11 +2589,15 @@ mod shot_perception_tests {
             assert!(to(&free).1 >= 0, "to his free teammate: {:?}", to(&free));
         }
 
-        /// Twin (DD 5): the same pressed defender, the same three men on
-        /// every landing up the pitch. Only a mate waiting behind him
-        /// changes: knocking it over his own line becomes the best clearance.
+        /// Twin (DD 5, closed by DD-8/DD-10): the same pressed defender,
+        /// the same three men on every landing up the pitch, and now a mate
+        /// waiting behind him. Under DD 5 that mate made the ball behind his
+        /// own line the best landing; once the corner is read as the loss it
+        /// is, a sure throw-in up the touchline is still better. The choice
+        /// stays in `clear_candidate` (Law 17), it is simply never the least
+        /// bad in this scene.
         #[test]
-        fn a_pressed_defender_may_put_it_behind_his_own_goal() {
+        fn a_corner_is_a_loss_even_with_a_mate_behind() {
             let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
             let from = (1000, 1500);
             let x = from.0 + mind().kick.clear_length_cm;
@@ -2581,8 +2611,37 @@ mod shot_perception_tests {
                 .expect("a clearance")
                 .kind;
             assert!(
-                matches!(kind, ChoiceKind::Clear { to } if to.0 < s.own_goal.0),
-                "behind his own goal: {kind:?}"
+                matches!(kind, ChoiceKind::Clear { to } if to.1 < 0),
+                "into touch, not into a corner: {kind:?}"
+            );
+        }
+
+        /// Twin (DD-8): same defender, pressure and men. His mate is 15 m
+        /// clear of the near landing, so a corner is no longer a free ball:
+        /// he keeps it on the wing instead of knocking it behind his goal.
+        #[test]
+        fn a_corner_is_not_a_free_landing() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let from = (1000, 1500);
+            let x = from.0 + mind().kick.clear_length_cm;
+            let mut s = scene((500, 1500), None);
+            let mate = PlayerId::new(8, 0);
+            s.teammates.push(mate);
+            s.positions.insert(mate, (x, 680));
+            for (k, (ox, oy)) in [(x + 1500, 680), (x, 3400), (x, 6120)]
+                .into_iter()
+                .enumerate()
+            {
+                let o = PlayerId::new(110 + u32::try_from(k).expect("k"), 0);
+                s.opponents.push(o);
+                s.positions.insert(o, (ox, oy));
+            }
+            let kind = clear_candidate(&s, from, (0.5, 0.9), &b)
+                .expect("a clearance")
+                .kind;
+            assert!(
+                matches!(kind, ChoiceKind::Clear { to } if to == (x, 680)),
+                "a contested corner is worse than the wing: {kind:?}"
             );
         }
 
@@ -2660,6 +2719,25 @@ mod shot_perception_tests {
             assert!(!has_hold(&s), "no new moment, nothing to wait for");
             s.soon.insert(PlayerId::new(7, 0), (7500, 3400));
             assert!(has_hold(&s), "the same man coming up gives the hold back");
+        }
+
+        /// Twin (DD-9): the same man, the same mate and the same opponent;
+        /// only *who* moves changes. An opponent wandering off does not
+        /// bring the pass nearer, so there is nothing to wait for. The
+        /// mate coming up to the ball gives the hold back.
+        #[test]
+        fn the_wait_is_for_the_man_who_brings_the_option() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let has_hold = |s: &PerceivedScene| {
+                let (ctx, _) = build_choice(s, Side::Right, 0.5, 0.04, &b);
+                ctx.candidates.iter().any(|c| c.kind == ChoiceKind::Hold)
+            };
+            let mut s = scene((7000, 3400), Some((5500, 3400)));
+            s.shield_keep = 0.9;
+            s.soon.insert(PlayerId::new(105, 0), (5200, 3400));
+            assert!(!has_hold(&s), "a man wandering off is not his option");
+            s.soon.insert(PlayerId::new(7, 0), (7500, 3400));
+            assert!(has_hold(&s), "his mate coming up is an option to await");
         }
 
         fn scene(mate: (i32, i32), opponent: Option<(i32, i32)>) -> PerceivedScene {

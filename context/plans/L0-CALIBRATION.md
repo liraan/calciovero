@@ -143,6 +143,39 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 216 (2026-11-26, opencode)
+
+Stesso comando (`cargo run --release -p ds-reference -- compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..101`), bande corrette da T11 (`saves`) e T14-bis (recupero: limite inferiore, non confrontabile). Un solo bump per tre decisioni: DD-8 (il calcio dietro la propria porta è un corner, non un atterraggio libero), DD-9 (l'attesa vale solo se l'uomo che rende disponibile l'opzione si muove verso di essa) e DD-10 (il rischio del corner si legge dove arriva il cross, alla linea dell'area, non come tiro dalla bandierina). DD-9 è emersa perché DD-8 ha tolto al portiere del seed 42 l'uscita facile e ha scoperto 343 tick fermi in `Hold`; DD-10 è emersa perché il valore alla bandierina rendeva il corner più sicuro di una rimessa a 50 m. Nessuna delle tre è stata tarata guardando la misura.
+
+| metrica | 216 | 215 | reale | nota |
+|---|---|---|---|---|
+| goals | 4.00 | 7.28 | 2.68 ± 1.65 | in banda |
+| own_goals | 0.23 | 0.52 | 0.10 ± 0.31 | in banda |
+| shots | 26.53 | 34.70 | 24.60 ± 5.46 | in banda |
+| shots_on_target | 7.97 | 12.08 | 8.69 ± 3.22 | in banda |
+| penalties | 0.15 | 0.23 | 0.33 ± 0.56 | in banda |
+| passes | 1175.82 | 1132.78 | 887.68 ± 122.81 | fuori, OI aperto (RUN 35/66) |
+| passes_accurate | 1091.70 | 1043.28 | 739.17 ± 124.79 | fuori, stesso indizio |
+| crosses | 8.25 | 16.58 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 4.67 | 6.93 | 38.14 ± 12.98 | fuori, secondaria di ADR-081 (scelta C) |
+| ground_duels | 157.10 | 161.62 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 8.35 | 8.37 | 16.03 ± 5.67 | fuori, definizione DD/ADR, non soglia da ritoccare |
+| fouls | 21.53 | 22.10 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.37 | 2.52 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.18 | 0.32 | 0.24 ± 0.49 | in banda |
+| corners | 9.43 | 27.72 | 10.30 ± 3.58 | in banda: DD-8/DD-10 chiudono l'indizio del 215 |
+| throw_ins | 22.75 | 19.18 | 42.72 ± 8.92 | fuori, invariato nella causa aperta |
+| goal_kicks | 10.65 | 10.70 | 17.15 ± 4.20 | fuori |
+| free_kicks | 21.75 | 22.55 | 29.45 ± 6.81 | fuori di 0,89 |
+| offsides | 1.55 | 1.93 | 4.26 ± 2.40 | fuori di 0,31 |
+| clearances | 20.77 | 42.35 | 29.53 ± 8.65 | fuori di 0,11 |
+| interceptions | 49.00 | 51.37 | 89.86 ± 13.97 | non confrontabile |
+| saves | 4.47 | 5.60 | 6.70 ± 2.82 | in banda con T11 |
+| stoppage_first_half_min | 2.38 | 4.27 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 5.03 | 6.53 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+**In banda con le bande corrette: 11 su 20 confrontabili** (9 fuori: passaggi, passaggi accurati, duelli aerei, take-on vinti, rimesse, calci di porta, calci liberi, offside, spazzate; 4 righe non confrontabili). Rispetto al 215 sono entrate in banda gol, autogol, tiri e tiri in porta; angoli e falli erano già dentro. Sono uscite le offside (1,93 → 1,55, fuori di 0,31) e le spazzate (42,35 → 20,77, fuori di 0,11). Golden base, instruito e coppa rigenerati; semi coppa 59 → 43, pareggio al 90′ 56 → 42, vittoria al 90′ 42 → 45, rigori solo tiri 59 → 43, colpo di testa in fuorigioco 97 → 50; golden della piccola stagione L1 cambiato. Il seed della finestra GUI è passato da 42 a 43 perché il 42 non produce più fuorigioco con le scelte predefinite.
+
 ## La misura del 215 (2026-11-26, opencode)
 
 Stesso comando (`cargo run --release -p ds-reference -- compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..101`), bande corrette da T11 (`saves`) e T14-bis (recupero non confrontabile). Un solo bump per sei decisioni applicate insieme: DD 1 (la scansione staggered è un pavimento della latenza, non un termine additivo), DD 2 (lo spazio del ricevitore gradua il guadagno del passaggio e del lancio), DD 3 (la linea del fuorigioco va letta, non solo proiettata), DD 4 (nessun emendamento ad ADR-081: la scelta C resta, il residuo è a monte), DD 5 (il difensore può liberare anche oltre la propria linea di porta) e DD-6 (l'attesa esiste solo se la scena immaginata cambia). Le sei non sono state misurate una per una: la riga di una metrica non va attribuita a una singola DD senza una bisecazione delle misure.
