@@ -8,6 +8,10 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 214 — the touch belongs to the receiver, and a second man does not erase the first (opencode)
+
+Two independent attribution fixes, one bump. `first_touch_across` used to decide which goal line was the receiver's own from `home_in_possession`; with LUNA the touch belongs to the man who takes it, so the line now comes from `team_of(receiver)` (`PlayerId`), the identity already carried into `follow_carrier`. Guard: `the_first_touch_knows_the_receivers_own_goal_not_the_possessions`, two men in their own boxes with the same possession flag (fails before, passes after). Separately, `taking_on` was a single slot: beating a second man before getting past the first overwrote the first take-on and lost his dribble. It is now one pending entry per pair, settled in its own order; no choice, gate or number was added. Guard: `a_second_man_beaten_does_not_erase_the_first` (one man → one dribble, two men → two). Only the instructed golden changed (`EXPECTED_INSTRUCTED`); the base and cup golden, the seeds (cup 57, level at 90' 50, shoot-out 57, header offside 45), the L1 golden and both guards were re-verified green. No number was chosen from a metric.
+
 ## 213 — the loft reads its landing again (ADR-101, DD-76)
 
 SIM 210 made the lofted pass worth the receiver's next pass, with the same lookahead as the ground pass. ADR-101 §Conseguenze explicitly leaves the lofted and filtered branches out of OI-116, and the ball can leave the pitch before the receiver can choose: `lofted_missed_at` only sees his own goal, not the touchline. The receiver's options stay all available; the passer's imagined gain is what changes. Guard: `a_long_ball_does_not_read_past_the_landing`, the same scene with the next mate free or marked now has the same loft salience. Golden and seeds regenerated. `ds-reference 42..101`: corners 18.02 → 6.52, second-half stoppage 5.81 → 4.91 min, 9 → 14 of 22 in band. No number was chosen from the metric.

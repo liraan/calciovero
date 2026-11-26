@@ -71,8 +71,9 @@
       "sd": 0.495
     },
     "saves": {
-      "mean": 9.371,
-      "sd": 3.37
+      "mean": 6.695,
+      "sd": 2.823,
+      "note": "Wyscout tags a goal on the conceding keeper's save attempt too; attempts tagged 101 are excluded (T11)."
     },
     "shots": {
       "mean": 24.597,
@@ -84,12 +85,12 @@
     },
     "stoppage_first_half_min": {
       "mean": 1.488,
-      "note": "Wyscout: the last recorded event of the half, so a lower bound of the time played after the 45th.",
+      "note": "Wyscout: the last recorded event of the half, never the whistle; a lower bound on time played after the 45th, not the referee's added time.",
       "sd": 1.353
     },
     "stoppage_second_half_min": {
       "mean": 4.083,
-      "note": "Wyscout: the last recorded event of the half, so a lower bound of the time played after the 45th.",
+      "note": "Wyscout: the last recorded event of the half, never the whistle; a lower bound on time played after the 45th, not the referee's added time.",
       "sd": 1.609
     },
     "take_ons_won": {

@@ -48,7 +48,7 @@ fn golden_l0_is_deterministic() {
 /// The expected hash with a fixed instruction stream (ADR-059): the home
 /// coach asks for a high, wide block at the 30th minute, the away coach for
 /// a low, narrow one at the 60th. Regenerate when `SIM_VERSION` changes.
-const EXPECTED_INSTRUCTED: &str = "16a62ea2a7ec928ece2ac7159a541509b812d240e0030786efa39d0d3664ceed67da7e34916ef600032e54176abfcb098324e97db93e5a1cbdfb3b96614a2afa1ea159ccca9d18a68b6e8447605e3c0b1f13f1c0fee0ac6aa4800a8d5e6f3d3c35ed6d847f2d5f8a916e2ac409bc2da67d94e3dccaab4eb05fdbd4b74b39f4f62798d0ed4ee4efc723912023c8e5abad4c1df27dde3e94eeaf5d9fa4edce234e84a89ac6babd49637f25c7438661f03d1b107b8d0454d4bacee93102f42444657af61d693af19b649d9e79577ed7863ae012aeadde7fdb67c2d4f620552dd04076d5be195e05c02ccc6f6889fa602f87b31474abf0f0bf06d2947f2d934780da817b4afbd3238e00f2175649c0b4bca0a5860402660fdd0011589976a2e960c95940ba8514946bd0b3596caefa056d1154643e42e99f677e3169f86b303b78c8";
+const EXPECTED_INSTRUCTED: &str = "16a62ea2a7ec928ece2ac7159a541509b812d240e0030786efa39d0d3664ceed67da7e34916ef600032e54176abfcb098324e97db93e5a1cbdfb3b96614a2afa1ea159ccca9d18a68b6e8447605e3c0b1f13f1c0fee0ac6aa4800a8d5e6f3d3c42dd634ff3e22b72aee2a92da7b109962beb050f0d0ce1d15d1af80166a7179b2798d0ed4ee4efc723912023c8e5abad4c1df27dde3e94eeaf5d9fa4edce234e84a89ac6babd49637f25c7438661f03d1b107b8d0454d4bacee93102f42444657af61d693af19b649d9e79577ed7863ae012aeadde7fdb67c2d4f620552dd04076d5be195e05c02ccc6f6889fa602f87b31474abf0f0bf06d2947f2d934780da817b4afbd3238e00f2175649c0b4bca0a5860402660fdd0011589976a2e960c95940ba8514946bd0b3596caefa056d1154643e42e99f677e3169f86b303b78c8";
 
 #[test]
 fn golden_l0_with_instructions_is_deterministic() {
@@ -83,7 +83,7 @@ fn golden_l0_with_instructions_is_deterministic() {
 /// The expected hash of a cup match that goes to extra time and to
 /// penalties (Laws 7 and 10, plan L0-CLOSE 10h): the first seed from 42
 /// whose cup match is level after 120 minutes, decided by the shoot-out;
-/// the seed is part of what is hashed. SIM 213.
+/// the seed is part of what is hashed. SIM 214.
 const EXPECTED_CUP: &str = "57:f127a96c6425c5947dc54e5064331b4267dbc722f4e8ebb31f0f98d245d2c077";
 
 fn play_cup(seed: u64) -> ds_match::MatchResult {

@@ -196,7 +196,9 @@ fn count(c: &mut MatchCounts, e: &Event) {
     if has(INTERCEPTION) {
         c.add(Metric::Interceptions, 1.0);
     }
-    if e.event_id == SAVE_ATTEMPT {
+    // Wyscout tags a goal on the conceding keeper's save attempt too: that
+    // attempt failed. Counting it made saves exceed shots on target (T11).
+    if e.event_id == SAVE_ATTEMPT && !has(GOAL) {
         c.add(Metric::Saves, 1.0);
     }
     if has(OWN_GOAL) {
@@ -226,6 +228,22 @@ mod tests {
         let c = measure(&[a, b], &[m]);
         assert!((c[0].get(Metric::AerialDuels) - 1.0).abs() < 1e-9);
         assert!((c[0].get(Metric::Goals) - 3.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_goal_tag_on_a_save_attempt_is_not_a_save() {
+        let failed = ev(
+            r#"{"eventId":9,"subEventId":0,"tags":[{"id":101}],"matchId":1,"matchPeriod":"1H","eventSec":600.0}"#,
+        );
+        let held = ev(
+            r#"{"eventId":9,"subEventId":0,"tags":[{"id":1801}],"matchId":1,"matchPeriod":"1H","eventSec":700.0}"#,
+        );
+        let m: Match =
+            serde_json::from_str(r#"{"wyId":1,"teamsData":{"1":{"score":1},"2":{"score":0}}}"#)
+                .unwrap();
+        let c = measure(&[failed, held], &[m]);
+        assert!((c[0].get(Metric::Saves) - 1.0).abs() < 1e-9);
+        assert!((c[0].get(Metric::Goals) - 1.0).abs() < 1e-9);
     }
 
     #[test]

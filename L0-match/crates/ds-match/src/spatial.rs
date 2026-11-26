@@ -1432,12 +1432,19 @@ impl SpatialState {
 
     /// The way a first touch runs, kept off the receiver's own goal line in
     /// his own penalty area (Law 1): across, to the side the ball was going,
-    /// or away from the goal's middle.
-    fn first_touch_across(&self, from: (f64, f64), dir: (f64, f64)) -> (f64, f64) {
+    /// or away from the goal's middle. His own line comes from who he is,
+    /// not from which side happens to have the ball.
+    fn first_touch_across(
+        &self,
+        from: (f64, f64),
+        dir: (f64, f64),
+        receiver: PlayerId,
+    ) -> (f64, f64) {
         let law = ds_calculator::laws::law1();
         let (length, width) = (f64::from(self.pitch_cm.0), f64::from(self.pitch_cm.1));
-        // The side with the ball is the receiver's; home defends x = 0.
-        let (own_line, towards_line) = if self.home_in_possession {
+        // Home defends x = 0; the receiver's identity, not possession, says
+        // which goal is his.
+        let (own_line, towards_line) = if crate::perception::team_of(receiver) == 0 {
             (0.0, dir.0 < 0.0)
         } else {
             (length, dir.0 > 0.0)
@@ -1556,7 +1563,7 @@ impl SpatialState {
                 // The same rule as the carry's (nobody dribbles into a goal);
                 // the area is Law 1's. Before, a pass back that he did not
                 // kill rolled on into his own net while he chased it.
-                let dir = self.first_touch_across(from, dir);
+                let dir = self.first_touch_across(from, dir, carrier);
                 self.touch = Some(Touch {
                     from,
                     dir,
@@ -3020,6 +3027,41 @@ mod tests {
         assert!(
             ball.0 < at.0 + 80 && ball.1 == at.1,
             "out of the area it runs on the way it came: {at:?} {ball:?}"
+        );
+    }
+
+    /// The receiver's own line belongs to the receiver, not to the side in
+    /// possession (LUNA: the same man reads and takes the ball). Same scene,
+    /// same possession flag, two men on opposite sides of the pitch: both
+    /// take a pass played back towards his own line across, not into it.
+    #[test]
+    fn the_first_touch_knows_the_receivers_own_goal_not_the_possessions() {
+        let receive = |id: PlayerId, x: i32, incoming: i16| {
+            let mut s = make_state();
+            s.set_home_in_possession(true, 0, 0);
+            let y = s.pitch_cm.1 / 2;
+            let length = s.pitch_cm.0;
+            s.set_position(id, (x, y));
+            let from = if incoming < 0 {
+                (x + 80, y, 0)
+            } else {
+                (x - 80, y, 0)
+            };
+            s.set_ball_in_flight(from, (incoming, 0, 0));
+            s.set_carrier(Some(id));
+            s.follow_carrier(1, false, |_, _| 2.5, |_, _| 10.0, 45);
+            s.follow_carrier(4, false, |_, _| 2.5, |_, _| 10.0, 45);
+            (length, (x, y), s.ball())
+        };
+        let (length, home_at, home_ball) = receive(PlayerId::new(1, 0), 600, -60);
+        assert_ne!(
+            home_ball.1, home_at.1,
+            "home receiver goes across: {home_ball:?}"
+        );
+        let (_, away_at, away_ball) = receive(PlayerId::new(101, 0), length - 600, 60);
+        assert_ne!(
+            away_ball.1, away_at.1,
+            "away receiver goes across his own line: {away_ball:?}"
         );
     }
 

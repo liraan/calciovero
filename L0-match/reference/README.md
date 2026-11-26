@@ -50,8 +50,9 @@ offsides                        4.26     2.40     11.47     2.60     2.69
 clearances                     29.53     8.65    158.03    18.18     5.35
 interceptions                  89.86    13.97    328.07    22.43     3.65  (not comparable)
 saves                           9.37     3.37     16.20     4.31     1.73
-stoppage_first_half_min         1.49     1.35      6.33     2.51     4.26
-stoppage_second_half_min        4.08     1.61      5.61     2.29     1.37
+stoppage_first_half_min         1.49     1.35      6.33     2.51     4.26  (not comparable)
+stoppage_second_half_min        4.08     1.61      5.61     2.29     1.37  (not comparable)
 ```
 
 Ratios are engine / real. The ones marked *not comparable* count different things on the two sides (see each metric's `note`).
+Ratios are shown for the two stoppage rows too, but the real side is only a lower bound: the whistle is not a Wyscout event.

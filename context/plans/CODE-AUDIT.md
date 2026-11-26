@@ -167,10 +167,11 @@ Stessi 8 analisti in sola lettura, a HEAD `5eafc14` (SIM 202), con la tabella de
 - T10. Nel tick porta e linee sono giudicate prima dei contatti: nell'ultimo tratto nessun salvataggio sulla linea (confini). Tocca l'ordine delle fasi (B9): con un ADR.
 
 **Blocco 2 — la misura (ds-reference)**
-- T11. Parate reali: l'evento Wyscout 9 conta anche i tentativi sui gol (9.37 parate contro 8.69 tiri in porta: impossibile); la banda è gonfiata e "saves in banda" è falso (strumenti).
+- T11. ✅ (RUN 36) La banda era gonfiata: 1017 tentativi Wyscout 9 con tag 101 su 380 partite (2.676/m = i gol); esclusi, saves 6.695 ± 2.823 e il motore 5.27 è in banda (strumenti).
 - T12. Passaggi: il motore conta come passaggio anche rimesse, punizioni, angoli e rinvii, Wyscout no (circa 90 a partita) (strumenti).
 - T13. Falli e gialli reali contano offese che il motore non conosce (simulazione, perdite di tempo, proteste) (strumenti).
 - T14. Gli eventi della serie dei rigori entrano nei conteggi (motore).
+- T14-bis. Recupero: la banda reale è l'ultimo evento Wyscout (380 partite, 1.488/4.083 min); il fischio non è tra i suoi eventi, quindi è un limite inferiore, non il tempo aggiunto che il motore misura al `HalfTime`. `compare` marcava le due righe come confrontabili (`lib.rs:138`). Corretto: `comparable()` le esclude; la banda resta come limite inferiore, nessun secondo ritoccato (strumenti).
 
 **Blocco 3 — le Leggi**
 - T15. ✅ (SIM 203) Legge 7: il fallo con il vantaggio aggiunge 20 s; cambi e infortuni 0 (tutti).

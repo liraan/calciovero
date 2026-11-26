@@ -260,7 +260,7 @@ pub struct MatchState {
     /// he took on, and the tick by which he must have got past him (SIM 206,
     /// opencode RUN 15: the dribble is getting past the man, not winning
     /// the contact).
-    pub(crate) taking_on: Option<(PlayerId, PlayerId, u64)>,
+    pub(crate) taking_on: Vec<(PlayerId, PlayerId, u64)>,
     /// When each player without the ball chooses again (ADR-049).
     pub(crate) offball_due: BTreeMap<PlayerId, u64>,
     /// The intesa of each pair of teammates (strato 3): how well one
@@ -901,7 +901,7 @@ impl MatchState {
             last_carrier: None,
             carrier_decided: false,
             challenges: BTreeMap::new(),
-            taking_on: None,
+            taking_on: Vec::new(),
             offball_due: BTreeMap::new(),
             intesa: {
                 let mut m = BTreeMap::new();

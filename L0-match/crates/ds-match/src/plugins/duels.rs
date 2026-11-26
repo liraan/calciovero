@@ -208,7 +208,11 @@ impl MatchState {
         self.challenges.insert(challenger, tick + down);
         self.spatial
             .set_act(challenger, ds_orchestrator::OffBallAct::Hold);
-        self.taking_on = Some((carrier, challenger, tick + down));
+        // One pending take-on per pair: beating a second man before getting
+        // past the first must not forget the first (SIM 214).
+        self.taking_on
+            .retain(|(c, d, _)| (*c, *d) != (carrier, challenger));
+        self.taking_on.push((carrier, challenger, tick + down));
     }
 
     /// The take-on becomes a dribble when the carrier, the ball still his,
@@ -219,38 +223,40 @@ impl MatchState {
     /// Before, the dribble was told at the contact, the two still a step
     /// apart (opencode RUN 15: 1483 of 1559 within 150 cm).
     pub(crate) fn settle_take_on(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
-        let Some((carrier, challenger, until)) = self.taking_on else {
-            return;
-        };
-        if self.spatial.carrier() != Some(carrier) || tick > until {
-            self.taking_on = None;
-            return;
+        let now = self.spatial.carrier();
+        let mut pending = Vec::new();
+        for (carrier, challenger, until) in std::mem::take(&mut self.taking_on) {
+            if now != Some(carrier) || tick > until {
+                continue;
+            }
+            let (Some(c), Some(d)) = (
+                self.spatial.agent(carrier).map(|a| a.position),
+                self.spatial.agent(challenger).map(|a| a.position),
+            ) else {
+                continue;
+            };
+            // Goal-side: the man is no longer between the carrier and the
+            // goal he attacks, the carrier nearer it than him.
+            let home = ctx.match_.home.players.iter().any(|p| p.id == carrier);
+            let (length, width) = pitch_cm(ctx);
+            let goal = if home {
+                (length, width / 2)
+            } else {
+                (0, width / 2)
+            };
+            if distance_squared(c, goal) < distance_squared(d, goal) {
+                self.emit_event(
+                    ctx,
+                    tick,
+                    Some(ActorId::Player(carrier)),
+                    EventType::Dribble,
+                    serde_json::json!({ "past": challenger.slot() }),
+                );
+            } else {
+                pending.push((carrier, challenger, until));
+            }
         }
-        let (Some(c), Some(d)) = (self.spatial.agent(carrier), self.spatial.agent(challenger))
-        else {
-            self.taking_on = None;
-            return;
-        };
-        // Goal-side: the man is no longer between the carrier and the goal
-        // he attacks, the carrier nearer it than him.
-        let home = ctx.match_.home.players.iter().any(|p| p.id == carrier);
-        let (length, width) = pitch_cm(ctx);
-        let goal = if home {
-            (length, width / 2)
-        } else {
-            (0, width / 2)
-        };
-        let past = distance_squared(c.position, goal) < distance_squared(d.position, goal);
-        if past {
-            self.taking_on = None;
-            self.emit_event(
-                ctx,
-                tick,
-                Some(ActorId::Player(carrier)),
-                EventType::Dribble,
-                serde_json::json!({ "past": challenger.slot() }),
-            );
-        }
+        self.taking_on = pending;
     }
 
     /// What the carrier imagines is at stake in a challenge (ADR-052 §3):
@@ -483,5 +489,49 @@ mod tests {
 
         assert_eq!(scene(true), Some(carrier), "at his foot he keeps it");
         assert_eq!(scene(false), None, "rolling ahead he loses it to pressure");
+    }
+
+    /// SIM 214: beating a second man before getting past the first must not
+    /// forget the first take-on. Only the number of men beaten changes.
+    #[test]
+    fn a_second_man_beaten_does_not_erase_the_first() {
+        use crate::context::MatchContext;
+        use ds_stats::{EventChain, EventType};
+
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let carrier = m.home.players[6].id;
+        let first = m.away.players[1].id;
+        let second = m.away.players[2].id;
+        let scene = |two: bool| {
+            let mut hidden = ds_orchestrator::GroundTruth::for_match(42, &m);
+            let mut chain = EventChain::new();
+            let mut ctx = MatchContext {
+                match_: &m,
+                hidden: &mut hidden,
+                chain: &mut chain,
+                config: crate::context::MatchConfig::default(),
+            };
+            let mut s = crate::state::MatchState::new(&m);
+            let (length, width) = crate::state::pitch_cm(&ctx);
+            let y = width / 2;
+            assert!(s.spatial.set_position(carrier, (length / 2, y)));
+            assert!(s.spatial.set_position(first, (length / 2 - 200, y)));
+            assert!(s.spatial.set_position(second, (length / 2 - 300, y + 100)));
+            s.spatial.set_carrier(Some(carrier));
+            s.beaten_by_dribble(&mut ctx, 100, (carrier, first), 80);
+            if two {
+                s.beaten_by_dribble(&mut ctx, 101, (carrier, second), 80);
+            }
+            assert!(s.spatial.set_position(first, (length / 2 - 400, y)));
+            assert!(s.spatial.set_position(second, (length / 2 - 500, y + 100)));
+            s.settle_take_on(&mut ctx, 102);
+            chain
+                .events()
+                .iter()
+                .filter(|e| e.event_type == EventType::Dribble)
+                .count()
+        };
+        assert_eq!(scene(false), 1);
+        assert_eq!(scene(true), 2);
     }
 }

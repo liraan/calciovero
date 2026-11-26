@@ -143,6 +143,39 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 214 (2026-11-26, opencode)
+
+Stesso comando (`cargo run --release -p ds-reference -- compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..101`), bande corrette da T11 (`saves`) e T14-bis (recupero: limite inferiore, non confrontabile). Due fix indipendenti: il primo tocco riconosce la propria linea dall'identità del ricevitore, e un secondo uomo battuto non cancella il primo take-on.
+
+| metrica | 214 | reale | nota |
+|---|---|---|---|
+| goals | 4.07 | 2.68 ± 1.65 | in banda |
+| own_goals | 0.27 | 0.10 ± 0.31 | in banda, invariato dal 213: l'attribuzione non cambia il conteggio in questi 60 semi |
+| shots | 27.60 | 24.60 ± 5.46 | in banda |
+| shots_on_target | 9.35 | 8.69 ± 3.22 | in banda |
+| penalties | 0.22 | 0.33 ± 0.56 | in banda |
+| passes | 1524.25 | 887.68 ± 122.81 | fuori, OI aperto |
+| passes_accurate | 1383.45 | 739.17 ± 124.79 | fuori, OI aperto |
+| crosses | 7.50 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 5.93 | 38.14 ± 12.98 | fuori, OI-102 aperto |
+| ground_duels | 201.03 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 8.80 | 16.03 ± 5.67 | fuori: 8.72 → 8.80, il guard chiude la perdita del primo dribble ma non chiude la banda (definizione da DD) |
+| fouls | 26.92 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.95 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.30 | 0.24 ± 0.49 | in banda |
+| corners | 6.52 | 10.30 ± 3.58 | fuori, invariato dal 213 |
+| throw_ins | 19.37 | 42.72 ± 8.92 | fuori, OI aperto |
+| goal_kicks | 13.40 | 17.15 ± 4.20 | in banda |
+| free_kicks | 32.72 | 29.45 ± 6.81 | in banda |
+| offsides | 7.63 | 4.26 ± 2.40 | fuori, OI aperto |
+| clearances | 23.93 | 29.53 ± 8.65 | in banda |
+| interceptions | 93.97 | 89.86 ± 13.97 | non confrontabile |
+| saves | 5.72 | 6.70 ± 2.82 | in banda con T11 (prima 9.37 ± 3.37, banda gonfiata dal tag GOAL) |
+| stoppage_first_half_min | 2.90 | ≥1.49 ± 1.35 | non confrontabile (T14-bis): reale = ultimo evento Wyscout, motore = fischio |
+| stoppage_second_half_min | 4.91 | ≥4.08 ± 1.61 | non confrontabile (T14-bis): idem |
+
+**In banda con le bande corrette: 13 su 20 confrontabili** (7 fuori: passaggi, passaggi accurati, duelli aerei, take-on vinti, angoli, rimesse, fuorigioco); 4 righe non confrontabili (cross, intercettazioni, due recuperi). Il 14 su 22 del 213 non è uno scenario comparabile: T11 ha cambiato la banda delle parate e T14-bis ha tolto dal confronto le due righe di recupero. Nessun numero è stato scelto guardando la misura. Il solo golden cambiato è `EXPECTED_INSTRUCTED`; golden base, coppa, semi (coppa 57, pari al 90′ 50, rigori 57, colpo di testa in fuorigioco 45) e golden L1 sono bit-identici al 213 (`cargo test --release --workspace` e `cup_seed_scan` verdi).
+
 ## La misura del 213 (2026-11-25, DD-76)
 
 Stesso comando, stessa banda; confronto con la misura del 212.
@@ -170,11 +203,11 @@ Stesso comando, stessa banda; confronto con la misura del 212.
 | offsides | 7.63 | 4.26 ± 2.40 | fuori, OI aperto |
 | clearances | 23.93 | 29.53 ± 8.65 | in banda |
 | interceptions | 93.97 | 89.86 ± 13.97 | non confrontabile |
-| saves | 5.72 | 9.37 ± 3.37 | fuori, OI aperto |
-| stoppage_first_half_min | 2.90 | 1.49 ± 1.35 | fuori, OI-101 aperto |
-| stoppage_second_half_min | 4.91 | 4.08 ± 1.61 | in banda |
+| saves | 5.72 | 6.70 ± 2.82 | in banda dopo T11: il tag GOAL sui tentativi del portiere non è una parata |
+| stoppage_first_half_min | 2.90 | ≥1.49 ± 1.35 | non confrontabile (T14-bis): reale = ultimo evento Wyscout, motore = fischio |
+| stoppage_second_half_min | 4.91 | ≥4.08 ± 1.61 | non confrontabile (T14-bis): idem |
 
-**In banda: 213 → 14 su 22** (212 era 9 su 22). La revoca di DD-73 ha portato gli angoli da 18.02 a 6.52 e il secondo tempo di recupero dentro la banda; il primo tempo resta fuori (OI-101). Ogni metrica fuori banda resta un indizio con la sua causa, non una soglia ritoccata.
+**In banda: 213 → 14 su 22** (212 era 9 su 22). La revoca di DD-73 ha portato gli angoli da 18.02 a 6.52. Con T11 `saves` rientra (5.72 contro 6.70 ± 2.82); con T14-bis le due righe di recupero non sono più confrontabili (banda reale = limite inferiore dell'ultimo evento Wyscout, motore = fischio) e OI-101 resta aperto come modello dell'arbitro, non come scarto di banda. Ogni metrica fuori banda resta un indizio con la sua causa, non una soglia ritoccata.
 
 **Causa:** non è una taratura ma una revoca di DD-73. Il ramo loftato era stato aggiunto al lookahead di OI-116 benché ADR-101 §Conseguenze lo escluda, e il guadagno immaginato comprendeva una giocata successiva che può non avvenire: `lofted_missed_at` vede solo la propria porta, non l'uscita dal campo. Il ricevitore conserva tutte le sue opzioni; cambia solo il guadagno che il passatore immagina. Il guard `a_long_ball_does_not_read_past_the_landing` chiude il caso con scena identica.
 
@@ -184,13 +217,13 @@ Stesso comando, stessa banda; confronto con la misura del 211.
 
 | metrica | 211 | 212 | reale | nota |
 |---|---|---|---|---|
-| stoppage_first_half_min | 3.45 | 3.17 | 1.49 ± 1.35 | migliora, ancora fuori (2.84 il limite) |
-| stoppage_second_half_min | 5.92 | 5.81 | 4.08 ± 1.61 | migliora, ancora fuori (5.69 il limite) |
+| stoppage_first_half_min | 3.45 | 3.17 | ≥1.49 ± 1.35 | non confrontabile: reale = ultimo evento Wyscout, motore = fischio |
+| stoppage_second_half_min | 5.92 | 5.81 | ≥4.08 ± 1.61 | non confrontabile: idem |
 | goals | 5.23 | 5.38 | 2.68 ± 1.65 | resta fuori |
 | corners | 18.08 | 18.02 | 10.30 ± 3.58 | resta fuori, indizio aperto |
 | saves | 5.08 | 5.27 | 9.37 ± 3.37 | resta fuori |
 
-**In banda: 212 → 9 su 22**, come al 211. La causa è una regola (Law 7.3), non una taratura; il guard `the_knock_and_his_change_are_one_stoppage` chiude il doppio conteggio. Il recupero resta sopra la banda: la causa successiva è OI-101 (l'arbitro vero recupera circa metà del tempo perso), da modellare con la sua fonte, non da tarare.
+**In banda: 212 → 9 su 22**, come al 211 (10 dopo T11: la banda `saves` era gonfiata dal tag GOAL sui tentativi del portiere, non dal motore). La causa è una regola (Law 7.3), non una taratura; il guard `the_knock_and_his_change_are_one_stoppage` chiude il doppio conteggio. Le due righe di recupero non sono più lette come scarto di banda: la banda reale è il limite inferiore dell'ultimo evento Wyscout (1.488/4.083 min su 380 partite), il motore misura il fischio; OI-101 resta aperto come modello del comportamento dell'arbitro, non come differenza tra due misure dello stesso fatto.
 
 ## La misura del 211 (2026-11-25, DD-74)
 

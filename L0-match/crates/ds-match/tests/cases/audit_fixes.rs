@@ -112,7 +112,7 @@ fn no_substitution_during_the_shootout() {
 /// ground. Before SIM 196 the air cleared the marks unread and a header
 /// from offside was never called: the free kick could not follow an aerial
 /// duel won by its offender. The first seed from 42 where it happens under
-/// SIM 213, found once and played directly (before, ten matches were
+/// SIM 214, found once and played directly (before, ten matches were
 /// scanned; with the rarer aerial duels of SIM 203 none of 42..52 had one).
 #[test]
 fn a_header_from_offside_is_called() {

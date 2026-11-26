@@ -136,7 +136,13 @@ impl Metric {
     /// [`Metric::note`].
     #[must_use]
     pub const fn comparable(self) -> bool {
-        !matches!(self, Self::Interceptions | Self::Crosses)
+        !matches!(
+            self,
+            Self::Interceptions
+                | Self::Crosses
+                | Self::StoppageFirstHalf
+                | Self::StoppageSecondHalf
+        )
     }
 
     /// What each side counts, where the definitions differ or are bounded.
@@ -150,10 +156,13 @@ impl Metric {
                 "Wyscout counts open-play crosses only; the engine marks every pass that is a cross by its geometry (the `cross` qualifier of a Pass, ADR-072), corners included. Not comparable as they stand."
             }
             Self::StoppageFirstHalf | Self::StoppageSecondHalf => {
-                "Wyscout: the last recorded event of the half, so a lower bound of the time played after the 45th."
+                "Wyscout: the last recorded event of the half, never the whistle; a lower bound on time played after the 45th, not the referee's added time."
             }
             Self::AerialDuels | Self::GroundDuels => {
                 "Wyscout records a duel once for each player; the count is halved to give one per contest."
+            }
+            Self::Saves => {
+                "Wyscout tags a goal on the conceding keeper's save attempt too; those failed attempts are excluded."
             }
             _ => "",
         }
@@ -268,5 +277,14 @@ mod tests {
         keys.sort_unstable();
         keys.dedup();
         assert_eq!(keys.len(), Metric::ALL.len());
+    }
+
+    /// The real rows cannot be compared with the engine's whistle: they are
+    /// the last recorded action, so they only bound the time from below.
+    #[test]
+    fn stoppage_is_a_lower_bound_not_a_comparable_metric() {
+        assert!(!Metric::StoppageFirstHalf.comparable());
+        assert!(!Metric::StoppageSecondHalf.comparable());
+        assert!(Metric::StoppageFirstHalf.note().contains("lower bound"));
     }
 }
