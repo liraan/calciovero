@@ -252,4 +252,7 @@ pub struct LatencyContext {
     /// His fatigue, 0.0-1.0 (Plane B): concentration dims the decision
     /// as he tires (plan L0-CLOSE 10b).
     pub fatigue: f64,
+    /// Ticks until his next glance at the others (ADR-034, ADR-044 §6):
+    /// zero when he looks this tick. Perceiving is inside the chain.
+    pub ticks_to_scan: u64,
 }

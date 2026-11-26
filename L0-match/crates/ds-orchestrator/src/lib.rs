@@ -1375,6 +1375,10 @@ impl GroundTruth {
         let latency = latency * (1.0 - concentration).mul_add(ctx.fatigue.clamp(0.0, 1.0), 1.0);
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let ticks = latency.round().max(1.0) as u64;
+        // ADR-044 §6: the scan is inside the duration of the chain. The
+        // glance has its own interval (ADR-034), so it is a floor, not a
+        // second term to add.
+        let ticks = ticks.max(ctx.ticks_to_scan);
         LatencyOutcome { ticks }
     }
 
@@ -1575,6 +1579,7 @@ mod latency_scale_tests {
                         crowding,
                         nearest_threat: threat,
                         fatigue: 0.0,
+                        ticks_to_scan: 0,
                     })
                     .ticks;
                 assert!((1..=40).contains(&t), "slot {slot}: {t} ticks");
@@ -1915,6 +1920,7 @@ mod latency_tests {
             crowding: 0.0,
             nearest_threat: 0.0,
             fatigue: 0.0,
+            ticks_to_scan: 0,
         }
     }
 
@@ -1923,6 +1929,23 @@ mod latency_tests {
         let mut g = gt();
         let out = g.resolve_latency(&ctx(1));
         assert!(out.ticks >= 1, "a latency of 0 would decide every tick");
+    }
+
+    /// P1 (ADR-044 §6, DD 1): the chain cannot close before the glance.
+    /// The floor must not add to the scene's own latency.
+    #[test]
+    fn the_chain_waits_for_the_next_glance_without_adding_to_it() {
+        let base = gt().resolve_latency(&ctx(1)).ticks;
+        let mut now = ctx(1);
+        now.ticks_to_scan = 1;
+        assert_eq!(
+            gt().resolve_latency(&now).ticks,
+            base,
+            "a floor is not a term"
+        );
+        let mut later = ctx(1);
+        later.ticks_to_scan = base + 3;
+        assert_eq!(gt().resolve_latency(&later).ticks, base + 3);
     }
 
     #[test]
@@ -1947,12 +1970,14 @@ mod latency_tests {
             crowding: 0.0,
             nearest_threat: 0.0,
             fatigue: 0.0,
+            ticks_to_scan: 0,
         };
         let crowded = LatencyContext {
             player,
             crowding: 1.0,
             nearest_threat: 1.0,
             fatigue: 0.0,
+            ticks_to_scan: 0,
         };
         let t_open = g.resolve_latency(&open).ticks;
         let t_crowded = g.resolve_latency(&crowded).ticks;
@@ -1978,6 +2003,7 @@ mod latency_tests {
                     crowding: 0.0,
                     nearest_threat: 0.0,
                     fatigue: 0.0,
+                    ticks_to_scan: 0,
                 })
                 .ticks;
             if t < fastest.1 {
@@ -2196,6 +2222,7 @@ mod choice_filter_tests {
                     crowding: 0.0,
                     nearest_threat: 0.0,
                     fatigue: 0.0,
+                    ticks_to_scan: 0,
                 })
                 .ticks;
             let tired = g
@@ -2204,6 +2231,7 @@ mod choice_filter_tests {
                     crowding: 0.0,
                     nearest_threat: 0.0,
                     fatigue,
+                    ticks_to_scan: 0,
                 })
                 .ticks;
             (fresh, tired)

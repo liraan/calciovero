@@ -429,8 +429,8 @@ impl MatchState {
     ) {
         let (fx, fy, _) = self.spatial.ball_3d();
         let from = (fx, fy);
-        let (length, width) = pitch_cm(ctx);
-        let to = (to.0.clamp(0, length), to.1.clamp(0, width));
+        // Where he aimed is where the ball goes (DD 5): clamping the point
+        // back inside the pitch turned a deliberate kick out into a pass.
         // The pressure on his kick, as for the pass (SIM 132, OI-100).
         let pressure = {
             let (_, opponents) = self.squads(ctx);
@@ -690,6 +690,7 @@ impl MatchState {
                 crowding,
                 nearest_threat,
                 fatigue: self.bodies.get(&id).map_or(0.0, |b| b.fatigue),
+                ticks_to_scan: 0,
             })
             .ticks;
         let thought = ds_calculator::thought::ThoughtBalance::load();

@@ -104,6 +104,44 @@ pub struct PerceivedScene {
 /// Minimum distance from the nearest opponent for a pass receiver, cm.
 pub const PASS_FREEDOM_CM: i64 = 300;
 
+/// ADR-040: room at the end of a pass is salience, not a yes/no gate. The
+/// declared threshold grades it; no new number and no option is taken away.
+fn freedom_share(freedom: i64) -> f64 {
+    #[allow(clippy::cast_precision_loss)] // cm on a pitch
+    let (f, threshold) = (freedom as f64, PASS_FREEDOM_CM as f64);
+    f / (f + threshold)
+}
+
+/// The two men who draw Law 11's line are the deepest the passer perceives
+/// (the same two `offside_to` reads). Fewer than two: there is no line to
+/// look at, so nothing to gate. With two, both must be inside his cone
+/// *this tick* (`motion`, ADR-062).
+fn line_in_sight(scene: &PerceivedScene) -> bool {
+    let mut opp: Vec<_> = scene
+        .opponents
+        .iter()
+        .filter_map(|o| {
+            scene
+                .positions
+                .get(o)
+                .map(|at| ((scene.goal.0 - at.0).abs(), o))
+        })
+        .collect();
+    opp.sort_unstable();
+    let [last, second_last, ..] = opp.as_slice() else {
+        return true;
+    };
+    scene.motion.contains_key(last.1) && scene.motion.contains_key(second_last.1)
+}
+
+/// Law 11's case: the receiver is nearer the goal than the ball, in their
+/// half, so the passer must read the line to call him level.
+fn beyond_ball(scene: &PerceivedScene, from: (i32, i32), at: (i32, i32)) -> bool {
+    let depth = |x: i32| (scene.goal.0 - x).abs();
+    let half = (scene.goal.0 - scene.own_goal.0).abs() / 2;
+    depth(at.0) < half && depth(at.0) < depth(from.0)
+}
+
 /// What a passer reckons of the reception he plays to.
 ///
 /// ADR-058, ADR-052: what he foresees is what happens. The default
@@ -1172,14 +1210,25 @@ fn hold_candidate(
     if scene.soon.is_empty() {
         return None;
     }
+    // DD-6: waiting is only for a scene that changes. If nobody he sees is
+    // going anywhere, his next decision is this same one, and he would hold
+    // for ever (the keeper who never plays it again).
+    let moving: Vec<_> = scene
+        .soon
+        .iter()
+        .filter(|(id, at)| scene.positions.get(id).is_some_and(|now| now != *at))
+        .collect();
+    if moving.is_empty() {
+        return None;
+    }
     // The scene at his next decision: he where he is, the ball at his feet,
     // everyone he sees going as they are going; then the same thought he
     // gives the scene now, every option (ADR-052).
     let mut later = scene.clone();
     later.soon.clear();
-    for (id, at) in &scene.soon {
-        if *id != scene.actor {
-            later.positions.insert(*id, *at);
+    for (&id, &at) in moving {
+        if id != scene.actor {
+            later.positions.insert(id, at);
         }
     }
     let (ctx, _) = build_choice(&later, preferred_foot, risk_appetite, own_error, balance);
@@ -1232,6 +1281,10 @@ fn clear_candidate(
     };
     let x = pos.0 + forward * m.kick.clear_length_cm;
     let players = imagined(scene);
+    // How far outside the line a kick aims when it goes out, for a throw
+    // (SIM 125) or, behind his own goal, for a corner (DD 5). One declared
+    // offset, no new number.
+    let out_cm = 300;
     // Into touch on his side (SIM_VERSION 125): the ball goes out where he
     // kicks it, and the throw-in is theirs, for sure; it is worth what they
     // gain with the ball there, against what the others would give.
@@ -1241,13 +1294,22 @@ fn clear_candidate(
         let loss = space_value(spot, own_goal, goal);
         (
             ds_calculator::thought::ThoughtBalance::expected(0.0, 0.0, loss, risk_appetite),
-            (x, if touch_y == 0 { -300 } else { width + 300 }),
+            (
+                x,
+                if touch_y == 0 {
+                    -out_cm
+                } else {
+                    width + out_cm
+                },
+            ),
         )
     };
-    [near, own_goal.1, far]
+    // He may also knock it behind his own goal (Law 17): a corner for them,
+    // still a choice of his when every landing up the pitch is worse.
+    let behind = (own_goal.0 - forward * out_cm, pos.1);
+    [(x, near), (x, own_goal.1), (x, far), behind]
         .into_iter()
-        .map(|y| {
-            let landing = (x, y);
+        .map(|landing| {
             let d = (distance_squared(pos, landing) as f64).sqrt();
             let flight = d / 1000.0 * m.kick.loft_ticks_per_10m;
             let spread = d * m.kick.error_rad(0.5, 0.75, 1.0, pressure)
@@ -1478,17 +1540,22 @@ fn pass_candidates(
         // if its line goes there before it stops (plan L0-CLOSE 11, OI-98).
         let loss_at = missed_at(scene, pos, tpos, forecast.at);
         // He imagines the touch too, where the ball reaches him (ADR-058).
-        let clean =
-            controls_ground(scene, players, *id, (tpos, d, v0)) && !offside_to(scene, pos, here);
+        // A man beyond the ball is not clean if he has not looked at the
+        // line: ADR-062, a gate of perception, not a new threshold.
+        let line_read = !beyond_ball(scene, pos, here) || line_in_sight(scene);
+        let clean = controls_ground(scene, players, *id, (tpos, d, v0))
+            && !offside_to(scene, pos, here)
+            && line_read;
         let space = space_value(gain_at, scene.goal, scene.own_goal);
         // OI-116 (A): a man who will have a good pass is worth more than a
         // man marked in the same place. The first pass keeps its own line
-        // credit; the receiver's next pass is worth its own reading.
-        let gain = if lookahead && free && clean {
+        // credit; the receiver's next pass is worth its own reading. DD 2:
+        // room at the arrival grades that gain, as ADR-040 says of salience.
+        let gain = (if lookahead && free && clean {
             space.max(receiver_best_pass(scene, *id, tpos, risk_appetite, balance))
         } else {
             space
-        };
+        }) * freedom_share(freedom);
         // His ball drifts across its line by as much as his own miss
         // (SIM 194, `resolve_pass`: `distance x error x contact`, the
         // contact anywhere across it): the share of it that stays within his
@@ -1581,7 +1648,19 @@ fn pass_candidates(
             // takes it over his own goal line between the posts, he sees the
             // ball in his own net, not at his man's feet.
             let long = d * own_pass_spread(scene, v0, kick_pressure(pos, scene, balance, 0));
+            // DD 2: the lofted ball is valued at where it lands (ADR-101 /
+            // SIM 213), so the room that grades it is the room there. No
+            // lookahead past the landing, as ADR-101 requires.
+            #[allow(clippy::cast_precision_loss)] // cm on a pitch
+            let landing_freedom = opponents
+                .iter()
+                .filter_map(|o| scene.positions.get(o).copied())
+                .map(|opos| distance_squared(tpos, opos).isqrt())
+                .min()
+                .unwrap_or(i64::MAX);
+            #[allow(clippy::cast_precision_loss)] // cm on a pitch
             let sure = if offside_to(scene, pos, here)
+                || !line_read
                 || runs_into_goal(pos, tpos, scene.own_goal, long)
             {
                 0.0
@@ -1606,14 +1685,25 @@ fn pass_candidates(
             // pass, and `lofted_missed_at` only sees his own goal. SIM 210
             // valued the receiver's next pass here; SIM 213 restores the
             // landing as the gain. The ground pass keeps its lookahead.
-            let geom = worth(
+            // DD 2 grades the room where the ball lands when he must control
+            // it there (ADR-058). In a contested air ball the marker is
+            // already read by `wins()` (OI-102): grading him again would
+            // count the same man twice and kill the target man's option.
+            let room = if contested {
+                1.0
+            } else {
+                freedom_share(landing_freedom)
+            };
+            let gain = space_value(tpos, scene.goal, scene.own_goal)
+                * line_break(pos, tpos, &opponent_lines.0, opponent_lines.1)
+                * room;
+            let geom = worth_of(
                 scene,
-                pos,
                 sure,
                 tpos,
+                gain,
                 lofted_missed_at(scene, pos, tpos, flight),
                 risk_appetite,
-                &opponent_lines,
             );
             candidates.push(ChoiceCandidate {
                 kind: ChoiceKind::Loft(*id),
@@ -2071,6 +2161,74 @@ mod shot_perception_tests {
         );
     }
 
+    /// Twin (DD 2, ADR-040): the same man at the same spot and the same
+    /// line; only the room where the ball lands changes.
+    #[test]
+    fn room_at_the_landing_grades_the_pass() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let geometric = |opp_x: i32| {
+            let mut s = scene_with(None);
+            let actor = s.actor;
+            let mate = PlayerId::new(2, 0);
+            let opp = PlayerId::new(101, 0);
+            s.positions.insert(actor, (6000, 3400));
+            s.teammates.push(mate);
+            s.opponents.push(opp);
+            s.positions.insert(mate, (7500, 3400));
+            s.positions.insert(opp, (opp_x, 3400));
+            let ops = vec![(opp_x, 3400)];
+            let (cs, _) = pass_candidates(&s, (6000, 3400), &ops, 0.5, 0.5, &balance, false);
+            cs.iter()
+                .find(|c| matches!(c.kind, ChoiceKind::Pass(id) if id == mate))
+                .expect("the pass to the free man exists")
+                .geometric
+        };
+        assert!(
+            geometric(10000) > geometric(9000),
+            "more room at the same spot must be worth more"
+        );
+    }
+
+    /// Twin (DD 3, ADR-062): the same pass, the same eye threshold and the
+    /// same onside runner; only whether the two line men are in sight now.
+    #[test]
+    fn an_unseen_offside_line_is_not_a_clean_pass() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let mut s = scene_with(None);
+        let actor = s.actor;
+        let mate = PlayerId::new(2, 0);
+        let a = PlayerId::new(101, 0);
+        let b = PlayerId::new(102, 0);
+        s.positions.insert(actor, (6000, 3400));
+        s.teammates.push(mate);
+        s.opponents = vec![a, b];
+        s.positions.insert(mate, (7900, 3400));
+        s.positions.insert(a, (8000, 3000));
+        s.positions.insert(b, (8000, 3800));
+        let ops = vec![(8000, 3000), (8000, 3800)];
+        let worth = |scene: &PerceivedScene| {
+            pass_candidates(scene, (6000, 3400), &ops, 0.5, 0.5, &balance, false)
+                .0
+                .iter()
+                .find(|c| matches!(c.kind, ChoiceKind::Pass(id) if id == mate))
+                .expect("the pass to the free man exists")
+                .geometric
+        };
+        assert!(beyond_ball(&s, (6000, 3400), (7900, 3400)));
+        let unseen = worth(&s);
+        s.motion.insert(a, (0, 0));
+        s.motion.insert(b, (0, 0));
+        let seen = worth(&s);
+        assert!(
+            unseen <= 0.0,
+            "an unread line is not a clean pass: {unseen}"
+        );
+        assert!(
+            seen > unseen,
+            "the same runner once the line is seen: {unseen} -> {seen}"
+        );
+    }
+
     fn shot_options(scene: &PerceivedScene) -> Vec<ChoiceCandidate> {
         let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
         let (ctx, _) = build_choice(scene, Side::Right, 0.5, 0.04, &balance);
@@ -2405,6 +2563,29 @@ mod shot_perception_tests {
             assert!(to(&free).1 >= 0, "to his free teammate: {:?}", to(&free));
         }
 
+        /// Twin (DD 5): the same pressed defender, the same three men on
+        /// every landing up the pitch. Only a mate waiting behind him
+        /// changes: knocking it over his own line becomes the best clearance.
+        #[test]
+        fn a_pressed_defender_may_put_it_behind_his_own_goal() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let from = (1000, 1500);
+            let x = from.0 + mind().kick.clear_length_cm;
+            let mut s = scene((500, 1500), Some((1100, 1500)));
+            for (k, y) in [680, 3400, 6120].into_iter().enumerate() {
+                let o = PlayerId::new(110 + u32::try_from(k).expect("k"), 0);
+                s.opponents.push(o);
+                s.positions.insert(o, (x, y));
+            }
+            let kind = clear_candidate(&s, from, (0.5, 0.9), &b)
+                .expect("a clearance")
+                .kind;
+            assert!(
+                matches!(kind, ChoiceKind::Clear { to } if to.0 < s.own_goal.0),
+                "behind his own goal: {kind:?}"
+            );
+        }
+
         /// The pass into the run (P1, plan L0-CLOSE 11): standing, it goes
         /// where he is; running, ahead of him the way he runs, and farther
         /// ahead the longer the pass takes.
@@ -2461,6 +2642,24 @@ mod shot_perception_tests {
             s.foresight = 0.3;
             let doubtful = hold(&s).expect("a hold candidate");
             assert!(doubtful < weak, "{doubtful} {weak}");
+        }
+
+        /// Twin (DD-6): the same man under the same pressure, the same
+        /// foreseen scene — only nobody is going anywhere. Waiting for a
+        /// moment that never comes is not a choice.
+        #[test]
+        fn he_does_not_wait_for_a_scene_that_does_not_change() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let has_hold = |s: &PerceivedScene| {
+                let (ctx, _) = build_choice(s, Side::Right, 0.5, 0.04, &b);
+                ctx.candidates.iter().any(|c| c.kind == ChoiceKind::Hold)
+            };
+            let mut s = scene((5200, 3400), Some((5500, 3400)));
+            // What he sees coming is where the man already stands.
+            s.soon.insert(PlayerId::new(7, 0), (5200, 3400));
+            assert!(!has_hold(&s), "no new moment, nothing to wait for");
+            s.soon.insert(PlayerId::new(7, 0), (7500, 3400));
+            assert!(has_hold(&s), "the same man coming up gives the hold back");
         }
 
         fn scene(mate: (i32, i32), opponent: Option<(i32, i32)>) -> PerceivedScene {
@@ -2548,6 +2747,10 @@ mod shot_perception_tests {
             free.opponents.extend([deep_a, deep_b]);
             free.positions.insert(deep_a, (9000, 3400));
             free.positions.insert(deep_b, (9200, 3400));
+            // He has looked at both men of the line: this test is about
+            // the receiver's next pass, not about the glance (DD 3).
+            free.motion.insert(deep_a, (0, 0));
+            free.motion.insert(deep_b, (0, 0));
             free.teammates.push(mate);
             free.positions.insert(mate, (8500, 4800));
 
@@ -2614,12 +2817,14 @@ mod shot_perception_tests {
             let mut open = scene((8000, 3400), Some((8000, 3700)));
             open.reception.aerial.insert(target, 0.9);
             open.reception.aerial.insert(cover, 0.4);
+            open.motion.insert(cover, (0, 0));
             open.teammates.push(next);
             open.positions.insert(next, (9000, 4400));
             // Only the man on the next landing point changes.
             let mut closed = open.clone();
             closed.opponents.push(marker);
             closed.positions.insert(marker, (9060, 4400));
+            closed.motion.insert(marker, (0, 0));
             let free = loft_salience_to(&open, target);
             let guarded = loft_salience_to(&closed, target);
             assert!(free > 0.0, "the loft stays an option");

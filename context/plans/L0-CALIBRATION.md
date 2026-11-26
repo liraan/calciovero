@@ -143,6 +143,39 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 215 (2026-11-26, opencode)
+
+Stesso comando (`cargo run --release -p ds-reference -- compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..101`), bande corrette da T11 (`saves`) e T14-bis (recupero non confrontabile). Un solo bump per sei decisioni applicate insieme: DD 1 (la scansione staggered è un pavimento della latenza, non un termine additivo), DD 2 (lo spazio del ricevitore gradua il guadagno del passaggio e del lancio), DD 3 (la linea del fuorigioco va letta, non solo proiettata), DD 4 (nessun emendamento ad ADR-081: la scelta C resta, il residuo è a monte), DD 5 (il difensore può liberare anche oltre la propria linea di porta) e DD-6 (l'attesa esiste solo se la scena immaginata cambia). Le sei non sono state misurate una per una: la riga di una metrica non va attribuita a una singola DD senza una bisecazione delle misure.
+
+| metrica | 215 | 214 | reale | nota |
+|---|---|---|---|---|
+| goals | 7.28 | 4.07 | 2.68 ± 1.65 | fuori e quasi raddoppiato: da indagare come possibile bug, non da tarare |
+| own_goals | 0.52 | 0.27 | 0.10 ± 0.31 | fuori e raddoppiato: da indagare come possibile bug |
+| shots | 34.70 | 27.60 | 24.60 ± 5.46 | fuori |
+| shots_on_target | 12.08 | 9.35 | 8.69 ± 3.22 | fuori di 0,17 |
+| penalties | 0.23 | 0.22 | 0.33 ± 0.56 | in banda |
+| passes | 1132.78 | 1524.25 | 887.68 ± 122.81 | fuori, ma 391 in meno: DD 2 ha ridotto il guadagno immaginato, la causa del residuo resta aperta (RUN 35/66) |
+| passes_accurate | 1043.28 | 1383.45 | 739.17 ± 124.79 | fuori, stesso indizio dei passaggi |
+| crosses | 16.58 | 7.50 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 6.93 | 5.93 | 38.14 ± 12.98 | fuori, secondaria del DD 4: DD 5 non l'ha mossa; la scelta C di ADR-081 resta |
+| ground_duels | 161.62 | 201.03 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 8.37 | 8.80 | 16.03 ± 5.67 | fuori, definizione DD/ADR, non soglia da ritoccare |
+| fouls | 22.10 | 26.92 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.52 | 2.95 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.32 | 0.30 | 0.24 ± 0.49 | in banda |
+| corners | 27.72 | 6.52 | 10.30 ± 3.58 | fuori, peggiorato dal 214: DD 5 ha aggiunto l'uscita dietro la porta ma la misura non è migliorata; da indagare prima come bug |
+| throw_ins | 19.18 | 19.37 | 42.72 ± 8.92 | fuori, invariato: la graduazione di DD 2 non ha agito sul gioco largo come sperato |
+| goal_kicks | 10.70 | 13.40 | 17.15 ± 4.20 | fuori |
+| free_kicks | 22.55 | 32.72 | 29.45 ± 6.81 | fuori di 0,09 |
+| offsides | 1.93 | 7.63 | 4.26 ± 2.40 | in banda: il gate di percezione di DD 3 ha chiuso l'indizio del 214 |
+| clearances | 42.35 | 23.93 | 29.53 ± 8.65 | fuori |
+| interceptions | 51.37 | 93.97 | 89.86 ± 13.97 | non confrontabile |
+| saves | 5.60 | 5.72 | 6.70 ± 2.82 | in banda con T11 |
+| stoppage_first_half_min | 4.27 | 2.90 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 6.53 | 4.91 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+**In banda con le bande corrette: 7 su 20 confrontabili** (13 fuori: gol, autogol, tiri, tiri in porta, passaggi, passaggi accurati, duelli aerei, take-on vinti, angoli, rimesse, calci di porta, calci liberi, spazzate); 4 righe non confrontabili (cross, intercettazioni, due recuperi). Rispetto al 214 sono entrate in banda solo le offside; sono uscite gol, autogol, tiri, tiri in porta, calci di porta, calci liberi e spazzate. Nessun numero è stato scelto guardando la misura (A5-bis); ogni riga fuori banda resta un indizio da indagare come possibile bug prima di ogni taratura. Golden e semi rigenerati: base, instruito e coppa cambiati; semi coppa 57 → 59, pareggio al 90′ 50 → 56, rigori solo tiri 57 → 59, colpo di testa in fuorigioco 45 → 97; golden della piccola stagione L1 cambiato.
+
 ## La misura del 214 (2026-11-26, opencode)
 
 Stesso comando (`cargo run --release -p ds-reference -- compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..101`), bande corrette da T11 (`saves`) e T14-bis (recupero: limite inferiore, non confrontabile). Due fix indipendenti: il primo tocco riconosce la propria linea dall'identità del ricevitore, e un secondo uomo battuto non cancella il primo take-on.

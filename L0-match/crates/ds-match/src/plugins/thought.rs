@@ -110,6 +110,17 @@ impl MatchState {
         // the relation). Both are geometric and in [0, 1]; the formula
         // weights them in `L0-match/balance/latency.json`.
         let (crowding, nearest_threat) = self.latency_scene(attacker, &opponents);
+        // The same staggered glance `move_agents` uses (ADR-034): no second
+        // clock, no new constant. Zero when he looks this very tick.
+        let every = ctx.hidden.scan_interval_ticks(
+            attacker,
+            (
+                self.scan_balance.scan_rate_min_per_s,
+                self.scan_balance.scan_rate_max_per_s,
+            ),
+            10.0,
+        );
+        let ticks_to_scan = (every - (tick + u64::from(attacker.slot())) % every) % every;
         let latency = ctx
             .hidden
             .resolve_latency(&ds_orchestrator::LatencyContext {
@@ -120,6 +131,7 @@ impl MatchState {
                     .bodies
                     .get(&attacker)
                     .map_or(0.0, crate::spatial::PlayerBody::mind_fatigue),
+                ticks_to_scan,
             });
         self.latencies
             .insert(attacker, tick.saturating_add(latency.ticks));
@@ -1127,6 +1139,7 @@ impl MatchState {
                     .bodies
                     .get(&id)
                     .map_or(0.0, crate::spatial::PlayerBody::mind_fatigue),
+                ticks_to_scan: 0,
             })
             .ticks
     }
