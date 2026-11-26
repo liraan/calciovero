@@ -189,6 +189,31 @@ per la dottrina (una scelta tolta al giocatore), non perché producesse i
 passaggi in eccesso. Il volume residuo resta una questione di definizione e
 di tempo di palla viva, non di una soglia da abbassare.
 
+## DD-82: il tempo morto non spiega il volume dei passaggi (2026-11-26, opencode)
+
+La domanda aperta su `passes` e `passes_accurate` era se aggiungere fermate
+dopo falli, infortuni e cambi per portare il tempo vivo del motore ai ~57′
+citati in RUN 35. I timestamp del grezzo Wyscout locale (647.372 eventi, 380
+partite) smentiscono la premessa: il ritardo mediano ripresa → prima azione è
+2,85 s per una rimessa, 3,70 s per un calcio libero, 4,69 s per un angolo e
+3,72 s per un rinvio dal fondo, già vicino ai 4-7 s del motore. Sommandogli i
+gol e unendo gli intervalli sovrapposti, il morto reale è **8,70 min/partita**
+su 95,56 minuti trascorsi, quindi **86,86 minuti di palla viva**; con la
+definizione più stretta (fino al passaggio successivo) il morto sale a circa
+13,9 minuti. Il motore ha già 14,72 minuti morti e 84,25 vivi (RUN 35, SIM
+precedente): aggiungere pause non avvicina la misura, la allontana. Il "~57′"
+non ha fonte in `L0-match/reference/` ed è contraddetto dai dati locali.
+
+La decisione delegata è quindi di **non modificare il modello**: nessun
+secondo inventato, nessuna soglia, nessun bump di `SIM_VERSION`. `passes`
+resta confrontabile, perché referto e motore contano entrambi i tentativi di
+passaggio per partita, e resta fuori banda con causa nota nel ritmo di scelta:
+337,58 catene contro circa 200 possessi per squadra, con 4,45 passaggi per
+catena già corretti (RUN 35, sonda B). Il tasso è 13,50 pass/minuto vivo nel
+motore contro 10,22 reali. La causa va presa con un DD separato sul numero di
+possessi, non sul cronometro. Nessun numero è stato scelto guardando la tabella
+(A5-bis); il rapporto completo è in `target/opencode-log.md`, RUN 75.
+
 ## La misura del 218 (2026-11-26, opencode)
 
 Stesso comando e bande del 217. Un solo bump: il calcio di una ripresa giocato a un compagno era raccontato due volte (`GoalKick`/`Corner`/`ThrowIn`/`FreeKick` al fischio e `Pass` all'atterraggio); il grezzo Wyscout locale non ha nessuna coppia con le stesse posizioni su 37.861 riprese, quindi il secondo evento era un doppio conteggio, non una definizione diversa. Nessun numero scelto guardando la tabella (A5-bis). **11 su 20 confrontabili, invariato rispetto al 217.**
