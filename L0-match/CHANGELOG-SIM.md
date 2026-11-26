@@ -9,6 +9,33 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 220 — a won take-on is told at the contact (opencode RUN 77, DD-84)
+
+Wyscout's `take_ons_won` is the **attacking ground duel won with the take-on
+tag** (`eventId 1`, `subEventId 11`, tags 503/504 and 703): in the local dump
+those are exactly 16.03 per match, the reference's mean. Run 77 measured the
+same dump and found 6.97 more won take-ons from defending duels (`subEventId
+12`), which the reference excludes. DD-71/SIM 206 had told a `Dribble` only
+after the carrier got past the man and was nearer the goal; that premise about
+the source was wrong, and the post-hoc `past` gate on the label was neither a
+perception gate nor a Law.
+
+The won contact is now told in `beaten_by_dribble`, the point shared by the
+tackle and jockey branches (SIM 217/DD-87). A `Dribble` carries `won` (the man
+beaten), not `past`. The `taking_on` pending list and its `settle_take_on` pass
+are gone: they existed only to defer that label. The player still chooses
+`TakeOn` versus `Shield` before the contact and still decides what to do with
+the ball after it; only the chronicle of the act changes.
+
+Twin `a_take_on_won_is_told_at_the_contact`, plus the existing
+`a_take_on_against_a_jockey_is_remembered` and
+`a_second_man_beaten_does_not_erase_the_first` updated to read the new event.
+Golden L0 base/instructed/cup regenerated (cup seed 166 unchanged); the L1
+golden and every seed scan (44, 42, 166, 43) still hold. `ds-reference 42..101`:
+**11/20 comparable metrics in band** (was 10); take-ons 7.98 -> 18.80 against
+16.03 ± 5.67. No number was chosen from a metric (A5-bis); DD-71 is emended on
+source evidence, not tuned to the band.
+
 ## 219 — a marked mate is still a pass option (opencode RUN 74, DD-81)
 
 `pass_candidates` had the prototype's hard gate: a teammate with less than

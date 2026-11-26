@@ -143,6 +143,51 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 220 (2026-11-26, opencode)
+
+Stesso comando e bande del 219. Un solo bump: DD-84 emenda DD-71. La fonte
+dice che `take_ons_won` è il duello d'attacco a terra vinto con il tag
+take-on (`eventId 1`, `subEventId 11`, tag 503/504 + 703), non il superamento
+fisico dell'uomo: sul grezzo locale quei duelli sono 16,03/partita, esattamente
+la media del referto, mentre i duelli difensivi vinti con lo stesso tag
+(6,97/partita) non sono conteggiati dalla fonte. Il motore raccontava
+l'etichetta `Dribble` solo dopo il superamento, con un confronto con la porta
+che non era né percezione né regola del gioco; ora la racconta al contatto
+vinto, punto comune dei rami contrasto e jockey. Nessun numero scelto guardando
+la tabella (A5-bis). **11 su 20 confrontabili** (era 10): entra in banda solo
+`take_ons_won`, tutto il resto è invariato.
+
+| metrica | 220 | 219 | reale | nota |
+|---|---|---|---|---|
+| goals | 4.33 | 4.33 | 2.68 ± 1.65 | fuori di 0,008, non tarato |
+| own_goals | 0.20 | 0.20 | 0.10 ± 0.31 | in banda |
+| shots | 26.55 | 26.55 | 24.60 ± 5.46 | in banda |
+| shots_on_target | 8.17 | 8.17 | 8.69 ± 3.22 | in banda |
+| penalties | 0.13 | 0.13 | 0.33 ± 0.56 | in banda |
+| passes | 1137.20 | 1137.20 | 887.68 ± 122.81 | fuori, volume aperto (DD-82) |
+| passes_accurate | 1056.60 | 1056.60 | 739.17 ± 124.79 | fuori, volume aperto (DD-82) |
+| crosses | 7.45 | 7.45 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 4.87 | 4.87 | 38.14 ± 12.98 | fuori, DD?-86 |
+| ground_duels | 158.58 | 158.58 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 18.80 | 7.98 | 16.03 ± 5.67 | in banda, DD-84 chiude la definizione |
+| fouls | 21.42 | 21.42 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.15 | 2.15 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.28 | 0.28 | 0.24 ± 0.49 | in banda |
+| corners | 9.17 | 9.17 | 10.30 ± 3.58 | in banda |
+| throw_ins | 22.57 | 22.57 | 42.72 ± 8.92 | fuori, OI-100 (RUN 76) |
+| goal_kicks | 10.35 | 10.35 | 17.15 ± 4.20 | fuori, DD?-85 |
+| free_kicks | 21.77 | 21.77 | 29.45 ± 6.81 | fuori di 0,87 |
+| offsides | 1.60 | 1.60 | 4.26 ± 2.40 | fuori, DD?-88 |
+| clearances | 20.13 | 20.13 | 29.53 ± 8.65 | fuori, DD?-89 |
+| interceptions | 49.75 | 49.75 | 89.86 ± 13.97 | non confrontabile |
+| saves | 4.27 | 4.27 | 6.70 ± 2.82 | in banda con T11 |
+| stoppage_first_half_min | 2.48 | 2.48 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 5.27 | 5.27 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+Golden L0 base/istruito/coppa rigenerati (seed coppa 166 invariato); golden L1
+e tutti gli scan dei semi (44, 42, 166, 43) invariati. La cronaca cambia, non
+il gioco: tutte le altre righe sono bit-identiche al 219.
+
 ## La misura del 219 (2026-11-26, opencode)
 
 Stesso comando e bande del 218. Un solo bump: DD-81 toglie il gate duro
@@ -167,7 +212,7 @@ banda alta (4,330 contro 4,322). Nessuna di queste due righe è stata
 | crosses | 7.45 | 7.13 | 33.83 ± 8.78 | non confrontabile |
 | aerial_duels | 4.87 | 4.38 | 38.14 ± 12.98 | fuori, DD?-86 |
 | ground_duels | 158.58 | 156.50 | 182.63 ± 27.54 | in banda |
-| take_ons_won | 7.98 | 8.48 | 16.03 ± 5.67 | fuori, DD?-84 (definizione) |
+| take_ons_won | 7.98 | 8.48 | 16.03 ± 5.67 | fuori, definizione chiusa da DD-84 al 220 |
 | fouls | 21.42 | 20.65 | 26.00 ± 6.69 | in banda |
 | yellow_cards | 2.15 | 2.38 | 3.97 ± 1.96 | in banda |
 | red_cards | 0.28 | 0.20 | 0.24 ± 0.49 | in banda |

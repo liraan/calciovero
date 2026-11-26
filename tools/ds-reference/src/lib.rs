@@ -41,7 +41,7 @@ pub enum Metric {
     AerialDuels,
     /// Ground duels (one per contest).
     GroundDuels,
-    /// Take-ons that beat the man.
+    /// Attacking duels won with the take-on on (Wyscout, RUN 77).
     TakeOnsWon,
     /// Fouls.
     Fouls,
@@ -163,6 +163,9 @@ impl Metric {
             }
             Self::Saves => {
                 "Wyscout tags a goal on the conceding keeper's save attempt too; those failed attempts are excluded."
+            }
+            Self::TakeOnsWon => {
+                "Wyscout counts the attacking ground duel won with a take-on; the engine tells the won contact (SIM 220, RUN 77)."
             }
             _ => "",
         }

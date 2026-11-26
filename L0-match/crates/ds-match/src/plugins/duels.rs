@@ -26,7 +26,6 @@ impl MatchState {
     /// if the challenger wins, the ball is his. The one who lost the ball
     /// does not win it back at once.
     pub(crate) fn challenge_carrier(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
-        self.settle_take_on(ctx, tick);
         // A restart waiting: the ball is out of play (SIM 150).
         if self.waiting.is_some() {
             return;
@@ -201,11 +200,12 @@ impl MatchState {
     }
 
     /// Taken on and beaten at the contact (ADR-042 step c): the man is left
-    /// behind for `down` ticks. The dribble is not yet an event: it is one
-    /// when the carrier has got past him (`settle_take_on`).
+    /// behind for `down` ticks. Wyscout's won take-on is the attacking ground
+    /// duel won with the take-on tag, not the later run past him (RUN 77), so
+    /// the act is told here, whether or not he gets past before his next touch.
     pub(crate) fn beaten_by_dribble(
         &mut self,
-        _ctx: &mut MatchContext<'_>,
+        ctx: &mut MatchContext<'_>,
         tick: u64,
         (carrier, challenger): (PlayerId, PlayerId),
         down: u64,
@@ -213,55 +213,13 @@ impl MatchState {
         self.challenges.insert(challenger, tick + down);
         self.spatial
             .set_act(challenger, ds_orchestrator::OffBallAct::Hold);
-        // One pending take-on per pair: beating a second man before getting
-        // past the first must not forget the first (SIM 214).
-        self.taking_on
-            .retain(|(c, d, _)| (*c, *d) != (carrier, challenger));
-        self.taking_on.push((carrier, challenger, tick + down));
-    }
-
-    /// The take-on becomes a dribble when the carrier, the ball still his,
-    /// is past the man he took on: the man no longer goal-side of him, the
-    /// carrier nearer the goal he attacks (SIM 206; the take-on won of the Wyscout data the metric
-    /// reads is the dribbler getting past the opponent). If he loses the ball
-    /// first, or the man is up again before he is past, it is no dribble.
-    /// Before, the dribble was told at the contact, the two still a step
-    /// apart (opencode RUN 15: 1483 of 1559 within 150 cm).
-    pub(crate) fn settle_take_on(&mut self, ctx: &mut MatchContext<'_>, tick: u64) {
-        let now = self.spatial.carrier();
-        let mut pending = Vec::new();
-        for (carrier, challenger, until) in std::mem::take(&mut self.taking_on) {
-            if now != Some(carrier) || tick > until {
-                continue;
-            }
-            let (Some(c), Some(d)) = (
-                self.spatial.agent(carrier).map(|a| a.position),
-                self.spatial.agent(challenger).map(|a| a.position),
-            ) else {
-                continue;
-            };
-            // Goal-side: the man is no longer between the carrier and the
-            // goal he attacks, the carrier nearer it than him.
-            let home = ctx.match_.home.players.iter().any(|p| p.id == carrier);
-            let (length, width) = pitch_cm(ctx);
-            let goal = if home {
-                (length, width / 2)
-            } else {
-                (0, width / 2)
-            };
-            if distance_squared(c, goal) < distance_squared(d, goal) {
-                self.emit_event(
-                    ctx,
-                    tick,
-                    Some(ActorId::Player(carrier)),
-                    EventType::Dribble,
-                    serde_json::json!({ "past": challenger.slot() }),
-                );
-            } else {
-                pending.push((carrier, challenger, until));
-            }
-        }
-        self.taking_on = pending;
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(carrier)),
+            EventType::Dribble,
+            serde_json::json!({ "won": challenger.slot() }),
+        );
     }
 
     /// What the carrier imagines is at stake in a challenge (ADR-052 §3):
@@ -527,8 +485,11 @@ mod tests {
         s.jockey_pressure(&mut ctx, 10_000, carrier, jockey, (at, y));
         assert_eq!(s.spatial.carrier(), Some(carrier), "same scene, ball kept");
         assert!(
-            !s.taking_on.is_empty(),
-            "a won TakeOn under jockey pressure must be remembered"
+            chain
+                .events()
+                .iter()
+                .any(|e| e.event_type == ds_stats::EventType::Dribble),
+            "a won TakeOn under jockey pressure must be told"
         );
     }
 
@@ -563,9 +524,6 @@ mod tests {
             if two {
                 s.beaten_by_dribble(&mut ctx, 101, (carrier, second), 80);
             }
-            assert!(s.spatial.set_position(first, (length / 2 - 400, y)));
-            assert!(s.spatial.set_position(second, (length / 2 - 500, y + 100)));
-            s.settle_take_on(&mut ctx, 102);
             chain
                 .events()
                 .iter()

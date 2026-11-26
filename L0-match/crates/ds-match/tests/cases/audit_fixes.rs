@@ -146,54 +146,32 @@ fn a_header_from_offside_is_called() {
     assert!(called > 0, "no header from offside called at its seed");
 }
 
-/// SIM 206 (opencode RUN 15): a dribble is the carrier getting past the man,
-/// not winning the contact. At every dribble told, the man he took on is no
-/// longer goal-side of him: the carrier is nearer the goal he attacks.
+/// DD-84 (opencode RUN 77): Wyscout's won take-on is the attacking duel won
+/// with the take-on tag, told at the contact even if he never gets past the
+/// man. SIM 206 told it only after the run and lost the ones where he passed
+/// or lost the ball first.
 #[test]
-fn a_dribble_is_told_once_the_man_is_past() {
+fn a_take_on_won_is_told_at_the_contact() {
     let seed = 42;
     let m = match_fixture(seed).expect("fixture");
-    let (played, records) =
+    let (played, _) =
         crate::ds_match::simulate_from_seed_recorded(&m, seed, MatchConfig::default());
-    let length = i64::from(m.pitch.length_m) * 100;
-    let width = i64::from(m.pitch.width_m) * 100;
-    let mut dribbles = 0;
-    for (i, e) in played.events.events().iter().enumerate() {
+    let mut told = 0;
+    for e in played.events.events() {
         if e.event_type != EventType::Dribble {
             continue;
         }
         let Some(ds_core::ids::ActorId::Player(carrier)) = e.actor else {
             continue;
         };
-        let past = e
+        let beaten = e
             .fields
-            .get("past")
+            .get("won")
             .and_then(serde_json::Value::as_u64)
-            .expect("the man taken on");
-        // The tick the dribble was born in (the record names its events).
-        let rec = records
-            .iter()
-            .find(|x| x.events.contains(&i))
-            .expect("the tick of the dribble");
-        let at = |slot: u64| {
-            rec.agents
-                .iter()
-                .find(|a| u64::from(a.id.slot()) == slot)
-                .map(|a| (i64::from(a.position.0), i64::from(a.position.1)))
-                .expect("on the pitch")
-        };
-        let goal = if carrier.slot() < 100 {
-            (length, width / 2)
-        } else {
-            (0, width / 2)
-        };
-        let d2 = |p: (i64, i64)| (p.0 - goal.0).pow(2) + (p.1 - goal.1).pow(2);
-        assert!(
-            d2(at(u64::from(carrier.slot()))) < d2(at(past)),
-            "tick {}: a dribble with the man still goal-side",
-            rec.tick
-        );
-        dribbles += 1;
+            .expect("the man beaten at the contact");
+        assert_ne!(u64::from(carrier.slot()), beaten, "he cannot beat himself");
+        assert!(e.fields.get("past").is_none(), "not the later run");
+        told += 1;
     }
-    assert!(dribbles > 0, "a match with no dribble");
+    assert!(told > 0, "a match with no take-on won");
 }
