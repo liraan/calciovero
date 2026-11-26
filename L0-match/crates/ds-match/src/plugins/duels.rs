@@ -192,6 +192,11 @@ impl MatchState {
             outcome.loose = true;
             self.emit_contact(ctx, tick, carrier, challenger, &outcome);
             self.loose_from_contact(challenger, ball, duel.loose_speed_cm_per_tick);
+        } else if outcome.answer == Some(ds_calculator::duel::CarrierAnswer::TakeOn) {
+            // Same answer, same consequence as in a tackle: he took the
+            // man on and kept the ball, so the man is beaten and the
+            // take-on is remembered until he gets past him.
+            self.beaten_by_dribble(ctx, tick, (carrier, challenger), duel.beaten_ticks);
         }
     }
 
@@ -489,6 +494,42 @@ mod tests {
 
         assert_eq!(scene(true), Some(carrier), "at his foot he keeps it");
         assert_eq!(scene(false), None, "rolling ahead he loses it to pressure");
+    }
+
+    /// Loop: the tackle branch remembers a won `TakeOn`; the jockey branch
+    /// must remember the same answer in the same scene.
+    #[test]
+    fn a_take_on_against_a_jockey_is_remembered() {
+        use crate::context::MatchContext;
+        use ds_stats::EventChain;
+
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let carrier = m.home.players[1].id;
+        let jockey = m.away.players[5].id;
+        let mut hidden = ds_orchestrator::GroundTruth::for_match(42, &m);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            chain: &mut chain,
+            config: crate::context::MatchConfig::default(),
+        };
+        let mut s = crate::state::MatchState::new(&m);
+        let (length, width) = crate::state::pitch_cm(&ctx);
+        let at = length / 2;
+        let y = width / 2;
+        assert!(s.spatial.set_position(carrier, (at, y)));
+        assert!(s.spatial.set_position(jockey, (at - 60, y + 60)));
+        s.spatial.set_ball_in_flight((at, y, 0), (0, 0, 0));
+        s.spatial.set_carrier(Some(carrier));
+        s.spatial
+            .set_act(jockey, ds_orchestrator::OffBallAct::Challenge);
+        s.jockey_pressure(&mut ctx, 10_000, carrier, jockey, (at, y));
+        assert_eq!(s.spatial.carrier(), Some(carrier), "same scene, ball kept");
+        assert!(
+            !s.taking_on.is_empty(),
+            "a won TakeOn under jockey pressure must be remembered"
+        );
     }
 
     /// SIM 214: beating a second man before getting past the first must not

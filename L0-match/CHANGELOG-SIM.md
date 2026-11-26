@@ -8,6 +8,21 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+
+## 217 — a won answer is remembered under pressure too (opencode RUN 66, DD-87)
+
+`resolve_duel` gives the carrier the same `TakeOn` answer whether the opponent
+tackles or only jockeys him (SIM 170, ADR-086), and in both cases he can keep
+the ball. Only the tackle branch called `beaten_by_dribble` when he did: a man
+who chose to take his marker on and won under near pressure was forgotten, so
+the take-on could never become a dribble when he went past him. The jockey
+branch now remembers the same answer with the same `duel.beaten_ticks` already
+used there for the cooldown. No threshold, weight or choice was added, and
+`resolve_duel` is untouched.
+
+Twin `a_take_on_against_a_jockey_is_remembered`: same carrier, same jockey,
+same scene; red before, green after. Golden, seeds, the L1 golden and the
+GUI seed 43 all still hold. `ds-reference 42..101`: **11/20 comparable metrics in band, unchanged from SIM 216** (take-ons 8.35 -> 8.48, still outside; free kicks 21.75 -> 21.00 and clearances 20.77 -> 20.20 move slightly further out). No number was chosen from a metric.
 ## 216 — a corner is a loss, a wait needs a man arriving (loop DD-8, DD-9, DD-10; DD-78, DD-79, DD-80 in `STATE.md`)
 
 DD 5 gave the pressed defender the choice to knock it behind his own goal (Law 17), but the landing was valued like any other: nobody contests a ball that is out, so its confidence was 0.70 against 0.15 for a landing up the pitch and 84% of clearances ended behind the kicker's goal. With LUNA the man still chooses where to kick; what was wrong was the *value he read* — the opponents receive a corner, not a free ball at the goal line. The kick behind now carries the same `expected(0, 0, loss, risk)` already used for a ball into touch; no threshold, weight or removed choice. DD-10 fixes where the loss is read: not a shot from the flag (`space_value` there gave a corner *less* danger than a throw-in 50 m up the touchline), but the cross into the area, read at the penalty area line — a distance the Laws already declare, so no new number. Guards: `a_corner_is_not_a_free_landing`, the same defender, pressure and three opponents, only his mate 15 m clear of the near landing: before he put it behind his own goal, now he keeps it on the wing; `a_corner_is_a_loss_even_with_a_mate_behind`, the DD 5 twin, now keeps it in touch even with a mate waiting behind. The choice to put it behind remains in `clear_candidate`.

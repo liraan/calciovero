@@ -143,6 +143,39 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 217 (2026-11-26, opencode)
+
+Stesso comando e bande del 216. Un solo bump: il ramo jockey non registrava il `TakeOn` vinto dal portatore, mentre lo fa il ramo contrasto; ADR-086 chiede la stessa lettura per ogni atto. Nessun numero adattato (A5-bis). **11 su 20 confrontabili, invariato rispetto al 216.**
+
+| metrica | 217 | 216 | reale | nota |
+|---|---|---|---|---|
+| goals | 4.00 | 4.00 | 2.68 ± 1.65 | in banda |
+| own_goals | 0.20 | 0.23 | 0.10 ± 0.31 | in banda |
+| shots | 26.77 | 26.53 | 24.60 ± 5.46 | in banda |
+| shots_on_target | 8.12 | 7.97 | 8.69 ± 3.22 | in banda |
+| penalties | 0.17 | 0.15 | 0.33 ± 0.56 | in banda |
+| passes | 1175.30 | 1175.82 | 887.68 ± 122.81 | fuori, DD?-81/82 |
+| passes_accurate | 1092.35 | 1091.70 | 739.17 ± 124.79 | fuori, DD?-81 |
+| crosses | 8.40 | 8.25 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 4.38 | 4.67 | 38.14 ± 12.98 | fuori, DD?-86 |
+| ground_duels | 156.50 | 157.10 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 8.48 | 8.35 | 16.03 ± 5.67 | fuori, DD?-84 (definizione) |
+| fouls | 20.65 | 21.53 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.38 | 2.37 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.20 | 0.18 | 0.24 ± 0.49 | in banda |
+| corners | 9.23 | 9.43 | 10.30 ± 3.58 | in banda |
+| throw_ins | 22.37 | 22.75 | 42.72 ± 8.92 | fuori, DD?-83 |
+| goal_kicks | 11.07 | 10.65 | 17.15 ± 4.20 | fuori, DD?-85 |
+| free_kicks | 21.00 | 21.75 | 29.45 ± 6.81 | fuori di 1,64 (era 0,89) |
+| offsides | 1.57 | 1.55 | 4.26 ± 2.40 | fuori di 0,29 |
+| clearances | 20.20 | 20.77 | 29.53 ± 8.65 | fuori di 0,68 (era 0,11) |
+| interceptions | 47.87 | 49.00 | 89.86 ± 13.97 | non confrontabile |
+| saves | 4.52 | 4.47 | 6.70 ± 2.82 | in banda con T11 |
+| stoppage_first_half_min | 2.27 | 2.38 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 5.15 | 5.03 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+Il tanto piccolo spostamento delle righe non è una taratura: nessun numero è stato scelto guardando la tabella, e le due righe che si allontanano (punizioni, spazzate) restano affidate ai DD? già aperti.
+
 ## La misura del 216 (2026-11-26, opencode)
 
 Stesso comando (`cargo run --release -p ds-reference -- compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..101`), bande corrette da T11 (`saves`) e T14-bis (recupero: limite inferiore, non confrontabile). Un solo bump per tre decisioni: DD-8 (il calcio dietro la propria porta è un corner, non un atterraggio libero), DD-9 (l'attesa vale solo se l'uomo che rende disponibile l'opzione si muove verso di essa) e DD-10 (il rischio del corner si legge dove arriva il cross, alla linea dell'area, non come tiro dalla bandierina). DD-9 è emersa perché DD-8 ha tolto al portiere del seed 42 l'uscita facile e ha scoperto 343 tick fermi in `Hold`; DD-10 è emersa perché il valore alla bandierina rendeva il corner più sicuro di una rimessa a 50 m. Nessuna delle tre è stata tarata guardando la misura.
