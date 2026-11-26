@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `e504a80` - "docs(review): record SIM 214 and close the SIM 213 measurement"
+**Last commit verified:** `e0ae706` - "SIM 215: the glance, the room, the seen line, and the wait that ends"
 
 ## Mandato attivo (2026-11-16)
 
@@ -17,8 +17,9 @@ Il mandato di autonomia del maintainer del 16 novembre 2026: Claude Code continu
 
 L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1 con coppe e nazionali come settimane vuote, le decisioni F-K del 16 novembre su dati reali e asset, `tools/ds-gui/DESIGN.md`, con la prima scheda del giocatore come base), con C2 verde; poi `docs/readme-tables` (il README con lo stato in tabelle, al SIM 133, il motore di main).
 
-## Dove siamo (2026-11-25)
+## Dove siamo (2026-11-26)
 
+- **SIM 215 — sei decisioni L0 in un solo bump (DD 1-6, DD-77).** La scansione staggered è il pavimento della latenza; lo spazio del ricevitore gradua il guadagno di passaggi e lanci; la linea del fuorigioco va vista; ADR-081 C resta; il difensore può liberare dietro la propria porta; l'attesa esiste solo se la scena cambia (DD-6, trovata bisecando il test del cambio). Guard per tutti; golden, semi e golden L1 rigenerati. `ds-reference 42..101`: **7 su 20 confrontabili** (era 13); entrano le offside 7.63 → 1.93, peggiorano angoli 6.52 → 27.72 e gol 4.07 → 7.28. **Prossimo:** riprendere i loop chiesti dal maintainer: indagare come possibili bug (non tarature) le 13 righe fuori banda, partendo dal salto di gol/autogol, angoli e spazzate e dal residuo delle rimesse. Il blocco GUI del maintainer resta fuori dai commit.
 - **SIM 213 — il lancio torna a valere l'atterraggio (DD-76).** Revoca di SIM 210/DD-73: ADR-101 esclude il ramo loftato dal lookahead di OI-116 e il pallone può uscire prima che il ricevitore scelga. Guard `a_long_ball_does_not_read_past_the_landing`; golden e semi rigenerati (coppa 57). `ds-reference 42..101`: angoli 18.02 → 6.52, recupero secondo tempo 5.81 → 4.91 min, **14 su 22** (era 9).
 - **SIM 212 — infortunio e cambio forzato sono un solo recupero (DD-75).** Law 7.3: il tempo perso, non il numero di eventi. Guard `the_knock_and_his_change_are_one_stoppage`; golden e semi rigenerati (pari al 90′ 43). `ds-reference 42..101`: **9 su 22**; recupero primo tempo 3.45 → 3.17 min, secondo 5.92 → 5.81, ancora fuori banda (OI-101).
 - **SIM 211 — il rimbalzo dopo un blocco non torna subito a chi ha giocato (DD-74).** Il passatore e lo shooter aspettano lo stesso `retry_ticks` già usato dopo un controllo fallito. Guard `the_shooter_waits_after_a_block`; golden e semi rigenerati. `ds-reference 42..101`: **9 su 22**; tiri 38.73 → 30.50, rimesse 17.77 → 33.32, angoli 7.73 → 18.08, parate 6.75 → 5.08. Indizio aperto: angoli e parate.
@@ -155,6 +156,7 @@ L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1
 | DD-74 | SIM 211: dopo un passaggio o un tiro bloccato, anche chi lo ha giocato aspetta lo stesso `retry_ticks` di chi lo ha respinto prima di riprendere il rimbalzo | ADR-051 (il blocco dà il possesso agli avversari); la stessa regola del controllo fallito e della spazzata; opencode RUN 32 sulle registrazioni | un tempo nuovo scelto guardando i tiri ripetuti; impedire al giocatore di scegliere (il gate è solo fisico, non cognitivo) |
 | DD-75 | SIM 212: la sostituzione forzata dell'uomo caduto un tick prima non aggiunge 30 s all'infortunio già contato; una sostituzione tattica sì | Regola 7.3 (il recupero compensa il tempo perso, non il numero di eventi); opencode RUN 31: 56/56 coppie con stesso slot e gap 1 tick | una soglia di tempo nuova; contare come una sola anche la sostituzione tattica successiva a un infortunio |
 | DD-76 | SIM 213: il lancio torna a valere il punto dove atterra; revoca DD-73. Il ricevitore conserva tutte le opzioni, ma il pallone può uscire prima che le scelga | ADR-101 §Conseguenze esclude esplicitamente il ramo loftato da OI-116; `lofted_missed_at` vede solo la propria porta, non la linea di fondo; indagine opencode: angoli 18,02 contro 10,30 ± 3,58 reali, salto a SIM 210 | togliere opzioni al ricevitore (ADR-101); scegliere un numero guardando gli angoli (A5-bis) |
+| DD-77 | SIM 215: l'attesa (`Hold`) è un'opzione solo se qualcuno che il portatore vede sta andando davvero da qualche parte. Se la scena immaginata è identica a quella presente, il momento migliore non arriva e il giocatore resterebbe fermo per sempre: con DD 2 + DD 3 il portiere sceglieva `Hold` dal 59' al fischio, senza eventi né interruzioni, e il cambio pianificato al 60' non avveniva. | In partita vera il portiere non tiene la palla ferma per 36 minuti: o la gioca o gliela tolgono. | la posizione futura dei compagni già letta in `scene.soon`, confrontata con quella attuale | lo stesso portatore, con la sua pazienza e la sua lettura, che aspetta solo un momento che cambia davvero | il giocatore, nella scelta di attendere | bisecazione di `friendly::tests::the_substitute_comes_on` (verde con DD 1, DD 2, DD 3, DD 5 presi singolarmente; rosso solo con DD 2 + DD 3); gemello `he_does_not_wait_for_a_scene_that_does_not_change`; scelta del maintainer 2026-11-26 | questo commit |
 
 ## Plan
 
