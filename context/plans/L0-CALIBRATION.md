@@ -122,7 +122,7 @@ un gioco simulativo è proprio quello che non può succedere.
 | gialli | 3.97 | 1.96 | 5.87 | 2.0–5.9 | sì | — |
 | rossi | 0.24 | 0.49 | 0.07 | 0–0.73 | sì | — |
 | angoli | 10.30 | 3.58 | 18.05 | 6.7–13.9 | no | OI-100: la catena dei troppi tiri |
-| rimesse laterali | 42.72 | 8.92 | 19.20 | 33.8–51.6 | no | OI-100: raddoppiate dal 127 (3.85) con il rimbalzo; nel calcio vero il 21,5% segue una spazzata, il 19,7% un tocco, il 31% un duello, il 24% un passaggio sbagliato (Wyscout); nel motore un duello non manda quasi mai la palla fuori e il passaggio sbaglia poco |
+| rimesse laterali | 42.72 | 8.92 | 19.20 | 33.8–51.6 | no | OI-100: raddoppiate dal 127 (3.85) con il rimbalzo; nel calcio vero il 21,5% segue una spazzata, il 19,7% un tocco, il 31% un duello, il 24% un passaggio sbagliato (Wyscout); nel motore un duello non manda quasi mai la palla fuori e il passaggio sbaglia poco. DD-83 (RUN 76): nessuna modifica; il 31,2% è prossimità temporale, non causalità, e non si confronta con il 2,6% del motore; la causa resta ignota |
 | rinvii dal fondo | 17.15 | 4.20 | 20.07 | 13.0–21.4 | sì | — |
 | punizioni | 29.45 | 6.81 | 20.48 | 22.6–36.3 | no | OI-112: probabilmente di conteggio |
 | fuorigioco | 4.26 | 2.40 | 8.10 | 1.9–6.7 | no | OI-098 / OI-104: la linea è letta con posizioni esatte, l'errore di percezione non è ancora costruito |
@@ -188,6 +188,14 @@ che il gate duro quasi non incideva sul conteggio: il modello era sbagliato
 per la dottrina (una scelta tolta al giocatore), non perché producesse i
 passaggi in eccesso. Il volume residuo resta una questione di definizione e
 di tempo di palla viva, non di una soglia da abbassare.
+
+## DD-83: le rimesse non si chiudono né con il lookahead né con DD-76 (2026-11-26, opencode)
+
+La domanda aperta su `throw_ins` (22,57 contro 42,72 ± 8,92) proponeva di fare valere il lancio solo la migliore giocata successiva a terra del compagno, oppure di chiudere OI-100 come conseguenza dichiarata di DD-76. **Nessuna delle due è stata attuata.**
+
+La prima reintroduce il lookahead nel ramo loftato che ADR-101 §Conseguenze esclude e DD-76 aveva già revocato dopo aver misurato angoli 18,97 e autogol 0,47 (RUN 17); inoltre non insegna l'uscita laterale, perché `lofted_missed_at` vede solo la propria porta, non la linea di touch. La seconda attribuisce male la causa: DD-76 spiega il calo 33,17 → 19,37, ma il divario esisteva già prima, 42,72 − 33,17 = 9,55 rimesse/match, quando i duelli che mandavano fuori erano già il 2,4% (RUN 20).
+
+La seconda inoltre si appoggia su un confronto invalido: il 31,2% di duelli prima della rimessa, citato in questa stessa tabella e in RUN 65 come "Wyscout" (non StatsBomb), è la distribuzione di un evento qualunque in una finestra temporale con gap mediano 10,11 s, non l'attribuzione dell'azione che ha mandato la palla fuori; il 2,6% del motore è invece l'ultimo vero tocco. Le due percentuali non vanno confrontate e da lì non si può derivare una regola. DD-76 copre solo il calo storico 33,17 → 19,37, mentre il divario strutturale (42,72 − 33,17 = 9,55/match) esisteva già prima. L'emissione è completa (RUN 20, 37, 65: ogni uscita ha il suo `ThrowIn`) e l'opzione di calciare in fascia esiste ed è verde (`pressed_with_nothing_on_he_puts_it_into_touch`): con LUNA non manca una scelta. La causa del residuo resta ignota: una regola sui duelli richiederebbe un dataset che registri l'uscita stessa, non la prossimità degli eventi. OI-100 resta aperto con questa correzione di fonte; nessun comportamento o `SIM_VERSION` cambia. Rapporto completo in `target/opencode-log.md`, RUN 76.
 
 ## DD-82: il tempo morto non spiega il volume dei passaggi (2026-11-26, opencode)
 
