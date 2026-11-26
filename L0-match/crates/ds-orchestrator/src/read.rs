@@ -1601,24 +1601,19 @@ fn pass_candidates(
             } else {
                 0.0
             };
-            // The same measure as the ground pass (ADR-052, OI-116 A; SIM 206,
-            // code audit T33): a man he reaches in the air is worth the best
-            // pass he will then have, not only the space where it comes down.
-            // Before, only the ground pass looked a step ahead, and a long ball
-            // was always worth less than a short one to the same space.
-            let space = space_value(tpos, scene.goal, scene.own_goal);
-            let gain = if lookahead && sure > 0.0 {
-                space.max(receiver_best_pass(scene, *id, tpos, risk_appetite, balance))
-            } else {
-                space
-            };
-            let geom = worth_of(
+            // ADR-101 §Conseguenze leaves the lofted branch out of OI-116:
+            // the ball may leave the pitch before the man can make that next
+            // pass, and `lofted_missed_at` only sees his own goal. SIM 210
+            // valued the receiver's next pass here; SIM 213 restores the
+            // landing as the gain. The ground pass keeps its lookahead.
+            let geom = worth(
                 scene,
+                pos,
                 sure,
                 tpos,
-                gain * line_break(pos, tpos, &opponent_lines.0, opponent_lines.1),
                 lofted_missed_at(scene, pos, tpos, flight),
                 risk_appetite,
+                &opponent_lines,
             );
             candidates.push(ChoiceCandidate {
                 kind: ChoiceKind::Loft(*id),
@@ -2604,13 +2599,13 @@ mod shot_perception_tests {
                 .map_or(0.0, |c| c.geometric)
         }
 
-        /// Twin test (ADR-052, OI-116 A; SIM 210, code audit T33): the same
-        /// long ball to the same target man, and only the pass that man will
-        /// have where it comes down changes — his next mate free, or that
-        /// mate marked. The lofted pass looks one step ahead as the ground
-        /// pass does; before, it was worth only the space it reached.
+        /// Twin test (ADR-101 §Conseguenze; SIM 210 reverted by SIM 213):
+        /// the same long ball to the same target man, and only the pass that
+        /// man will have where it comes down changes — his next mate free,
+        /// or that mate marked. The loft still reads the landing, not a
+        /// next pass that may never happen because the ball goes out first.
         #[test]
-        fn a_long_ball_to_a_man_with_a_free_pass_is_worth_more() {
+        fn a_long_ball_does_not_read_past_the_landing() {
             let target = PlayerId::new(7, 0);
             let next = PlayerId::new(8, 0);
             let cover = PlayerId::new(105, 0);
@@ -2627,7 +2622,11 @@ mod shot_perception_tests {
             closed.positions.insert(marker, (9060, 4400));
             let free = loft_salience_to(&open, target);
             let guarded = loft_salience_to(&closed, target);
-            assert!(free > guarded, "free next pass {free}, guarded {guarded}");
+            assert!(free > 0.0, "the loft stays an option");
+            assert_eq!(
+                free, guarded,
+                "the loft reads the landing, not the next pass"
+            );
         }
 
         /// ADR-050 (P1): a pass forward is more salient than the same pass back,

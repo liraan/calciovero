@@ -8,6 +8,10 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 
 ---
 
+## 213 — the loft reads its landing again (ADR-101, DD-76)
+
+SIM 210 made the lofted pass worth the receiver's next pass, with the same lookahead as the ground pass. ADR-101 §Conseguenze explicitly leaves the lofted and filtered branches out of OI-116, and the ball can leave the pitch before the receiver can choose: `lofted_missed_at` only sees his own goal, not the touchline. The receiver's options stay all available; the passer's imagined gain is what changes. Guard: `a_long_ball_does_not_read_past_the_landing`, the same scene with the next mate free or marked now has the same loft salience. Golden and seeds regenerated. `ds-reference 42..101`: corners 18.02 → 6.52, second-half stoppage 5.81 → 4.91 min, 9 → 14 of 22 in band. No number was chosen from the metric.
+
 ## 212 — a knock and his forced change are one stoppage (opencode RUN 31, DD-75)
 
 `stoppage_for` added an injury (60 s) and the substitution that follows it one tick later (30 s) as if they were two interruptions. Law 7.3 recovers time lost, not events: the knocked man leaving is the same stoppage. Now a substitution whose `out` is the player injured at the previous tick adds no time; a tactical change still does. Guard: `the_knock_and_his_change_are_one_stoppage` (RUN 31: 56 of 56 injury→substitution pairs had the same slot and a one-tick gap). Golden and seeds regenerated. `ds-reference 42..101`: first-half stoppage 3.45 → 3.17 min, second-half 5.92 → 5.81 min (still above the real bands); 9 of 22 in band, unchanged.

@@ -143,6 +143,41 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 213 (2026-11-25, DD-76)
+
+Stesso comando, stessa banda; confronto con la misura del 212.
+
+| metrica | 213 | reale | nota |
+|---|---|---|---|
+| goals | 4.07 | 2.68 ± 1.65 | in banda |
+| own_goals | 0.27 | 0.10 ± 0.31 | in banda |
+| shots | 27.60 | 24.60 ± 5.46 | in banda |
+| shots_on_target | 9.35 | 8.69 ± 3.22 | in banda |
+| penalties | 0.22 | 0.33 ± 0.56 | in banda |
+| passes | 1524.25 | 887.68 ± 122.81 | fuori, OI aperto |
+| passes_accurate | 1383.45 | 739.17 ± 124.79 | fuori, OI aperto |
+| crosses | 7.50 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 5.93 | 38.14 ± 12.98 | fuori, OI-102 aperto |
+| ground_duels | 201.03 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 8.72 | 16.03 ± 5.67 | fuori, OI aperto |
+| fouls | 26.92 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.95 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.30 | 0.24 ± 0.49 | in banda |
+| corners | 6.52 | 10.30 ± 3.58 | fuori, ma 18.02 → 6.52: la revoca ha chiuso l'indizio del 210, ora mancano angoli |
+| throw_ins | 19.37 | 42.72 ± 8.92 | fuori, OI aperto |
+| goal_kicks | 13.40 | 17.15 ± 4.20 | in banda |
+| free_kicks | 32.72 | 29.45 ± 6.81 | in banda |
+| offsides | 7.63 | 4.26 ± 2.40 | fuori, OI aperto |
+| clearances | 23.93 | 29.53 ± 8.65 | in banda |
+| interceptions | 93.97 | 89.86 ± 13.97 | non confrontabile |
+| saves | 5.72 | 9.37 ± 3.37 | fuori, OI aperto |
+| stoppage_first_half_min | 2.90 | 1.49 ± 1.35 | fuori, OI-101 aperto |
+| stoppage_second_half_min | 4.91 | 4.08 ± 1.61 | in banda |
+
+**In banda: 213 → 14 su 22** (212 era 9 su 22). La revoca di DD-73 ha portato gli angoli da 18.02 a 6.52 e il secondo tempo di recupero dentro la banda; il primo tempo resta fuori (OI-101). Ogni metrica fuori banda resta un indizio con la sua causa, non una soglia ritoccata.
+
+**Causa:** non è una taratura ma una revoca di DD-73. Il ramo loftato era stato aggiunto al lookahead di OI-116 benché ADR-101 §Conseguenze lo escluda, e il guadagno immaginato comprendeva una giocata successiva che può non avvenire: `lofted_missed_at` vede solo la propria porta, non l'uscita dal campo. Il ricevitore conserva tutte le sue opzioni; cambia solo il guadagno che il passatore immagina. Il guard `a_long_ball_does_not_read_past_the_landing` chiude il caso con scena identica.
+
 ## La misura del 212 (2026-11-25, DD-75)
 
 Stesso comando, stessa banda; confronto con la misura del 211.
