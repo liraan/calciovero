@@ -9,6 +9,29 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 219 — a marked mate is still a pass option (opencode RUN 74, DD-81)
+
+`pass_candidates` had the prototype's hard gate: a teammate with less than
+`PASS_FREEDOM_CM` (300 cm) of room was not offered as a ground pass at all.
+ADR-040 already grades that same room as salience (`freedom_share`), and
+ADR-052's note had left the gate only because the prototype had it. With LUNA
+the gate took away a choice the player may need — the wall pass, the lay-off,
+the ball played into a man who is marked but moving away. The option is now
+always present and the room grades its worth; the lookahead to the receiver's
+next pass follows the same rule. No number, weight or threshold was added or
+changed, and the lofted branch is untouched (ADR-101).
+
+Twin `a_marked_mate_is_still_a_pass_option`: same passer, same receiver, same
+ball; only the marker 50 cm away instead of 25 m. Before, the marked scene had
+no ground-pass candidate; now it has one, worth less. Recorded in
+`context/plans/BEHAVIOURS.md`, tendency 9, read with the partita-vera and LUNA
+filters. Golden L0 base/instructions/cup regenerated (cup seed 43 -> 166),
+small-season L1 golden updated, GUI seed 42 unchanged. `ds-reference 42..101`:
+**10/20 comparable metrics in band** (was 11); passes 1138.15 -> 1137.20,
+accurate 1060.28 -> 1056.60, goals 4.00 -> 4.33 (0.008 outside the band).
+The gate was nearly inert on the count: the fix is doctrinal, not a tune.
+No number was chosen from a metric (A5-bis).
+
 ## 218 — a restart kick is told once (opencode RUN 73, DD-90)
 
 A goal kick, corner, throw-in or free kick played to a mate was told twice:

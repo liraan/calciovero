@@ -143,6 +143,52 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 219 (2026-11-26, opencode)
+
+Stesso comando e bande del 218. Un solo bump: DD-81 toglie il gate duro
+`PASS_FREEDOM_CM` dalle opzioni di passaggio a terra. Il compagno marcato
+resta una scelta e lo spazio lo gradua con il `freedom_share` che ADR-040 già
+usava; nessun numero, peso o soglia è stato scelto guardando la tabella
+(A5-bis). Il gemello `a_marked_mate_is_still_a_pass_option` è rosso con il
+gate e verde senza. **10 su 20 confrontabili** (era 11): il volume dei
+passaggi non si chiude con questa correzione, e `goals` esce di 0,008 dalla
+banda alta (4,330 contro 4,322). Nessuna di queste due righe è stata
+"aggiustata": la decisione era sul modello della scelta, non sulla misura.
+
+| metrica | 219 | 218 | reale | nota |
+|---|---|---|---|---|
+| goals | 4.33 | 4.00 | 2.68 ± 1.65 | fuori di 0,008, non tarato |
+| own_goals | 0.20 | 0.20 | 0.10 ± 0.31 | in banda |
+| shots | 26.55 | 26.77 | 24.60 ± 5.46 | in banda |
+| shots_on_target | 8.17 | 8.12 | 8.69 ± 3.22 | in banda |
+| penalties | 0.13 | 0.17 | 0.33 ± 0.56 | in banda |
+| passes | 1137.20 | 1138.15 | 887.68 ± 122.81 | fuori, volume aperto (DD-82) |
+| passes_accurate | 1056.60 | 1060.28 | 739.17 ± 124.79 | fuori, volume aperto (DD-82) |
+| crosses | 7.45 | 7.13 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 4.87 | 4.38 | 38.14 ± 12.98 | fuori, DD?-86 |
+| ground_duels | 158.58 | 156.50 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 7.98 | 8.48 | 16.03 ± 5.67 | fuori, DD?-84 (definizione) |
+| fouls | 21.42 | 20.65 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.15 | 2.38 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.28 | 0.20 | 0.24 ± 0.49 | in banda |
+| corners | 9.17 | 9.23 | 10.30 ± 3.58 | in banda |
+| throw_ins | 22.57 | 22.37 | 42.72 ± 8.92 | fuori, DD?-83 |
+| goal_kicks | 10.35 | 11.07 | 17.15 ± 4.20 | fuori, DD?-85 |
+| free_kicks | 21.77 | 21.00 | 29.45 ± 6.81 | fuori, DD?-88 |
+| offsides | 1.60 | 1.57 | 4.26 ± 2.40 | fuori, DD?-88 |
+| clearances | 20.13 | 20.20 | 29.53 ± 8.65 | fuori, DD?-89 |
+| interceptions | 49.75 | 47.87 | 89.86 ± 13.97 | non confrontabile |
+| saves | 4.27 | 4.52 | 6.70 ± 2.82 | in banda con T11 |
+| stoppage_first_half_min | 2.48 | 2.27 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 5.27 | 5.15 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+Golden L0 base/istruito/coppa rigenerati (primo seed di coppa 43 → 166),
+golden L1 aggiornato, seed della GUI 42 invariato. La scoperta economica è
+che il gate duro quasi non incideva sul conteggio: il modello era sbagliato
+per la dottrina (una scelta tolta al giocatore), non perché producesse i
+passaggi in eccesso. Il volume residuo resta una questione di definizione e
+di tempo di palla viva, non di una soglia da abbassare.
+
 ## La misura del 218 (2026-11-26, opencode)
 
 Stesso comando e bande del 217. Un solo bump: il calcio di una ripresa giocato a un compagno era raccontato due volte (`GoalKick`/`Corner`/`ThrowIn`/`FreeKick` al fischio e `Pass` all'atterraggio); il grezzo Wyscout locale non ha nessuna coppia con le stesse posizioni su 37.861 riprese, quindi il secondo evento era un doppio conteggio, non una definizione diversa. Nessun numero scelto guardando la tabella (A5-bis). **11 su 20 confrontabili, invariato rispetto al 217.**

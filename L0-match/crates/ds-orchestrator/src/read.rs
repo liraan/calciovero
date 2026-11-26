@@ -1499,7 +1499,7 @@ fn receiver_best_pass(
     passes.iter().map(|c| c.geometric).fold(0.0, f64::max)
 }
 
-/// The pass candidates (ADR-040, ADR-050): every teammate free enough,
+/// The pass candidates (ADR-040, ADR-050): every teammate he sees,
 /// read for his freedom, the lane, the distance and what the pass brings;
 /// and each receiver's freedom, carried to `resolve_pass`.
 #[allow(clippy::cast_precision_loss)] // cm: well inside f64 exact range
@@ -1539,11 +1539,11 @@ fn pass_candidates(
             .map(|opos| distance_squared(tpos, opos).isqrt())
             .min()
             .unwrap_or(i64::MAX);
-        // A man marked closer than this is no ground pass (the prototype's
-        // gate, declared); in the air he is still a target, to win it with
-        // his head (OI-102, SIM 149): before, the long ball to the marked
-        // target man was not even an option.
-        let free = freedom >= PASS_FREEDOM_CM;
+        // DD-81 (LUNA): a marked mate stays a ground-pass option. The
+        // prototype's gate took the choice away; ADR-040 already grades
+        // the same room by `freedom_share`, so he can pick the wall pass
+        // or the lay-off when the moment calls for it. The air branch
+        // never had the gate (OI-102, SIM 149).
         // ADR-040: salience, not probability. freedom x line x distance.
         let lq = line_quality(pos, tpos, opponent_positions);
         // ADR-052: he imagines the pass, weighed to arrive rolling, and who
@@ -1577,7 +1577,7 @@ fn pass_candidates(
         // man marked in the same place. The first pass keeps its own line
         // credit; the receiver's next pass is worth its own reading. DD 2:
         // room at the arrival grades that gain, as ADR-040 says of salience.
-        let gain = (if lookahead && free && clean {
+        let gain = (if lookahead && clean {
             space.max(receiver_best_pass(scene, *id, tpos, risk_appetite, balance))
         } else {
             space
@@ -1613,13 +1613,11 @@ fn pass_candidates(
             risk_appetite,
         );
         let _ = (goal, pressure, balance);
-        if free {
-            candidates.push(ChoiceCandidate {
-                kind: ChoiceKind::Pass(*id),
-                geometric: geom,
-                visibility: lq,
-            });
-        }
+        candidates.push(ChoiceCandidate {
+            kind: ChoiceKind::Pass(*id),
+            geometric: geom,
+            visibility: lq,
+        });
         // The lofted pass goes over the line, so the lane does not count,
         // and it reaches farther; it is less precise and harder to control
         // (`loft_salience`). A teammate too far for a ground pass may be
@@ -1830,9 +1828,9 @@ fn through_candidates(
 /// `crate::choice` for the selection.
 ///
 /// Options, in the order they are built:
-/// - one `Pass { receiver }` for each teammate with enough freedom
-///   (>= `PASS_FREEDOM_CM`); geometric = `freedom_cm / 1000`, risk
-///   grows as `freedom_cm` shrinks towards `PASS_FREEDOM_CM`.
+/// - one `Pass { receiver }` for each teammate he sees: room grades the
+///   worth (`freedom_share`, ADR-040), it does not remove the option
+///   (DD-81).
 /// - one `Shoot` if the attacker is within `shot_range_cm` (balance) of the
 ///   goal; geometric falls with distance, risk rises with it.
 /// - one `Advance` fallback only if no other candidate exists (the
@@ -2212,6 +2210,38 @@ mod shot_perception_tests {
         assert!(
             geometric(10000) > geometric(9000),
             "more room at the same spot must be worth more"
+        );
+    }
+
+    /// Twin (DD-81, LUNA): the same receiver at the same spot, only the
+    /// marker 50 cm away instead of 25 m. The marked man is still a choice
+    /// (a wall pass, a lay-off); the room only grades how good it looks.
+    /// Before the fix the second scene had no ground-pass option at all.
+    #[test]
+    fn a_marked_mate_is_still_a_pass_option() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let worth = |opp_x: i32| {
+            let mut s = scene_with(None);
+            let actor = s.actor;
+            let mate = PlayerId::new(2, 0);
+            let opp = PlayerId::new(101, 0);
+            s.positions.insert(actor, (6000, 3400));
+            s.teammates.push(mate);
+            s.opponents.push(opp);
+            s.positions.insert(mate, (7500, 3400));
+            s.positions.insert(opp, (opp_x, 3400));
+            let ops = vec![(opp_x, 3400)];
+            let (cs, _) = pass_candidates(&s, (6000, 3400), &ops, 0.5, 0.5, &balance, false);
+            cs.iter()
+                .find(|c| matches!(c.kind, ChoiceKind::Pass(id) if id == mate))
+                .expect("a marked mate is still a ground-pass option")
+                .geometric
+        };
+        let free = worth(10000);
+        let marked = worth(7550);
+        assert!(
+            marked < free,
+            "room grades the same pass: {marked} < {free}"
         );
     }
 

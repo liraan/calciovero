@@ -258,7 +258,7 @@ Verificata riga per riga contro il codice il 2026-11-20: ogni voce ha ora un rif
 | 6 | Vicino alla propria porta | percepisce palla libera in area → legge il pericolo → prende o spazza subito | nessun gemello dedicato | parziale: `clear_candidate` (`read.rs:1176`, zona 2500 cm), `technique.rs:97` portiere in area; nessuna regola "la palla libera non resta in area" |
 | 7 | I palloni alti | percepisce palla in aria, punto di discesa, chi può arrivarci → legge chi la prende e chi copre → va se ci arriva | `the_second_reaches_the_near_ball_and_holds_for_the_far_one` (SIM 164), `tick_record.rs:459` | attuato in SIM 164 (ADR-081 C): ogni palla alta, entrambi i lati; il secondo ha il rank vero e la race decide. Prima, solo lato difeso + pass in volo |
 | 8 | Palla davanti protetta | percepisce l'avversario che arriva → legge dove mettere il corpo → tiene il pallone davanti | `in_a_dribble_the_ball_is_ahead` (`golden_scenes.rs:265`) | attuato: `carry_the_ball`→`follow_carrier` (`technique.rs:1031`), scudo in `lib.rs:890` |
-| 9 | Alzare la testa e scegliere | percepisce spazio, pressione, posizione → legge il valore di tenere, passare, avanzare, tirare → sceglie | `actor.rs:61`, `read.rs:1615`, `choice.rs:139`; gemello non noto | attivo (ADR-052); qualità della scelta non testata direttamente |
+| 9 | Alzare la testa e scegliere | percepisce spazio, pressione, posizione → legge il valore di tenere, passare, avanzare, tirare → sceglie | `a_marked_mate_is_still_a_pass_option` (`read.rs`, DD-81); `actor.rs:61`, `choice.rs:139` | attivo (ADR-052); dal SIM 219 tutte le opzioni di passaggio restano disponibili e lo spazio le gradua (`freedom_share`, ADR-040), non le sopprime |
 | 10 | Sicuri vicino alla porta | percepisce la distanza dalla propria porta → legge il rischio accettabile → gioca semplice o rischioso | `shot_choice.json:14 clear_zone_cm=2500` | parziale: `risk_appetite` è un latente fisso (`actor.rs:79-81`), non cresce con la distanza; solo la spazzata è distanza-dipendente |
 | 11 | Avanzare quando si può | percepisce spazio davanti → legge che avanti conviene → passa o conduce avanti | `a_pass_forward_brings_more_than_a_pass_back` (`read.rs:2356`); golden 23/53/24 contro 31/53/16 veri | attuato, ma i passaggi in avanti restano sotto il vero (OI-100) |
 | 12 | Offrirsi | percepisce portatore, marcatore, linee → legge dove la linea è pulita → si sposta | `a_marked_player_near_the_ball_offers` (`offball.rs:588`) | attuato (`with_mate.values.offer`, `offball.rs:336`) |
@@ -277,6 +277,17 @@ Verificata riga per riga contro il codice il 2026-11-20: ogni voce ha ora un rif
 | 25 | Si va al pallone | percepisce palla ferma e chi batte → legge che la ripresa aspetta → ci va | `no_restart_stops_the_match` (`golden_scenes.rs:241`) | attuato: `call_restart`/`send` (`set_pieces.rs:77,97`), ADR-080 SIM 163 |
 | 26 | Ci si piazza | percepisce palla ferma e ruolo → legge marcature e movimenti → prende posto | `nobody_moves_faster_than_his_legs` (`golden_scenes.rs:68`) | attuato: `place_for_restart`, `clear_the_spot`, `form_wall` (`set_pieces.rs:62,270,451`); nessun test dedicato ai movimenti d'attacco dalla lavagna |
 | 27 | Dopo il gol | percepisce il gol → legge il tempo per tornare → esulta e rientra | `after_a_goal_the_kick_off_waits_and_the_sides_are_in_their_halves` (`golden_scenes.rs:122`) | parziale: rientro + attesa (`set_pieces.rs:74-130`), narrazione (`ds-narrative:287-297`); nessun atto di esultanza |
+
+**Voce 9, letta con LUNA e partita vera (DD-81, 26 novembre 2026).** Il
+portatore vede il compagno marcato: è lui che sceglie COME eseguire — il
+passaggio filtrato tra due uomini, l'appoggio a chi viene incontro, il
+retropassaggio sicuro — non la lavagna a togliergli l'opzione. Nella partita
+vera il passaggio a un uomo marcato è una scelta, spesso la più intelligente;
+lo spazio lo rende più o meno conveniente, non impossibile. Il gemello
+`a_marked_mate_is_still_a_pass_option` mette lo stesso passaggio con il
+marcatore a 50 cm e a 25 m: l'opzione c'è in entrambi i casi e vale di meno
+nel primo. Nessun numero nuovo: la misura dello spazio è già `freedom_share`
+(ADR-040).
 
 ### 1.1 Sempre
 
