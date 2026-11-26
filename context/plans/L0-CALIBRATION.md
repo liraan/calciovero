@@ -175,7 +175,7 @@ la tabella (A5-bis). **11 su 20 confrontabili** (era 10): entra in banda solo
 | red_cards | 0.28 | 0.28 | 0.24 ± 0.49 | in banda |
 | corners | 9.17 | 9.17 | 10.30 ± 3.58 | in banda |
 | throw_ins | 22.57 | 22.57 | 42.72 ± 8.92 | fuori, OI-100 (RUN 76) |
-| goal_kicks | 10.35 | 10.35 | 17.15 ± 4.20 | fuori, DD?-85 |
+| goal_kicks | 10.35 | 10.35 | 17.15 ± 4.20 | fuori, DD-85 senza modifica: uscite dalla linea, non scelta del portiere |
 | free_kicks | 21.77 | 21.77 | 29.45 ± 6.81 | fuori di 0,87 |
 | offsides | 1.60 | 1.60 | 4.26 ± 2.40 | fuori, DD?-88 |
 | clearances | 20.13 | 20.13 | 29.53 ± 8.65 | fuori, DD?-89 |
@@ -233,6 +233,42 @@ che il gate duro quasi non incideva sul conteggio: il modello era sbagliato
 per la dottrina (una scelta tolta al giocatore), non perché producesse i
 passaggi in eccesso. Il volume residuo resta una questione di definizione e
 di tempo di palla viva, non di una soglia da abbassare.
+
+## DD-85: il rinvio è raccontato al fischio, non dopo la scelta del portiere (2026-11-26, opencode)
+
+La domanda aperta su `goal_kicks` (10,35 contro 17,15 ± 4,20) chiedeva se
+correggere il modello del portiere che giocherebbe corto in 96/111 rinvii,
+oppure se chiudere la riga come differenza di definizione. **Nessuna delle due
+è stata attuata.**
+
+La fonte è riprodotta esattamente: `tools/ds-reference/src/wyscout.rs:91,185-192`
+conta `subEventId=34` senza filtri su `eventId` o tag; sul grezzo locale
+(647.372 eventi, 380 partite) sono 6.518 rinvii, 6.518/380 = 17,153, la media
+del referto. L'emissione del motore è completa (111/111 assegnati ed emessi,
+RUN 66) e ha un solo punto, `plugins/referee.rs:707-724`, al fischio: la
+scelta del portiere (`set_pieces.rs:241-303`, `read.rs:1903-1939`) arriva
+dopo, quindi non può cambiare il conteggio dei rinvii. Con LUNA il portiere
+sceglie COME battere, ma il rinvio è la Legge 16: è il fatto che la palla è
+uscita dalla linea di porta dopo un tocco d'attaccante, non una sua decisione.
+
+La premessa dei 96/111 passaggi corti era il doppio racconto già tolto da
+DD-90/SIM 218: il `Pass` 41 tick dopo il `GoalKick` era la seconda etichetta
+dello stesso calcio. Anche il "10,4% reale entro 10 s" del RUN 66 non è
+riproducibile sul dump: con definizione esplicita i Pass dello stesso
+battitore entro 10 s sono 498/6.518 = 7,64% (3,71% se `sub=85`, 1,15% se è il
+primo evento). Il referto non registra GoalKick e Pass per lo stesso calcio:
+il passaggio successivo parte da un'altra posizione ed è un'azione nuova.
+Chiudere come "differenza di definizione" è quindi falso: fonte e motore
+contano lo stesso atto nominale e la Legge 16 è attuata (`referee.rs:179-201`).
+
+Resta una differenza di dinamica, non di registro: 19,52 uscite dalla linea di
+porta per partita nel motore (10,35 rinvii + 9,17 angoli) contro 27,45 reali
+(17,15 + 10,30), con quota rinvio 53,0% contro 62,5%. Gli angoli sono in banda:
+non è un difetto generico delle uscite. Va indagato con una sonda sull'ultimo
+tocco e sulle uscite (OI-100), non con una soglia letta dalla tabella
+(A5-bis). **Nessuna modifica al modello, nessun bump di `SIM_VERSION`, nessun
+golden, seme o guard da rigenerare.** Rapporto completo in
+`target/opencode-log.md`, RUN 78.
 
 ## DD-83: le rimesse non si chiudono né con il lookahead né con DD-76 (2026-11-26, opencode)
 
