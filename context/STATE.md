@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `58bf777` - "merge: unite the reference bundle with the SIM 223 line"
+**Last commit verified:** `b6b3e29` - "docs(research): finish the source audit and keep the seed probe"
 
 ## Mandato attivo (2026-11-16)
 
