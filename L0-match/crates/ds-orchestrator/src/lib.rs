@@ -88,6 +88,21 @@ pub struct GroundTruth {
     recognition: std::collections::BTreeMap<PlayerId, (crate::offball::OffBallAct, u64)>,
 }
 
+/// A man who can meet a ball in the air (ADR-117).
+#[derive(Clone, Copy)]
+pub struct AerialContender {
+    /// The player.
+    pub id: PlayerId,
+    /// His height at the contest, in cm.
+    pub height_cm: f64,
+    /// Whether he reaches with the keeper's hands.
+    pub hands: bool,
+    /// The small step of the tick at which he meets the ball.
+    pub step: usize,
+    /// Whether he is inside his reach, not merely shoulder to shoulder.
+    pub within_reach: bool,
+}
+
 impl GroundTruth {
     /// Creates a new `GroundTruth` from a world seed and a match id.
     ///
@@ -693,29 +708,33 @@ impl GroundTruth {
         height_cm + jump + arms
     }
 
-    /// The winner of an aerial duel among `contenders` (id, height cm, the
-    /// keeper's hands): heading, the jump, strength and height (ADR-042).
+    /// The winner of an aerial duel (ADR-042 §3 as amended by ADR-117):
+    /// reach first, then who arrives first in the tick, then aerial force.
     /// Ties go to the first listed.
     #[must_use]
-    pub fn resolve_aerial(&mut self, contenders: &[(PlayerId, f64, bool)]) -> Option<PlayerId> {
+    pub fn resolve_aerial(&mut self, contenders: &[AerialContender]) -> Option<PlayerId> {
         let b = self.duel_balance;
-        let mut best: Option<(f32, PlayerId)> = None;
-        for (id, height, hands) in contenders {
-            let l = self.latents_for(*id);
+        let mut best: Option<(bool, usize, f32, PlayerId)> = None;
+        for c in contenders {
+            let l = self.latents_for(c.id);
             let mut f = b.aerial_force(
                 l.technical.heading,
                 l.physical.explosive_force,
                 l.physical.maximal_force,
-                *height,
+                c.height_cm,
             );
-            if *hands {
+            if c.hands {
                 f += f32::from(i16::try_from(b.keeper_hands_bonus_milli).unwrap_or(0)) / 1000.0;
             }
-            if best.is_none_or(|(bf, _)| f > bf) {
-                best = Some((f, *id));
+            let better = best.is_none_or(|(near, step, bf, _)| {
+                (c.within_reach && !near)
+                    || (c.within_reach == near && (c.step < step || (c.step == step && f > bf)))
+            });
+            if better {
+                best = Some((c.within_reach, c.step, f, c.id));
             }
         }
-        best.map(|(_, id)| id)
+        best.map(|(_, _, _, id)| id)
     }
 
     /// How `defender` goes into a challenge (ADR-042 §2, amended): standing,
@@ -2464,6 +2483,38 @@ mod choice_filter_tests {
             s,
             ChoiceKind::Pass(PlayerId::new(200, 0)),
             "the strong reader sees the hidden one"
+        );
+    }
+
+    /// ADR-117: the same high ball, the same two men. Reach and arrival
+    /// decide before strength; only at the same step does aerial force.
+    #[test]
+    fn the_man_who_gets_there_first_wins_the_air() {
+        let mut g = GroundTruth::new(42, MatchId::new(1, 0));
+        let (weak, strong) = ends(&mut g, |l| {
+            l.technical.heading + l.physical.explosive_force + l.physical.maximal_force
+        });
+        let at = |id, step, within_reach| AerialContender {
+            id,
+            height_cm: 180.0,
+            hands: false,
+            step,
+            within_reach,
+        };
+        assert_eq!(
+            g.resolve_aerial(&[at(weak, 1, true), at(strong, 3, true)]),
+            Some(weak),
+            "earlier arrival wins even against a stronger man"
+        );
+        assert_eq!(
+            g.resolve_aerial(&[at(weak, 1, true), at(strong, 1, true)]),
+            Some(strong),
+            "at the same step the stronger man wins"
+        );
+        assert_eq!(
+            g.resolve_aerial(&[at(strong, 1, false), at(weak, 3, true)]),
+            Some(weak),
+            "inside reach wins over a shoulder-to-shoulder man"
         );
     }
 }

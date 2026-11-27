@@ -9,6 +9,19 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 224 — the air goes to the man who gets there (opencode RUN 99, DD-97)
+
+ADR-117: `resolve_aerial` chose the winner by `aerial_force` alone, so a man
+who reached the ball a step later could win it against one already at it.
+The contact now reads what `aerial_contenders` already calculates: a man
+inside his reach beats one who can only contest him shoulder to shoulder;
+then the earlier step of the same tick wins; `aerial_force` decides only at
+the same step, with the first listed winning a tie (ADR-019). No weight,
+parameter, option or gesture was added, and nothing was chosen by looking at
+the band (A5-bis). The twin test `the_man_who_gets_there_first_wins_the_air`
+holds the scene fixed and changes only arrival and reach. Golden L0/L1 and
+the fixtures are regenerated; the measurement is in `L0-CALIBRATION.md` §224.
+
 ## 223 — the keeper is read where he is in the tick (opencode RUN 99, DD-95)
 
 `CODE-AUDIT.md` T10: `advance_ball` judged the crossing of a shot — and

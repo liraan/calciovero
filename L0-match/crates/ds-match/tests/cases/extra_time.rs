@@ -15,15 +15,15 @@ use ds_match::{MatchConfig, MatchResult};
 use ds_model::Match;
 use ds_stats::{EventType, Half};
 
-/// A level and a decisive friendly of the range under SIM 223, found once
+/// A level and a decisive friendly of the range under SIM 224, found once
 /// with `ds_fixtures::first_seed`. Asserted below, so a change in the engine
 /// fails here instead of silently scanning again.
-const LEVEL_AT_90_SEED: u64 = 47;
+const LEVEL_AT_90_SEED: u64 = 44;
 const DECIDED_AT_90_SEED: u64 = 42;
 
-/// A SIM 223 shoot-out whose kicks are all shots (Law 10/14), found on real
+/// A SIM 224 shoot-out whose kicks are all shots (Law 10/14), found on real
 /// matches: the golden's first shoot-out seed is the same as its cup seed.
-const SHOOTOUT_KICKS_SEED: u64 = 47;
+const SHOOTOUT_KICKS_SEED: u64 = 115;
 
 /// The same fixture, as a cup tie: extra time is asked for.
 fn cup(seed: u64) -> Match {
@@ -143,4 +143,34 @@ fn a_cup_match_level_after_extra_time_goes_to_penalties() {
         friendly(seed).shootout.is_none(),
         "a friendly has no penalties"
     );
+}
+
+/// One-off on a SIM bump: re-find the two fixture seeds and update the
+/// constants above. Not part of the routine run.
+#[test]
+#[ignore = "one-off: run only on a SIM_VERSION bump"]
+fn fixture_seed_scan() {
+    let (level_seed, _) =
+        ds_fixtures::first_seed(42..342, friendly, level).expect("a friendly level at 90");
+    assert_eq!(level_seed, LEVEL_AT_90_SEED, "update the level seed");
+    let (kicks_seed, _) = ds_fixtures::first_seed(42..342, play_cup_with_shootout, |r| {
+        let Some((h, a)) = r.shootout else {
+            return false;
+        };
+        let kicks: Vec<_> = r
+            .events
+            .events()
+            .iter()
+            .filter(|e| e.half == Half::Shootout)
+            .collect();
+        kicks.iter().all(|e| e.event_type != EventType::Pass)
+            && kicks
+                .iter()
+                .filter(|e| e.event_type == EventType::Shot)
+                .count()
+                >= 6
+            && h != a
+    })
+    .expect("a shoot-out of shots only");
+    assert_eq!(kicks_seed, SHOOTOUT_KICKS_SEED, "update the kicks seed");
 }

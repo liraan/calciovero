@@ -5,6 +5,7 @@
 //! they act on.
 
 use ds_match_api::{MatchPlugin, PluginCard};
+use ds_orchestrator::AerialContender;
 
 use crate::spatial::STEPS;
 use crate::state::prelude::*;
@@ -52,7 +53,7 @@ impl MatchState {
         tick: u64,
         (bx, by, bz): (i32, i32, i32),
         step: usize,
-    ) -> Vec<(PlayerId, f64, bool)> {
+    ) -> Vec<AerialContender> {
         let (length, width) = pitch_cm(ctx);
         let radius = self.reception_balance.loose_control_radius_cm;
         let off = ctx.hidden.offball_balance();
@@ -66,10 +67,10 @@ impl MatchState {
             .played
             .filter(|p| touches.deflected.is_none() || touches.deflected == Some(*p));
         let m = ctx.match_;
-        let mut contenders: Vec<(PlayerId, f64, bool)> = Vec::new();
+        let mut contenders: Vec<AerialContender> = Vec::new();
         // Those who reach it (`near`), and those a body's width farther who
         // can only contest it against them, shoulder to shoulder.
-        let mut shoulder: Vec<(PlayerId, f64, bool)> = Vec::new();
+        let mut shoulder: Vec<AerialContender> = Vec::new();
         for (squad, home) in [(&m.home, true), (&m.away, false)] {
             let keeper = squad.players.first().map(|p| p.id);
             for p in &squad.players {
@@ -96,10 +97,17 @@ impl MatchState {
                 let hands =
                     Some(p.id) == keeper && in_keeper_box((bx, by), home, (length, width), &off);
                 if ctx.hidden.aerial_reach_cm(p.id, height, hands) >= f64::from(bz) {
-                    if d2 <= reach * reach {
-                        contenders.push((p.id, height, hands));
+                    let c = AerialContender {
+                        id: p.id,
+                        height_cm: height,
+                        hands,
+                        step,
+                        within_reach: d2 <= reach * reach,
+                    };
+                    if c.within_reach {
+                        contenders.push(c);
                     } else {
-                        shoulder.push((p.id, height, hands));
+                        shoulder.push(c);
                     }
                 }
             }
@@ -165,7 +173,7 @@ impl MatchState {
         let contested = self
             .aerial_contenders(ctx, tick, (bx, by, bz), 0)
             .iter()
-            .any(|(id, _, _)| *id != winner);
+            .any(|c| c.id != winner);
         let difficulty = if contested { 100 } else { 0 };
         let ctx_shot = ds_orchestrator::ShotContext {
             shooter: winner,
@@ -277,7 +285,7 @@ impl MatchState {
         // were six a match against thirty-eight).
         for &(s, b) in &path {
             for c in self.aerial_contenders(ctx, tick, b, s) {
-                if !contenders.iter().any(|x| x.0 == c.0) {
+                if !contenders.iter().any(|x| x.id == c.id) {
                     contenders.push(c);
                 }
             }
@@ -290,8 +298,8 @@ impl MatchState {
         if contenders.len() > 1 {
             let against = contenders
                 .iter()
-                .find(|c| c.0 != winner)
-                .map_or(0, |c| c.0.slot());
+                .find(|c| c.id != winner)
+                .map_or(0, |c| c.id.slot());
             self.emit_event(
                 ctx,
                 tick,
@@ -323,7 +331,7 @@ impl MatchState {
         } else {
             Possession::Away
         };
-        let hands = contenders.iter().any(|c| c.0 == winner && c.2);
+        let hands = contenders.iter().any(|c| c.id == winner && c.hands);
         let goal = (if home { length } else { 0 }, width / 2);
         let own = (length - goal.0, goal.1);
         let speed = f64::from(ctx.hidden.duel_balance().header_speed_cm_per_tick);

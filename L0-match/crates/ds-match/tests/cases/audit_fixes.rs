@@ -128,38 +128,53 @@ fn no_substitution_during_the_shootout() {
 /// ground. Before SIM 196 the air cleared the marks unread and a header
 /// from offside was never called: the free kick could not follow an aerial
 /// duel won by its offender. The first seed from 42 where it happens under
-/// SIM 223, found once and played directly (with the rarer aerial duels of
+/// SIM 224, found once and played directly (with the rarer aerial duels of
 /// SIM 203 none of 42..52 had one).
+fn header_offside_calls(seed: u64) -> usize {
+    let m = match_fixture(seed).expect("fixture");
+    let r = simulate_from_seed(&m, seed, MatchConfig::default());
+    r.events
+        .events()
+        .windows(2)
+        .filter(|w| {
+            w[0].event_type == EventType::Duel
+                && w[0]
+                    .fields
+                    .get("aerial")
+                    .and_then(serde_json::Value::as_bool)
+                    == Some(true)
+                && w[1].event_type == EventType::FreeKick
+                && w[1]
+                    .fields
+                    .get("reason")
+                    .and_then(serde_json::Value::as_str)
+                    == Some("offside")
+                && w[1].fields.get("offender") == w[0].fields.get("winner_slot")
+        })
+        .count()
+}
+
+const HEADER_OFFSIDE_SEED: u64 = 45;
+
 #[test]
 fn a_header_from_offside_is_called() {
-    const HEADER_OFFSIDE_SEED: u64 = 52;
-    let called: usize =
-        ds_fixtures::each_seed(HEADER_OFFSIDE_SEED..HEADER_OFFSIDE_SEED + 1, |seed| {
-            let m = match_fixture(seed).expect("fixture");
-            let r = simulate_from_seed(&m, seed, MatchConfig::default());
-            r.events
-                .events()
-                .windows(2)
-                .filter(|w| {
-                    w[0].event_type == EventType::Duel
-                        && w[0]
-                            .fields
-                            .get("aerial")
-                            .and_then(serde_json::Value::as_bool)
-                            == Some(true)
-                        && w[1].event_type == EventType::FreeKick
-                        && w[1]
-                            .fields
-                            .get("reason")
-                            .and_then(serde_json::Value::as_str)
-                            == Some("offside")
-                        && w[1].fields.get("offender") == w[0].fields.get("winner_slot")
-                })
-                .count()
-        })
-        .into_iter()
-        .sum();
+    let called: usize = ds_fixtures::each_seed(
+        HEADER_OFFSIDE_SEED..HEADER_OFFSIDE_SEED + 1,
+        header_offside_calls,
+    )
+    .into_iter()
+    .sum();
     assert!(called > 0, "no header from offside called at its seed");
+}
+
+/// One-off on a SIM bump: re-find the first seed and update the constant.
+#[test]
+#[ignore = "one-off: run only on a SIM_VERSION bump"]
+fn header_offside_seed_scan() {
+    let (seed, calls) = ds_fixtures::first_seed(42..342, header_offside_calls, |n| *n > 0)
+        .expect("a header from offside called");
+    assert_eq!(seed, HEADER_OFFSIDE_SEED, "update the constant");
+    assert!(calls > 0);
 }
 
 /// DD-84 (opencode RUN 77): Wyscout's won take-on is the attacking duel won
