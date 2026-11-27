@@ -198,7 +198,16 @@ DD?-89 chiuso senza modifica (RUN 83): `clearances` 25,67 e `corners`
 (29,531579 ± 8,650923, `eventId 7 / subEventId 71`) e il 78,6% dei precedenti
 entro 5 s è dell'altra squadra. Il dump non registra pressione né opzioni di
 passaggio: non autorizza a cambiare DD-5/DD-8/DD-10. Restano aperti DD?-91
-(volume e accuratezza dei passaggi) e DD?-92 (gol), uno alla volta.
+(volume e accuratezza dei passaggi) e DD?-92 (gol), uno alla volta. RUN 84:
+la fonte riproduce 887,676 passaggi/m e 739,168 accurati/m (tag 1801,
+83,27%); il motore conta l'esito del controllo del ricevitore (`complete`,
+intercetti sempre inaccurati), quindi l'accuratezza è almeno in parte una
+definizione diversa; le catene event-based del grezzo (334,89/m, 2,65
+pass/catena) non sono confrontabili con quelle tick-based del motore. RUN 85:
+i gol non hanno bug di conteggio (0 mismatch), ma la conversione è quasi
+raddoppiata (0,1814 contro 0,1088 gol/tiro) mentre il volume dei tiri è in
+banda; le etichette che precedono i gol precedono anche i tiri non segnati.
+Nessun numero o soglia scelto dalla tabella (A5-bis).
 
 Golden L0 base/istruito/coppa rigenerati (seed coppa 62 -> 78, hash
 `78:24f14890…`); golden L1 `SMALL_GOLDEN` `0b00a6ad…`. Fixtures spostati:
