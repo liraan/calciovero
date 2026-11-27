@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `b8fcc1c` - "SIM 222: a remembered offside line keeps the pass"
+**Last commit verified:** `2db20fd` - "docs: archive the source evidence for DD-91 and DD-92"
 
 ## Mandato attivo (2026-11-16)
 
@@ -183,7 +183,7 @@ I numeri `DD?-91` e `DD?-92` sono domande riservate, non decisioni: dopo l'80 i 
 | id | decisione sospesa | perche' non la prendo da solo |
 |---|---|---|
 | DD?-91 (RUN 71/82/84) | `passes` 1193,28 contro 887,68 ± 122,81 e `passes_accurate` 1079,88 contro 739,17 ± 124,79: (a) mantenere il volume aperto; (b) dichiarare `passes_accurate` definizione diversa (Wyscout tag 1801 dell'osservatore contro `complete` del motore, intercetti sempre inaccurati) invece di tarare; (c) decidere se il volume vada indagato come scelta del portatore. | La fonte riproduce esattamente 337.317 passaggi (887,676/m, tag 1801 sul 83,27%). Sul grezzo le catene event-based con pass sono 334,89/m e 2,65 pass/catena contro le 337,58/m e 4,45 del motore (RUN 35): non confrontabili, perché il motore chiude su cambio squadra/intercetto/tiro e il dump non ha possessioni tick-based. Il divario di accuratezza è almeno in parte definizionale e il dump non quantifica quanto. Nessun valore va preso dalla tabella (A5-bis). |
-| DD?-92 (RUN 82) | `goals` 5,28 contro 2,68 ± 1,65: (a) lasciarlo come effetto a valle del volume dei passaggi e del loft; (b) decidere se la conversione (0,18 gol/tiro contro ~0,109 reale, con tiri e tiri in porta in banda) sia una definizione o una scelta; (c) rivedere la conclusione. | È peggiorato con DD-86 (4,73) e DD?-88 (5,28) senza che nessuna delle due toccasse il tiro: va indagato come effetto delle scelte di passaggio, non ritoccato guardando la metrica. Tiri 29,10 e tiri in porta 9,85 sono in banda, quindi il difetto non è il volume degli tiri. |
+| DD?-92 (RUN 82/85) | `goals` 5,28 contro 2,68 ± 1,65: (a) lasciarlo come effetto a valle del volume dei passaggi e del loft; (b) indagare la conversione come scelta del tiratore a scena di tiro identica; (c) rivedere la conclusione. | RUN 85: nessun bug di conteggio (317 gol somma score = 317 eventi `Goal`, 0 mismatch sui semi 42..101, nessun filtro post-hoc). La conversione domina: 0,1814 gol/tiro contro 0,1088 reali (x1,668) e 0,5360 gol/tiro in porta contro 0,3080 (x1,740); volume tiri +18,3% (0,83 DS), gol +97% (1,58 DS). Le etichette che precedono i gol (pass 47,98%, cross 27,43%) precedono anche i tiri non segnati (51,54%, 19,29%), quindi l'atto precedente non spiega la scelta. Peggiora con DD-86 e DD?-88 senza che tocchino il tiro: nessun numero va preso dalla tabella (A5-bis). |
 
 ## Plan
 
