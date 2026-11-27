@@ -96,8 +96,8 @@ fn season_full(
 }
 
 /// The fingerprint of the small season at `SEASON_VERSION` 9 and
-/// `SIM_VERSION` 217; regenerate on a bump of either.
-const SMALL_GOLDEN: &str = "1b10ce2e1550fa92acfba90be4cc793349d7f0f2460a4fb28d3146321e60b0ab";
+/// `SIM_VERSION` 221; regenerate on a bump of either.
+const SMALL_GOLDEN: &str = "3e8babad7636014c6ba918446395e012381f5264c783897fc9840dfbad415df9";
 
 #[test]
 fn a_small_league_is_played_whole_by_the_engine() {

@@ -143,6 +143,58 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 221 (2026-11-27, opencode)
+
+Stesso comando e bande del 220. Un solo bump: DD-86 toglie il veto
+sull'esito immaginato del loft conteso. Il 39,26% dei duelli reali con un
+passaggio alto/cross nei 5 s precedenti è vinto da chi ha calciato: il
+passatore sceglie il loft anche perdendo l'aria, quindi `sure = 0` era un
+clamp sul COME, non percezione (ADR-062) né regola. SIM 221 gradua con la
+forza aerea immaginata solo il ramo che il veto azzerava; il ramo già vinto
+resta bit-identico al 220. Una prima versione che graduava anche il ramo
+vinto aveva portato `aerial_duels` a 3,48 e indebolito il guard del caso
+forte: corretta come bug, non ricalibrata guardando la tabella (A5-bis).
+
+**11 su 20 confrontabili in banda**, come al 220; nessuna riga entra o esce
+dalla banda. `aerial_duels` 4,75 contro 38,14 ± 12,98 resta fuori: il veto
+era falso, ma non era il serbatoio dei ~33 duelli mancanti (RUN 79: la
+percezione attuale ne può recuperare +0,62/match; il 40,0% dei duelli reali
+segue una ripresa, causa separata). `goals` 4,73 esce di 0,40 dalla banda
+alta (era 4,33, fuori di 0,008): il cambiamento delle scelte di passaggio si
+propaga, come già accaduto al 219; non si tarato per riportarlo dentro.
+
+| metrica | 221 | 220 | reale | nota |
+|---|---|---|---|---|
+| goals | 4.73 | 4.33 | 2.68 ± 1.65 | fuori di 0,40, non tarato |
+| own_goals | 0.27 | 0.20 | 0.10 ± 0.31 | in banda |
+| shots | 27.27 | 26.55 | 24.60 ± 5.46 | in banda |
+| shots_on_target | 8.55 | 8.17 | 8.69 ± 3.22 | in banda |
+| penalties | 0.20 | 0.13 | 0.33 ± 0.56 | in banda |
+| passes | 1143.52 | 1137.20 | 887.68 ± 122.81 | fuori, volume aperto (DD-82) |
+| passes_accurate | 1064.23 | 1056.60 | 739.17 ± 124.79 | fuori, volume aperto (DD-82) |
+| crosses | 6.90 | 7.45 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 4.75 | 4.87 | 38.14 ± 12.98 | fuori, DD-86: veto falso, non il volume |
+| ground_duels | 156.70 | 158.58 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 18.55 | 18.80 | 16.03 ± 5.67 | in banda |
+| fouls | 21.05 | 21.42 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.28 | 2.15 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.22 | 0.28 | 0.24 ± 0.49 | in banda |
+| corners | 8.85 | 9.17 | 10.30 ± 3.58 | in banda |
+| throw_ins | 21.40 | 22.57 | 42.72 ± 8.92 | fuori, OI-100 (RUN 76) |
+| goal_kicks | 10.85 | 10.35 | 17.15 ± 4.20 | fuori, DD-85 senza modifica |
+| free_kicks | 21.32 | 21.77 | 29.45 ± 6.81 | fuori di 1,32 |
+| offsides | 1.52 | 1.60 | 4.26 ± 2.40 | fuori, DD?-88 |
+| clearances | 19.82 | 20.13 | 29.53 ± 8.65 | fuori, DD?-89 |
+| interceptions | 49.13 | 49.75 | 89.86 ± 13.97 | non confrontabile |
+| saves | 4.35 | 4.27 | 6.70 ± 2.82 | in banda con T11 |
+| stoppage_first_half_min | 2.57 | 2.48 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 5.60 | 5.27 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+Golden L0 base/istruito/coppa rigenerati (seed coppa 166 -> 62); golden L1
+`3e8babad…`. Fixtures spostati dalla nuova-play: header in fuorigioco 50 ->
+79, livello al 90' 44 -> 53, knock 43 -> 42, rigori solo-tiri 166 -> 62. Il
+guard del movimento ora esclude il corpo mandato in panchina dopo un rosso.
+
 ## La misura del 220 (2026-11-26, opencode)
 
 Stesso comando e bande del 219. Un solo bump: DD-84 emenda DD-71. La fonte
@@ -233,6 +285,36 @@ che il gate duro quasi non incideva sul conteggio: il modello era sbagliato
 per la dottrina (una scelta tolta al giocatore), non perché producesse i
 passaggi in eccesso. Il volume residuo resta una questione di definizione e
 di tempo di palla viva, non di una soglia da abbassare.
+
+## DD-86: il loft conteso resta una scelta (2026-11-26, opencode)
+
+La riga `aerial_duels` (4,87 contro 38,14 ± 12,98) non chiude una differenza
+di definizione e non si taratura: la fonte è riprodotta esattamente (28.985
+record Wyscout `eventId 1 / subEventId 10` su 380 partite, dimezzati perché
+il referto registra entrambi i contendenti), e i tag dicono solo esito e
+accuratezza, non il contatto fisico. Il motore emette il duello solo con due
+corpi in portata nello stesso sottopasso del tick; con la percezione attuale
+il serbatoio recuperabile è +0,62 duelli/partita (SIM 216, meccanica
+invariata al 220), non i ~33 mancanti. Riaprire l'opzione B di ADR-081 darebbe
+12,12 duelli e distruggerebbe il guard del piede dei laterali.
+
+Con LUNA il passatore sceglie COME giocare, non se vincerà l'aria. Il dato di
+partita vera toglie la premessa del veto: su 6.639 contese con un pass
+alto/cross nei cinque secondi precedenti vince la squadra che ha calciato
+2.384/6.073 = 39,26% degli esiti decisi (robusta: 39,22% pesando i record
+singoli, 39,28%/39,41% con finestre di accoppiamento 0,5/1 s, 39,55% col
+primo pass). Il giocatore lofta anche quando perde la contesa, quindi il
+`sure = 0` di `read.rs:1691-1698` non era percezione (ADR-062) né regola, ma
+un clamp sul COME: DD-81 aveva già rimosso lo stesso tipo di gate sul pass a
+terra.
+
+SIM 221 conserva l'opzione: il ramo che `wins()` vietava è graduato dalla
+quota della forza aerea immaginata del proprio uomo su quella del miglior
+avversario che arriva all'atterraggio; il ramo già vinto resta invariato.
+Nessuna costante nuova (schema di `freedom_share`, ADR-040). ADR-081 opzione C, il drop point letto esattamente e i gate di
+percezione restano invariati. Il 39,26% non è entrato nel modello (A5-bis).
+La misura 42..101 è sotto; il 40,0% dei duelli reali che seguono una ripresa
+resta una causa separata, registrata qui e non risolta da questo bump.
 
 ## DD-85: il rinvio è raccontato al fischio, non dopo la scelta del portiere (2026-11-26, opencode)
 

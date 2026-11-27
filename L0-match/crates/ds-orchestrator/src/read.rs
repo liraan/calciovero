@@ -1653,6 +1653,9 @@ fn pass_candidates(
             // the passer weighed only the control, and with a man on him
             // the long ball to the target man was worth nothing.
             let contested = best(true) <= flight && best(false) <= flight;
+            // DD-86: the kicker often loses the header in a real match, so
+            // strength in the air grades a contested loft (as room grades a
+            // marked receiver, ADR-040) instead of taking the option away.
             let wins = || {
                 let mine = scene.reception.aerial.get(id).copied().unwrap_or(0.0);
                 scene
@@ -1666,6 +1669,26 @@ fn pass_candidates(
                             <= flight
                     })
                     .all(|(o, _)| scene.reception.aerial.get(o).copied().unwrap_or(0.0) < mine)
+            };
+            let aerial_share = || {
+                let mine = scene.reception.aerial.get(id).copied().unwrap_or(0.0);
+                let rival = scene
+                    .opponents
+                    .iter()
+                    .filter_map(|o| scene.positions.get(o).map(|at| (o, *at)))
+                    .filter(|(_, at)| {
+                        let run = dmath::hypot(f64::from(at.0 - tpos.0), f64::from(at.1 - tpos.1));
+                        m.thought.believed_reaction_ticks
+                            + run / m.thought.believed_speed_cm_per_tick.max(1.0)
+                            <= flight
+                    })
+                    .filter_map(|(o, _)| scene.reception.aerial.get(o).copied())
+                    .fold(0.0, f64::max);
+                if mine + rival > 0.0 {
+                    mine / (mine + rival)
+                } else {
+                    m.thought.confidence(0.0)
+                }
             };
             // His kick goes long by his own miss (SIM 194, `resolve_pass`:
             // the lofted pass carries `distance x (1 + error)`): if that
@@ -1691,10 +1714,13 @@ fn pass_candidates(
             } else if contested {
                 if wins() {
                     // Won, it is his if it falls where he is: less the
-                    // spread of a long kick.
+                    // spread of a long kick (as before DD-86).
                     m.thought.confidence(-spread)
                 } else {
-                    0.0
+                    // He may lose the header and still loft: grade the
+                    // option by the imagined air force (DD-86) instead
+                    // of taking it away.
+                    m.thought.confidence(-spread) * aerial_share()
                 }
             } else if controls_lofted(scene, players, *id, (tpos, d, flight)) {
                 // Where it comes down he must control it at the speed the
@@ -1711,8 +1737,8 @@ fn pass_candidates(
             // landing as the gain. The ground pass keeps its lookahead.
             // DD 2 grades the room where the ball lands when he must control
             // it there (ADR-058). In a contested air ball the marker is
-            // already read by `wins()` (OI-102): grading him again would
-            // count the same man twice and kill the target man's option.
+            // already read by `wins`/`aerial_share` (OI-102, DD-86): grading
+            // him again would count the same man twice and kill the option.
             let room = if contested {
                 1.0
             } else {
@@ -2875,18 +2901,20 @@ mod shot_perception_tests {
         fn loft_salience(s: &PerceivedScene) -> f64 {
             let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
             let (ctx, _) = build_choice(s, Side::Right, 0.5, 0.04, &b);
-            ctx.candidates
+            let loft = ctx
+                .candidates
                 .iter()
                 .find(|c| matches!(c.kind, ChoiceKind::Loft(_)))
-                .map_or(0.0, |c| c.geometric)
+                .expect("a contested loft is still an option");
+            loft.geometric
         }
 
-        /// Twin test (OI-102, SIM 149): the same long ball to the same
+        /// Twin test (OI-102, SIM 149; DD-86): the same long ball to the same
         /// target man with a defender at his shoulder; only what the passer
-        /// knows of his man in the air changes. Stronger in the air than the
-        /// defender he sees, the ball is worth playing; weaker, it is not.
-        /// Before, with a man on him the long ball was worth nothing either
-        /// way.
+        /// believes of his man in the air changes. Stronger, even, weaker —
+        /// all three are options, graded in that order. Before SIM 149 the
+        /// ball was worth nothing either way; before DD-86 the even and the
+        /// weaker case had no confidence at all.
         #[test]
         fn the_long_ball_to_the_man_who_wins_it_in_the_air() {
             let mate = PlayerId::new(7, 0);
@@ -2895,9 +2923,15 @@ mod shot_perception_tests {
             s.reception.aerial.insert(opp, 0.5);
             s.reception.aerial.insert(mate, 0.9);
             let strong = loft_salience(&s);
+            s.reception.aerial.insert(mate, 0.5);
+            let even = loft_salience(&s);
             s.reception.aerial.insert(mate, 0.2);
             let weak = loft_salience(&s);
             assert!(strong > 0.0, "strong {strong}");
+            assert!(
+                even > weak,
+                "an even header grades above a weak one: {even} > {weak}"
+            );
             assert!(weak < strong, "weak {weak}, strong {strong}");
         }
 

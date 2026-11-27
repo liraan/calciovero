@@ -9,6 +9,39 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 221 — a contested loft is graded, not vetoed (opencode RUN 80, DD-86)
+
+Wyscout counts 38.14 aerial duels a match; the local dump reproduces it
+exactly (28,985 `eventId 1 / subEventId 10` records, halved because both
+contenders are recorded, over 380 matches). No tag says there was contact:
+the source counts a contest in the air. In 6,639 contests with a high pass
+or cross in the previous five seconds, the kicking side wins 39.26% of the
+decided ones: in a real match the kicker lofts even when he loses the
+header. `read.rs` used to set `sure = 0` when `wins()` imagined a loss,
+taking the loft away before the player chose. That was a veto on the *how*,
+not a perception gate (ADR-062) nor a Law; DD-81 had already removed the
+same kind of gate on the ground pass.
+
+A contested loft now keeps the option: the cases `wins()` used to veto keep
+their old `confidence(-spread)`; the imagined losses are graded by
+`confidence(-spread) * mine / (mine + rival)` over the aerial forces the
+passer imagines for his man and for the opponents who arrive before it
+lands. Only the vetoed branch changes — grading the won branch as well had
+weakened a choice that was already correct. No new number or threshold: it
+is the `freedom_share` pattern of ADR-040. ADR-081's second man (option C),
+the flight's drop point, the perception cones and the Laws are untouched.
+
+Twin `the_long_ball_to_the_man_who_wins_it_in_the_air` now reads three
+scenes with the same geometry — stronger, even, weaker in the air. It is red
+before the change (even and weaker had identical confidence) and green
+after. Golden L0 base/instructed/cup regenerated (cup shoot-out seed 166 ->
+62); the fixtures that follow the new play moved: first offside header 50 ->
+79, first level friendly at 90' 44 -> 53, first knock with a substitution
+43 -> 42, first kick-only shoot-out 166 -> 62; the movement guard now
+ignores a man placed on the bench by a sending off. `ds-reference 42..101` is recorded in `L0-CALIBRATION.md` §221. A5-bis:
+the 39.26% is evidence that the veto is false, not a number fitted to the
+band.
+
 ## 220 — a won take-on is told at the contact (opencode RUN 77, DD-84)
 
 Wyscout's `take_ons_won` is the **attacking ground duel won with the take-on

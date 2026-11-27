@@ -101,6 +101,11 @@ fn nobody_moves_faster_than_his_legs() {
                 continue;
             }
             for a in &now.agents {
+                // A sent-off man is put on the bench (y = -300), possibly
+                // after the card's tick: the placement is by Law, not legs.
+                if a.position.1 < 0 {
+                    continue;
+                }
                 let Some(b) = before.agents.iter().find(|x| x.id == a.id) else {
                     continue;
                 };
