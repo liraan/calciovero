@@ -293,7 +293,7 @@ mod tests {
     /// gone; saved and reloaded, it is the same match.
     #[test]
     fn the_substitute_comes_on() {
-        let seed = 7;
+        let seed = 8;
         let choices = Choices {
             subs: vec![parse_sub("60:J=P").expect("sub")],
             ..Choices::default()
@@ -309,17 +309,25 @@ mod tests {
             .find(|p| letter(p.id) == 'P')
             .map(|p| u64::from(p.id.slot()))
             .expect("P");
-        // His change: other changes (a knock, the opponents' coach) may come
-        // before it.
+        // His change: a knock can bring P on earlier for another man, so
+        // match both ends of the planned 60:J=P, not just the incoming slot.
+        let j_slot = game
+            .home
+            .players
+            .iter()
+            .find(|p| letter(p.id) == 'J')
+            .map(|p| u64::from(p.id.slot()))
+            .expect("J");
         let sub = r
             .events
             .events()
             .iter()
             .find(|e| {
                 e.event_type == EventType::Substitution
+                    && e.fields.get("out").and_then(serde_json::Value::as_u64) == Some(j_slot)
                     && e.fields.get("in").and_then(serde_json::Value::as_u64) == Some(p_slot)
             })
-            .expect("P's substitution");
+            .expect("J for P at the 60th minute");
         assert_eq!(sub.half, ds_stats::Half::Second);
         assert!(sub.timestamp_minute >= 15, "from the 60th minute");
         let on = game

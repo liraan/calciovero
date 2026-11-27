@@ -387,6 +387,61 @@ solo arrivo e portata. La riga `shots` è uscita di banda per effetto della
 nuova risoluzione dei duelli aerei, non per una taratura: va indagata come
 possibile bug prima di qualunque aggiustamento (A5-bis).
 
+## La misura del 225 (2026-11-27, opencode, DD-98/ADR-118)
+
+Stesso comando e bande del 224. T23: con la palla le punte aspettano sulla
+linea del penultimo avversario, corta dello stesso `onside_margin_cm` già usato
+dalla corsa di ADR-070, anche senza compito sulla lavagna. Nessun gate sul
+passaggio, nessun margine, peso o gesto nuovo, nessun numero preso guardando
+la banda (A5-bis). Il gemello `the_forward_waits_on_the_line_without_an_order`
+cambia solo il ruolo nella stessa scena.
+
+**13 su 20 confrontabili in banda** (14 nel 224). Fuori banda: `goals` 5,47
+contro 2,68 ± 1,65, `shots` 31,90 contro 24,60 ± 5,46, `passes` 1182,80 contro
+887,68 ± 122,81, `passes_accurate` 1067,63 contro 739,17 ± 124,79,
+`aerial_duels` 8,40 contro 38,14 ± 12,98, `throw_ins` 21,05 contro 42,72 ± 8,92
+e `offsides` 6,95 contro 4,26 ± 2,40 (6,15 nel 224: esce di 0,29 dal limite
+alto). Le sei righe vecchie restano con le cause archiviate: volume dei
+passaggi (DD-82), uscita laterale non attribuita dalla fonte (DD-94), duello
+aereo (OI-100), tiro in porta (RUN 98). La settima è nuova e va indagata come
+possibile bug, non tarata: il posto della punta legge `second_last` da posizioni
+vere, il fischio legge `offside_to` da posizioni percepite con la soglia
+dell'occhio (ADR-062 (b)); i 50 cm di margine non sono una soglia di vista scritta
+e non vanno cambiati guardando il conteggio (A5-bis).
+
+| metrica | 225 | 224 | reale | nota |
+|---|---|---|---|---|
+| goals | 5.47 | 5.13 | 2.68 ± 1.65 | fuori, RUN 98 |
+| own_goals | 0.23 | 0.28 | 0.10 ± 0.31 | in banda |
+| shots | 31.90 | 31.02 | 24.60 ± 5.46 | fuori di 1,84, non tarato |
+| shots_on_target | 10.90 | 10.33 | 8.69 ± 3.22 | in banda |
+| penalties | 0.18 | 0.25 | 0.33 ± 0.56 | in banda |
+| passes | 1182.80 | 1191.65 | 887.68 ± 122.81 | fuori, volume aperto (DD-82) |
+| passes_accurate | 1067.63 | 1080.05 | 739.17 ± 124.79 | fuori, volume aperto (DD-82) |
+| crosses | 9.55 | 8.63 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 8.40 | 8.55 | 38.14 ± 12.98 | fuori, OI-100 |
+| ground_duels | 160.78 | 161.18 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 19.52 | 20.00 | 16.03 ± 5.67 | in banda |
+| fouls | 21.70 | 22.17 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.52 | 2.68 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.33 | 0.22 | 0.24 ± 0.49 | in banda |
+| corners | 8.52 | 8.30 | 10.30 ± 3.58 | in banda |
+| throw_ins | 21.05 | 20.22 | 42.72 ± 8.92 | fuori, DD-94 |
+| goal_kicks | 18.05 | 16.13 | 17.15 ± 4.20 | in banda |
+| free_kicks | 27.37 | 26.68 | 29.45 ± 6.81 | in banda |
+| offsides | 6.95 | 6.15 | 4.26 ± 2.40 | fuori di 0,29, da indagare |
+| clearances | 25.42 | 26.42 | 29.53 ± 8.65 | in banda |
+| interceptions | 72.37 | 70.10 | 89.86 ± 13.97 | non confrontabile |
+| saves | 6.15 | 5.87 | 6.70 ± 2.82 | in banda |
+| stoppage_first_half_min | 3.45 | 2.98 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 5.64 | 5.76 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+Golden L0 e L1 rigenerati, semi spostati: coppa e rigori solo-tiri 115 → 55,
+livello al 90' 44 → 55, header in fuorigioco 45 → 42. Il golden coppa è
+`55:68dff084d68b080c174315186aff2ae676179e462659ace9e975a5b12549fc86`. Gol e
+tiri salgono insieme alle punte che ora restano in posizione valida: sono
+indizi di una causa a valle, non numeri da ricalibrare.
+
 ## RUN 100 — un campione 360: cosa dice e cosa non dice (2026-11-27, sola lettura)
 
 Fuori dal repository, da `statsbomb/open-data/data/three-sixty/3773377.json`

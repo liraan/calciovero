@@ -184,7 +184,7 @@ Stessi 8 analisti in sola lettura, a HEAD `5eafc14` (SIM 202), con la tabella de
 - T22. Minori: lato della ripresa vicino alla bandierina (y prima di x); retropassaggio preso con le mani; portiere espulso fino alla sosta (S8 a metà); `denial` e muro e spazzata col portiere per slot; il secondo giallo non contato fra i gialli.
 
 **Blocco 4 — il fuorigioco nelle posizioni**
-- T23. `shape.rs`: le punte del blocco alla pari della linea per costruzione (+1500 da entrambe le parti), oltre la linea negli ultimi 25 m e con il blocco alto; a ogni cambio di possesso tutti tornano al blocco (spazio).
+- T23. ✅ (SIM 225, DD-98/ADR-118) le punte del blocco non sono più oltre la linea: con la palla aspettano sulla linea del penultimo avversario, corte dello stesso margine della corsa, anche senza compito. Il ritorno al blocco dopo il cambio di possesso resta la regola di spazio com'era.
 - T24. ✅ (SIM 203) `Hold`: il posto del ruolo (`anchor`) non è riportato in gioco; l'errore di lettura della linea sempre in avanti (200 cm scritti) contro un margine di 50 (orchestratore).
 - T25. ✅ (SIM 203) `foresee` rialza verso 0.5 una fiducia zero che viene da un fatto certo (fuorigioco, palla nella propria porta) (orchestratore).
 - T26. Il filtrante non è limitato al campo e non ha controllo né errore (orchestratore).

@@ -9,6 +9,22 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 225 — the forwards hold the line (DD-98, ADR-118)
+
+T23 of the audit: with the ball, `shape.rs::place` drew the forwards at
+`line + depth_in_possession_cm`, past the second-last opponent, and ADR-070
+corrected that place only for a man given the "attack the depth" task — the
+default board gives everyone `Task::Free`. A forward now waits short of the
+line the same rule already reads (`spatial.rs::second_last`, `onside_margin_cm`),
+without an order; the asked run below the forward line still moves up to it
+and the kick-off keeps Law 8's own half. No gate on the pass, no new number,
+option or state, nothing chosen by looking at the offside band (A5-bis). The
+twin `the_forward_waits_on_the_line_without_an_order` changes only the role in
+the same scene. The ADR-070 twin now measures a midfielder, the case the order
+still covers, and the demo's planned-substitution guard matches both ends of
+`60:J=P` (a knock can bring P on earlier for another man). Golden L0/L1 and the
+fixtures are regenerated; the measurement is in `L0-CALIBRATION.md` §225.
+
 ## 224 — the air goes to the man who gets there (opencode RUN 99, DD-97)
 
 ADR-117: `resolve_aerial` chose the winner by `aerial_force` alone, so a man

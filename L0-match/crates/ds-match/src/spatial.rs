@@ -960,16 +960,22 @@ impl SpatialState {
             transition: self.transition.1 < self.transition.0,
         };
         let mut at = crate::shape::place(role, situation, &self.block);
-        // Asked to attack the depth (ADR-070), with the ball he holds on
-        // the last defender's shoulder, onside, in his own lane: from there
-        // he goes. Before, the ask counted only when the run was already
-        // one of his options, and a striker behind the ball never had it.
-        if in_possession && board.with_ball_tasks[slot.min(10)] == ds_model::Task::Run {
-            let forward = if home { 1 } else { -1 };
+        let forward = if home { 1 } else { -1 };
+        if in_possession {
             if let Some(line) = self.second_last(home) {
-                let x = line - forward * self.onside_margin_cm;
-                if (x - at.0) * forward > 0 {
-                    at.0 = x.clamp(0, length);
+                let x = (line - forward * self.onside_margin_cm).clamp(0, length);
+                // ADR-118 (T23): a forward holds the onside place even with
+                // no task, so the block no longer draws him past the last
+                // line. `depth` 1000 is the forward line declared in
+                // `shape.rs`. The kick-off keeps Law 8's own half.
+                if role.depth == 1000 && !own_half {
+                    at.0 = x;
+                } else if board.with_ball_tasks[slot.min(10)] == ds_model::Task::Run
+                    && (x - at.0) * forward > 0
+                {
+                    // ADR-070: asked to attack the depth, he moves up to
+                    // the shoulder; a man already beyond it keeps his run.
+                    at.0 = x;
                 }
             }
         }
@@ -2584,6 +2590,41 @@ mod tests {
 
     fn make_state() -> SpatialState {
         SpatialState::from_squads(&Pitch::default(), &make_squad(0), &make_squad(100))
+    }
+
+    /// T23 / ADR-118: the same ball and the same opposing line, only the
+    /// role changes. Without any order, the striker waits short of the
+    /// second-last defender; a midfielder keeps the space his role draws.
+    #[test]
+    fn the_forward_waits_on_the_line_without_an_order() {
+        let mut s = make_state();
+        let len = s.pitch_cm.0;
+        let (line, margin) = (
+            8_000,
+            ds_calculator::offball::OffBallBalance::load().onside_margin_cm,
+        );
+        for slot in 0..11 {
+            let x = if slot == 0 { len } else { line };
+            s.set_position(PlayerId::new(100 + slot, 0), (x, 3_400));
+        }
+        s.ball_position = (9_000, 3_400, 0);
+        let forward = PlayerId::new(9, 0);
+        let mid = PlayerId::new(5, 0);
+        let f = s
+            .block_target(forward, (9_000, 3_400), true, false)
+            .unwrap();
+        let m = s.block_target(mid, (9_000, 3_400), true, false).unwrap();
+        assert_eq!(f.0, line - margin, "the striker waits on the line: {f:?}");
+        assert!(m.0 > f.0, "the midfielder keeps his zone: {m:?}");
+        // ADR-070 is still in force: asked to attack the depth, a man
+        // below the forward line moves up to the same onside place.
+        let high = 9_500;
+        for slot in 1..11 {
+            s.set_position(PlayerId::new(100 + slot, 0), (high, 3_400));
+        }
+        s.boards.0.with_ball_tasks[5] = ds_model::Task::Run;
+        let asked = s.block_target(mid, (9_000, 3_400), true, false).unwrap();
+        assert_eq!(asked.0, high - margin, "the asked midfielder moves up");
     }
 
     /// SIM 203 (T1b): a ball he cannot reach before it crosses his goal line

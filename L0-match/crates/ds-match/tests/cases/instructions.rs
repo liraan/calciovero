@@ -316,25 +316,27 @@ fn the_board_changes_from_its_tick() {
 
 /// P1 (ADR-059 step 4, ADR-070): an individual instruction is a
 /// responsibility on the board, changed during the match like the rest of
-/// it. The same matches twice, in one the striker asked from the 15th
-/// minute to attack the depth: from then, on average over six matches,
+/// it. The same matches twice, in one the wide midfielder asked from the
+/// 15th minute to attack the depth: from then, on average over six matches,
 /// when a teammate has the ball he waits nearer the last defender's line
 /// than without the ask, by at least a metre; before it, the same match.
-/// (Until SIM 148 the twin measured how far ahead of the ball he stood,
-/// which moves with where the ball goes too: at 149 the ask still brought
-/// him 2.4 m nearer the line, but only 1.2 m farther ahead of the ball.)
+/// A striker is no longer the subject (SIM 225, ADR-118): he waits on that
+/// line anyway, with or without an order, so the ask cannot move him a
+/// metre further. (Until SIM 148 the twin measured how far ahead of the
+/// ball he stood, which moves with where the ball goes too: at 149 the ask
+/// still brought him 2.4 m nearer the line, but only 1.2 m farther ahead.)
 #[test]
 #[allow(clippy::cast_precision_loss)] // ticks of a match
-fn a_striker_asked_to_run_waits_on_the_last_line() {
+fn a_midfielder_asked_to_run_waits_on_the_last_line() {
     let upto = usize::try_from(AT).expect("tick fits");
     let (mut asked, mut free) = (0.0, 0.0);
     for (a, f) in ds_fixtures::each_seed(50..56, |seed| {
         let plain = match_fixture(seed).expect("fixture");
-        let striker = plain.home.players[9].id;
+        let runner = plain.home.players[5].id;
         let home: Vec<_> = plain.home.players.iter().map(|p| p.id).collect();
         let mut m = match_fixture(seed).expect("fixture");
         let mut board = m.home.board;
-        board.with_ball_tasks[9] = ds_model::Task::Run;
+        board.with_ball_tasks[5] = ds_model::Task::Run;
         m.home = m.home.clone().with_instructions(vec![Instruction {
             tick: AT,
             channel: None,
@@ -351,9 +353,9 @@ fn a_striker_asked_to_run_waits_on_the_last_line() {
         let from_line = |r: &[ds_match::TickRecord]| {
             let ds: Vec<f64> = r
                 .iter()
-                .filter(|t| t.carrier.is_some_and(|c| home.contains(&c) && c != striker))
+                .filter(|t| t.carrier.is_some_and(|c| home.contains(&c) && c != runner))
                 .filter_map(|t| {
-                    let me = t.agents.iter().find(|a| a.id == striker)?.position.0;
+                    let me = t.agents.iter().find(|a| a.id == runner)?.position.0;
                     let mut xs: Vec<i32> = t
                         .agents
                         .iter()
