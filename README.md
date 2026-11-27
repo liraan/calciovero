@@ -26,7 +26,7 @@
 
     git clone https://github.com/liraan/calciovero.git
     cd calciovero
-    cargo run --release -p ds-gui                              # the window: the 2.5D board, commentary, why you conceded
+    cargo run --release -p ds-gui-desktop                       # the Lavagna desktop prototype
     cargo run --release --bin ds-demo -- --seed 42 --tui       # the same match on a text pitch in the terminal
 
 More options in [Try the engine today](#try-the-engine-today). New here?
@@ -54,12 +54,12 @@ stretches in his dive, the header lifts its man off the grass with his
 shadow below, and the home end rises at the goal. Every movement comes
 from a fact of the match, nothing else.*
 
-*It is all the engine's own tick record — where the twenty-two and the ball
-are, ten times a second — drawn by the GUI at 60 frames a second: between
-two ticks the players move on curves at their own pace, the ball flies on
-the gravity the match was played with, and every curve ends exactly on the
-next tick. The drawing never touches the simulation
-([`tools/ds-gui/DESIGN.md`](tools/ds-gui/DESIGN.md)). The terminal view is in
+*The plan is to draw the engine's own tick record — where the twenty-two and
+the ball are, ten times a second — in the 2.5D view at 60 frames a second:
+between two ticks the players move on curves at their own pace, the ball
+flies on the gravity the match was played with, and every curve ends exactly
+on the next tick. The desktop GUI is currently a Lavagna prototype, not yet
+connected to a match ([`context/plans/GUI-DESIGN.md`](context/plans/GUI-DESIGN.md)). The terminal view is in
 [`assets/demo-2d.gif`](assets/demo-2d.gif).*
 
 </div>
@@ -160,8 +160,8 @@ The game is built in four concentric levels; each one widens the previous and de
 | **L1 · The season** | three divisions and the cup in the real Italian format, every match played by the engine | 🟡 in progress: the season contract ([ADR-113](doctrine/adr/113-the-season-contract.md)), the world as an editable folder, squads, calendar, matchday, standings; the coach ([ADR-114](doctrine/adr/114-an-actor-of-every-kind.md)) and the body, first rings | [`L1`](context/plans/L1.md) |
 | **L2 · The career** | contracts, market, scouts, academy, growth, finances, the dressing room, the coach's life | ⬜ planned | [ADR-060](doctrine/adr/060-the-season-is-true-the-career-builds.md) |
 | **L3 · Make it yours** | editor for every value, packs, a local importer for your own data, external plugins in WebAssembly | ⬜ planned | [decisions](context/plans/DECISIONS-2026-11-15.md) |
-| **Interface** | desktop window today: the 2.5D view (numbered tokens with their gestures from the facts, a continuous zoom, follow the ball or drag the view, the stadium and its crowd, three themes), orders in the top bar, the bench in a collapsible right panel, commentary, why you conceded; the full design is decided | 🟡 | [`DESIGN`](tools/ds-gui/DESIGN.md) |
-| **Android** | the same game, the same plugins, light asset packs | ⬜ after the desktop | [ADR-061](doctrine/adr/061-android-is-the-same-game.md) |
+| **Interface** | desktop prototype: the Lavagna board, post-its and phase formations, with match frames from fixture data; the record-driven 2.5D view is to be rebuilt on the new crate ([decision in REVIEW-QUEUE](context/REVIEW-QUEUE.md)) | 🟡 | [`DESIGN`](context/plans/GUI-DESIGN.md), [`prototypes`](context/previews/gui-from-maintainer/README.md) |
+| **Android** | portrait A / landscape C prototype of the Lavagna and the match; the same game, the same plugins, light asset packs still to connect | 🟡 prototype | [ADR-061](doctrine/adr/061-android-is-the-same-game.md) |
 
 ### Releases
 
@@ -230,11 +230,11 @@ Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
     cd calciovero
     cargo run --release --bin ds-demo -- --seed 42 --tui
 
-Or open the window (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): choose seed, block and width, watch the match on the 2.5D board with the commentary, click an event to go back to it, and read why you conceded. The wheel (two fingers on a touch screen) zooms from the whole pitch to about 25 m; the camera follows the ball until you drag the view, and "Back to the ball" or a double click brings it back; the tilt goes from 0° (from above) to 75°, with a slow motion and three themes. From the orders in the top bar you bend the block while you watch; from the Bench panel on the right you make a substitution: the match is the same up to that moment and goes on with your change. `--help` lists the options (`--seed`, `--zoom`, `--free`, `--tilt`, `--theme`, `--slow`).
+Or open the Lavagna desktop prototype (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): tactics board, post-its, phase formations and match frames from fixture data. It does not read the engine's tick record yet, so there are no seed, camera or bench options; the 2.5D view is being rebuilt on this crate ([design](context/plans/GUI-DESIGN.md), [previews](context/previews/gui-from-maintainer/README.md)).
 
-    cargo run --release -p ds-gui
+    cargo run --release -p ds-gui-desktop
 
-![The GUI](tools/ds-gui/screenshot-tokens.png)
+![The 2.5D view](assets/demo-2.5d-tokens.webp)
 
 The first command above is the 2D debug view in the terminal: the twenty-two (`A`-`K` home, `a`-`k` away)
 and the ball on a text pitch, with the events as they happen. It works

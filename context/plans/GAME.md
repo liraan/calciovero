@@ -12,11 +12,11 @@
 |---|---|---|---|
 | L0 · La partita | Ventidue giocatori che pensano, il pallone con la fisica, le Leggi, la panchina | quasi chiuso, in taratura; si riprende con il 2.5D (decisione S) | [`L0-CLOSE`](L0-CLOSE.md), [`L0-CALIBRATION`](L0-CALIBRATION.md), [`L0-AUDIT`](L0-AUDIT.md) |
 | L0 · Plugin | La partita divisa in plugin dietro un contratto (ADR-063) | fatto | [`PLUGINS`](PLUGINS.md) |
-| Vista 2.5D | La lavagna inclinata, la vista della GUI su desktop e Android | adesso, prima della chiusura di L0 (decisione S) | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
+| Vista 2.5D | La lavagna inclinata, la vista della GUI su desktop e Android | adesso, prima della chiusura di L0 (decisione S) | [`DESIGN`](GUI-DESIGN.md) |
 | L1 · La stagione | Tre serie e la coppa nel formato reale, ogni partita dal motore | dopo il 2.5D | [`L1`](L1.md) |
 | L2 · La carriera | Procuratori, osservatori, vivaio, crescita, bilancio completo, società, spogliatoio, la vita dell'allenatore (contratti e mercato sono in L1, decisione AR) | dopo la 0.1 | ADR-060; il piano in [`L2.md`](L2.md), un blocco alla volta |
 | L3 · Il gioco che si modifica | Editor (il giocatore nasce dai suoi dati), pacchetti, importatore locale, plugin esterni in WebAssembly, accessibilità, tutorial | dopo L2 | [`L3.md`](L3.md); decisioni 4, F–K, BE |
-| 3D | Solo desktop, con Bevy se maturo | dopo la 1.0 | [`DESIGN`](../../tools/ds-gui/DESIGN.md) |
+| 3D | Solo desktop, con Bevy se maturo | dopo la 1.0 | [`DESIGN`](GUI-DESIGN.md) |
 
 ## L'ordine di lavoro
 
@@ -84,5 +84,5 @@ Ogni versione: cosa porta, la prova che la chiude, a chi va, cosa serve prima di
 | Le decisioni di forma del modello | [`doctrine/adr/`](../../doctrine/adr/) |
 | L0: chiusura, taratura, ricontrollo, confronto con il piano ideale, plugin | [`L0-CLOSE`](L0-CLOSE.md), [`L0-CALIBRATION`](L0-CALIBRATION.md), [`L0-AUDIT`](L0-AUDIT.md), [`L0-IDEAL-COMPARISON`](L0-IDEAL-COMPARISON.md), [`PLUGINS`](PLUGINS.md) |
 | L1 | [`L1.md`](L1.md) |
-| La GUI, le viste, la scheda giocatore, Android | [`tools/ds-gui/DESIGN.md`](../../tools/ds-gui/DESIGN.md) |
+| La GUI, le viste, la scheda giocatore, Android | [`context/plans/GUI-DESIGN.md`](GUI-DESIGN.md) |
 | Le fonti di ogni numero | [`L0-match/balance/SOURCES.md`](../../L0-match/balance/SOURCES.md) |

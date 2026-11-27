@@ -21,7 +21,7 @@ timeline of events, a scenario test that proves something about a match.
 See [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ```bash
-cargo run --release -p ds-gui
+cargo run --release -p ds-gui-desktop
 cargo run -p ds-demo -- --seed 42 --tui
 cargo run -p ds-demo -- --seed 42 --tui --frame 30
 cargo run -p ds-demo -- --seed 42 --roster

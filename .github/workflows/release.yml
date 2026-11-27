@@ -4,7 +4,7 @@
 #
 # Three platforms, the ones ADR-038 keeps open on the desktop: Linux
 # x86_64, Windows x86_64, macOS arm64. Each archive holds the GUI
-# (`ds-gui`, ADR-055), the CLI (`ds-demo`), the README and the licences.
+# (`ds-gui-desktop`, ADR-055), the CLI (`ds-demo`), the README and the licences.
 
 name: Release
 
@@ -51,14 +51,14 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build
-        run: cargo build --release -p ds-gui -p ds-demo
+        run: cargo build --release -p ds-gui-desktop -p ds-gui-android -p ds-demo
 
       - name: Package
         shell: bash
         run: |
           name="calcio-vero-${TAG}-${{ matrix.target }}"
           mkdir "$name"
-          cp "target/release/ds-gui${{ matrix.ext }}" "target/release/ds-demo${{ matrix.ext }}" "$name/"
+          cp "target/release/ds-gui-desktop${{ matrix.ext }}" "target/release/ds-demo${{ matrix.ext }}" "$name/"
           cp README.md LICENSE.md LICENSE-MIT LICENSE-APACHE LICENSE-ASSETS "$name/"
           if [ "${{ matrix.ext }}" = ".exe" ]; then
             7z a "$name.zip" "$name" > /dev/null

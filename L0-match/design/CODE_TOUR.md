@@ -14,7 +14,7 @@ The three ideas that hold the engine together — **no dice** (ADR-035), **every
 cargo build --release
 cargo test --workspace
 cargo run --release -p ds-demo -- --seed 42
-cargo run --release -p ds-gui
+cargo run --release -p ds-gui-desktop
 ```
 
 The quality gate (RULES C2) is in `README.md`.
