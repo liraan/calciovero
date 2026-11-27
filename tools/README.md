@@ -7,7 +7,9 @@ from the outside. Nothing in `L0-match/` depends on a crate here, except
 | Crate | Responsibility |
 |---|---|
 | `ds-demo` | simulate a match and render it: the 2D debug replay (`--tui`), a text board, JSON, a self-contained HTML page |
-| `ds-gui` | the desktop GUI (egui, ADR-055): the friendly on a 2D pitch, the commentary, the reasons for every goal conceded; colours in `theme.json` |
+| `ds-gui-view` | the record-driven 2.5D view shared by both GUIs: camera, interpolated frames, gestures from events and commentary |
+| `ds-gui-desktop` | the Lavagna desktop GUI (egui, ADR-055): tactics board, post-its, phase formations and the match in `ds-gui-view` |
+| `ds-gui-android` | the Android A/C GUI prototype: the same record-driven view in portrait and landscape |
 | `ds-fixtures` | the hardcoded squads used by the demo and the tests (test data, not production data) |
 | `ds-testkit` | the test contract (`Scenario`, `Feature`); no dependency on any `ds-*` crate |
 | `ds-test-runner` | run the scenarios; `--check` is the health check of every commit |

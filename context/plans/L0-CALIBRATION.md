@@ -221,6 +221,18 @@ definizioni diverse (tag dell'accuratezza, placement e portata del portiere),
 DD-93 unità Wyscout non confrontabile, DD-94 emissione completa senza gesto
 «fuori»: nessun numero, soglia, finestra o golden toccato (A5-bis).
 
+RUN 96 aggiunge una sonda sulle origini del duello aereo, senza modifica al
+modello: delle 28.985 righe aeree del grezzo, il 45,3% segue un'altra riga
+aerea entro 5 s (la seconda riga dello stesso duello); fra le prime righe,
+passaggi alti e cross 31,1%, rinvii dal fondo 14,3%, punizioni 10,4%, angoli
+9,6%, rimesse 4,6%. Lato motore (493 duelli su 60 semi, 8,22/partita):
+`Pressure` 40,8%, passaggi 21,3%, spazzate 9,3%, angoli 8,7%, rimesse 7,7%,
+punizioni 5,3%, **rinvii dal fondo 0%**. La ripartizione è una misura nuova,
+non una soglia: il motore non contesta mai il rinvio e il 40,8% dei suoi
+duelli nasce da una pressione, categoria assente nel referto. Non autorizza
+a cambiare ADR-081 (DD-93 chiuso) né a tarare raggi o finestre (A5-bis); è
+l'evidenza da portare a una nuova DD dottrinale, se si apre.
+
 Golden L0 base/istruito/coppa rigenerati (seed coppa 62 -> 78, hash
 `78:24f14890…`); golden L1 `SMALL_GOLDEN` `0b00a6ad…`. Fixtures spostati:
 header in fuorigioco 79 -> 48, livello al 90' 53 -> 49, knock 42, rigori

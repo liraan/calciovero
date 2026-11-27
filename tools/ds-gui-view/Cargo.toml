@@ -1,0 +1,27 @@
+[package]
+name = "ds-gui-view"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "The record-driven 2.5D view shared by the desktop and Android GUIs (ADR-055, decision W)"
+
+[lib]
+name = "ds_gui_view"
+path = "src/lib.rs"
+
+[dependencies]
+ds-core.workspace = true
+ds-model.workspace = true
+ds-stats.workspace = true
+ds-match.workspace = true
+ds-demo.workspace = true
+ds-fixtures.workspace = true
+eframe = "=0.32.3"
+egui = "=0.32.3"
+serde_json.workspace = true
+
+[lints]
+workspace = true

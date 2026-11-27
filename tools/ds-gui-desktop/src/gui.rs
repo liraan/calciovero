@@ -24,7 +24,7 @@
 use ds_career::Career;
 use ds_world::Pack;
 
-use crate::match_data::TK;
+use ds_gui_view::{MatchView, Palette};
 use eframe::egui::{
     self, Align2, Area, Color32, CornerRadius, FontId, Id, Order, Pos2, Rect, RichText, Sense,
     Stroke, StrokeKind, Vec2,
@@ -398,6 +398,22 @@ fn ink_on(c: Color32) -> Color32 {
     }
 }
 
+fn palette(th: BoardTheme, home: Color32) -> Palette {
+    let away = Color32::from_rgb(0x1D, 0x4E, 0xD8);
+    Palette {
+        grass: th.pitch,
+        stripe: th.pitch.gamma_multiply(0.8),
+        chalk: th.pitch_line,
+        home,
+        home_ink: ink_on(home),
+        away,
+        away_ink: ink_on(away),
+        referee: th.text,
+        ball: Color32::WHITE,
+        time: th.text,
+    }
+}
+
 fn project_mark(ui: &egui::Ui, rect: Rect, fg: Color32) {
     let p = ui.painter_at(rect);
     let s = rect.width().min(rect.height());
@@ -435,9 +451,7 @@ pub struct GuiApp {
     bar_hover: bool,
     start_open: bool,
     team_idx: usize,
-    match_t: usize,
-    match_playing: bool,
-    match_last: f64,
+    view: MatchView,
     formation: [[(f32, f32); 11]; 3], // Con, Trans, Senza
     drag_player: Option<usize>,
 }
@@ -487,7 +501,7 @@ impl GuiApp {
         self.scenario = Scenario::Partita;
         self.view_day = 5;
         self.selected_day = 5;
-        self.match_playing = true;
+        self.view.rewind();
         self.phase = Phase::Nessuna;
         self.open_kind(PostItKind::Istruzioni);
         self.open_kind(PostItKind::Cronaca);
@@ -508,6 +522,12 @@ impl GuiApp {
         self.career
             .as_ref()
             .map_or(0, |c| i32::try_from(c.day()).unwrap_or(i32::MAX))
+    }
+
+    /// Clock and score shown next to the playback buttons.
+    fn scoreboard(&self) -> String {
+        let (home, away) = self.view.score();
+        format!("{} · {home} – {away}", self.view.clock())
     }
 }
 
@@ -551,9 +571,7 @@ impl Default for GuiApp {
             bar_hover: false,
             start_open: false,
             team_idx: 0,
-            match_t: 0,
-            match_playing: false,
-            match_last: 0.0,
+            view: MatchView::new(42).expect("the seed's fixture"),
             formation: [
                 Self::formation_default(Phase::Con),
                 Self::formation_default(Phase::Trans),
@@ -574,15 +592,9 @@ impl eframe::App for GuiApp {
 
 impl GuiApp {
     fn view_lavagna(&mut self, ui: &mut egui::Ui) {
-        let now = ui.input(|i| i.time);
-        if self.scenario == Scenario::Partita && self.match_playing {
-            if self.match_last == 0.0 {
-                self.match_last = now;
-            }
-            if now - self.match_last >= 0.1 {
-                self.match_t = (self.match_t + 1) % 230;
-                self.match_last = now;
-            }
+        if self.scenario == Scenario::Partita {
+            let dt = ui.input(|i| i.stable_dt);
+            self.view.advance(dt);
             ui.ctx()
                 .request_repaint_after(std::time::Duration::from_millis(100));
         }
@@ -635,6 +647,55 @@ impl GuiApp {
         self.paint_deck(ui, deck, th);
         self.paint_pitch(ui, board, th);
         self.paint_postits(ui, board, th);
+
+        if self.scenario == Scenario::Partita {
+            egui::Area::new(Id::new("partita-playback"))
+                .anchor(Align2::CENTER_BOTTOM, Vec2::new(0.0, -12.0))
+                .show(ui.ctx(), |ui| {
+                    egui::Frame::new()
+                        .fill(th.bar)
+                        .corner_radius(8.0)
+                        .inner_margin(6.0)
+                        .show(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                ui.label(self.scoreboard());
+                                let play = if self.view.is_playing() {
+                                    "❚❚"
+                                } else {
+                                    "▶"
+                                };
+                                if ui.button(play).clicked() {
+                                    self.view.toggle();
+                                }
+                                if ui.button("↺").clicked() {
+                                    self.view.rewind();
+                                }
+                                if ui
+                                    .button(format!("x{}", self.view.speed() as i32))
+                                    .clicked()
+                                {
+                                    self.view.cycle_speed();
+                                }
+                                let follow = if self.view.is_following() {
+                                    "segui palla"
+                                } else {
+                                    "camera libera"
+                                };
+                                // A drag on the board frees the camera; this gives it back.
+                                if ui.button(follow).clicked() {
+                                    self.view.follow_ball();
+                                }
+                                let mut tilt = self.view.tilt();
+                                if ui
+                                    .add(egui::Slider::new(&mut tilt, 0.0..=75.0).text("tilt"))
+                                    .changed()
+                                {
+                                    self.view.set_tilt(tilt);
+                                }
+                            });
+                        });
+                });
+        }
     }
 
     #[allow(dead_code)]
@@ -2003,76 +2064,8 @@ impl GuiApp {
         );
 
         if self.scenario == Scenario::Partita {
-            let t = &TK[self.match_t.min(TK.len() - 1)];
-            for (i, pos) in t.pos.iter().enumerate() {
-                let home = i < 11;
-                let sl = if home { i } else { i - 11 };
-                let x = field.left() + pos[0] / 100.0 * field.width();
-                let y = field.top() + pos[1] / 100.0 * field.height();
-                let c = if home {
-                    if sl == 0 {
-                        Color32::from_rgb(0xE0, 0xA4, 0x3A)
-                    } else {
-                        Color32::from_rgb(0xC2, 0x41, 0x0C)
-                    }
-                } else {
-                    if sl == 0 {
-                        Color32::from_rgb(0x3A, 0xA7, 0xA0)
-                    } else {
-                        Color32::from_rgb(0x1D, 0x4E, 0xD8)
-                    }
-                };
-                let tc = if home {
-                    Color32::from_rgb(0x2A, 0x12, 0x08)
-                } else {
-                    Color32::from_rgb(0x0B, 0x1B, 0x3A)
-                };
-                let dot = Pos2::new(x, y);
-                p.circle_filled(dot, 10.0, c);
-                let label = if home {
-                    ((b'A' + sl as u8) as char).to_string()
-                } else {
-                    ((b'a' + sl as u8) as char).to_string()
-                };
-                p.text(
-                    dot,
-                    Align2::CENTER_CENTER,
-                    label,
-                    FontId::proportional(9.0),
-                    tc,
-                );
-            }
-            let bx = field.left() + t.ball[0] / 100.0 * field.width();
-            let byb = field.top() + t.ball[1] / 100.0 * field.height();
-            p.circle_filled(Pos2::new(bx, byb), 4.5, Color32::WHITE);
-            p.circle_stroke(
-                Pos2::new(bx, byb),
-                4.5,
-                Stroke::new(1.0, Color32::from_gray(30)),
-            );
-            let sc = format!(
-                "{}  {} – {}  {}",
-                t.clock,
-                t.score[0],
-                t.score[1],
-                if self.match_playing { "●" } else { "❚❚" }
-            );
-            let sr = Rect::from_min_size(
-                Pos2::new(field.center().x - 90.0, field.top() + 10.0),
-                Vec2::new(180.0, 28.0),
-            );
-            p.rect_filled(
-                sr,
-                CornerRadius::same(8),
-                Color32::from_rgba_unmultiplied(0, 0, 0, 120),
-            );
-            p.text(
-                sr.center(),
-                Align2::CENTER_CENTER,
-                sc,
-                FontId::monospace(14.0),
-                Color32::WHITE,
-            );
+            let palette = palette(th, self.team_color());
+            self.view.paint(ui, field, &palette);
         } else {
             let opp = Self::opponent_formation(self.phase);
             for (gx, gy) in opp {
@@ -2976,5 +2969,21 @@ impl GuiApp {
             4.0,
             Color32::WHITE,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The desktop's scoreboard follows the record's playhead.
+    #[test]
+    fn the_scoreboard_comes_from_the_match_view() {
+        let mut app = GuiApp::default();
+        let before = app.scoreboard();
+        app.view.advance(1_000.0);
+        assert_ne!(app.scoreboard(), before);
+        let (home, away) = app.view.score();
+        assert!(app.scoreboard().contains(&format!("{home} – {away}")));
     }
 }

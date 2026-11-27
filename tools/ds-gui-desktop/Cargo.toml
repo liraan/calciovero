@@ -19,6 +19,7 @@ path = "src/lib.rs"
 [dependencies]
 ds-career = { path = "../../L1-season/crates/ds-career" }
 ds-world = { path = "../../L1-season/crates/ds-world" }
+ds-gui-view.workspace = true
 # ADR-055: pinned to the last version that keeps the workspace's Rust 1.85.
 eframe = "=0.32.3"
 

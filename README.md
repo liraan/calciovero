@@ -155,12 +155,12 @@ The game is built in four concentric levels; each one widens the previous and de
 
 | Level | What it is | Status | Plan |
 |---|---|---|---|
-| **L0 · The match** | twenty-two players who think, a ball with physics, the Laws, the bench | 🟡 virtually closed: 10 of 22 metrics in band, every one out a bug being hunted; closed for real at 22 of 22 | [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md), [`CODE-AUDIT`](context/plans/CODE-AUDIT.md) |
+| **L0 · The match** | twenty-two players who think, a ball with physics, the Laws, the bench | 🟡 virtually closed: 15 of 20 comparable metrics in band, every one out with its cause; closed for real at 22 of 22 | [`L0-CALIBRATION`](context/plans/L0-CALIBRATION.md), [`CODE-AUDIT`](context/plans/CODE-AUDIT.md) |
 | **L0 · Plugins** | the match split into plugins behind one contract, the commentary out of the engine | ✅ done ([ADR-063](doctrine/adr/063-the-match-split-into-plugins.md)) | [`PLUGINS`](context/plans/PLUGINS.md) |
 | **L1 · The season** | three divisions and the cup in the real Italian format, every match played by the engine | 🟡 in progress: the season contract ([ADR-113](doctrine/adr/113-the-season-contract.md)), the world as an editable folder, squads, calendar, matchday, standings; the coach ([ADR-114](doctrine/adr/114-an-actor-of-every-kind.md)) and the body, first rings | [`L1`](context/plans/L1.md) |
 | **L2 · The career** | contracts, market, scouts, academy, growth, finances, the dressing room, the coach's life | ⬜ planned | [ADR-060](doctrine/adr/060-the-season-is-true-the-career-builds.md) |
 | **L3 · Make it yours** | editor for every value, packs, a local importer for your own data, external plugins in WebAssembly | ⬜ planned | [decisions](context/plans/DECISIONS-2026-11-15.md) |
-| **Interface** | desktop prototype: the Lavagna board, post-its and phase formations, with match frames from fixture data; the record-driven 2.5D view is to be rebuilt on the new crate ([decision in REVIEW-QUEUE](context/REVIEW-QUEUE.md)) | 🟡 | [`DESIGN`](context/plans/GUI-DESIGN.md), [`prototypes`](context/previews/gui-from-maintainer/README.md) |
+| **Interface** | desktop prototype: the Lavagna board, post-its and phase formations, now playing a real recorded match in the shared 2.5D view (camera, playback, gestures from events); bench and orders still from the prototypes | 🟡 | [`DESIGN`](context/plans/GUI-DESIGN.md), [`prototypes`](context/previews/gui-from-maintainer/README.md) |
 | **Android** | portrait A / landscape C prototype of the Lavagna and the match; the same game, the same plugins, light asset packs still to connect | 🟡 prototype | [ADR-061](doctrine/adr/061-android-is-the-same-game.md) |
 
 ### Releases
@@ -230,7 +230,7 @@ Requires **Rust 1.85+ (stable)**. On Windows, use Git Bash or WSL.
     cd calciovero
     cargo run --release --bin ds-demo -- --seed 42 --tui
 
-Or open the Lavagna desktop prototype (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): tactics board, post-its, phase formations and match frames from fixture data. It does not read the engine's tick record yet, so there are no seed, camera or bench options; the 2.5D view is being rebuilt on this crate ([design](context/plans/GUI-DESIGN.md), [previews](context/previews/gui-from-maintainer/README.md)).
+Or open the Lavagna desktop prototype (egui, [ADR-055](doctrine/adr/055-the-gui-is-egui-behind-the-view-model.md)): tactics board, post-its, phase formations and the match played from the engine's tick record in the shared record-driven 2.5D view (`ds-gui-view`), with play/pause, camera follow, tilt and speed. Bench decisions and the written panels still come from the prototype ([design](context/plans/GUI-DESIGN.md), [previews](context/previews/gui-from-maintainer/README.md)).
 
     cargo run --release -p ds-gui-desktop
 

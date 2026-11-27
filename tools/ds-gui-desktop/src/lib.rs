@@ -2,4 +2,3 @@
 //! Riferimento: `context/previews/gui-from-maintainer/Lavagna.dc.html`.
 
 pub mod gui;
-pub mod match_data;

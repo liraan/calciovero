@@ -13,6 +13,7 @@ members = [
     "tools/ds-demo",
     "tools/ds-gui-desktop",
     "tools/ds-gui-android",
+    "tools/ds-gui-view",
     "tools/ds-fixtures",
     "tools/ds-testkit",
     "tools/ds-reference",
@@ -51,8 +52,10 @@ ds-db = { path = "L0-match/crates/ds-db", version = "0.1.0" }
 ds-orchestrator = { path = "L0-match/crates/ds-orchestrator", version = "0.1.0" }
 ds-stats = { path = "L0-match/crates/ds-stats", version = "0.1.0" }
 ds-match = { path = "L0-match/crates/ds-match", version = "0.1.0" }
+ds-gui-view = { path = "tools/ds-gui-view", version = "0.1.0" }
 ds-testkit = { path = "tools/ds-testkit", version = "0.1.0" }
 ds-fixtures = { path = "tools/ds-fixtures", version = "0.1.0" }
+ds-demo = { path = "tools/ds-demo", version = "0.1.0" }
 ds-calculator = { path = "L0-match/crates/ds-calculator", version = "0.1.0" }
 ds-match-api = { path = "L0-match/crates/ds-match-api", version = "0.1.0" }
 ds-narrative = { path = "L0-match/crates/ds-narrative", version = "0.1.0" }

@@ -10,10 +10,9 @@
 #![allow(clippy::too_many_arguments)]
 
 use ds_career::Career;
+use ds_gui_view::{MatchView, Palette};
 use ds_world::Pack;
 use egui::{Align2, Color32, CornerRadius, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2};
-
-type MatchPos = ([(f32, f32); 11], [(f32, f32); 11]);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ViewMode {
@@ -63,7 +62,7 @@ pub struct AndroidApp {
     a_tab: ATab,
     selected_day: i32,
     view_day: i32,
-    match_playing: bool,
+    match_view: MatchView,
     quick: [bool; 6],
 }
 
@@ -81,7 +80,7 @@ impl Default for AndroidApp {
             a_tab: ATab::Cronaca,
             selected_day,
             view_day: selected_day,
-            match_playing: false,
+            match_view: MatchView::new(42).expect("the seed's fixture"),
             quick: [true, false, false, false, false, false],
         }
     }
@@ -129,176 +128,31 @@ impl AndroidApp {
         }
     }
 
-    fn paint_pitch(ui: &egui::Ui, rect: Rect, vertical: bool) {
-        let p = ui.painter_at(rect);
-        p.rect_filled(
-            rect,
-            CornerRadius::ZERO,
-            Color32::from_rgb(0x14, 0x35, 0x28),
-        );
-        let line = Stroke::new(1.5_f32, Color32::from_rgba_unmultiplied(233, 236, 239, 100));
-        let inner = rect.shrink(8.0);
-        p.rect_stroke(inner, CornerRadius::ZERO, line, StrokeKind::Middle);
-        if vertical {
-            p.line_segment(
-                [
-                    Pos2::new(inner.left(), inner.center().y),
-                    Pos2::new(inner.right(), inner.center().y),
-                ],
-                line,
-            );
-            p.circle_stroke(inner.center(), inner.width() * 0.13, line);
-            let bw = inner.width() * 0.6;
-            let bh = inner.height() * 0.16;
-            p.rect_stroke(
-                Rect::from_min_size(
-                    Pos2::new(inner.center().x - bw / 2.0, inner.top()),
-                    Vec2::new(bw, bh),
-                ),
-                CornerRadius::ZERO,
-                line,
-                StrokeKind::Middle,
-            );
-            p.rect_stroke(
-                Rect::from_min_size(
-                    Pos2::new(inner.center().x - bw / 2.0, inner.bottom() - bh),
-                    Vec2::new(bw, bh),
-                ),
-                CornerRadius::ZERO,
-                line,
-                StrokeKind::Middle,
-            );
-        } else {
-            p.line_segment(
-                [
-                    Pos2::new(inner.center().x, inner.top()),
-                    Pos2::new(inner.center().x, inner.bottom()),
-                ],
-                line,
-            );
-            p.circle_stroke(inner.center(), inner.height() * 0.13, line);
-            let bw = inner.width() * 0.16;
-            let bh = inner.height() * 0.6;
-            p.rect_stroke(
-                Rect::from_min_size(
-                    Pos2::new(inner.left(), inner.center().y - bh / 2.0),
-                    Vec2::new(bw, bh),
-                ),
-                CornerRadius::ZERO,
-                line,
-                StrokeKind::Middle,
-            );
-            p.rect_stroke(
-                Rect::from_min_size(
-                    Pos2::new(inner.right() - bw, inner.center().y - bh / 2.0),
-                    Vec2::new(bw, bh),
-                ),
-                CornerRadius::ZERO,
-                line,
-                StrokeKind::Middle,
-            );
-        }
-        let (home_pos, away_pos) = Self::match_positions(vertical);
-        for (i, (x, y)) in home_pos.iter().enumerate() {
-            let dot = Pos2::new(
-                rect.left() + x * rect.width(),
-                rect.top() + y * rect.height(),
-            );
-            p.circle_filled(dot, 13.0, Colors::HOME);
-            p.text(
-                dot,
-                Align2::CENTER_CENTER,
-                ((b'A' + i as u8) as char).to_string(),
-                FontId::proportional(11.0),
-                Colors::HOME_TXT,
-            );
-        }
-        for (i, (x, y)) in away_pos.iter().enumerate() {
-            let dot = Pos2::new(
-                rect.left() + x * rect.width(),
-                rect.top() + y * rect.height(),
-            );
-            p.circle_filled(dot, 13.0, Colors::AWAY);
-            p.text(
-                dot,
-                Align2::CENTER_CENTER,
-                ((b'a' + i as u8) as char).to_string(),
-                FontId::proportional(11.0),
-                Colors::AWAY_TXT,
-            );
-        }
-        let ball = Pos2::new(
-            rect.left() + 0.56 * rect.width(),
-            rect.top() + 0.45 * rect.height(),
-        );
-        p.circle_filled(ball, 5.0, Color32::WHITE);
-        p.circle_stroke(
-            ball,
-            5.0,
-            Stroke::new(1.0_f32, Color32::from_rgba_unmultiplied(0, 0, 0, 80)),
-        );
+    fn paint_pitch(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let palette = Palette {
+            grass: Color32::from_rgb(0x14, 0x35, 0x28),
+            stripe: Color32::from_rgb(0x18, 0x3C, 0x2E),
+            chalk: Color32::from_rgba_unmultiplied(233, 236, 239, 100),
+            home: Colors::HOME,
+            home_ink: Colors::HOME_TXT,
+            away: Colors::AWAY,
+            away_ink: Colors::AWAY_TXT,
+            referee: Colors::MUTED,
+            ball: Color32::WHITE,
+            time: Colors::TEXT,
+        };
+        self.match_view.paint(ui, rect, &palette);
     }
 
-    const fn match_positions(vertical: bool) -> MatchPos {
-        if vertical {
-            (
-                [
-                    (0.50, 0.95),
-                    (0.86, 0.60),
-                    (0.62, 0.72),
-                    (0.40, 0.73),
-                    (0.14, 0.56),
-                    (0.82, 0.38),
-                    (0.56, 0.52),
-                    (0.38, 0.45),
-                    (0.18, 0.34),
-                    (0.46, 0.26),
-                    (0.60, 0.30),
-                ],
-                [
-                    (0.50, 0.05),
-                    (0.84, 0.28),
-                    (0.60, 0.22),
-                    (0.40, 0.21),
-                    (0.16, 0.27),
-                    (0.70, 0.38),
-                    (0.48, 0.40),
-                    (0.30, 0.37),
-                    (0.88, 0.42),
-                    (0.52, 0.50),
-                    (0.30, 0.52),
-                ],
-            )
-        } else {
-            (
-                [
-                    (0.05, 0.50),
-                    (0.40, 0.86),
-                    (0.28, 0.62),
-                    (0.27, 0.40),
-                    (0.44, 0.14),
-                    (0.62, 0.82),
-                    (0.48, 0.56),
-                    (0.55, 0.38),
-                    (0.66, 0.18),
-                    (0.74, 0.46),
-                    (0.70, 0.60),
-                ],
-                [
-                    (0.95, 0.50),
-                    (0.72, 0.84),
-                    (0.78, 0.60),
-                    (0.79, 0.40),
-                    (0.73, 0.16),
-                    (0.62, 0.70),
-                    (0.60, 0.48),
-                    (0.63, 0.30),
-                    (0.58, 0.88),
-                    (0.50, 0.52),
-                    (0.48, 0.30),
-                ],
-            )
-        }
+    /// The broadcast minute read from the record's `mm:ss` clock.
+    fn minute(&self) -> u32 {
+        self.match_view
+            .clock()
+            .split(':')
+            .next()
+            .unwrap_or("0")
+            .parse()
+            .unwrap_or(0)
     }
 
     const fn week_pitch_positions(phase: Phase) -> [(f32, f32); 11] {
@@ -412,10 +266,18 @@ impl AndroidApp {
             FontId::proportional(11.0),
             fg,
         );
+        let minute = self.minute();
         let title = if self.scenario == Scenario::Partita {
-            "62' · secondo tempo"
+            format!(
+                "{minute}' · {}",
+                if minute >= 45 {
+                    "secondo tempo"
+                } else {
+                    "primo tempo"
+                }
+            )
         } else {
-            "Giovedì 13 · settimana 11"
+            "Giovedì 13 · settimana 11".to_string()
         };
         let sub = if self.scenario == Scenario::Partita {
             format!("Serie di prova · {} – Real Valcastello", self.club_name())
@@ -445,12 +307,12 @@ impl AndroidApp {
             .clicked()
             && self.scenario == Scenario::Partita
         {
-            self.match_playing = !self.match_playing;
+            self.match_view.toggle();
         }
         ui.painter()
             .rect_filled(pause, CornerRadius::same(10), fg.gamma_multiply(0.12));
         let ic = pause.center();
-        if self.scenario == Scenario::Partita && self.match_playing {
+        if self.scenario == Scenario::Partita && self.match_view.is_playing() {
             ui.painter().rect_filled(
                 Rect::from_center_size(ic - Vec2::new(4.0, 0.0), Vec2::new(3.0, 14.0)),
                 CornerRadius::ZERO,
@@ -484,6 +346,7 @@ impl AndroidApp {
         );
         let y = rect.center().y;
         let cx = rect.center().x;
+        let (home, away) = self.match_view.score();
         ui.painter().rect_filled(
             Rect::from_center_size(Pos2::new(cx - 110.0, y), Vec2::splat(10.0)),
             CornerRadius::same(2),
@@ -499,7 +362,7 @@ impl AndroidApp {
         ui.painter().text(
             Pos2::new(cx, y),
             Align2::CENTER_CENTER,
-            "0 – 1",
+            format!("{home} – {away}"),
             FontId::monospace(20.0),
             Colors::TEXT,
         );
@@ -645,28 +508,16 @@ impl AndroidApp {
         let p = ui.painter_at(body);
         match self.a_tab {
             ATab::Cronaca => {
-                let rows = [
-                    ("62'", "Home 9 calcia da fuori: alto.", false),
-                    ("58'", "Ammonito Valcastello 4, fallo su Home 7.", false),
-                    ("52'", "Cambio: Home 15 per Home 6.", false),
-                    ("34'", "Gol! Valcastello 9 di testa, su angolo.", true),
-                    ("21'", "Parata di Home 1 sul tiro di Valcastello 7.", false),
-                ];
+                let rows = self.match_view.commentary(8);
                 let mut y = body.min.y;
-                for (t, x, gol) in rows {
+                for row in rows {
+                    let goal = row.contains("GOAL");
                     p.text(
                         Pos2::new(body.min.x, y + 10.0),
                         Align2::LEFT_CENTER,
-                        t,
-                        FontId::monospace(12.0),
-                        Colors::MUTED,
-                    );
-                    p.text(
-                        Pos2::new(body.min.x + 44.0, y + 10.0),
-                        Align2::LEFT_CENTER,
-                        x,
+                        row,
                         FontId::proportional(13.0),
-                        if gol { Colors::ACCENT } else { Colors::TEXT },
+                        if goal { Colors::ACCENT } else { Colors::TEXT },
                     );
                     y += 34.0;
                     p.line_segment(
@@ -804,7 +655,7 @@ impl AndroidApp {
         }
     }
 
-    fn paint_a_partita(&mut self, ui: &egui::Ui, full: Rect) {
+    fn paint_a_partita(&mut self, ui: &mut egui::Ui, full: Rect) {
         let top = Rect::from_min_size(full.min, Vec2::new(full.width(), 60.0));
         let strip = Rect::from_min_size(
             Pos2::new(full.min.x, top.max.y),
@@ -825,7 +676,7 @@ impl AndroidApp {
         );
         self.top_bar_a(ui, top);
         self.score_strip(ui, strip);
-        Self::paint_pitch(ui, pitch, true);
+        self.paint_pitch(ui, pitch);
         self.quick_bar(ui, quick);
         self.drawer_a(ui, drawer);
     }
@@ -854,6 +705,7 @@ impl AndroidApp {
                 self.view_day = i as i32;
                 if i == 5 {
                     self.scenario = Scenario::Partita;
+                    self.match_view.rewind();
                 }
             }
             let sel = self.view_day == i as i32;
@@ -1045,7 +897,7 @@ impl AndroidApp {
         self.top_bar_a(ui, top);
     }
 
-    fn paint_c_partita(&mut self, ui: &egui::Ui, full: Rect) {
+    fn paint_c_partita(&mut self, ui: &mut egui::Ui, full: Rect) {
         let (team, fg) = self.team_colors();
         let top = Rect::from_min_size(full.min, Vec2::new(full.width(), 48.0));
         ui.painter().rect_filled(top, CornerRadius::ZERO, team);
@@ -1059,14 +911,15 @@ impl AndroidApp {
         ui.painter().text(
             Pos2::new(top.min.x + 54.0, top.center().y),
             Align2::LEFT_CENTER,
-            "62'",
+            format!("{}'", self.minute()),
             FontId::proportional(15.0),
             fg,
         );
+        let (home, away) = self.match_view.score();
         ui.painter().text(
             top.center(),
             Align2::CENTER_CENTER,
-            format!("{}  0 – 1  Valcastello", self.club_name()),
+            format!("{}  {home} – {away}  Valcastello", self.club_name()),
             FontId::proportional(16.0),
             fg,
         );
@@ -1078,12 +931,16 @@ impl AndroidApp {
             .interact(pause, ui.id().with("cpause"), Sense::click())
             .clicked()
         {
-            self.match_playing = !self.match_playing;
+            self.match_view.toggle();
         }
         ui.painter().text(
             pause.center(),
             Align2::CENTER_CENTER,
-            if self.match_playing { "||" } else { "▶" },
+            if self.match_view.is_playing() {
+                "||"
+            } else {
+                "▶"
+            },
             FontId::proportional(14.0),
             fg,
         );
@@ -1152,7 +1009,7 @@ impl AndroidApp {
             );
         }
 
-        Self::paint_pitch(ui, pitch, false);
+        self.paint_pitch(ui, pitch);
 
         ui.painter().rect_filled(
             right.shrink2(Vec2::new(4.0, 4.0)),
@@ -1179,27 +1036,15 @@ impl AndroidApp {
             FontId::proportional(13.0),
             Colors::TEXT,
         );
-        let rows = [
-            ("62'", "Home 9 calcia da fuori: alto.", false),
-            ("58'", "Ammonito Valcastello 4.", false),
-            ("52'", "Cambio: Home 15 per Home 6.", false),
-            ("34'", "Gol! Valcastello 9 di testa.", true),
-        ];
         let mut y = right.min.y + 42.0;
-        for (t, x, gol) in rows {
+        for row in self.match_view.commentary(6) {
+            let goal = row.contains("GOAL");
             ui.painter().text(
                 Pos2::new(right.min.x + 14.0, y),
                 Align2::LEFT_TOP,
-                t,
-                FontId::monospace(11.0),
-                Colors::MUTED,
-            );
-            ui.painter().text(
-                Pos2::new(right.min.x + 42.0, y),
-                Align2::LEFT_TOP,
-                x,
+                row,
                 FontId::proportional(11.0),
-                if gol { Colors::ACCENT } else { Colors::TEXT },
+                if goal { Colors::ACCENT } else { Colors::TEXT },
             );
             y += 34.0;
         }
@@ -1363,6 +1208,10 @@ impl AndroidApp {
 
 impl eframe::App for AndroidApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.scenario == Scenario::Partita && self.match_view.is_playing() {
+            self.match_view.advance(ctx.input(|i| i.stable_dt));
+            ctx.request_repaint_after(std::time::Duration::from_millis(100));
+        }
         let size = ctx.screen_rect().size();
         self.view = if size.x > size.y {
             ViewMode::C
@@ -1397,5 +1246,29 @@ fn android_main(android_app: winit::platform::android::activity::AndroidApp) {
         Box::new(|_cc| Ok(Box::new(AndroidApp::default()))),
     ) {
         eprintln!("ds-gui-android: {e}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The phone's clock follows the record's playhead.
+    #[test]
+    fn the_clock_comes_from_the_match_view() {
+        let mut app = AndroidApp::default();
+        let read = |a: &AndroidApp| {
+            a.match_view
+                .clock()
+                .split(':')
+                .next()
+                .unwrap_or("0")
+                .parse::<u32>()
+                .unwrap_or(0)
+        };
+        assert_eq!(app.minute(), read(&app));
+        app.match_view.advance(1_000.0);
+        assert_eq!(app.minute(), read(&app));
+        assert_ne!(app.minute(), 0);
     }
 }
