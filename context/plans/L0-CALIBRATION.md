@@ -197,9 +197,10 @@ DD?-89 chiuso senza modifica (RUN 83): `clearances` 25,67 e `corners`
 7,67 sono in banda sul 222, il grezzo riproduce 11.222 spazzate Wyscout
 (29,531579 ± 8,650923, `eventId 7 / subEventId 71`) e il 78,6% dei precedenti
 entro 5 s è dell'altra squadra. Il dump non registra pressione né opzioni di
-passaggio: non autorizza a cambiare DD-5/DD-8/DD-10. Restano aperti DD?-91
-(volume e accuratezza dei passaggi), DD?-92 (gol), DD?-93 (duelli aerei) e
-DD?-94 (rimesse), uno alla volta. RUN 84:
+passaggio: non autorizza a cambiare DD-5/DD-8/DD-10. All'epoca restavano
+aperti DD?-91 (passaggi), DD?-92 (gol), DD?-93 (duelli aerei) e DD?-94
+(rimesse): DD-93 chiuso in RUN 91 come unità Wyscout non confrontabile,
+senza toccare ADR-081. RUN 84:
 la fonte riproduce 887,676 passaggi/m e 739,168 accurati/m (tag 1801,
 83,27%); il motore conta l'esito del controllo del ricevitore (`complete`,
 intercetti sempre inaccurati), quindi l'accuratezza è almeno in parte una
