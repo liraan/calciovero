@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `c1c6092` - "docs: point the guides at the new GUI prototypes"
+**Last commit verified:** `019441a` - "docs: record the source research for L0's open metrics"
 
 ## Mandato attivo (2026-11-16)
 
@@ -18,6 +18,9 @@ Il mandato di autonomia del maintainer del 16 novembre 2026: Claude Code continu
 L2 no. Prima voce eseguita: il merge di `docs/l1-europe-and-breaks` (il piano L1 con coppe e nazionali come settimane vuote, le decisioni F-K del 16 novembre su dati reali e asset, `context/plans/GUI-DESIGN.md`, con la prima scheda del giocatore come base), con C2 verde; poi `docs/readme-tables` (il README con lo stato in tabelle, al SIM 133, il motore di main).
 
 ## Dove siamo (2026-11-27)
+
+- **La 2.5D è ricostruita sul record (commit `95022fe`).** Il nuovo crate `ds-gui-view` contiene i moduli della vecchia vista e la tabella evento → animazione di ADR-065, con 15 test; `ds-gui-desktop` e `ds-gui-android` leggono il `MatchRecord` simulato, con telecamera, riproduzione, gesti e cronaca, al posto dei 6.681 righe di dati finti di `match_data.rs`. C2 verde completa (build, clippy, test, fmt, runner 6/6, gates GREEN). **Prossimo:** panchina e ordini ancora dai prototipi, nessuna CLI per la vista; il testo narrato resta in inglese.
+- **L0, scelta del maintainer: cercare fonti nuove.** Le cinque righe fuori banda (gol, passaggi, accurati, aerei, rimesse) sono tutte indagate e chiuse come differenze di definizione o di fonte, senza tarature; 15 su 20 confrontabili in banda. La sonda delle origini aeree (`L0-CALIBRATION.md`, RUN 96) mostra che il motore non contesta mai i rinvii e che il 40,8% dei suoi duelli nasce da una pressione, categoria assente nel referto: è evidenza per una nuova DD, non autorizzazione a cambiare ADR-081 o a scegliere numeri (A5-bis). `research_notes/` raccoglie la ricerca sulle fonti correnti; il subagent ha verificato che StatsBomb Open Data + 360 dà posizioni dei giocatori al tiro e nei duelli, Metrica e SkillCorner danno il tracking, ma nessuna fonte aperta risponde da sola alle quattro domande. **Prossimo:** scaricare una partita StatsBomb 360 come campione, senza toccare il modello finché la fonte non risponde alle domande; il blocco GUI del maintainer resta fuori.
 
 - **GUI sostituita dai prototipi (commit `5c393f4`, scelta del maintainer).** `tools/ds-gui` è stato rimpiazzato da `tools/ds-gui-desktop` e `tools/ds-gui-android`: due prototipi statici, senza test, senza lettura del `MatchRecord` e senza CLI. La GUI giocabile e i suoi 33 test non tornano indietro: la 2.5D va ricostruita sui nuovi crate a partire dal record, con la tabella evento → animazione di ADR-065 (decisione U). Il vecchio `tools/ds-gui/DESIGN.md` è conservato in `context/plans/GUI-DESIGN.md`; README, piani e workflow puntano ai crate nuovi. C2 verde su clone pulito di `5c393f4`; il debito è registrato in `context/REVIEW-QUEUE.md`. **Prossimo:** prima ricostruzione della 2.5D sul record, poi L1.
 
