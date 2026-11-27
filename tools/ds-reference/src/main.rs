@@ -4,12 +4,13 @@
 //! ds-reference wyscout --events events_Italy.json --matches matches_Italy.json \
 //!     --label "Serie A 2017-18" --out L0-match/reference/serie-a-2017-18.json
 //! ds-reference compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..71
+//! ds-reference bundle --manifest L0-match/reference/bundle.json --out bundle.json
 //! ds-reference scene --seeds 43..43
 //! ```
 
 use std::process::ExitCode;
 
-use ds_reference::{Metric, Summary, engine, round3, summarise, wyscout};
+use ds_reference::{Metric, Summary, bundle, engine, round3, summarise, wyscout};
 
 const HELP: &str = "\
 ds-reference — real football beside the engine
@@ -20,6 +21,10 @@ USAGE:
         Without --out, print the JSON.
     ds-reference compare --reference <PATH> [--seeds A..B]
         Play the engine on the seeds (default 42..71) and print both sides.
+    ds-reference bundle --manifest <PATH> [--out <PATH>]
+        Flatten a bundle of real-match sources into one reference file.
+        A team aggregate may be listed but cannot be truth for a metric.
+        Without --out, print the JSON.
     ds-reference scene [--seeds A..B]
         Play the engine on the seeds (default 42..51) and print what the
         matches look like: teleports, the free ball, the keeper's mates in
@@ -49,6 +54,7 @@ fn run() -> Result<(), String> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("wyscout") => run_wyscout(&args),
+        Some("bundle") => run_bundle(&args),
         Some("compare") => run_compare(&args),
         Some("scene") => run_scene(&args),
         _ => {
@@ -100,6 +106,19 @@ fn run_wyscout(args: &[String]) -> Result<(), String> {
     let matches: Vec<wyscout::Match> = read(matches_path)?;
     let summary = summarise(&wyscout::measure(&events, &matches));
     let json = reference_json(label, &summary);
+    let text = serde_json::to_string_pretty(&json).map_err(|e| e.to_string())? + "\n";
+    if let Some(out) = value(args, "--out") {
+        return std::fs::write(out, text).map_err(|e| format!("{out}: {e}"));
+    }
+    print!("{text}");
+    Ok(())
+}
+
+fn run_bundle(args: &[String]) -> Result<(), String> {
+    let path = value(args, "--manifest").ok_or("--manifest is required")?;
+    let manifest = bundle::read_manifest(path)?;
+    let sources = bundle::load_sources(path, &manifest)?;
+    let json = bundle::build(&manifest, &sources)?;
     let text = serde_json::to_string_pretty(&json).map_err(|e| e.to_string())? + "\n";
     if let Some(out) = value(args, "--out") {
         return std::fs::write(out, text).map_err(|e| format!("{out}: {e}"));
@@ -166,6 +185,9 @@ fn run_compare(args: &[String]) -> Result<(), String> {
     for m in Metric::ALL {
         let real = &reference["metrics"][m.key()];
         let (rm, rs) = (real["mean"].as_f64(), real["sd"].as_f64());
+        let comparable = real["comparable"]
+            .as_bool()
+            .unwrap_or_else(|| m.comparable());
         let e = ours.stat(m).ok_or("missing metric")?;
         let ratio = match rm {
             Some(x) if x.abs() > 1e-9 => format!("{:.2}", round3(e.mean / x)),
@@ -179,12 +201,24 @@ fn run_compare(args: &[String]) -> Result<(), String> {
             e.mean,
             e.sd,
             ratio,
-            if m.comparable() {
-                ""
-            } else {
-                "  (not comparable)"
-            }
+            if comparable { "" } else { "  (not comparable)" }
         );
+    }
+    for m in Metric::ALL {
+        let real = &reference["metrics"][m.key()];
+        if real["comparable"]
+            .as_bool()
+            .unwrap_or_else(|| m.comparable())
+        {
+            continue;
+        }
+        let note = real["note"]
+            .as_str()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| m.note());
+        if !note.is_empty() {
+            println!("{}: {}", m.key(), note);
+        }
     }
     Ok(())
 }

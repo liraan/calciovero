@@ -12,6 +12,7 @@
 //! The raw data never enters the repository: only the averages, with
 //! their source, in `L0-match/reference/`.
 
+pub mod bundle;
 pub mod engine;
 pub mod scene;
 pub mod wyscout;

@@ -20,6 +20,20 @@ the same thing.
 the season's total goals as published (Wikipedia, *2017-18 Serie A*;
 futbol24, season statistics).
 
+## More than one source
+
+`bundle.json` is the manifest of the reference (ADR-116). It declares, for
+every metric, which real-match file supplies it. A new source enters here as
+data: no new ADR, no engine change. Each source declares provenance, licence,
+granularity and whether its rows are attributable to a player; a team total
+can be a cross-check but cannot be truth for a metric (partita vera + LUNA).
+
+    cargo run --release -p ds-reference -- bundle --manifest L0-match/reference/bundle.json --out bundle-generated.json
+    cargo run --release -p ds-reference -- compare --reference bundle-generated.json --seeds 42..71
+
+The bundle currently contains only Wyscout 2017-18, so every number below is
+unchanged. Metric keys missing from a source are an error, never a silent `-`.
+
 ## Read it beside the engine
 
     cargo run --release -p ds-reference -- compare --reference L0-match/reference/serie-a-2017-18.json --seeds 42..71

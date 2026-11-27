@@ -1,0 +1,38 @@
+{
+  "label": "L0 reference bundle (Serie A 2017-18)",
+  "sources": {
+    "wyscout-2017-18": {
+      "file": "serie-a-2017-18.json",
+      "partita_vera": true,
+      "granularity": "event",
+      "actor_attributable": true,
+      "licence": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)"
+    }
+  },
+  "truth": {
+    "goals": "wyscout-2017-18",
+    "own_goals": "wyscout-2017-18",
+    "shots": "wyscout-2017-18",
+    "shots_on_target": "wyscout-2017-18",
+    "penalties": "wyscout-2017-18",
+    "passes": "wyscout-2017-18",
+    "passes_accurate": "wyscout-2017-18",
+    "crosses": "wyscout-2017-18",
+    "aerial_duels": "wyscout-2017-18",
+    "ground_duels": "wyscout-2017-18",
+    "take_ons_won": "wyscout-2017-18",
+    "fouls": "wyscout-2017-18",
+    "yellow_cards": "wyscout-2017-18",
+    "red_cards": "wyscout-2017-18",
+    "corners": "wyscout-2017-18",
+    "throw_ins": "wyscout-2017-18",
+    "goal_kicks": "wyscout-2017-18",
+    "free_kicks": "wyscout-2017-18",
+    "offsides": "wyscout-2017-18",
+    "clearances": "wyscout-2017-18",
+    "interceptions": "wyscout-2017-18",
+    "saves": "wyscout-2017-18",
+    "stoppage_first_half_min": "wyscout-2017-18",
+    "stoppage_second_half_min": "wyscout-2017-18"
+  }
+}
