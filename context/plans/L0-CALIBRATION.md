@@ -200,7 +200,8 @@ entro 5 s è dell'altra squadra. Il dump non registra pressione né opzioni di
 passaggio: non autorizza a cambiare DD-5/DD-8/DD-10. All'epoca restavano
 aperti DD?-91 (passaggi), DD?-92 (gol), DD?-93 (duelli aerei) e DD?-94
 (rimesse): DD-93 chiuso in RUN 91 come unità Wyscout non confrontabile,
-senza toccare ADR-081. RUN 84:
+senza toccare ADR-081; DD-94 in RUN 92 con emissione completa e nessun gesto
+«fuori». RUN 84:
 la fonte riproduce 887,676 passaggi/m e 739,168 accurati/m (tag 1801,
 83,27%); il motore conta l'esito del controllo del ricevitore (`complete`,
 intercetti sempre inaccurati), quindi l'accuratezza è almeno in parte una
@@ -215,8 +216,10 @@ massimo +0,43/partita; il grezzo dimezza le righe per giocatore e la frazione
 «contesa» dipende dalla finestra di matching (19% a 1 secondo, 85% entro 1 s).
 RUN 87: ogni uscita ha il suo `ThrowIn`, le 16.235 rimesse grezze danno
 42,724 ± 8,921 con 0 duplicati e il 99,6% segue l'`Interruption`; il dump non
-registra l'azione che ha mandato la palla fuori. Nessun numero o soglia
-scelto dalla tabella (A5-bis).
+registra l'azione che ha mandato la palla fuori. Chiusura: DD-91 e DD-92
+definizioni diverse (tag dell'accuratezza, placement e portata del portiere),
+DD-93 unità Wyscout non confrontabile, DD-94 emissione completa senza gesto
+«fuori»: nessun numero, soglia, finestra o golden toccato (A5-bis).
 
 Golden L0 base/istruito/coppa rigenerati (seed coppa 62 -> 78, hash
 `78:24f14890…`); golden L1 `SMALL_GOLDEN` `0b00a6ad…`. Fixtures spostati:
