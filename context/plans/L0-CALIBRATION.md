@@ -323,6 +323,37 @@ con Wyscout (30,8%) e StatsBomb (32,8%) resta, coerentemente con i parametri
 di `save.json` dichiarati arbitrari e da tarare a L3, mai tarati. Golden L0 e
 L1 rigenerati, semi spostati (coppa 78 → 47, header 48 → 52, livello 49 → 47).
 
+## RUN 100 — un campione 360: cosa dice e cosa non dice (2026-11-27, sola lettura)
+
+Fuori dal repository, da `statsbomb/open-data/data/three-sixty/3773377.json`
+(La Liga 2020/21, Barcellona–Valencia, la partita con più tiri delle 35 del
+RUN 97): 3.512 frame, tutti con UUID presente nei 3.717 eventi già scaricati.
+Nessun file tracciato del motore toccato.
+
+Al tiro: 35/35 frame, 34 con un solo portiere nominato, 25 con quota
+z dell'endpoint, 24 con entrambi. Distanza x–y portiere → endpoint (coordinate
+StatsBomb 120×80 yard): mediana 1,79 yard nei 8 `Saved`, 4,27 nei 4 `Goal`,
+6,45 nei 12 `Off T`, 16,07 nei 9 `Blocked`. Con LUNA il dito è la posizione
+del portiere nel frame dell'evento e la luna è lo stesso uomo che ha letto il
+volo e scelto COME parare: il frame registra dove era, non la scelta, la quota
+del corpo o l'istante dell'attraversamento. La fonte dà quindi una geometria
+vera al tiro, ma non la portata in aria: non chiude DD-92 e non autorizza a
+tarare `save.json` (A5-bis). Un solo campione, 4 gol: nessuna banda nuova.
+
+Ai duelli aerei: 19 eventi `Duel` di tipo `Aerial` nella partita, 18 con frame.
+I frame dei duelli hanno le coordinate ruotate di 180° rispetto a `location`
+(`(x, y) → (120−x, 80−y)`); allineati sull'attore, tutti e 18 hanno almeno 2
+giocatori entro 2 yard dal punto del duello (mediana 2, massimo 3). Con LUNA il
+dito sono i corpi presenti e l'etichetta dell'evento, la luna è chi sceglie
+COME contendere: il frame conferma la coppia del duello già etichettato, non
+quanti voli alti diventano duelli. La causa del volume (38,14 reali contro
+8,10 del motore) resta come nel RUN 96: DD-93 resta chiuso, nessun raggio o
+finestra nuova.
+
+Esito: nessun bump, golden, seme, parametro o test toccato. 15 su 20
+confrontabili in banda, invariato; `goals` e `aerial_duels` restano fuori
+banda con le cause archiviate.
+
 ## La misura del 221 (2026-11-27, opencode)
 
 Stesso comando e bande del 220. Un solo bump: DD-86 toglie il veto
