@@ -2,7 +2,7 @@
 
 **Cos'è.** Il segnalibro: dove siamo, cosa viene dopo, cosa resta aperto. Non è un diario: la storia è in `git log` (anche quella del vecchio `process/SESSION-STATE.md`). Le regole per aggiornarlo sono in `RULES.md` §E.
 
-**Last commit verified:** `ca56e1a` - "docs(bookmark): point the bookmark at the 360 source sample"
+**Last commit verified:** `58bf777` - "merge: unite the reference bundle with the SIM 223 line"
 
 ## Mandato attivo (2026-11-16)
 
