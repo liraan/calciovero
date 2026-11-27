@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Anteprima Lavagna: il gioco</title>
+<script src="./_runtime/react.js"></script>
+<script src="./_runtime/react-dom.js"></script>
+<script src="./_runtime/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #0C2A22; color: #F6EBD3; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden"><header style="height: 64px; display: flex; align-items: center; gap: 28px; padding: 0 24px; border-bottom: 1px solid rgba(246,235,211,0.14); flex-shrink: 0">
+<div style="display: flex; align-items: center; gap: 12px">
+<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><rect x="1.5" y="1.5" width="33" height="33" rx="9" fill="none" stroke="#D9A24A" stroke-width="2.5"/><line x1="18" y1="4" x2="18" y2="32" stroke="#D9A24A" stroke-width="2"/><circle cx="18" cy="18" r="6.5" fill="none" stroke="#D9A24A" stroke-width="2"/><circle cx="18" cy="18" r="2" fill="#F6EBD3"/></svg>
+<div style="display: flex; flex-direction: column; line-height: 1"><span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 0.06em; color: #F6EBD3">CALCIO VERO</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #C2B79D; margin-top: 4px">deep simulator</span></div>
+</div>
+<nav aria-label="Sezioni" style="display: flex; gap: 4px">
+<sc-for list="{{tabs}}" as="tb" hint-placeholder-count="6"><button type="button" onClick="{{tb.go}}" style="box-sizing: border-box; {{tb.style}}">{{tb.label}}</button></sc-for>
+</nav>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 14px; font-size: 13px; color: #C2B79D"><span>Settimana 12 · giovedì</span><button type="button" onClick="{{goPartita}}" style="height: 44px; padding: 0 16px; border-radius: 10px; border: none; background: #D9A24A; color: #1E1608; font: 700 14px 'Inter', system-ui, sans-serif; cursor: pointer; height: 40px">Avanti al giorno della partita</button></div>
+</header><div style="flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 20px 24px; box-sizing: border-box"><sc-if value="{{is.scrivania}}" hint-placeholder-val="{{true}}">
+<div style="flex: 1; display: grid; grid-template-columns: 360px minmax(0, 1fr) 340px; gap: 20px; min-height: 0">
+<section aria-label="Posta" style="display: flex; flex-direction: column; gap: 8px; min-height: 0">
+<h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 600; color: #F6EBD3">Posta</h2>
+<sc-for list="{{inbox}}" as="m" hint-placeholder-count="5">
+<button type="button" onClick="{{m.pick}}" style="box-sizing: border-box; {{m.style}}"><span style="display: flex; justify-content: space-between; font-size: 12px; color: #C2B79D"><span>{{m.from}}</span><span>{{m.when}}</span></span><span style="font-size: 14px; font-weight: 600; margin-top: 4px; display: block">{{m.subj}}</span></button>
+</sc-for>
+</section>
+<article aria-label="Messaggio" style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 12px; color: #C2B79D">{{msg.from}} · {{msg.when}}</div>
+<h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 700; line-height: 1.2">{{msg.subj}}</h1>
+<p style="margin: 0; font-size: 15px; line-height: 1.6">{{msg.body}}</p>
+<div style="display: flex; gap: 10px; margin-top: auto">
+<button type="button" onClick="{{goOsservatori}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(246,235,211,0.14); background: transparent; color: #F6EBD3; font: 500 13px 'Inter', system-ui, sans-serif; cursor: pointer">Apri gli osservatori</button>
+<button type="button" onClick="{{goRosa}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(246,235,211,0.14); background: transparent; color: #F6EBD3; font: 500 13px 'Inter', system-ui, sans-serif; cursor: pointer">Vai alla rosa</button>
+</div>
+</article>
+<aside style="display: flex; flex-direction: column; gap: 16px">
+<div style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px">
+<div style="font-size: 12px; color: #C2B79D">Prossima partita · sabato 15:00</div>
+<div style="font-family: 'Fraunces', Georgia, serif; font-size: 22px; font-weight: 700; margin: 6px 0">Borgoverde – Real Valcastello</div>
+<div style="font-size: 13px; color: #C2B79D; line-height: 1.5">Loro: blocco basso, ampiezza stretta. Terzi in classifica.</div>
+<button type="button" onClick="{{goTattica}}" style="height: 44px; padding: 0 16px; border-radius: 10px; border: none; background: #D9A24A; color: #1E1608; font: 700 14px 'Inter', system-ui, sans-serif; cursor: pointer; width: 100%; margin-top: 12px">Prepara la tattica</button>
+</div>
+<div style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 600; color: #F6EBD3">Classifica</h2><button type="button" onClick="{{goMondo}}" style="border: none; background: none; color: #D9A24A; font: 500 13px 'Inter', system-ui, sans-serif; cursor: pointer">Tutta</button></div>
+<sc-for list="{{top6}}" as="r" hint-placeholder-count="6">
+<div style="box-sizing: border-box; {{r.style}}"><span style="width: 22px; color: #C2B79D">{{r.pos}}</span><span style="flex: 1">{{r.team}}</span><span style="font-weight: 700">{{r.pts}}</span></div>
+</sc-for>
+</div>
+<div style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px">
+<div style="font-size: 12px; color: #C2B79D">L'ultima partita, perché</div>
+<div style="font-size: 13px; line-height: 1.5; margin-top: 6px">2-2 a Lagonero. I due gol subiti nascono da palla persa in uscita.</div>
+<button type="button" onClick="{{goPartita}}" style="border: none; background: none; padding: 8px 0 0; color: #D9A24A; font: 600 13px 'Inter', system-ui, sans-serif; cursor: pointer">Rivedi le azioni</button>
+</div>
+</aside>
+</div>
+</sc-if><sc-if value="{{is.rosa}}" hint-placeholder-val="{{false}}">
+<div style="flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; min-height: 0">
+<section aria-label="La rosa" style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+<div style="display: flex; align-items: baseline; gap: 14px"><h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 700">La rosa</h1><span style="font-size: 12px; color: #C2B79D">Le caratteristiche sono stime: una fascia, più stretta quando gli osservatori sono più sicuri</span></div>
+<table style="width: 100%; border-collapse: collapse; font-size: 13px">
+<thead><tr style="color: #C2B79D; text-align: left; font-size: 11px; letter-spacing: 0.08em"><th scope="col" style="padding: 6px">#</th><th scope="col" style="padding: 6px">GIOCATORE</th><th scope="col" style="padding: 6px">RUOLO</th><th scope="col" style="padding: 6px">ETÀ</th><th scope="col" style="padding: 6px">ENERGIA</th><th scope="col" style="padding: 6px; width: 96px">VELOCITÀ</th><th scope="col" style="padding: 6px; width: 96px">PASSAGGIO</th><th scope="col" style="padding: 6px; width: 96px">CONTRASTO</th><th scope="col" style="padding: 6px; width: 96px">TESTA</th></tr></thead>
+<tbody>
+<sc-for list="{{squad}}" as="p" hint-placeholder-count="16">
+<tr style="box-sizing: border-box; {{p.style}}">
+<td style="padding: 0 6px; font-weight: 700; color: #D9A24A">{{p.l}}</td>
+<td style="padding: 0 6px"><button type="button" onClick="{{p.pick}}" style="border: none; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left">{{p.n}}</button></td>
+<td style="padding: 0 6px; color: #C2B79D">{{p.r}}</td>
+<td style="padding: 0 6px">{{p.age}}</td>
+<td style="padding: 0 6px"><span style="display: block; height: 6px; border-radius: 3px; background: rgba(246,235,211,0.14); overflow: hidden"><span style="display: block; height: 100%; width: {{p.en}}; background: #F6EBD3; opacity: 0.7"></span></span></td>
+<sc-for list="{{p.b}}" as="b" hint-placeholder-count="4"><td style="padding: 0 6px"><span style="position: relative; display: block; height: 8px; border-radius: 4px; background: rgba(246,235,211,0.14)"><span style="position: absolute; left: {{b.l}}; width: {{b.w}}; top: 0; bottom: 0; border-radius: 4px; background: #F6EBD3; opacity: 0.8"></span></span></td></sc-for>
+</tr>
+</sc-for>
+</tbody></table>
+</section>
+<aside aria-label="Scheda del giocatore" style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-size: 12px; color: #C2B79D">{{pl.l}} · {{pl.r}}</div>
+<h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 28px; font-weight: 700">{{pl.n}}</h2>
+<div style="font-size: 13px; color: #C2B79D">{{pl.age}} anni · {{pl.h}} cm · {{pl.w}} kg · misurati, non stimati</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: #174538; border-radius: 10px; padding: 10px 12px"><div style="font-size: 12px; color: #C2B79D">Energia</div><div style="font-size: 20px; font-weight: 700">{{pl.en}}</div></div>
+<div style="background: #174538; border-radius: 10px; padding: 10px 12px"><div style="font-size: 12px; color: #C2B79D">Umore</div><div style="font-size: 20px; font-weight: 700">{{pl.mood}}</div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{pl.bands}}" as="b" hint-placeholder-count="4">
+<div><div style="display: flex; justify-content: space-between; font-size: 12px; color: #C2B79D; margin-bottom: 4px"><span>{{b.name}}</span><span>{{b.range}}</span></div><span style="position: relative; display: block; height: 8px; border-radius: 4px; background: rgba(246,235,211,0.14)"><span style="position: absolute; left: {{b.l}}; width: {{b.w}}; top: 0; bottom: 0; border-radius: 4px; background: #F6EBD3; opacity: 0.8"></span></span></div>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #C2B79D">Sicurezza degli osservatori: {{pl.conf}}. Il valore vero lo conosce solo il motore.</div>
+<div style="display: flex; gap: 10px; margin-top: auto">
+<button type="button" onClick="{{goOsservatori}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(246,235,211,0.14); background: transparent; color: #F6EBD3; font: 500 13px 'Inter', system-ui, sans-serif; cursor: pointer; flex: 1">Manda un osservatore</button>
+<button type="button" onClick="{{goTattica}}" style="height: 44px; padding: 0 16px; border-radius: 10px; border: none; background: #D9A24A; color: #1E1608; font: 700 14px 'Inter', system-ui, sans-serif; cursor: pointer; flex: 1">Negli undici</button>
+</div>
+</aside>
+</div>
+</sc-if><sc-if value="{{is.tattica}}" hint-placeholder-val="{{false}}">
+<div style="flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; min-height: 0">
+<section aria-label="La formazione" style="display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
+<div style="display: flex; align-items: baseline; gap: 14px"><h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 700">Tattica · 4-4-2</h1><span style="font-size: 12px; color: #C2B79D">Contro Real Valcastello, sabato</span></div>
+<div style="padding: 8px; border-radius: 12px; background: #5A3A1E; box-shadow: inset 0 0 0 2px #7A5230"><div role="img" aria-label="La formazione sul campo" style="position: relative; width: 720px; height: 466px; background: #1D4A3C; overflow: hidden; flex-shrink: 0">
+<div style="position: absolute; left: 0%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 10%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 20%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 30%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 40%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 50%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 60%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 70%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 80%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 90%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 3%; top: 4%; width: 94%; height: 92%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div>
+<div style="position: absolute; left: 50%; top: 4%; width: 2px; height: 92%; background: rgba(246,235,211,0.85)"></div>
+<div style="position: absolute; left: calc(50% - 63px); top: calc(50% - 63px); width: 126px; height: 126px; border: 2px solid rgba(246,235,211,0.85); border-radius: 50%; box-sizing: border-box"></div>
+<div style="position: absolute; left: 3%; top: 24.3%; width: 15.1%; height: 51.4%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div><div style="position: absolute; left: 81.9%; top: 24.3%; width: 15.1%; height: 51.4%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div><div style="position: absolute; left: 3%; top: 36.5%; width: 5%; height: 27%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div><div style="position: absolute; left: 92%; top: 36.5%; width: 5%; height: 27%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div>
+<sc-for list="{{tac}}" as="p" hint-placeholder-count="11">
+<div style="position: absolute; left: {{p.x}}; top: {{p.y}}; width: 26px; height: 26px; margin-left: -13px; margin-top: -13px; border-radius: 50%; background: {{p.bg}}; color: {{p.fg}}; font: 700 13px/26px 'Inter', system-ui, sans-serif; text-align: center; transition: left 0.4s, top 0.4s">{{p.l}}</div>
+</sc-for>
+
+</div></div>
+<div style="font-size: 13px; color: #C2B79D; max-width: 720px; line-height: 1.5">{{tacNote}}</div>
+</section>
+<aside style="display: flex; flex-direction: column; gap: 16px">
+<div style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 600; color: #F6EBD3">L'intenzione</h2>
+<span style="font-size: 12px; color: #C2B79D">Quanto in alto difendiamo</span>
+<div style="display: flex; gap: 6px"><button type="button" onClick="{{setBlock.alto}}" style="box-sizing: border-box; {{stBlock.alto}}">Alto</button><button type="button" onClick="{{setBlock.medio}}" style="box-sizing: border-box; {{stBlock.medio}}">Medio</button><button type="button" onClick="{{setBlock.basso}}" style="box-sizing: border-box; {{stBlock.basso}}">Basso</button></div>
+<span style="font-size: 12px; color: #C2B79D">Quanto larghi giochiamo</span>
+<div style="display: flex; gap: 6px"><button type="button" onClick="{{setWidth.stretta}}" style="box-sizing: border-box; {{stWidth.stretta}}">Stretta</button><button type="button" onClick="{{setWidth.normale}}" style="box-sizing: border-box; {{stWidth.normale}}">Normale</button><button type="button" onClick="{{setWidth.larga}}" style="box-sizing: border-box; {{stWidth.larga}}">Larga</button></div>
+</div>
+<div style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 600; color: #F6EBD3">Istruzioni</h2>
+<div style="font-size: 13px; color: #C2B79D; line-height: 1.5">Pressing, ritmo, marcature: ogni giocatore le pensa con la sua testa (ADR-052). Arrivano con L1.</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="font-size: 12px; border: 1px dashed rgba(246,235,211,0.14); border-radius: 99px; padding: 4px 10px; color: #C2B79D">Pressing alto</span><span style="font-size: 12px; border: 1px dashed rgba(246,235,211,0.14); border-radius: 99px; padding: 4px 10px; color: #C2B79D">Ritmo</span><span style="font-size: 12px; border: 1px dashed rgba(246,235,211,0.14); border-radius: 99px; padding: 4px 10px; color: #C2B79D">Marcatura a uomo</span></div>
+</div>
+<button type="button" onClick="{{goPartita}}" style="height: 44px; padding: 0 16px; border-radius: 10px; border: none; background: #D9A24A; color: #1E1608; font: 700 14px 'Inter', system-ui, sans-serif; cursor: pointer">Gioca la partita</button>
+</aside>
+</div>
+</sc-if><sc-if value="{{is.partita}}" hint-placeholder-val="{{false}}">
+<div style="flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 22px; min-height: 0">
+<section style="display: flex; flex-direction: column; gap: 12px; align-items: center">
+<div style="display: flex; align-items: center; gap: 22px">
+<span style="display: flex; align-items: center; gap: 8px; font-family: 'Fraunces', Georgia, serif; font-size: 22px; font-weight: 700"><span style="width: 12px; height: 12px; border-radius: 50%; background: #E8875F"></span>Borgoverde</span>
+<span style="font-family: 'Fraunces', Georgia, serif; font-size: 40px; font-weight: 700">2 – 2</span>
+<span style="display: flex; align-items: center; gap: 8px; font-family: 'Fraunces', Georgia, serif; font-size: 22px; font-weight: 700">Real Valcastello<span style="width: 12px; height: 12px; border-radius: 50%; background: #7FA6F0"></span></span>
+<span style="font-size: 16px; font-weight: 700; color: #D9A24A; font-variant-numeric: tabular-nums">{{clock}}</span>
+</div>
+<div style="padding: 8px; border-radius: 12px; background: #5A3A1E; box-shadow: inset 0 0 0 2px #7A5230"><div role="img" aria-label="La partita, minuto 62" style="position: relative; width: 700px; height: 453px; background: #1D4A3C; overflow: hidden; flex-shrink: 0">
+<div style="position: absolute; left: 0%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 10%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 20%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 30%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 40%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 50%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 60%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 70%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 80%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 90%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 3%; top: 4%; width: 94%; height: 92%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div>
+<div style="position: absolute; left: 50%; top: 4%; width: 2px; height: 92%; background: rgba(246,235,211,0.85)"></div>
+<div style="position: absolute; left: calc(50% - 61px); top: calc(50% - 61px); width: 122px; height: 122px; border: 2px solid rgba(246,235,211,0.85); border-radius: 50%; box-sizing: border-box"></div>
+<div style="position: absolute; left: 3%; top: 24.3%; width: 15.1%; height: 51.4%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div><div style="position: absolute; left: 81.9%; top: 24.3%; width: 15.1%; height: 51.4%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div><div style="position: absolute; left: 3%; top: 36.5%; width: 5%; height: 27%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div><div style="position: absolute; left: 92%; top: 36.5%; width: 5%; height: 27%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div>
+<sc-for list="{{match}}" as="p" hint-placeholder-count="11">
+<div style="position: absolute; left: {{p.x}}; top: {{p.y}}; width: 22px; height: 22px; margin-left: -11px; margin-top: -11px; border-radius: 50%; background: {{p.bg}}; color: {{p.fg}}; font: 700 11px/22px 'Inter', system-ui, sans-serif; text-align: center; transition: left 0.4s, top 0.4s">{{p.l}}</div>
+</sc-for>
+<div style="position: absolute; left: {{ballX}}; top: {{ballY}}; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 3px rgba(0,0,0,0.2)"></div>
+</div></div>
+<div style="display: flex; align-items: center; gap: 10px; width: 716px">
+<button type="button" onClick="{{togglePlay}}" aria-label="Avvia o metti in pausa" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(246,235,211,0.14); background: transparent; color: #F6EBD3; font: 500 13px 'Inter', system-ui, sans-serif; cursor: pointer; width: 64px">{{playLabel}}</button>
+<div style="flex: 1; position: relative; height: 22px">
+<div style="position: absolute; left: 0; right: 0; top: 10px; height: 3px; border-radius: 2px; background: rgba(246,235,211,0.14)"></div>
+<div style="position: absolute; left: 0; width: {{progress}}; top: 10px; height: 3px; border-radius: 2px; background: #D9A24A"></div>
+<div style="position: absolute; left: 5.3%; top: 4px; width: 8px; height: 14px; margin-left: -4px; border-radius: 2px; background: #7FA6F0"></div>
+<div style="position: absolute; left: 30.5%; top: 4px; width: 8px; height: 14px; margin-left: -4px; border-radius: 2px; background: #E8875F"></div>
+<div style="position: absolute; left: 55.8%; top: 4px; width: 8px; height: 14px; margin-left: -4px; border-radius: 2px; background: #E8875F"></div>
+<div style="position: absolute; left: 65.3%; top: 4px; width: 8px; height: 14px; margin-left: -4px; border-radius: 2px; background: #7FA6F0"></div>
+</div>
+<button type="button" onClick="{{goTattica}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(246,235,211,0.14); background: transparent; color: #F6EBD3; font: 500 13px 'Inter', system-ui, sans-serif; cursor: pointer">Bordo campo</button>
+</div>
+</section>
+<aside style="display: flex; flex-direction: column; gap: 14px; min-height: 0">
+<div style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px; border-color: #D9A24A">
+<div style="font-size: 10px; letter-spacing: 0.2em; color: #D9A24A; font-weight: 600">PERCHÉ ABBIAMO SUBITO</div>
+<div style="font-family: 'Fraunces', Georgia, serif; font-size: 18px; font-weight: 600; margin: 6px 0">62' · tiro forte da 31 m</div>
+<div style="font-size: 13px; line-height: 1.5">L'azione nasce 2 s prima: Sala spazza, loro la riconquistano e tirano senza un passaggio in mezzo.</div>
+<button type="button" onClick="{{pickSala}}" style="border: none; background: none; padding: 8px 0 0; color: #D9A24A; font: 600 13px 'Inter', system-ui, sans-serif; cursor: pointer">Apri la scheda di Sala</button>
+</div>
+<h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 600; color: #F6EBD3">Cronaca</h2>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<sc-for list="{{comm}}" as="c" hint-placeholder-count="8">
+<li style="display: grid; grid-template-columns: 44px 1fr; gap: 8px"><span style="color: #C2B79D; font-variant-numeric: tabular-nums">{{c.t}}</span><span style="box-sizing: border-box; {{c.style}}">{{c.x}}</span></li>
+</sc-for>
+</ol>
+</aside>
+</div>
+</sc-if><sc-if value="{{is.osservatori}}" hint-placeholder-val="{{false}}">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 14px; min-height: 0">
+<div style="display: flex; align-items: baseline; gap: 14px"><h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 700">Osservatori</h1><span style="font-size: 12px; color: #C2B79D">Ogni rapporto dice chi l'ha scritto, quante volte ha visto il giocatore e cosa tende a sopravvalutare</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px">
+<sc-for list="{{targets}}" as="g" hint-placeholder-count="3">
+<article style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; color: #C2B79D">{{g.club}} · {{g.role}} · {{g.age}} anni</div>
+<h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 22px; font-weight: 700">{{g.n}}</h2>
+<sc-for list="{{g.bands}}" as="b" hint-placeholder-count="4">
+<div><div style="display: flex; justify-content: space-between; font-size: 12px; color: #C2B79D; margin-bottom: 4px"><span>{{b.name}}</span><span>{{b.range}}</span></div><span style="position: relative; display: block; height: 8px; border-radius: 4px; background: rgba(246,235,211,0.14)"><span style="position: absolute; left: {{b.l}}; width: {{b.w}}; top: 0; bottom: 0; border-radius: 4px; background: #F6EBD3; opacity: 0.8"></span></span></div>
+</sc-for>
+<div style="font-size: 12px; color: #C2B79D; line-height: 1.5; border-top: 1px solid rgba(246,235,211,0.14); padding-top: 8px">Visto da {{g.scout}} in {{g.seen}}. Bias dichiarato: {{g.bias}}.</div>
+<button type="button" onClick="{{g.follow}}" style="box-sizing: border-box; {{g.btnStyle}}">{{g.btnLabel}}</button>
+</article>
+</sc-for>
+</div>
+</div>
+</sc-if><sc-if value="{{is.mondo}}" hint-placeholder-val="{{false}}">
+<div style="flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; min-height: 0">
+<section style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px">
+<h1 style="margin: 0 0 10px; font-family: 'Fraunces', Georgia, serif; font-size: 24px; font-weight: 700">Serie Pianura · classifica</h1>
+<table style="width: 100%; border-collapse: collapse; font-size: 14px">
+<thead><tr style="color: #C2B79D; text-align: left; font-size: 11px; letter-spacing: 0.08em"><th scope="col" style="padding: 6px">POS</th><th scope="col" style="padding: 6px">SQUADRA</th><th scope="col" style="padding: 6px">G</th><th scope="col" style="padding: 6px">DR</th><th scope="col" style="padding: 6px">PUNTI</th></tr></thead>
+<tbody><sc-for list="{{table}}" as="r" hint-placeholder-count="10"><tr style="box-sizing: border-box; {{r.style}}"><td style="padding: 0 6px; color: #C2B79D">{{r.pos}}</td><td style="padding: 0 6px">{{r.team}}</td><td style="padding: 0 6px">{{r.g}}</td><td style="padding: 0 6px">{{r.dr}}</td><td style="padding: 0 6px; font-weight: 700">{{r.pts}}</td></tr></sc-for></tbody>
+</table>
+</section>
+<aside style="display: flex; flex-direction: column; gap: 16px">
+<div style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px"><h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 600; color: #F6EBD3">Giornata 12</h2>
+<sc-for list="{{fixtures}}" as="f" hint-placeholder-count="5"><div style="box-sizing: border-box; {{f.style}}"><span style="color: #C2B79D; width: 80px">{{f.when}}</span><span>{{f.h}} – {{f.a}}</span></div></sc-for>
+</div>
+<div style="background: #123A2F; border: 1px solid rgba(246,235,211,0.14); border-radius: 10px; padding: 14px 16px"><h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 600; color: #F6EBD3">Domenica Sport</h2><div style="font-size: 12px; color: #C2B79D; margin-bottom: 6px">La trasmissione della settimana</div>
+<sc-for list="{{news}}" as="n" hint-placeholder-count="3"><div style="font-size: 13px; line-height: 1.5; padding: 6px 0; border-top: 1px solid rgba(246,235,211,0.14)">{{n.x}}</div></sc-for>
+</div>
+</aside>
+</div>
+</sc-if><div style="font-size: 11px; color: #C2B79D; margin-top: auto; padding-top: 10px">Anteprima illustrativa: club, nomi e classifica sono inventati; arriveranno con L1 e L2.</div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state={tab:'scrivania',sel:'G',block:'medio',width:'normale',msg:0,playing:false,t:3734,follow:{}}; }
+  componentWillUnmount(){ if(this.timer) clearInterval(this.timer); }
+  go(tab){ return () => this.setState({tab}); }
+  renderVals() {
+    const D={"tabsDef": [{"id": "scrivania", "label": "Scrivania", "short": "S"}, {"id": "rosa", "label": "Rosa", "short": "R"}, {"id": "tattica", "label": "Tattica", "short": "T"}, {"id": "partita", "label": "Partita", "short": "P"}, {"id": "osservatori", "label": "Osservatori", "short": "O"}, {"id": "mondo", "label": "Mondo", "short": "M"}], "inbox": [{"from": "Osservatore Bellini", "subj": "Rapporto: Elia Fontana è pronto?", "body": "Visto in 4 allenamenti e 2 partite. Fascia ampia sul passaggio: lo vedo bene, ma non abbastanza da esserne sicuro. Consiglio un'altra settimana.", "when": "oggi"}, {"from": "Prossima partita", "subj": "Sabato: Borgoverde – Real Valcastello", "body": "In casa, ore 15:00. Loro difendono bassi e stretti: le tue ultime tre partite contro un blocco basso sono finite 0-0, 1-1, 2-1.", "when": "oggi"}, {"from": "Staff medico", "subj": "Federico Sala è stanco", "body": "Ha corso 11,4 km mercoledì. Se gioca sabato, l'accelerazione nel secondo tempo calerà: è la sua fatica, non un dado.", "when": "ieri"}, {"from": "Il presidente", "subj": "Gli obiettivi della stagione", "body": "Salvezza tranquilla e almeno due giovani in prima squadra. Non chiede altro, per ora.", "when": "lun"}, {"from": "Domenica Sport", "subj": "La trasmissione della settimana parla di noi", "body": "«Il Borgoverde subisce gol da palla persa: tre su cinque nascono da una spazzata ripresa.» Il perché è nei dati della partita.", "when": "dom"}], "squad": [{"l": "A", "n": "Marco Riva", "r": "Portiere", "age": 29, "h": 188, "w": 84, "en": "96%", "mood": "sereno", "conf": "alta", "b": [{"l": "30%", "w": "15%", "name": "Velocità", "range": "30–45"}, {"l": "40%", "w": "18%", "name": "Passaggio", "range": "40–58"}, {"l": "20%", "w": "10%", "name": "Contrasto", "range": "20–30"}, {"l": "55%", "w": "15%", "name": "Colpo di testa", "range": "55–70"}]}, {"l": "B", "n": "Luca Ferrandi", "r": "Terzino destro", "age": 24, "h": 175, "w": 72, "en": "78%", "mood": "carico", "conf": "media", "b": [{"l": "70%", "w": "12%", "name": "Velocità", "range": "70–82"}, {"l": "55%", "w": "13%", "name": "Passaggio", "range": "55–68"}, {"l": "60%", "w": "12%", "name": "Contrasto", "range": "60–72"}, {"l": "35%", "w": "15%", "name": "Colpo di testa", "range": "35–50"}]}, {"l": "C", "n": "Davide Orsini", "r": "Difensore centrale", "age": 27, "h": 190, "w": 85, "en": "81%", "mood": "sereno", "conf": "alta", "b": [{"l": "45%", "w": "13%", "name": "Velocità", "range": "45–58"}, {"l": "48%", "w": "12%", "name": "Passaggio", "range": "48–60"}, {"l": "72%", "w": "12%", "name": "Contrasto", "range": "72–84"}, {"l": "78%", "w": "12%", "name": "Colpo di testa", "range": "78–90"}]}, {"l": "D", "n": "Paolo Neri", "r": "Difensore centrale", "age": 31, "h": 186, "w": 82, "en": "74%", "mood": "teso", "conf": "alta", "b": [{"l": "38%", "w": "14%", "name": "Velocità", "range": "38–52"}, {"l": "55%", "w": "11%", "name": "Passaggio", "range": "55–66"}, {"l": "70%", "w": "10%", "name": "Contrasto", "range": "70–80"}, {"l": "70%", "w": "14%", "name": "Colpo di testa", "range": "70–84"}]}, {"l": "E", "n": "Simone Galli", "r": "Terzino sinistro", "age": 22, "h": 172, "w": 69, "en": "83%", "mood": "carico", "conf": "bassa", "b": [{"l": "74%", "w": "14%", "name": "Velocità", "range": "74–88"}, {"l": "50%", "w": "16%", "name": "Passaggio", "range": "50–66"}, {"l": "52%", "w": "14%", "name": "Contrasto", "range": "52–66"}, {"l": "30%", "w": "16%", "name": "Colpo di testa", "range": "30–46"}]}, {"l": "F", "n": "Andrea Monti", "r": "Esterno destro", "age": 25, "h": 180, "w": 73, "en": "72%", "mood": "sereno", "conf": "media", "b": [{"l": "76%", "w": "10%", "name": "Velocità", "range": "76–86"}, {"l": "62%", "w": "12%", "name": "Passaggio", "range": "62–74"}, {"l": "40%", "w": "12%", "name": "Contrasto", "range": "40–52"}, {"l": "40%", "w": "14%", "name": "Colpo di testa", "range": "40–54"}]}, {"l": "G", "n": "Federico Sala", "r": "Mediano", "age": 28, "h": 184, "w": 77, "en": "64%", "mood": "stanco", "conf": "alta", "b": [{"l": "50%", "w": "12%", "name": "Velocità", "range": "50–62"}, {"l": "66%", "w": "12%", "name": "Passaggio", "range": "66–78"}, {"l": "70%", "w": "12%", "name": "Contrasto", "range": "70–82"}, {"l": "60%", "w": "12%", "name": "Colpo di testa", "range": "60–72"}]}, {"l": "H", "n": "Matteo Conti", "r": "Mezzala", "age": 26, "h": 178, "w": 76, "en": "70%", "mood": "sereno", "conf": "media", "b": [{"l": "56%", "w": "12%", "name": "Velocità", "range": "56–68"}, {"l": "72%", "w": "12%", "name": "Passaggio", "range": "72–84"}, {"l": "54%", "w": "12%", "name": "Contrasto", "range": "54–66"}, {"l": "44%", "w": "14%", "name": "Colpo di testa", "range": "44–58"}]}, {"l": "I", "n": "Giorgio Valli", "r": "Esterno sinistro", "age": 21, "h": 171, "w": 68, "en": "75%", "mood": "carico", "conf": "bassa", "b": [{"l": "80%", "w": "12%", "name": "Velocità", "range": "80–92"}, {"l": "58%", "w": "16%", "name": "Passaggio", "range": "58–74"}, {"l": "36%", "w": "14%", "name": "Contrasto", "range": "36–50"}, {"l": "28%", "w": "14%", "name": "Colpo di testa", "range": "28–42"}]}, {"l": "J", "n": "Stefano Bruni", "r": "Centravanti", "age": 30, "h": 187, "w": 80, "en": "69%", "mood": "sereno", "conf": "alta", "b": [{"l": "54%", "w": "12%", "name": "Velocità", "range": "54–66"}, {"l": "50%", "w": "12%", "name": "Passaggio", "range": "50–62"}, {"l": "40%", "w": "12%", "name": "Contrasto", "range": "40–52"}, {"l": "80%", "w": "12%", "name": "Colpo di testa", "range": "80–92"}]}, {"l": "K", "n": "Nicola Testa", "r": "Seconda punta", "age": 23, "h": 178, "w": 75, "en": "71%", "mood": "carico", "conf": "media", "b": [{"l": "68%", "w": "12%", "name": "Velocità", "range": "68–80"}, {"l": "64%", "w": "14%", "name": "Passaggio", "range": "64–78"}, {"l": "36%", "w": "12%", "name": "Contrasto", "range": "36–48"}, {"l": "46%", "w": "14%", "name": "Colpo di testa", "range": "46–60"}]}, {"l": "L", "n": "Enrico Pace", "r": "Portiere", "age": 33, "h": 191, "w": 85, "en": "100%", "mood": "sereno", "conf": "alta", "b": [{"l": "26%", "w": "14%", "name": "Velocità", "range": "26–40"}, {"l": "36%", "w": "14%", "name": "Passaggio", "range": "36–50"}, {"l": "18%", "w": "10%", "name": "Contrasto", "range": "18–28"}, {"l": "54%", "w": "14%", "name": "Colpo di testa", "range": "54–68"}]}, {"l": "M", "n": "Ivan Dellera", "r": "Difensore centrale", "age": 20, "h": 183, "w": 80, "en": "100%", "mood": "carico", "conf": "bassa", "b": [{"l": "50%", "w": "20%", "name": "Velocità", "range": "50–70"}, {"l": "40%", "w": "22%", "name": "Passaggio", "range": "40–62"}, {"l": "58%", "w": "22%", "name": "Contrasto", "range": "58–80"}, {"l": "62%", "w": "20%", "name": "Colpo di testa", "range": "62–82"}]}, {"l": "N", "n": "Tommaso Leone", "r": "Mezzala", "age": 24, "h": 180, "w": 73, "en": "100%", "mood": "sereno", "conf": "media", "b": [{"l": "58%", "w": "14%", "name": "Velocità", "range": "58–72"}, {"l": "64%", "w": "16%", "name": "Passaggio", "range": "64–80"}, {"l": "50%", "w": "14%", "name": "Contrasto", "range": "50–64"}, {"l": "42%", "w": "16%", "name": "Colpo di testa", "range": "42–58"}]}, {"l": "O", "n": "Elia Fontana", "r": "Esterno", "age": 19, "h": 169, "w": 68, "en": "100%", "mood": "carico", "conf": "bassa", "b": [{"l": "78%", "w": "16%", "name": "Velocità", "range": "78–94"}, {"l": "50%", "w": "22%", "name": "Passaggio", "range": "50–72"}, {"l": "30%", "w": "18%", "name": "Contrasto", "range": "30–48"}, {"l": "24%", "w": "18%", "name": "Colpo di testa", "range": "24–42"}]}, {"l": "P", "n": "Riccardo Arena", "r": "Punta", "age": 27, "h": 179, "w": 78, "en": "100%", "mood": "teso", "conf": "media", "b": [{"l": "62%", "w": "12%", "name": "Velocità", "range": "62–74"}, {"l": "54%", "w": "12%", "name": "Passaggio", "range": "54–66"}, {"l": "34%", "w": "12%", "name": "Contrasto", "range": "34–46"}, {"l": "56%", "w": "14%", "name": "Colpo di testa", "range": "56–70"}]}], "targets": [{"n": "Sergio Lanza", "club": "Pro Collina", "role": "Mediano", "age": 22, "scout": "Bellini", "seen": "3 partite", "bias": "guarda soprattutto chi vince i contrasti", "bands": [{"l": "60%", "w": "14%", "name": "Velocità", "range": "60–74"}, {"l": "62%", "w": "18%", "name": "Passaggio", "range": "62–80"}, {"l": "66%", "w": "18%", "name": "Contrasto", "range": "66–84"}, {"l": "50%", "w": "16%", "name": "Colpo di testa", "range": "50–66"}]}, {"n": "Ahmed Rossi", "club": "FC Lagonero", "role": "Esterno", "age": 20, "scout": "Ferraro", "seen": "1 partita", "bias": "sopravvaluta la velocità", "bands": [{"l": "78%", "w": "16%", "name": "Velocità", "range": "78–94"}, {"l": "52%", "w": "20%", "name": "Passaggio", "range": "52–72"}, {"l": "30%", "w": "16%", "name": "Contrasto", "range": "30–46"}, {"l": "30%", "w": "18%", "name": "Colpo di testa", "range": "30–48"}]}, {"n": "Bruno Esposito", "club": "Audace Valpiana", "role": "Difensore", "age": 25, "scout": "Bellini", "seen": "5 partite", "bias": "guarda soprattutto chi vince i contrasti", "bands": [{"l": "46%", "w": "12%", "name": "Velocità", "range": "46–58"}, {"l": "50%", "w": "12%", "name": "Passaggio", "range": "50–62"}, {"l": "70%", "w": "12%", "name": "Contrasto", "range": "70–82"}, {"l": "74%", "w": "12%", "name": "Colpo di testa", "range": "74–86"}]}], "table": [{"pos": "1", "team": "Atletico Monteluce", "g": 11, "pts": 26, "dr": "+14"}, {"pos": "2", "team": "Sporting Riva", "g": 11, "pts": 23, "dr": "+9"}, {"pos": "3", "team": "Real Valcastello", "g": 11, "pts": 21, "dr": "+6"}, {"pos": "4", "team": "Virtus Selvarossa", "g": 11, "pts": 18, "dr": "+2"}, {"pos": "5", "team": "Borgoverde", "g": 11, "pts": 17, "dr": "+1"}, {"pos": "6", "team": "US Pietrabianca", "g": 11, "pts": 15, "dr": "-1"}, {"pos": "7", "team": "FC Lagonero", "g": 11, "pts": 13, "dr": "-4"}, {"pos": "8", "team": "Pro Collina", "g": 11, "pts": 12, "dr": "-5"}, {"pos": "9", "team": "Olimpia Castelfiume", "g": 11, "pts": 10, "dr": "-9"}, {"pos": "10", "team": "Audace Valpiana", "g": 11, "pts": 6, "dr": "-13"}], "fixtures": [{"when": "Sab 15:00", "h": "Borgoverde", "a": "Real Valcastello"}, {"when": "Sab 15:00", "h": "Sporting Riva", "a": "FC Lagonero"}, {"when": "Dom 15:00", "h": "Atletico Monteluce", "a": "Pro Collina"}, {"when": "Dom 18:00", "h": "Virtus Selvarossa", "a": "US Pietrabianca"}, {"when": "Dom 20:45", "h": "Audace Valpiana", "a": "Olimpia Castelfiume"}], "news": [{"x": "Monteluce, sesta vittoria di fila: il loro pressing alto vale la fatica?"}, {"x": "Valcastello, il portiere ha fermato 9 tiri su 10 nelle ultime tre"}, {"x": "Mercato: i giovani del Borgoverde osservati da tre club"}], "comm": [{"t": "62'", "x": "GOL! Valcastello, tiro da 31 m", "k": "c"}, {"t": "62'", "x": "Sala spazza, palla ripresa", "k": "m"}, {"t": "58'", "x": "Parata di Riva", "k": "h"}, {"t": "53'", "x": "GOL! Bruni, colpo di testa", "k": "c"}, {"t": "50'", "x": "Giallo a Testa", "k": "h"}, {"t": "47'", "x": "Galli crossa, respinto", "k": "m"}, {"t": "45'", "x": "Inizio del secondo tempo", "k": "m"}, {"t": "29'", "x": "GOL! Autogol di Valcastello", "k": "c"}], "club": "Borgoverde"}, C={"text": "#F6EBD3", "muted": "#C2B79D", "line": "rgba(246,235,211,0.14)", "accent": "#D9A24A", "accentText": "#1E1608", "panel": "#123A2F", "panel2": "#174538", "home": "#E8875F", "homeText": "#2A1208", "away": "#7FA6F0", "awayText": "#0B1B3A", "ui": "'Inter', system-ui, sans-serif", "r": "10", "nav": "top", "selBg": "rgba(217,162,74,0.16)"}, s=this.state;
+    const nav=C.nav;
+    const tabStyle=(on)=> nav==='rail'
+      ? 'display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;border:none;border-radius:10px;cursor:pointer;font:500 11px '+C.ui+';background:'+(on?C.panel2:'transparent')+';color:'+(on?C.text:C.muted)
+      : nav==='masthead'
+      ? 'height:44px;padding:0 16px;border:none;border-bottom:3px solid '+(on?C.accent:'transparent')+';background:transparent;cursor:pointer;font:'+(on?'600':'500')+' 15px '+C.ui+';color:'+(on?C.text:C.muted)
+      : 'height:40px;padding:0 14px;border:none;border-radius:'+C.r+'px;cursor:pointer;font:'+(on?'600':'500')+' 14px '+C.ui+';background:'+(on?C.panel2:'transparent')+';color:'+(on?C.text:C.muted);
+    const tabs=D.tabsDef.map(t=>({...t,go:this.go(t.id),style:tabStyle(s.tab===t.id)}));
+    const is={}; D.tabsDef.forEach(t=>is[t.id]=s.tab===t.id);
+    const inbox=D.inbox.map((m,i)=>({...m,pick:()=>this.setState({msg:i}),style:'display:block;width:100%;text-align:left;padding:12px 14px;border-radius:'+C.r+'px;cursor:pointer;font-family:'+C.ui+';color:'+C.text+';border:1px solid '+(s.msg===i?C.accent:C.line)+';background:'+(s.msg===i?C.selBg:C.panel)}));
+    const msg=D.inbox[s.msg];
+    const rowS=(on)=>'display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 8px;border-radius:6px;'+(on?'background:'+C.selBg+';font-weight:600;':'');
+    const top6=D.table.slice(0,6).map(r=>({...r,style:rowS(r.team===D.club)}));
+    const table=D.table.map(r=>({...r,style:'height:36px;border-top:1px solid '+C.line+';'+(r.team===D.club?'background:'+C.selBg+';font-weight:600':'')}));
+    const fixtures=D.fixtures.map(f=>({...f,style:rowS(f.h===D.club||f.a===D.club)}));
+    const squad=D.squad.map(p=>({...p,pick:()=>this.setState({sel:p.l}),style:'height:34px;cursor:pointer;border-top:1px solid '+C.line+';'+(s.sel===p.l?'background:'+C.selBg:'')}));
+    const pl0=D.squad.find(p=>p.l===s.sel)||D.squad[0];
+    const pl={...pl0,bands:pl0.b};
+    const depth={alto:14,medio:0,basso:-12}[s.block], spread={stretta:0.78,normale:1,larga:1.18}[s.width];
+    const base=[['A',6,50],['B',22,84],['C',19,62],['D',19,38],['E',22,16],['F',40,86],['G',36,58],['H',36,42],['I',40,14],['J',54,42],['K',54,58]];
+    const tac=base.map(([l,x,y])=>({l, x:(l==='A'?x:Math.min(80,x+depth))+'%', y:(l==='A'?y:Math.max(6,Math.min(94,50+(y-50)*spread)))+'%', bg:C.home, fg:C.homeText}));
+    const blockTxt={alto:'La linea difensiva sale e la squadra si accorcia verso la loro area: si recupera prima, ma lo spazio dietro è più grande.',medio:'Il blocco medio: la linea a metà strada, la squadra corta tra le linee.',basso:'La linea si abbassa verso la nostra area: meno spazio dietro, palla recuperata più lontano dalla loro porta.'}[s.block];
+    const widthTxt={stretta:' Stretti: i centrali coperti, le fasce lasciate a loro.',normale:' Ampiezza normale.',larga:' Larghi: il campo si apre, le distanze tra i compagni crescono.'}[s.width];
+    const optS=(on)=>'flex:1;height:40px;border-radius:'+C.r+'px;cursor:pointer;font:'+(on?'600':'500')+' 13px '+C.ui+';color:'+C.text+';border:1px solid '+(on?C.accent:C.line)+';background:'+(on?C.selBg:'transparent');
+    const setBlock={}, stBlock={}, setWidth={}, stWidth={};
+    ['alto','medio','basso'].forEach(k=>{setBlock[k]=()=>this.setState({block:k}); stBlock[k]=optS(s.block===k);});
+    ['stretta','normale','larga'].forEach(k=>{setWidth[k]=()=>this.setState({width:k}); stWidth[k]=optS(s.width===k);});
+    const H=[['A',8,50],['B',22,82],['C',16,60],['D',15,40],['E',24,16],['F',44,84],['G',33,55],['H',38,36],['I',47,14],['J',58,46],['K',55,64]];
+    const A=[['a',95,50],['b',62,16],['c',70,38],['d',71,62],['e',60,86],['f',34,20],['g',27,47],['h',40,58],['i',30,78],['j',19,36],['k',15,57]];
+    const ph=(s.t%20)/20, wob=(v,i)=>v+Math.sin(ph*6.283+i)*1.2;
+    const match=H.map(([l,x,y],i)=>({l,x:wob(x,i)+'%',y:wob(y,i+3)+'%',bg:C.home,fg:C.homeText})).concat(A.map(([l,x,y],i)=>({l,x:wob(x,i+5)+'%',y:wob(y,i+7)+'%',bg:C.away,fg:C.awayText})));
+    const sec=s.t, clock=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+    const comm=D.comm.map(c=>({...c,style:c.k==='c'?'color:'+C.accent+';font-weight:700':(c.k==='h'?'color:'+C.text:'color:'+C.muted)}));
+    const togglePlay=()=>{ if(this.state.playing){clearInterval(this.timer);this.setState({playing:false});} else {this.timer=setInterval(()=>this.setState(st=>({t:st.t>=5700?3734:st.t+3})),120); this.setState({playing:true});} };
+    const targets=D.targets.map((g,i)=>{const on=!!s.follow[i]; return {...g,follow:()=>this.setState(st=>({follow:{...st.follow,[i]:!st.follow[i]}})),btnLabel:on?'Lo seguiamo · smetti':'Seguilo per due settimane',btnStyle:on?'height:44px;border-radius:'+C.r+'px;border:1px solid '+C.accent+';background:'+C.selBg+';color:'+C.text+';font:600 13px '+C.ui+';cursor:pointer':'height:44px;border-radius:'+C.r+'px;border:none;background:'+C.accent+';color:'+C.accentText+';font:700 13px '+C.ui+';cursor:pointer'};});
+    const titles={scrivania:'Scrivania',rosa:'La rosa',tattica:'Tattica',partita:'Partita',osservatori:'Osservatori',mondo:'Mondo'};
+    return {tabs,is,inbox,msg,top6,table,fixtures,news:D.news,squad,pl,tac,tacNote:blockTxt+widthTxt,setBlock,stBlock,setWidth,stWidth,match,clock,
+      ballX:wob(14,1)+'%',ballY:wob(52,2)+'%',progress:Math.min(100,sec/5700*100)+'%',playLabel:s.playing?'Pausa':'Avvia',togglePlay,comm,targets,
+      title:titles[s.tab],
+      goPartita:this.go('partita'),goTattica:this.go('tattica'),goRosa:this.go('rosa'),goMondo:this.go('mondo'),goOsservatori:this.go('osservatori'),
+      pickSala:()=>this.setState({tab:'rosa',sel:'G'})};
+  }
+}
+
+</script>
+</body>
+</html>

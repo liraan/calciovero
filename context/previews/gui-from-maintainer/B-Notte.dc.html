@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Proposta B, Notte: la partita</title>
+<script src="./_runtime/react.js"></script>
+<script src="./_runtime/react-dom.js"></script>
+<script src="./_runtime/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #0E1114; color: #E9ECEF; font-family: 'Inter', system-ui, sans-serif; display: flex; overflow: hidden">
+<nav aria-label="Sezioni" style="width: 84px; background: #161B20; border-right: 1px solid #2A323B; display: flex; flex-direction: column; gap: 6px; padding: 14px 10px; box-sizing: border-box">
+<div style="font-weight: 700; font-size: 13px; text-align: center; padding: 6px 0 14px; line-height: 1.1">CV<br><span style="font-size: 9px; color: #F0B04A; letter-spacing: 0.15em">DS</span></div>
+<a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; color: #E9ECEF; text-decoration: none; font-size: 11px; background: #1D242B; border-radius: 10px;"><span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">P</span>Partita</a><a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; color: #A3ADB8; text-decoration: none; font-size: 11px; "><span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">R</span>Rosa</a><a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; color: #A3ADB8; text-decoration: none; font-size: 11px; "><span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">T</span>Tattica</a><a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; color: #A3ADB8; text-decoration: none; font-size: 11px; "><span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">O</span>Osserv.</a><a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; color: #A3ADB8; text-decoration: none; font-size: 11px; "><span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">M</span>Mondo</a><a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; color: #A3ADB8; text-decoration: none; font-size: 11px; "><span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">I</span>Inbox</a>
+</nav>
+<div style="flex: 1; display: flex; flex-direction: column; min-width: 0">
+<header style="height: 52px; display: flex; align-items: center; gap: 16px; padding: 0 20px; border-bottom: 1px solid #2A323B">
+<span style="font-size: 13px; color: #A3ADB8">Amichevole › Replay</span>
+<div role="tablist" aria-label="Viste della partita" style="display: flex; gap: 2px; margin-left: 12px">
+<button type="button" role="tab" aria-selected="true" style="height: 34px; padding: 0 14px; border: none; border-bottom: 2px solid #F0B04A; background: transparent; color: #E9ECEF; font: 600 13px 'Inter', system-ui, sans-serif">Campo</button>
+<button type="button" role="tab" aria-selected="false" style="height: 34px; padding: 0 14px; border: none; background: transparent; color: #A3ADB8; font: 500 13px 'Inter', system-ui, sans-serif">Statistiche</button>
+<button type="button" role="tab" aria-selected="false" style="height: 34px; padding: 0 14px; border: none; background: transparent; color: #A3ADB8; font: 500 13px 'Inter', system-ui, sans-serif">Giocatori</button>
+<button type="button" role="tab" aria-selected="false" style="height: 34px; padding: 0 14px; border: none; background: transparent; color: #A3ADB8; font: 500 13px 'Inter', system-ui, sans-serif">Perché</button>
+</div>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 10px; background: #1D242B; border: 1px solid #2A323B; border-radius: 10px; padding: 6px 14px">
+<span style="width: 10px; height: 10px; border-radius: 2px; background: #F08A5D"></span><span style="font-weight: 600">Home</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 20px; font-weight: 700">2 – 2</span>
+<span style="font-weight: 600">Away</span><span style="width: 10px; height: 10px; border-radius: 2px; background: #6EA0FF"></span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; color: #F0B04A; margin-left: 8px">62:14</span>
+</div>
+</header>
+<div style="flex: 1; display: grid; grid-template-columns: 280px 1fr 330px; min-height: 0">
+<aside aria-label="Statistiche" style="border-right: 1px solid #2A323B; padding: 18px; display: flex; flex-direction: column; gap: 16px">
+<h2 style="margin: 0; font-size: 12px; letter-spacing: 0.12em; color: #A3ADB8; font-weight: 600">STATISTICHE · FINE PARTITA</h2>
+<div style="display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 10px; font-size: 13px">
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">48%</span>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; color: #A3ADB8; text-align: center">Possesso</span>
+<span style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: #2A323B"><span style="width: 48%; background: #F08A5D"></span><span style="flex: 1; background: #6EA0FF"></span></span></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace">52%</span></div><div style="display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 10px; font-size: 13px">
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">15</span>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; color: #A3ADB8; text-align: center">Tiri</span>
+<span style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: #2A323B"><span style="width: 47%; background: #F08A5D"></span><span style="flex: 1; background: #6EA0FF"></span></span></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace">17</span></div><div style="display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 10px; font-size: 13px">
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">2</span>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; color: #A3ADB8; text-align: center">Gol</span>
+<span style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: #2A323B"><span style="width: 50%; background: #F08A5D"></span><span style="flex: 1; background: #6EA0FF"></span></span></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace">2</span></div><div style="display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 10px; font-size: 13px">
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">8</span>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; color: #A3ADB8; text-align: center">Parate</span>
+<span style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: #2A323B"><span style="width: 62%; background: #F08A5D"></span><span style="flex: 1; background: #6EA0FF"></span></span></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace">5</span></div><div style="display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 10px; font-size: 13px">
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">1</span>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; color: #A3ADB8; text-align: center">Cartellini</span>
+<span style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: #2A323B"><span style="width: 25%; background: #F08A5D"></span><span style="flex: 1; background: #6EA0FF"></span></span></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace">3</span></div>
+<h2 style="margin: 10px 0 0; font-size: 12px; letter-spacing: 0.12em; color: #A3ADB8; font-weight: 600">BORDO CAMPO</h2>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #A3ADB8">Blocco
+<select style="height: 36px; border-radius: 8px; background: #1D242B; color: #E9ECEF; border: 1px solid #2A323B; font: 500 13px 'Inter', system-ui, sans-serif; padding: 0 8px"><option>Medio</option><option>Alto</option><option>Basso</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #A3ADB8">Ampiezza
+<select style="height: 36px; border-radius: 8px; background: #1D242B; color: #E9ECEF; border: 1px solid #2A323B; font: 500 13px 'Inter', system-ui, sans-serif; padding: 0 8px"><option>Normale</option><option>Stretta</option><option>Larga</option></select></label>
+<button type="button" style="height: 44px; border-radius: 8px; border: 1px solid #F0B04A; background: transparent; color: #F0B04A; font: 600 13px 'Inter', system-ui, sans-serif">Pianifica sostituzione</button>
+</aside>
+<main style="display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px; min-width: 0">
+<div role="img" aria-label="Campo 2D: le due squadre al momento del gol del 62 minuto" style="position: relative; width: 720px; height: 466px; background: #173A2C; overflow: hidden; flex-shrink: 0">
+<div style="position: absolute; left: 0%; top: 0; width: 5%; height: 100%; background: #183E2F"></div><div style="position: absolute; left: 10%; top: 0; width: 5%; height: 100%; background: #183E2F"></div><div style="position: absolute; left: 20%; top: 0; width: 5%; height: 100%; background: #183E2F"></div><div style="position: absolute; left: 30%; top: 0; width: 5%; height: 100%; background: #183E2F"></div><div style="position: absolute; left: 40%; top: 0; width: 5%; height: 100%; background: #183E2F"></div><div style="position: absolute; left: 50%; top: 0; width: 5%; height: 100%; background: #183E2F"></div><div style="position: absolute; left: 60%; top: 0; width: 5%; height: 100%; background: #183E2F"></div><div style="position: absolute; left: 70%; top: 0; width: 5%; height: 100%; background: #183E2F"></div><div style="position: absolute; left: 80%; top: 0; width: 5%; height: 100%; background: #183E2F"></div><div style="position: absolute; left: 90%; top: 0; width: 5%; height: 100%; background: #183E2F"></div>
+<div style="position: absolute; left: 3%; top: 4%; width: 94%; height: 92%; border: 2px solid rgba(233,236,239,0.55); box-sizing: border-box"></div>
+<div style="position: absolute; left: 50%; top: 4%; width: 2px; height: 92%; background: rgba(233,236,239,0.55)"></div>
+<div style="position: absolute; left: calc(50% - 62.910000000000004px); top: calc(50% - 62.910000000000004px); width: 125.82000000000001px; height: 125.82000000000001px; border: 2px solid rgba(233,236,239,0.55); border-radius: 50%; box-sizing: border-box"></div>
+<div style="position: absolute; left: 3%; top: 24.3%; width: 15.1%; height: 51.4%; border: 2px solid rgba(233,236,239,0.55); box-sizing: border-box"></div>
+<div style="position: absolute; left: 81.9%; top: 24.3%; width: 15.1%; height: 51.4%; border: 2px solid rgba(233,236,239,0.55); box-sizing: border-box"></div>
+<div style="position: absolute; left: 3%; top: 36.5%; width: 5%; height: 27%; border: 2px solid rgba(233,236,239,0.55); box-sizing: border-box"></div>
+<div style="position: absolute; left: 92%; top: 36.5%; width: 5%; height: 27%; border: 2px solid rgba(233,236,239,0.55); box-sizing: border-box"></div>
+<div style="position: absolute; left: 1.2%; top: 44.6%; width: 1.8%; height: 10.8%; border: 2px solid rgba(233,236,239,0.55); border-right: none; box-sizing: border-box"></div>
+<div style="position: absolute; left: 97%; top: 44.6%; width: 1.8%; height: 10.8%; border: 2px solid rgba(233,236,239,0.55); border-left: none; box-sizing: border-box"></div>
+<sc-for list="{{home}}" as="p" hint-placeholder-count="11">
+<div style="position: absolute; left: {{p.x}}; top: {{p.y}}; width: 22px; height: 22px; margin-left: -11px; margin-top: -11px; border-radius: 50%; background: #F08A5D; color: #2A1208; font: 700 12px/22px 'Inter', system-ui, sans-serif; text-align: center">{{p.l}}</div>
+</sc-for>
+<sc-for list="{{away}}" as="p" hint-placeholder-count="11">
+<div style="position: absolute; left: {{p.x}}; top: {{p.y}}; width: 22px; height: 22px; margin-left: -11px; margin-top: -11px; border-radius: 50%; background: #6EA0FF; color: #0B1B3A; font: 700 12px/22px 'Inter', system-ui, sans-serif; text-align: center">{{p.l}}</div>
+</sc-for>
+<div style="position: absolute; left: 5.6%; top: 49%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 3px rgba(0,0,0,0.25)"></div>
+</div>
+<div style="width: 720px; display: flex; gap: 12px; align-items: flex-start; background: #161B20; border: 1px solid #2A323B; border-radius: 10px; padding: 12px 14px; box-sizing: border-box">
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; color: #6EA0FF; font-weight: 700">62'</span>
+<div style="font-size: 13px; line-height: 1.5"><strong>Perché abbiamo subito:</strong> Away 6 (centrocampista) tiro forte da 31 m. L'azione nasce 2 s prima: Home 6 spazza, loro la riconquistano; nessun loro passaggio in mezzo.</div>
+<a href="#" style="margin-left: auto; white-space: nowrap; font-size: 13px; color: #F0B04A">Rivedi</a>
+</div>
+</main>
+<aside aria-label="Cronaca" style="border-left: 1px solid #2A323B; display: flex; flex-direction: column; min-height: 0">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 10px">
+<h2 style="margin: 0; font-size: 12px; letter-spacing: 0.12em; color: #A3ADB8; font-weight: 600">CRONACA</h2>
+<label style="font-size: 12px; color: #A3ADB8; display: flex; gap: 6px; align-items: center"><input type="checkbox"> ogni tocco</label>
+</div>
+<ol style="list-style: none; margin: 0; padding: 0 8px; font-size: 13px">
+<sc-for list="{{comm}}" as="c" hint-placeholder-count="12">
+<li style="display: grid; grid-template-columns: 56px 1fr; gap: 6px; padding: 8px 10px; border-bottom: 1px solid #2A323B">
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; color: #A3ADB8">{{c.t}}</span>
+<sc-if value="{{c.crit}}" hint-placeholder-val="{{false}}"><span style="color: #F0B04A; font-weight: 700">{{c.x}}</span></sc-if>
+<sc-if value="{{c.high}}" hint-placeholder-val="{{true}}"><span>{{c.x}}</span></sc-if>
+<sc-if value="{{c.mid}}" hint-placeholder-val="{{false}}"><span style="color: #A3ADB8">{{c.x}}</span></sc-if>
+</li>
+</sc-for>
+</ol>
+</aside>
+</div>
+<footer style="height: 52px; display: flex; align-items: center; gap: 14px; padding: 0 20px; border-top: 1px solid #2A323B; background: #161B20">
+<button type="button" aria-label="Pausa" style="width: 44px; height: 34px; border-radius: 8px; border: 1px solid #2A323B; background: #1D242B; color: #E9ECEF; font: 700 12px 'Inter', system-ui, sans-serif">II</button>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #A3ADB8">x1 · <span style="color: #E9ECEF">x4</span> · x16 · x64</span>
+<div style="flex: 1; position: relative; height: 22px">
+<div style="position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: #2A323B"></div>
+<div style="position: absolute; left: 0; width: 65.5%; top: 10px; height: 2px; background: #F0B04A"></div>
+<sc-for list="{{marks}}" as="m" hint-placeholder-count="4">
+<sc-if value="{{m.home}}" hint-placeholder-val="{{true}}"><div style="position: absolute; left: {{m.left}}; top: 3px; width: 3px; height: 16px; background: #F08A5D"></div></sc-if>
+<sc-if value="{{m.away}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: {{m.left}}; top: 3px; width: 3px; height: 16px; background: #6EA0FF"></div></sc-if>
+</sc-for>
+</div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #A3ADB8">0' — 95'</span>
+</footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const d = {"home": [{"l": "A", "x": "8%", "y": "50%"}, {"l": "B", "x": "22%", "y": "82%"}, {"l": "C", "x": "17%", "y": "60%"}, {"l": "D", "x": "16%", "y": "40%"}, {"l": "E", "x": "24%", "y": "16%"}, {"l": "F", "x": "44%", "y": "84%"}, {"l": "G", "x": "34%", "y": "55%"}, {"l": "H", "x": "38%", "y": "36%"}, {"l": "I", "x": "47%", "y": "14%"}, {"l": "J", "x": "58%", "y": "46%"}, {"l": "K", "x": "55%", "y": "64%"}], "away": [{"l": "a", "x": "95%", "y": "50%"}, {"l": "b", "x": "62%", "y": "16%"}, {"l": "c", "x": "70%", "y": "38%"}, {"l": "d", "x": "71%", "y": "62%"}, {"l": "e", "x": "60%", "y": "86%"}, {"l": "f", "x": "34%", "y": "20%"}, {"l": "g", "x": "27%", "y": "47%"}, {"l": "h", "x": "40%", "y": "58%"}, {"l": "i", "x": "30%", "y": "78%"}, {"l": "j", "x": "19%", "y": "36%"}, {"l": "k", "x": "15%", "y": "57%"}], "xi": [{"l": "A", "n": "Home 0", "r": "POR", "f": "96%", "fv": 96}, {"l": "B", "n": "Home 1", "r": "TD", "f": "71%", "fv": 71}, {"l": "C", "n": "Home 2", "r": "DC", "f": "80%", "fv": 80}, {"l": "D", "n": "Home 3", "r": "DC", "f": "77%", "fv": 77}, {"l": "E", "n": "Home 4", "r": "TS", "f": "68%", "fv": 68}, {"l": "F", "n": "Home 5", "r": "CD", "f": "74%", "fv": 74}, {"l": "G", "n": "Home 6", "r": "CC", "f": "63%", "fv": 63}, {"l": "H", "n": "Home 7", "r": "CC", "f": "70%", "fv": 70}, {"l": "I", "n": "Home 8", "r": "CS", "f": "72%", "fv": 72}, {"l": "J", "n": "Home 9", "r": "ATT", "f": "66%", "fv": 66}, {"l": "K", "n": "Home 10", "r": "ATT", "f": "69%", "fv": 69}], "comm": [{"t": "62'", "x": "GOL! Away 6 segna al 62'", "crit": true, "high": false, "mid": false}, {"t": "62'", "x": "Away 6 tira da 31 m", "crit": false, "high": true, "mid": false}, {"t": "62'", "x": "Home 6 spazza", "crit": false, "high": false, "mid": true}, {"t": "59'", "x": "Away 9 vince un duello", "crit": false, "high": false, "mid": true}, {"t": "53'", "x": "GOL! Home 9 segna al 53'", "crit": true, "high": false, "mid": false}, {"t": "53'", "x": "Home 9 tira, piazzato", "crit": false, "high": true, "mid": false}, {"t": "50'", "x": "Cartellino giallo a Home 10", "crit": false, "high": true, "mid": false}, {"t": "49'", "x": "Fallo di Home 10", "crit": false, "high": false, "mid": true}, {"t": "47'", "x": "Parata di Away 0", "crit": false, "high": true, "mid": false}, {"t": "45'", "x": "Inizio del secondo tempo", "crit": false, "high": false, "mid": true}, {"t": "45'+4'", "x": "Fine del primo tempo", "crit": false, "high": false, "mid": true}, {"t": "29'", "x": "GOL! Autogol di Away 7 al 29'", "crit": true, "high": false, "mid": false}], "marks": [{"left": "5.3%", "home": false, "away": true}, {"left": "30.5%", "home": true, "away": false}, {"left": "55.8%", "home": true, "away": false}, {"left": "65.3%", "home": false, "away": true}]};
+return d;
+}
+}
+</script>
+</body>
+</html>

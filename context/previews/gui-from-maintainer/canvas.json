@@ -1,0 +1,403 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "A · Lavagna: la partita (consigliata)",
+      "page": "prime"
+    },
+    {
+      "file": "B-Notte.dc.html",
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "B · Notte: la partita",
+      "page": "prime"
+    },
+    {
+      "file": "C-Carta.dc.html",
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "C · Carta: la partita",
+      "page": "prime"
+    },
+    {
+      "file": "A-Rosa.dc.html",
+      "x": 0,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "title": "A · Lavagna: la rosa, tra una partita e l'altra",
+      "page": "prime"
+    },
+    {
+      "file": "Loghi.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Il logo scelto: il monogramma della Notte, nelle tre varianti",
+      "page": "anteprima"
+    },
+    {
+      "file": "A-Lavagna.dc.html",
+      "x": 0,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "title": "A · Lavagna: il gioco (cliccabile)",
+      "page": "anteprima",
+      "is_interactive": true
+    },
+    {
+      "file": "B-Notte-app.dc.html",
+      "x": 1520,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "title": "B · Notte: il gioco (cliccabile)",
+      "page": "anteprima",
+      "is_interactive": true
+    },
+    {
+      "file": "C-Carta-app.dc.html",
+      "x": 3040,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "title": "C · Carta: il gioco (cliccabile)",
+      "page": "anteprima",
+      "is_interactive": true
+    },
+    {
+      "file": "Analisi.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Analisi della partita: panoramica, tiri, giocatore, eventi (cliccabile)",
+      "page": "analisi",
+      "is_interactive": true
+    },
+    {
+      "file": "Pannelli.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Interfaccia totalmente personalizzabile, con la barra dei settori (cliccabile)",
+      "page": "pannelli",
+      "is_interactive": true
+    },
+    {
+      "file": "Bacheca.dc.html",
+      "x": 0,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "title": "La bacheca: post-it liberi e sovrapponibili, con la barra di sistema (cliccabile)",
+      "page": "pannelli",
+      "is_interactive": true
+    },
+    {
+      "file": "Lavagna.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "La lavagna tattica con i post-it e la barra di sistema (cliccabile)",
+      "page": "lavagna",
+      "is_interactive": true
+    },
+    {
+      "file": "Android-A-partita.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "A · La lavagna e il cassetto: la partita",
+      "page": "android",
+      "radius": 36
+    },
+    {
+      "file": "Android-A-settimana.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "A · La lavagna e il cassetto: la settimana",
+      "page": "android",
+      "radius": 36
+    },
+    {
+      "file": "Android-B-partita.dc.html",
+      "x": 470,
+      "y": 1084,
+      "w": 390,
+      "h": 844,
+      "title": "B · Un post-it alla volta: la partita",
+      "page": "android",
+      "radius": 36
+    },
+    {
+      "file": "Android-B-settimana.dc.html",
+      "x": 0,
+      "y": 1084,
+      "w": 390,
+      "h": 844,
+      "title": "B · Un post-it alla volta: la settimana",
+      "page": "android",
+      "radius": 36
+    },
+    {
+      "file": "Android-C-partita.dc.html",
+      "x": 470,
+      "y": 2168,
+      "w": 844,
+      "h": 390,
+      "title": "C · La lavagna con le linguette: la partita in orizzontale",
+      "page": "android",
+      "radius": 36
+    },
+    {
+      "file": "Android-C-settimana.dc.html",
+      "x": 0,
+      "y": 2168,
+      "w": 390,
+      "h": 844,
+      "title": "C · La lavagna con le linguette: la settimana",
+      "page": "android",
+      "radius": 36
+    },
+    {
+      "file": "Artboard-72yd.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 800,
+      "h": 600,
+      "title": "Artboard 1",
+      "page": "page-0dufoo",
+      "handmade": true
+    }
+  ],
+  "annotations": [
+    {
+      "id": "t2",
+      "x": 1520,
+      "y": -300,
+      "w": 240,
+      "maxW": 2960,
+      "text": "Anteprima del gioco: un logo, tre varianti, sei schede collegate",
+      "kind": "title1",
+      "page": "anteprima"
+    },
+    {
+      "id": "n2",
+      "x": 1520,
+      "y": 0,
+      "w": 440,
+      "text": "Premi Play su un'anteprima. Le schede si richiamano: dalla posta alla rosa o agli osservatori, dalla prossima partita alla tattica, dal perché del gol alla scheda del giocatore. In Tattica blocco e ampiezza spostano la squadra; in Partita Avvia fa scorrere il tempo; negli Osservatori puoi seguire un giocatore.",
+      "fill": "blue",
+      "page": "anteprima"
+    },
+    {
+      "id": "n3",
+      "x": 2040,
+      "y": 0,
+      "w": 440,
+      "text": "Tutto ciò che è L1 e L2 è inventato per l'anteprima: club, nomi, classifica, posta, rapporti. Restano veri i principi: nessun numero nascosto mostrato come certo (stime a fascia, Plane C), il perché accanto a ogni evento, la fatica come stato del giocatore.",
+      "fill": "orange",
+      "page": "anteprima"
+    },
+    {
+      "id": "t1",
+      "x": 0,
+      "y": -300,
+      "w": 240,
+      "maxW": 4480,
+      "text": "Tre direzioni per la GUI, stile Football Manager ma moderna",
+      "kind": "title1",
+      "page": "prime"
+    },
+    {
+      "id": "n1",
+      "x": 4560,
+      "y": 0,
+      "w": 360,
+      "text": "Dati veri: seed 42, motore 102 (2-2, tiri 15-17, possesso 48-52, parate 8-5, i quattro gol e il perché del 62'). Le posizioni sul campo e le stime della rosa sono illustrative: i nomi veri e le stime degli osservatori arrivano con L1 e L2.",
+      "fill": "orange",
+      "page": "prime"
+    },
+    {
+      "id": "t3",
+      "x": 0,
+      "y": -300,
+      "w": 240,
+      "maxW": 1440,
+      "text": "Analisi: la partita come la legge un match analyst",
+      "kind": "title1",
+      "page": "analisi"
+    },
+    {
+      "id": "n4",
+      "x": 1520,
+      "y": 0,
+      "w": 420,
+      "text": "Tutti i numeri sono veri: seed 42, motore 102. I tiri sono dove il motore li ha calciati, la mappa di calore è una posizione al secondo dal tick record, la lista è la catena degli eventi. Mancano di proposito xG e valutazioni: il motore non le ha, e non le inventiamo. Ispirata alle piattaforme di video-analisi, con il disegno della Notte.",
+      "size": 40,
+      "fill": "blue",
+      "page": "analisi"
+    },
+    {
+      "id": "t4",
+      "x": 0,
+      "y": -300,
+      "w": 240,
+      "maxW": 1440,
+      "text": "La GUI: tutto personalizzabile, tranne la barra dei settori",
+      "kind": "title1",
+      "page": "pannelli"
+    },
+    {
+      "id": "n5",
+      "x": 1520,
+      "y": 0,
+      "w": 440,
+      "text": "Premi Play. A sinistra l'unica parte fissa: i macrosettori della gestione (Scrivania, Rosa, Tattica, Allenamento, Partita, Osservatori, Mercato, Club e finanze, Mondo). Appuntata resta aperta; sganciata diventa una colonna di icone che si apre al passaggio del mouse. Ogni settore ha la sua disposizione. Ogni pannello: il contenuto si sceglie dal suo menu, ↔ e ↕ cambiano larghezza e altezza, ‹ › lo spostano, ⤢ lo porta a tutto schermo, × lo chiude; in alto se ne aggiungono altri, si ripristina o si salva la disposizione. Il contenuto si adatta allo spazio (la cronaca stretta mostra solo i gol, la formazione stretta diventa una griglia per energia). Nella GUI vera i pannelli si trascinano e si agganciano (egui_dock o egui_tiles).",
+      "fill": "blue",
+      "page": "pannelli"
+    },
+    {
+      "id": "n6",
+      "x": 1520,
+      "y": 1020,
+      "w": 440,
+      "text": "La bacheca, come l'abbiamo decisa. Premi Play. I post-it si trascinano dalla testata e si ridimensionano dall'angolo in basso a destra; si sovrappongono, e quello davanti ha il bordo ocra. Trascinando, si agganciano ai bordi degli altri e della bacheca (le linee ocra). Il lucchetto blocca tutto. La barra a sinistra, al passaggio del mouse o appuntata, è la barra di sistema: sotto il settore attivo ci sono i suoi post-it, un clic porta davanti, un altro riduce; 'nuovo' segnala la cronaca quando è coperta o ridotta; i chiusi si riaprono da lì. 'Mostra la bacheca' riduce tutto. Da decidere ancora: il ritaglio, e se la barra resta una o diventa due.",
+      "fill": "blue",
+      "page": "pannelli"
+    },
+    {
+      "id": "t5",
+      "x": 0,
+      "y": -300,
+      "w": 240,
+      "maxW": 1440,
+      "text": "Una lavagna, i post-it sopra, il calendario sotto",
+      "kind": "title1",
+      "page": "lavagna"
+    },
+    {
+      "id": "n7",
+      "x": 1520,
+      "y": 0,
+      "w": 460,
+      "text": "Premi Play. I post-it nascono chiusi: sono linguette a sinistra, divise per gruppi colorati (Scrivania, Squadra, Tattica, Partita). Un clic apre il post-it sopra la lavagna, un altro (o –) lo riduce di nuovo a linguetta, nella posizione in cui l'avevi lasciato. Doppio clic sulla testata (o ⤢) lo apre alla sua misura naturale. Due post-it espansi si agganciano: trascinane uno contro il bordo di un altro per affiancarli in una sola cornice (il divisorio si trascina), o sopra il suo centro per metterli a schede. ⇱ sgancia un post-it dal gruppo; – riduce il gruppo intero a una linguetta sola, in 'Gruppi', che lo riapre com'era. In partita c'è già un gruppo d'esempio: Cronaca + Statistiche. La barra in alto ha settori, calendario, colori, posta e tempo; i post-it non ci sono più.",
+      "fill": "blue",
+      "page": "lavagna"
+    },
+    {
+      "id": "t6",
+      "x": 0,
+      "y": -300,
+      "w": 240,
+      "maxW": 1400,
+      "text": "Android: tre modi di portare lavagna e post-it sul telefono",
+      "kind": "title1",
+      "page": "android"
+    },
+    {
+      "id": "n8",
+      "x": 940,
+      "y": 0,
+      "w": 420,
+      "text": "A · La lavagna e il cassetto. La lavagna resta lo sfondo, come sul PC; i post-it diventano un cassetto che sale dal basso (tre altezze: linguetta, metà, tutto schermo) con le loro schede in fila: un tocco per passare dall'una all'altra. In alto la barra della squadra (il logo apre i settori) e il calendario. In partita il cassetto tiene la cronaca e le istruzioni rapide restano sempre sopra, a un tocco. È la più vicina al PC.",
+      "fill": "blue",
+      "page": "android"
+    },
+    {
+      "id": "n9",
+      "x": 940,
+      "y": 1084,
+      "w": 420,
+      "text": "B · Un post-it alla volta. Ogni post-it è una scheda a tutto schermo e si scorre di lato; la lavagna è una delle schede. In basso la barra dei settori, come nelle app Android. In partita il campo resta fisso in alto e sotto scorrono cronaca, statistiche, perché; un pulsante apre le istruzioni rapide. È la più comoda con una mano sola, ma perde la sovrapposizione dei post-it.",
+      "fill": "blue",
+      "page": "android"
+    },
+    {
+      "id": "n10",
+      "x": 1394,
+      "y": 2168,
+      "w": 420,
+      "text": "C · La lavagna con le linguette. La lavagna occupa tutto; i post-it chiusi sono linguette sui bordi (come le pile del PC in partita) e uno alla volta si apre sopra, con riduci e ingrandisci. In basso, a portata di pollice, la fase e Continua. La partita si gira in orizzontale: campo al centro, istruzioni a sinistra, cronaca a destra, e in trasparenza lo schieramento previsto.",
+      "fill": "blue",
+      "page": "android"
+    },
+    {
+      "id": "n11",
+      "x": 940,
+      "y": 620,
+      "w": 420,
+      "text": "In tutte e tre: nessun post-it in meno rispetto al PC, solo un altro modo di aprirli; la barra prende i colori della squadra (qui granata e bianco); tocchi da almeno 44 px. Nomi e numeri sono di prova.",
+      "fill": "orange",
+      "page": "android"
+    },
+    {
+      "id": "n12",
+      "x": 1440,
+      "y": 0,
+      "w": 360,
+      "text": "Scelta del maintainer (14 novembre): si parte dalla A, la lavagna e il cassetto. Prima si riempie di contenuti, poi la si migliora con i betatester.",
+      "fill": "green",
+      "page": "android"
+    },
+    {
+      "id": "n13",
+      "x": 1394,
+      "y": 2640,
+      "w": 420,
+      "text": "Scelta del maintainer (14 novembre): con il telefono in orizzontale vale la partita della C (campo al centro, istruzioni a sinistra, cronaca a destra, lo schieramento previsto in trasparenza). In verticale resta la A.",
+      "fill": "green",
+      "page": "android"
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "android"
+  },
+  "pages": [
+    {
+      "id": "android",
+      "name": "Android"
+    },
+    {
+      "id": "lavagna",
+      "name": "Lavagna tattica"
+    },
+    {
+      "id": "pannelli",
+      "name": "Interfaccia a pannelli"
+    },
+    {
+      "id": "anteprima",
+      "name": "Anteprima del gioco"
+    },
+    {
+      "id": "analisi",
+      "name": "Analisi (stile video-analisi)"
+    },
+    {
+      "id": "prime",
+      "name": "Prime proposte"
+    },
+    {
+      "id": "page-0dufoo",
+      "name": "Page 6"
+    }
+  ]
+}

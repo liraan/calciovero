@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Proposta A, Lavagna: la rosa</title>
+<script src="./_runtime/react.js"></script>
+<script src="./_runtime/react-dom.js"></script>
+<script src="./_runtime/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #0C2A22; color: #F6EBD3; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+<header style="height: 60px; display: flex; align-items: center; gap: 32px; padding: 0 24px; border-bottom: 1px solid rgba(246,235,211,0.14)">
+<div style="display: flex; flex-direction: column; line-height: 1">
+<span style="font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 22px">Calcio Vero</span>
+<span style="font-size: 9px; letter-spacing: 0.32em; color: #D9A24A; margin-top: 3px">DEEP SIMULATOR</span>
+</div>
+<nav aria-label="Sezioni" style="display: flex; gap: 4px">
+<a href="Main.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #BFB49A; text-decoration: none; font-size: 14px">Partita</a>
+<a href="#" style="padding: 8px 14px; border-radius: 8px; background: #174538; color: #F6EBD3; text-decoration: none; font-size: 14px; font-weight: 600">Rosa</a>
+<a href="#" style="padding: 8px 14px; border-radius: 8px; color: #BFB49A; text-decoration: none; font-size: 14px">Tattica</a>
+<a href="#" style="padding: 8px 14px; border-radius: 8px; color: #BFB49A; text-decoration: none; font-size: 14px">Osservatori</a>
+<a href="#" style="padding: 8px 14px; border-radius: 8px; color: #BFB49A; text-decoration: none; font-size: 14px">Mondo</a>
+</nav>
+<label style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #BFB49A">Cerca
+<input type="search" placeholder="nome, ruolo" style="height: 36px; width: 220px; border-radius: 8px; border: 1px solid rgba(246,235,211,0.14); background: #123A2F; color: #F6EBD3; padding: 0 10px; font: 400 13px 'Inter', system-ui, sans-serif"></label>
+</header>
+<div style="flex: 1; display: flex; min-height: 0">
+<main style="flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+<div style="display: flex; align-items: baseline; gap: 16px">
+<h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 700">La rosa</h1>
+<span style="font-size: 13px; color: #BFB49A">16 giocatori · le caratteristiche sono stime degli osservatori, una fascia: più è stretta, più sono sicuri</span>
+</div>
+<table style="width: 100%; border-collapse: collapse; font-size: 13px">
+<thead><tr style="color: #BFB49A; text-align: left; font-size: 11px; letter-spacing: 0.08em">
+<th scope="col" style="padding: 8px 6px; font-weight: 600">#</th><th scope="col" style="padding: 8px 6px; font-weight: 600">GIOCATORE</th><th scope="col" style="padding: 8px 6px; font-weight: 600">RUOLO</th>
+<th scope="col" style="padding: 8px 6px; font-weight: 600">ALTEZZA</th><th scope="col" style="padding: 8px 6px; font-weight: 600">PESO</th>
+<th scope="col" style="padding: 8px 6px; font-weight: 600; width: 120px">VELOCITÀ</th><th scope="col" style="padding: 8px 6px; font-weight: 600; width: 120px">PASSAGGIO</th>
+<th scope="col" style="padding: 8px 6px; font-weight: 600; width: 120px">CONTRASTO</th><th scope="col" style="padding: 8px 6px; font-weight: 600; width: 120px">COLPO DI TESTA</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="p" hint-placeholder-count="16">
+<tr style="border-top: 1px solid rgba(246,235,211,0.14); height: 34px">
+<td style="padding: 0 6px; font-weight: 700; color: #D9A24A">{{p.l}}</td>
+<td style="padding: 0 6px"><sc-if value="{{p.sel}}" hint-placeholder-val="{{false}}"><strong style="color: #D9A24A">{{p.n}}</strong></sc-if><sc-if value="{{p.nsel}}" hint-placeholder-val="{{true}}">{{p.n}}</sc-if><sc-if value="{{p.bench}}" hint-placeholder-val="{{false}}"><span style="margin-left: 8px; font-size: 10px; color: #BFB49A; border: 1px solid rgba(246,235,211,0.14); border-radius: 4px; padding: 1px 5px">panchina</span></sc-if></td>
+<td style="padding: 0 6px; color: #BFB49A">{{p.r}}</td>
+<td style="padding: 0 6px; font-variant-numeric: tabular-nums">{{p.h}}</td>
+<td style="padding: 0 6px; font-variant-numeric: tabular-nums">{{p.w}}</td>
+<sc-for list="{{p.b}}" as="b" hint-placeholder-count="4">
+<td style="padding: 0 6px"><span style="position: relative; display: block; height: 8px; border-radius: 4px; background: rgba(246,235,211,0.1)"><span style="position: absolute; left: {{b.l}}; width: {{b.w}}; top: 0; bottom: 0; border-radius: 4px; background: #F6EBD3; opacity: 0.8"></span></span></td>
+</sc-for>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</main>
+<aside aria-label="Scheda di Home 6" style="width: 360px; border-left: 1px solid rgba(246,235,211,0.14); padding: 20px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+<div>
+<div style="font-size: 10px; letter-spacing: 0.2em; color: #D9A24A">G · MEDIANO</div>
+<h2 style="margin: 4px 0 0; font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 700">Home 6</h2>
+<div style="font-size: 13px; color: #BFB49A; margin-top: 4px">184 cm · 77 kg · misurati, non stimati</div>
+</div>
+<div style="background: #123A2F; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; color: #BFB49A">Cosa vedono gli osservatori</div>
+<div style="font-size: 13px; line-height: 1.5">Spazza presto e lontano; in questa partita una sua spazzata è stata ripresa due secondi prima del gol del 62'.</div>
+<div style="font-size: 12px; color: #BFB49A">Visto in [N] partite · fascia larga sul colpo di testa</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; color: #BFB49A">Mai un numero solo: ogni stima è una fascia (Plane C). Il valore vero lo conosce solo il motore.</div>
+</div>
+<a href="#" style="margin-top: auto; display: flex; align-items: center; justify-content: center; height: 44px; border-radius: 10px; background: #D9A24A; color: #1E1608; font-weight: 700; font-size: 14px; text-decoration: none">Manda un osservatore</a>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const d = {"rows": [{"l": "A", "n": "Home 0", "r": "Portiere", "h": "188 cm", "w": "84 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "21%", "w": "8%"}, {"l": "70%", "w": "15%"}, {"l": "65%", "w": "22%"}, {"l": "70%", "w": "9%"}], "nsel": true}, {"l": "B", "n": "Home 1", "r": "Terzino", "h": "175 cm", "w": "72 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "52%", "w": "19%"}, {"l": "47%", "w": "26%"}, {"l": "51%", "w": "13%"}, {"l": "46%", "w": "20%"}], "nsel": true}, {"l": "C", "n": "Home 2", "r": "Centrale", "h": "190 cm", "w": "85 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "39%", "w": "10%"}, {"l": "34%", "w": "17%"}, {"l": "28%", "w": "24%"}, {"l": "32%", "w": "11%"}], "nsel": true}, {"l": "D", "n": "Home 3", "r": "Centrale", "h": "186 cm", "w": "82 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "16%", "w": "21%"}, {"l": "75%", "w": "8%"}, {"l": "70%", "w": "15%"}, {"l": "64%", "w": "22%"}], "nsel": true}, {"l": "E", "n": "Home 4", "r": "Terzino", "h": "172 cm", "w": "69 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "57%", "w": "12%"}, {"l": "52%", "w": "19%"}, {"l": "46%", "w": "26%"}, {"l": "50%", "w": "13%"}], "nsel": true}, {"l": "F", "n": "Home 5", "r": "Esterno", "h": "180 cm", "w": "73 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "34%", "w": "23%"}, {"l": "38%", "w": "10%"}, {"l": "32%", "w": "17%"}, {"l": "27%", "w": "24%"}], "nsel": true}, {"l": "G", "n": "Home 6", "r": "Mediano", "h": "184 cm", "w": "77 kg", "bench": false, "xi": true, "sel": true, "b": [{"l": "20%", "w": "14%"}, {"l": "15%", "w": "21%"}, {"l": "74%", "w": "8%"}, {"l": "68%", "w": "15%"}], "nsel": false}, {"l": "H", "n": "Home 7", "r": "Mezzala", "h": "178 cm", "w": "76 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "52%", "w": "25%"}, {"l": "56%", "w": "12%"}, {"l": "50%", "w": "19%"}, {"l": "45%", "w": "26%"}], "nsel": true}, {"l": "I", "n": "Home 8", "r": "Esterno", "h": "171 cm", "w": "68 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "38%", "w": "16%"}, {"l": "32%", "w": "23%"}, {"l": "37%", "w": "10%"}, {"l": "32%", "w": "17%"}], "nsel": true}, {"l": "J", "n": "Home 9", "r": "Punta", "h": "187 cm", "w": "80 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "15%", "w": "27%"}, {"l": "19%", "w": "14%"}, {"l": "68%", "w": "21%"}, {"l": "73%", "w": "8%"}], "nsel": true}, {"l": "K", "n": "Home 10", "r": "Seconda punta", "h": "178 cm", "w": "75 kg", "bench": false, "xi": true, "sel": false, "b": [{"l": "56%", "w": "18%"}, {"l": "50%", "w": "25%"}, {"l": "55%", "w": "12%"}, {"l": "50%", "w": "19%"}], "nsel": true}, {"l": "L", "n": "Home 11", "r": "Portiere", "h": "191 cm", "w": "85 kg", "bench": true, "xi": false, "sel": false, "b": [{"l": "42%", "w": "9%"}, {"l": "37%", "w": "16%"}, {"l": "32%", "w": "23%"}, {"l": "36%", "w": "10%"}], "nsel": true}, {"l": "M", "n": "Home 12", "r": "Centrale", "h": "183 cm", "w": "80 kg", "bench": true, "xi": false, "sel": false, "b": [{"l": "19%", "w": "20%"}, {"l": "14%", "w": "27%"}, {"l": "18%", "w": "14%"}, {"l": "68%", "w": "21%"}], "nsel": true}, {"l": "N", "n": "Home 13", "r": "Mezzala", "h": "180 cm", "w": "73 kg", "bench": true, "xi": false, "sel": false, "b": [{"l": "60%", "w": "11%"}, {"l": "55%", "w": "18%"}, {"l": "50%", "w": "25%"}, {"l": "54%", "w": "12%"}], "nsel": true}, {"l": "O", "n": "Home 14", "r": "Esterno", "h": "169 cm", "w": "68 kg", "bench": true, "xi": false, "sel": false, "b": [{"l": "37%", "w": "22%"}, {"l": "42%", "w": "9%"}, {"l": "36%", "w": "16%"}, {"l": "30%", "w": "23%"}], "nsel": true}, {"l": "P", "n": "Home 15", "r": "Punta", "h": "179 cm", "w": "78 kg", "bench": true, "xi": false, "sel": false, "b": [{"l": "24%", "w": "13%"}, {"l": "18%", "w": "20%"}, {"l": "12%", "w": "27%"}, {"l": "72%", "w": "14%"}], "nsel": true}]};
+return d;
+}
+}
+</script>
+</body>
+</html>

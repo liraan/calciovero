@@ -1,0 +1,26 @@
+[package]
+name = "ds-gui-desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Calcio Vero desktop GUI (egui, ADR-061): lavagna tattica con post-it, da Lavagna.dc.html"
+
+[[bin]]
+name = "ds-gui-desktop"
+path = "src/main.rs"
+
+[lib]
+name = "ds_gui_desktop"
+path = "src/lib.rs"
+
+[dependencies]
+ds-career = { path = "../../L1-season/crates/ds-career" }
+ds-world = { path = "../../L1-season/crates/ds-world" }
+# ADR-055: pinned to the last version that keeps the workspace's Rust 1.85.
+eframe = "=0.32.3"
+
+[lints]
+workspace = true

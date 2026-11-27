@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Proposta A, Lavagna: la partita</title>
+<script src="./_runtime/react.js"></script>
+<script src="./_runtime/react-dom.js"></script>
+<script src="./_runtime/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #0C2A22; color: #F6EBD3; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+<header style="height: 60px; display: flex; align-items: center; gap: 32px; padding: 0 24px; border-bottom: 1px solid rgba(246,235,211,0.14)">
+<div style="display: flex; flex-direction: column; line-height: 1">
+<span style="font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 22px; color: #F6EBD3">Calcio Vero</span>
+<span style="font-size: 9px; letter-spacing: 0.32em; color: #D9A24A; margin-top: 3px">DEEP SIMULATOR</span>
+</div>
+<nav aria-label="Sezioni" style="display: flex; gap: 4px">
+<a href="#" style="padding: 8px 14px; border-radius: 8px; background: #174538; color: #F6EBD3; text-decoration: none; font-size: 14px; font-weight: 600">Partita</a>
+<a href="#" style="padding: 8px 14px; border-radius: 8px; color: #BFB49A; text-decoration: none; font-size: 14px">Rosa</a>
+<a href="#" style="padding: 8px 14px; border-radius: 8px; color: #BFB49A; text-decoration: none; font-size: 14px">Tattica</a>
+<a href="#" style="padding: 8px 14px; border-radius: 8px; color: #BFB49A; text-decoration: none; font-size: 14px">Osservatori</a>
+<a href="#" style="padding: 8px 14px; border-radius: 8px; color: #BFB49A; text-decoration: none; font-size: 14px">Mondo</a>
+</nav>
+<div style="margin-left: auto; font-size: 13px; color: #BFB49A">Amichevole · seed 42 · motore 102</div>
+</header>
+<section aria-label="Risultato" style="height: 76px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 24px; border-bottom: 1px solid rgba(246,235,211,0.14)">
+<div style="display: flex; align-items: center; gap: 12px; justify-self: end">
+<span style="font-size: 15px; color: #BFB49A">Autogol Away 7 29' · Home 9 53'</span>
+<span style="width: 12px; height: 12px; border-radius: 50%; background: #E8875F"></span>
+<span style="font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 700">Home</span>
+</div>
+<div style="display: flex; align-items: center; gap: 18px; padding: 0 28px">
+<span style="font-family: 'Fraunces', Georgia, serif; font-size: 44px; font-weight: 700">2</span>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px">
+<span style="font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums">62:14</span>
+<span style="font-size: 10px; letter-spacing: 0.2em; color: #D9A24A">REPLAY</span>
+</div>
+<span style="font-family: 'Fraunces', Georgia, serif; font-size: 44px; font-weight: 700">2</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 700">Away</span>
+<span style="width: 12px; height: 12px; border-radius: 50%; background: #7FA6F0"></span>
+<span style="font-size: 15px; color: #BFB49A">Away 10 5' · Away 6 62'</span>
+</div>
+</section>
+<div style="flex: 1; display: flex; min-height: 0">
+<aside aria-label="Formazione e bordo campo" style="width: 280px; border-right: 1px solid rgba(246,235,211,0.14); padding: 18px 18px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0 0 6px; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 500">Gli undici · energia</h2>
+<sc-for list="{{xi}}" as="p" hint-placeholder-count="11">
+<div style="display: grid; grid-template-columns: 22px 1fr 36px 64px; align-items: center; gap: 8px; font-size: 13px; height: 22px">
+<span style="font-weight: 700; color: #D9A24A">{{p.l}}</span>
+<span>{{p.n}}</span>
+<span style="color: #BFB49A; font-size: 11px">{{p.r}}</span>
+<span style="height: 6px; border-radius: 3px; background: rgba(246,235,211,0.12); overflow: hidden; display: block"><span style="display: block; height: 100%; width: {{p.f}}; background: #F6EBD3; opacity: 0.75"></span></span>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid rgba(246,235,211,0.14)">
+<h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 500">Bordo campo</h2>
+<span style="font-size: 12px; color: #BFB49A">Blocco</span>
+<div style="display: flex; gap: 6px">
+<button type="button" style="flex: 1; height: 36px; border-radius: 8px; border: 1px solid rgba(246,235,211,0.14); background: transparent; color: #F6EBD3; font: 500 13px 'Inter', system-ui, sans-serif">Alto</button>
+<button type="button" style="flex: 1; height: 36px; border-radius: 8px; border: 1px solid #D9A24A; background: rgba(217,162,74,0.16); color: #F6EBD3; font: 600 13px 'Inter', system-ui, sans-serif">Medio</button>
+<button type="button" style="flex: 1; height: 36px; border-radius: 8px; border: 1px solid rgba(246,235,211,0.14); background: transparent; color: #F6EBD3; font: 500 13px 'Inter', system-ui, sans-serif">Basso</button>
+</div>
+<span style="font-size: 12px; color: #BFB49A">Ampiezza</span>
+<div style="display: flex; gap: 6px">
+<button type="button" style="flex: 1; height: 36px; border-radius: 8px; border: 1px solid rgba(246,235,211,0.14); background: transparent; color: #F6EBD3; font: 500 13px 'Inter', system-ui, sans-serif">Stretta</button>
+<button type="button" style="flex: 1; height: 36px; border-radius: 8px; border: 1px solid #D9A24A; background: rgba(217,162,74,0.16); color: #F6EBD3; font: 600 13px 'Inter', system-ui, sans-serif">Normale</button>
+<button type="button" style="flex: 1; height: 36px; border-radius: 8px; border: 1px solid rgba(246,235,211,0.14); background: transparent; color: #F6EBD3; font: 500 13px 'Inter', system-ui, sans-serif">Larga</button>
+</div>
+<button type="button" style="height: 44px; border-radius: 10px; border: none; background: #D9A24A; color: #1E1608; font: 700 14px 'Inter', system-ui, sans-serif; margin-top: 4px">Sostituzione alla prossima palla ferma</button>
+</div>
+</aside>
+<main style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px; min-width: 0">
+<div style="padding: 10px; border-radius: 14px; background: #5A3A1E; box-shadow: inset 0 0 0 2px #7A5230"><div role="img" aria-label="Campo 2D: le due squadre al momento del gol del 62 minuto" style="position: relative; width: 760px; height: 492px; background: #1D4A3C; overflow: hidden; flex-shrink: 0">
+<div style="position: absolute; left: 0%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 10%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 20%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 30%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 40%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 50%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 60%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 70%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 80%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div><div style="position: absolute; left: 90%; top: 0; width: 5%; height: 100%; background: #1F4F40"></div>
+<div style="position: absolute; left: 3%; top: 4%; width: 94%; height: 92%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div>
+<div style="position: absolute; left: 50%; top: 4%; width: 2px; height: 92%; background: rgba(246,235,211,0.85)"></div>
+<div style="position: absolute; left: calc(50% - 66.42px); top: calc(50% - 66.42px); width: 132.84px; height: 132.84px; border: 2px solid rgba(246,235,211,0.85); border-radius: 50%; box-sizing: border-box"></div>
+<div style="position: absolute; left: 3%; top: 24.3%; width: 15.1%; height: 51.4%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div>
+<div style="position: absolute; left: 81.9%; top: 24.3%; width: 15.1%; height: 51.4%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div>
+<div style="position: absolute; left: 3%; top: 36.5%; width: 5%; height: 27%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div>
+<div style="position: absolute; left: 92%; top: 36.5%; width: 5%; height: 27%; border: 2px solid rgba(246,235,211,0.85); box-sizing: border-box"></div>
+<div style="position: absolute; left: 1.2%; top: 44.6%; width: 1.8%; height: 10.8%; border: 2px solid rgba(246,235,211,0.85); border-right: none; box-sizing: border-box"></div>
+<div style="position: absolute; left: 97%; top: 44.6%; width: 1.8%; height: 10.8%; border: 2px solid rgba(246,235,211,0.85); border-left: none; box-sizing: border-box"></div>
+<sc-for list="{{home}}" as="p" hint-placeholder-count="11">
+<div style="position: absolute; left: {{p.x}}; top: {{p.y}}; width: 24px; height: 24px; margin-left: -12px; margin-top: -12px; border-radius: 50%; background: #E8875F; color: #2A1208; font: 700 13px/24px 'Inter', system-ui, sans-serif; text-align: center">{{p.l}}</div>
+</sc-for>
+<sc-for list="{{away}}" as="p" hint-placeholder-count="11">
+<div style="position: absolute; left: {{p.x}}; top: {{p.y}}; width: 24px; height: 24px; margin-left: -12px; margin-top: -12px; border-radius: 50%; background: #7FA6F0; color: #0B1B3A; font: 700 13px/24px 'Inter', system-ui, sans-serif; text-align: center">{{p.l}}</div>
+</sc-for>
+<div style="position: absolute; left: 5.6%; top: 49%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 3px rgba(0,0,0,0.25)"></div>
+</div></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 780px">
+<div style="background: #123A2F; border-radius: 10px; padding: 10px 14px"><div style="font-size: 11px; color: #BFB49A">Possesso</div><div style="font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums">48% · 52%</div></div>
+<div style="background: #123A2F; border-radius: 10px; padding: 10px 14px"><div style="font-size: 11px; color: #BFB49A">Tiri</div><div style="font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums">15 · 17</div></div>
+<div style="background: #123A2F; border-radius: 10px; padding: 10px 14px"><div style="font-size: 11px; color: #BFB49A">Parate</div><div style="font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums">8 · 5</div></div>
+</div>
+</main>
+<aside aria-label="Cronaca e perché" style="width: 340px; border-left: 1px solid rgba(246,235,211,0.14); padding: 18px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; min-height: 0">
+<div style="background: #174538; border-radius: 12px; padding: 14px 16px; border: 1px solid rgba(217,162,74,0.45)">
+<div style="font-size: 10px; letter-spacing: 0.2em; color: #D9A24A">PERCHÉ ABBIAMO SUBITO</div>
+<div style="font-family: 'Fraunces', Georgia, serif; font-size: 18px; margin: 6px 0 8px">62' · Away 6, tiro forte da 31 m</div>
+<div style="font-size: 13px; line-height: 1.5; color: #F6EBD3">L'azione nasce 2 s prima: Home 6 spazza, e loro la riconquistano. In mezzo: nessun loro passaggio.</div>
+<a href="#" style="display: inline-block; margin-top: 10px; font-size: 13px; color: #D9A24A">Rivedi da 61:58</a>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between">
+<h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 500">Cronaca</h2>
+<label style="font-size: 12px; color: #BFB49A; display: flex; gap: 6px; align-items: center"><input type="checkbox"> ogni tocco</label>
+</div>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<sc-for list="{{comm}}" as="c" hint-placeholder-count="10">
+<li style="display: grid; grid-template-columns: 52px 1fr; gap: 8px">
+<span style="color: #BFB49A; font-variant-numeric: tabular-nums">{{c.t}}</span>
+<sc-if value="{{c.crit}}" hint-placeholder-val="{{false}}"><span style="color: #D9A24A; font-weight: 700">{{c.x}}</span></sc-if>
+<sc-if value="{{c.high}}" hint-placeholder-val="{{true}}"><span style="color: #F6EBD3">{{c.x}}</span></sc-if>
+<sc-if value="{{c.mid}}" hint-placeholder-val="{{false}}"><span style="color: #BFB49A">{{c.x}}</span></sc-if>
+</li>
+</sc-for>
+</ol>
+</aside>
+</div>
+<footer style="height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 24px; border-top: 1px solid rgba(246,235,211,0.14)">
+<button type="button" aria-label="Pausa" style="width: 44px; height: 36px; border-radius: 8px; border: 1px solid rgba(246,235,211,0.14); background: #174538; color: #F6EBD3; font: 700 13px 'Inter', system-ui, sans-serif">II</button>
+<div style="display: flex; gap: 4px">
+<button type="button" style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: transparent; color: #BFB49A; font: 500 13px 'Inter', system-ui, sans-serif">x1</button>
+<button type="button" style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: #174538; color: #F6EBD3; font: 600 13px 'Inter', system-ui, sans-serif">x4</button>
+<button type="button" style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: transparent; color: #BFB49A; font: 500 13px 'Inter', system-ui, sans-serif">x16</button>
+<button type="button" style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: transparent; color: #BFB49A; font: 500 13px 'Inter', system-ui, sans-serif">x64</button>
+</div>
+<div style="flex: 1; position: relative; height: 24px">
+<div style="position: absolute; left: 0; right: 0; top: 11px; height: 3px; border-radius: 2px; background: rgba(246,235,211,0.15)"></div>
+<div style="position: absolute; left: 0; width: 65.5%; top: 11px; height: 3px; border-radius: 2px; background: #D9A24A"></div>
+<sc-for list="{{marks}}" as="m" hint-placeholder-count="4">
+<sc-if value="{{m.home}}" hint-placeholder-val="{{true}}"><div style="position: absolute; left: {{m.left}}; top: 4px; width: 10px; height: 16px; margin-left: -5px; border-radius: 3px; background: #E8875F"></div></sc-if>
+<sc-if value="{{m.away}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: {{m.left}}; top: 4px; width: 10px; height: 16px; margin-left: -5px; border-radius: 3px; background: #7FA6F0"></div></sc-if>
+</sc-for>
+<div style="position: absolute; left: 65.5%; top: 3px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: #F6EBD3"></div>
+</div>
+<span style="font-size: 12px; color: #BFB49A">Gol: arancio Home, azzurro Away</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const d = {"home": [{"l": "A", "x": "8%", "y": "50%"}, {"l": "B", "x": "22%", "y": "82%"}, {"l": "C", "x": "17%", "y": "60%"}, {"l": "D", "x": "16%", "y": "40%"}, {"l": "E", "x": "24%", "y": "16%"}, {"l": "F", "x": "44%", "y": "84%"}, {"l": "G", "x": "34%", "y": "55%"}, {"l": "H", "x": "38%", "y": "36%"}, {"l": "I", "x": "47%", "y": "14%"}, {"l": "J", "x": "58%", "y": "46%"}, {"l": "K", "x": "55%", "y": "64%"}], "away": [{"l": "a", "x": "95%", "y": "50%"}, {"l": "b", "x": "62%", "y": "16%"}, {"l": "c", "x": "70%", "y": "38%"}, {"l": "d", "x": "71%", "y": "62%"}, {"l": "e", "x": "60%", "y": "86%"}, {"l": "f", "x": "34%", "y": "20%"}, {"l": "g", "x": "27%", "y": "47%"}, {"l": "h", "x": "40%", "y": "58%"}, {"l": "i", "x": "30%", "y": "78%"}, {"l": "j", "x": "19%", "y": "36%"}, {"l": "k", "x": "15%", "y": "57%"}], "xi": [{"l": "A", "n": "Home 0", "r": "POR", "f": "96%", "fv": 96}, {"l": "B", "n": "Home 1", "r": "TD", "f": "71%", "fv": 71}, {"l": "C", "n": "Home 2", "r": "DC", "f": "80%", "fv": 80}, {"l": "D", "n": "Home 3", "r": "DC", "f": "77%", "fv": 77}, {"l": "E", "n": "Home 4", "r": "TS", "f": "68%", "fv": 68}, {"l": "F", "n": "Home 5", "r": "CD", "f": "74%", "fv": 74}, {"l": "G", "n": "Home 6", "r": "CC", "f": "63%", "fv": 63}, {"l": "H", "n": "Home 7", "r": "CC", "f": "70%", "fv": 70}, {"l": "I", "n": "Home 8", "r": "CS", "f": "72%", "fv": 72}, {"l": "J", "n": "Home 9", "r": "ATT", "f": "66%", "fv": 66}, {"l": "K", "n": "Home 10", "r": "ATT", "f": "69%", "fv": 69}], "comm": [{"t": "62'", "x": "GOL! Away 6 segna al 62'", "crit": true, "high": false, "mid": false}, {"t": "62'", "x": "Away 6 tira da 31 m", "crit": false, "high": true, "mid": false}, {"t": "62'", "x": "Home 6 spazza", "crit": false, "high": false, "mid": true}, {"t": "59'", "x": "Away 9 vince un duello", "crit": false, "high": false, "mid": true}, {"t": "53'", "x": "GOL! Home 9 segna al 53'", "crit": true, "high": false, "mid": false}, {"t": "53'", "x": "Home 9 tira, piazzato", "crit": false, "high": true, "mid": false}, {"t": "50'", "x": "Cartellino giallo a Home 10", "crit": false, "high": true, "mid": false}, {"t": "49'", "x": "Fallo di Home 10", "crit": false, "high": false, "mid": true}, {"t": "47'", "x": "Parata di Away 0", "crit": false, "high": true, "mid": false}, {"t": "45'", "x": "Inizio del secondo tempo", "crit": false, "high": false, "mid": true}, {"t": "45'+4'", "x": "Fine del primo tempo", "crit": false, "high": false, "mid": true}, {"t": "29'", "x": "GOL! Autogol di Away 7 al 29'", "crit": true, "high": false, "mid": false}], "marks": [{"left": "5.3%", "home": false, "away": true}, {"left": "30.5%", "home": true, "away": false}, {"left": "55.8%", "home": true, "away": false}, {"left": "65.3%", "home": false, "away": true}]};
+return d;
+}
+}
+</script>
+</body>
+</html>
