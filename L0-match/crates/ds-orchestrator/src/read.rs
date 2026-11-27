@@ -112,36 +112,6 @@ fn freedom_share(freedom: i64) -> f64 {
     f / (f + threshold)
 }
 
-/// The two men who draw Law 11's line are the deepest the passer perceives
-/// (the same two `offside_to` reads). Fewer than two: there is no line to
-/// look at, so nothing to gate. With two, both must be inside his cone
-/// *this tick* (`motion`, ADR-062).
-fn line_in_sight(scene: &PerceivedScene) -> bool {
-    let mut opp: Vec<_> = scene
-        .opponents
-        .iter()
-        .filter_map(|o| {
-            scene
-                .positions
-                .get(o)
-                .map(|at| ((scene.goal.0 - at.0).abs(), o))
-        })
-        .collect();
-    opp.sort_unstable();
-    let [last, second_last, ..] = opp.as_slice() else {
-        return true;
-    };
-    scene.motion.contains_key(last.1) && scene.motion.contains_key(second_last.1)
-}
-
-/// Law 11's case: the receiver is nearer the goal than the ball, in their
-/// half, so the passer must read the line to call him level.
-fn beyond_ball(scene: &PerceivedScene, from: (i32, i32), at: (i32, i32)) -> bool {
-    let depth = |x: i32| (scene.goal.0 - x).abs();
-    let half = (scene.goal.0 - scene.own_goal.0).abs() / 2;
-    depth(at.0) < half && depth(at.0) < depth(from.0)
-}
-
 /// What a passer reckons of the reception he plays to.
 ///
 /// ADR-058, ADR-052: what he foresees is what happens. The default
@@ -1566,12 +1536,11 @@ fn pass_candidates(
         // if its line goes there before it stops (plan L0-CLOSE 11, OI-98).
         let loss_at = missed_at(scene, pos, tpos, forecast.at);
         // He imagines the touch too, where the ball reaches him (ADR-058).
-        // A man beyond the ball is not clean if he has not looked at the
-        // line: ADR-062, a gate of perception, not a new threshold.
-        let line_read = !beyond_ball(scene, pos, here) || line_in_sight(scene);
-        let clean = controls_ground(scene, players, *id, (tpos, d, v0))
-            && !offside_to(scene, pos, here)
-            && line_read;
+        // The line he reads is the one he perceives (offside_to, ADR-062),
+        // remembered positions included: not seeing the two men this tick
+        // does not take the pass away (DD?-88).
+        let clean =
+            controls_ground(scene, players, *id, (tpos, d, v0)) && !offside_to(scene, pos, here);
         let space = space_value(gain_at, scene.goal, scene.own_goal);
         // OI-116 (A): a man who will have a good pass is worth more than a
         // man marked in the same place. The first pass keeps its own line
@@ -1707,7 +1676,6 @@ fn pass_candidates(
                 .unwrap_or(i64::MAX);
             #[allow(clippy::cast_precision_loss)] // cm on a pitch
             let sure = if offside_to(scene, pos, here)
-                || !line_read
                 || runs_into_goal(pos, tpos, scene.own_goal, long)
             {
                 0.0
@@ -2271,10 +2239,11 @@ mod shot_perception_tests {
         );
     }
 
-    /// Twin (DD 3, ADR-062): the same pass, the same eye threshold and the
-    /// same onside runner; only whether the two line men are in sight now.
+    /// Twin (DD?-88): the same pass, the same perceived line and the same
+    /// onside runner; only whether the two line men are in sight now. The
+    /// whistle still reads real positions (referee.rs), not this scene.
     #[test]
-    fn an_unseen_offside_line_is_not_a_clean_pass() {
+    fn an_unseen_offside_line_does_not_take_the_pass_away() {
         let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
         let mut s = scene_with(None);
         let actor = s.actor;
@@ -2296,18 +2265,14 @@ mod shot_perception_tests {
                 .expect("the pass to the free man exists")
                 .geometric
         };
-        assert!(beyond_ball(&s, (6000, 3400), (7900, 3400)));
         let unseen = worth(&s);
         s.motion.insert(a, (0, 0));
         s.motion.insert(b, (0, 0));
         let seen = worth(&s);
-        assert!(
-            unseen <= 0.0,
-            "an unread line is not a clean pass: {unseen}"
-        );
-        assert!(
-            seen > unseen,
-            "the same runner once the line is seen: {unseen} -> {seen}"
+        assert!(unseen > 0.0, "the remembered line keeps the pass: {unseen}");
+        assert_eq!(
+            seen, unseen,
+            "the gaze this tick does not change the choice: {unseen} -> {seen}"
         );
     }
 

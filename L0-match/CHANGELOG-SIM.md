@@ -9,6 +9,31 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 222 — a remembered offside line keeps the pass (opencode RUN 82, DD?-88)
+
+On the local Wyscout dump 1,620 offside events give 4.263 ± 2.397 a match,
+the reference band. The pass-first story holds: 1,327 of them (81.9%) have a
+pass of the same team within five seconds and in 93.1% of those pairs the
+offside event sits exactly on the pass endpoint. The dump has no positions
+for the defenders, so it cannot measure the line itself.
+
+`offside_to` already reads Law 11 from the positions the passer perceives,
+remembered positions included, with the eye's 8 mrad threshold (ADR-062 (b)).
+`line_in_sight` added a second gate: when the two deepest defenders he
+perceives were not both in `motion` that tick, the ground pass and the loft
+lost all worth. The tracked player had a line and could not play from it; the
+whistle, meanwhile, is raised from real positions (`referee.rs`). That is a
+veto on the choice, of the same kind as DD-81 and DD-86, not an extra
+perception gate. ADR-062 (c) — reading the line from the last look outside
+the spread of attention — would need a freshness threshold no source gives,
+so none is added (A5-bis).
+
+The gate and its `beyond_ball` helper are gone; the perceived line and the
+eye threshold stay. The twin `an_unseen_offside_line_does_not_take_the_pass_away`
+reads the same scene with and without the two men in `motion` and asserts the
+same pass worth. Golden L0/L1 and the fixtures are regenerated;
+`ds-reference 42..101` is recorded in `L0-CALIBRATION.md` §222.
+
 ## 221 — a contested loft is graded, not vetoed (opencode RUN 80, DD-86)
 
 Wyscout counts 38.14 aerial duels a match; the local dump reproduces it

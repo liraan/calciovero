@@ -143,6 +143,70 @@ Il recupero della Regola 7.3 (OI-101).
 
 **In banda: 208 → 14 su 22.**
 
+## La misura del 222 (2026-11-27, opencode)
+
+Stesso comando e bande del 221. Un solo bump: DD?-88 toglie il gate
+`line_in_sight` sul passaggio. Grezzo Wyscout: 1.620 offside su 380 partite
+(4,263 ± 2,397, la banda); 1.327 (81,9%) hanno un pass della stessa squadra
+entro 5 s e nel 93,1% di essi l'evento di offside cade esattamente
+sull'endpoint del pass. Il dump non ha le posizioni dei difensori, quindi non
+misura la linea: la storia "passaggio al ricevitore, poi bandierina" è
+sostenuta, la geometria della linea no.
+
+`offside_to` leggeva già Law 11 dalle posizioni percepite (ultimo sguardo
+estrapolato) con la soglia dell'occhio di 8 mrad (ADR-062 (b)). Il gate
+aggiungeva che i due difensori più profondi dovessero essere in `motion` in
+quel tick, altrimenti il pass valeva zero: un secondo veto sulla scelta, non
+un gate di percezione — il fischio arriva da posizioni reali
+(`referee.rs:466-509`). La (c) di ADR-062 (linea letta dall'ultimo sguardo
+fuori dall'attenzione) non è attuata e chiederebbe una soglia di freschezza
+che nessuna fonte dà: non l'ho aggiunta (A5-bis).
+
+**15 su 20 confrontabili in banda** (erano 11). Entrano in banda `offsides`,
+`clearances`, `goal_kicks` e `free_kicks`; esce `goals`. `aerial_duels` 8,22
+contro 38,14 ± 12,98 resta fuori e non è questa la sua causa (OI-100).
+
+| metrica | 222 | 221 | reale | nota |
+|---|---|---|---|---|
+| goals | 5.28 | 4.73 | 2.68 ± 1.65 | fuori di 0,95, non tarato |
+| own_goals | 0.30 | 0.27 | 0.10 ± 0.31 | in banda |
+| shots | 29.10 | 27.27 | 24.60 ± 5.46 | in banda |
+| shots_on_target | 9.85 | 8.55 | 8.69 ± 3.22 | in banda |
+| penalties | 0.15 | 0.20 | 0.33 ± 0.56 | in banda |
+| passes | 1193.28 | 1143.52 | 887.68 ± 122.81 | fuori, volume aperto (DD-82) |
+| passes_accurate | 1079.88 | 1064.23 | 739.17 ± 124.79 | fuori, volume aperto (DD-82) |
+| crosses | 8.68 | 6.90 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 8.22 | 4.75 | 38.14 ± 12.98 | fuori, OI-100 |
+| ground_duels | 159.70 | 156.70 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 19.03 | 18.55 | 16.03 ± 5.67 | in banda |
+| fouls | 22.03 | 21.05 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.52 | 2.28 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.42 | 0.22 | 0.24 ± 0.49 | in banda |
+| corners | 7.67 | 8.85 | 10.30 ± 3.58 | in banda |
+| throw_ins | 22.75 | 21.40 | 42.72 ± 8.92 | fuori, OI-100 (RUN 76) |
+| goal_kicks | 16.38 | 10.85 | 17.15 ± 4.20 | in banda |
+| free_kicks | 26.77 | 21.32 | 29.45 ± 6.81 | in banda |
+| offsides | 6.17 | 1.52 | 4.26 ± 2.40 | in banda, DD?-88 |
+| clearances | 25.67 | 19.82 | 29.53 ± 8.65 | in banda |
+| interceptions | 70.18 | 49.13 | 89.86 ± 13.97 | non confrontabile |
+| saves | 5.08 | 4.35 | 6.70 ± 2.82 | in banda con T11 |
+| stoppage_first_half_min | 2.73 | 2.57 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 6.21 | 5.60 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+DD?-89 chiuso senza modifica (RUN 83): `clearances` 25,67 e `corners`
+7,67 sono in banda sul 222, il grezzo riproduce 11.222 spazzate Wyscout
+(29,531579 ± 8,650923, `eventId 7 / subEventId 71`) e il 78,6% dei precedenti
+entro 5 s è dell'altra squadra. Il dump non registra pressione né opzioni di
+passaggio: non autorizza a cambiare DD-5/DD-8/DD-10. Restano aperti DD?-91
+(volume e accuratezza dei passaggi) e DD?-92 (gol), uno alla volta.
+
+Golden L0 base/istruito/coppa rigenerati (seed coppa 62 -> 78, hash
+`78:24f14890…`); golden L1 `SMALL_GOLDEN` `0b00a6ad…`. Fixtures spostati:
+header in fuorigioco 79 -> 48, livello al 90' 53 -> 49, knock 42, rigori
+solo-tiri 62 -> 78. Il gemello riscritto
+`an_unseen_offside_line_does_not_take_the_pass_away` legge la stessa scena
+con e senza i due uomini in `motion` e pretende lo stesso valore del pass.
+
 ## La misura del 221 (2026-11-27, opencode)
 
 Stesso comando e bande del 220. Un solo bump: DD-86 toglie il veto
