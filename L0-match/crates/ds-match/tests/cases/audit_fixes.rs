@@ -40,6 +40,22 @@ fn the_keeper_who_came_on_meets_the_shots() {
     assert!(saves > 0, "the keeper who came on never met a shot");
 }
 
+/// T10 (P1, `CODE-AUDIT.md`): the keeper is read where he is in the tick.
+/// Before SIM 223 the crossing was judged before `move_bodies`, so a shot
+/// was parried — or conceded — against the keeper of the previous tick.
+#[test]
+fn the_keeper_moves_before_the_shot_crosses() {
+    let src = include_str!("../../src/state.rs");
+    // rfind: the waiting branch also moves bodies, earlier in the source.
+    let moved = src
+        .rfind("self.move_bodies(ctx, tick);")
+        .expect("the bodies move in a tick");
+    let crossing = src
+        .find("self.check_shot_crossing(ctx, tick, prev_ball, curr_ball);")
+        .expect("the crossing is judged");
+    assert!(moved < crossing, "the keeper is read one tick too early");
+}
+
 /// A7 (P1, Law 3): the substitutions planned before the match count
 /// against the limit too. Before SIM 196 only those ordered during the
 /// match did: a plan of five was made in full with three allowed.
@@ -112,11 +128,11 @@ fn no_substitution_during_the_shootout() {
 /// ground. Before SIM 196 the air cleared the marks unread and a header
 /// from offside was never called: the free kick could not follow an aerial
 /// duel won by its offender. The first seed from 42 where it happens under
-/// SIM 222, found once and played directly (with the rarer aerial duels of
+/// SIM 223, found once and played directly (with the rarer aerial duels of
 /// SIM 203 none of 42..52 had one).
 #[test]
 fn a_header_from_offside_is_called() {
-    const HEADER_OFFSIDE_SEED: u64 = 48;
+    const HEADER_OFFSIDE_SEED: u64 = 52;
     let called: usize =
         ds_fixtures::each_seed(HEADER_OFFSIDE_SEED..HEADER_OFFSIDE_SEED + 1, |seed| {
             let m = match_fixture(seed).expect("fixture");

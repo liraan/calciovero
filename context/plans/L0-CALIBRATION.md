@@ -233,12 +233,95 @@ duelli nasce da una pressione, categoria assente nel referto. Non autorizza
 a cambiare ADR-081 (DD-93 chiuso) né a tarare raggi o finestre (A5-bis); è
 l'evidenza da portare a una nuova DD dottrinale, se si apre.
 
+RUN 97 aggiunge una fonte nuova, sempre senza modifica al modello. Non esiste
+Serie A maschile in StatsBomb open data: le 426 partite con 360 sono World Cup,
+Euro, La Liga, Bundesliga, Ligue 1, MLS e tornei femminili. Ho letto gli eventi
+delle 35 partite maschili di La Liga 2020/21 che hanno 360: 839 tiri (23,97 a
+partita), 111 gol, 227 parati, 203 bloccati, 256 fuori, 15 pali, 4 parati fuori,
+3 parati sul palo, 20 wayward; 616/839 end_location hanno la quota z.
+Goal/(Goal+Saved) = 111/338 = **32,8%** (111/356 = 31,2% includendo pali e
+parati sul palo); tiri in porta 40,3%, gol/tiro 13,2%. Confronti: Wyscout
+Serie A 2017-18 30,8% di conversione, 35,3% di tiri in porta, 0,1088 gol/tiro;
+motore SIM 222 53,6% di conversione, 33,9% di tiri in porta, 0,1814 gol/tiro.
+La selezione dei tiri non spiega il divario: è la risoluzione del tiro in porta
+da auditare come possibile bug (geometria di portiere e pali), non una soglia da
+tarare (A5-bis). Il campione è un'altra lega e un'altra stagione, quindi non
+confronta lo stesso evento del referto: non dà una banda nuova né una taratura.
+Il match femminile `3835328` esaminato prima (22 tiri, 2 gol, conversione 20%)
+aveva i free frame con portiere nominato e quota z, ma non basta a separare
+geometria da definizione: due gol soli, istante del frame non dichiarato.
+
+RUN 98 chiude l'audit del tiro senza trovare un bug di conteggio. Gol dal
+punteggio (`engine.rs:18-21`), `on_target` geometrico
+(`ds-orchestrator/src/lib.rs:592-601`), gol solo dall'attraversamento reale
+(`ball.rs:220-230`), nessun doppio conteggio; `resolve_save`
+(`ds-orchestrator/src/lib.rs:949-978`) è una soglia deterministica (ADR-035).
+`L0-match/balance/save.json` dichiara i parametri «arbitrary, declared, to be
+calibrated at L3 against real save rates (about seven shots on target in ten
+are saved)»: la taratura non è mai stata fatta, ma scegliere oggi la portata
+guardando i gol violerebbe A5-bis; la riga `saves` del resto è già in banda
+(T11: 6,695 ± 2,823 contro 5,08 del motore). Ho misurato in un worktree
+temporaneo, senza toccare l'albero principale, l'unico sospetto di stato rimasto
+(T10 in `CODE-AUDIT.md`: il portiere è letto un tick prima di muoversi): spostare
+`move_bodies` prima di `check_shot_crossing` (`state.rs:1013-1027`) lascia
+**15 su 20** in banda; gol 5,28 → 5,02 (ancora fuori, banda fino a 4,33),
+conversione 53,6% → 49,1%, parate 5,08 → 5,83, tiri in porta 9,85 → 10,23,
+rimesse 22,75 → 20,57 (peggiora), duelli aerei 8,22 → 8,10, passaggi +5.
+T10 è un effetto di ordine reale, ma non è la causa delle righe fuori banda:
+è stato applicato dopo, con DD-95/ADR-115 e SIM 223, nella misura qui sotto.
+Le cinque righe restano fuori banda con la loro causa, senza tarature.
+
 Golden L0 base/istruito/coppa rigenerati (seed coppa 62 -> 78, hash
 `78:24f14890…`); golden L1 `SMALL_GOLDEN` `0b00a6ad…`. Fixtures spostati:
 header in fuorigioco 79 -> 48, livello al 90' 53 -> 49, knock 42, rigori
 solo-tiri 62 -> 78. Il gemello riscritto
 `an_unseen_offside_line_does_not_take_the_pass_away` legge la stessa scena
 con e senza i due uomini in `motion` e pretende lo stesso valore del pass.
+
+## La misura del 223 (2026-11-27, opencode, DD-95/ADR-115)
+
+Stesso comando e bande del 222. DD-95 sposta `move_bodies` prima di
+`check_shot_crossing` in `advance_ball` (`state.rs`): il portiere è letto nel
+tick in cui la palla passa il piano, non in quello prima. Nessun numero,
+soglia o portata cambiati (A5-bis).
+
+**15 su 20 confrontabili in banda**, come nel 222. Fuori banda restano le
+stesse cinque righe, con le cause già archiviate: `goals` 5,02 contro
+2,68 ± 1,65, `passes` 1198,93 contro 887,68 ± 122,81, `passes_accurate`
+1085,60 contro 739,17 ± 124,79, `aerial_duels` 8,10 contro 38,14 ± 12,98,
+`throw_ins` 20,57 contro 42,72 ± 8,92 (peggiora di 2,18 rispetto al 222).
+
+| metrica | 223 | 222 | reale | nota |
+|---|---|---|---|---|
+| goals | 5.02 | 5.28 | 2.68 ± 1.65 | fuori di 0,69, non tarato |
+| own_goals | 0.27 | 0.30 | 0.10 ± 0.31 | in banda |
+| shots | 29.35 | 29.10 | 24.60 ± 5.46 | in banda |
+| shots_on_target | 10.23 | 9.85 | 8.69 ± 3.22 | in banda |
+| penalties | 0.12 | 0.15 | 0.33 ± 0.56 | in banda |
+| passes | 1198.93 | 1193.28 | 887.68 ± 122.81 | fuori, volume aperto (DD-82) |
+| passes_accurate | 1085.60 | 1079.88 | 739.17 ± 124.79 | fuori, volume aperto (DD-82) |
+| crosses | 8.37 | 8.68 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 8.10 | 8.22 | 38.14 ± 12.98 | fuori, OI-100 |
+| ground_duels | 159.18 | 159.70 | 182.63 ± 27.54 | in banda |
+| take_ons_won | 19.38 | 19.03 | 16.03 ± 5.67 | in banda |
+| fouls | 22.15 | 22.03 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.77 | 2.52 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.27 | 0.42 | 0.24 ± 0.49 | in banda |
+| corners | 8.00 | 7.67 | 10.30 ± 3.58 | in banda |
+| throw_ins | 20.57 | 22.75 | 42.72 ± 8.92 | fuori, DD-94 |
+| goal_kicks | 15.78 | 16.38 | 17.15 ± 4.20 | in banda |
+| free_kicks | 26.45 | 26.77 | 29.45 ± 6.81 | in banda |
+| offsides | 5.65 | 6.17 | 4.26 ± 2.40 | in banda |
+| clearances | 24.75 | 25.67 | 29.53 ± 8.65 | in banda |
+| interceptions | 71.77 | 70.18 | 89.86 ± 13.97 | non confrontabile |
+| saves | 5.83 | 5.08 | 6.70 ± 2.82 | in banda (T11) |
+| stoppage_first_half_min | 3.12 | 2.73 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 5.47 | 6.21 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+Parate 5,08 → 5,83, conversione dei tiri in porta 53,6% → 49,1%: il divario
+con Wyscout (30,8%) e StatsBomb (32,8%) resta, coerentemente con i parametri
+di `save.json` dichiarati arbitrari e da tarare a L3, mai tarati. Golden L0 e
+L1 rigenerati, semi spostati (coppa 78 → 47, header 48 → 52, livello 49 → 47).
 
 ## La misura del 221 (2026-11-27, opencode)
 

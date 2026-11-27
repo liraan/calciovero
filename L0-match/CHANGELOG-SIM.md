@@ -9,6 +9,28 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 223 — the keeper is read where he is in the tick (opencode RUN 99, DD-95)
+
+`CODE-AUDIT.md` T10: `advance_ball` judged the crossing of a shot — and
+therefore the keeper's save — before `move_bodies`. The parry used the
+position of the previous tick: the keeper was one tick behind the ball he
+was facing. With LUNA the dito is the ball crossing the goal plane and the
+luna is the keeper reading the flight and choosing how to meet it; a
+position from the tick before is not what he saw. `move_bodies` now runs
+before `check_shot_crossing`, with the guard
+`the_keeper_moves_before_the_shot_crosses` on the order of the two calls.
+
+It is an order of phases, not a new rule, a clamp or a tuned number:
+`resolve_save`, the reach in `save.json` and the geometry of the goal are
+untouched. Golden L0/L1 and the fixtures are regenerated (cup seed 78 → 47,
+first offside header 48 → 52, first level friendly 49 → 47). `ds-reference
+42..101` stays at **15 of 20 comparable metrics in band**: goals 5.28 →
+5.02 (still out of the 2.68 ± 1.65 band), saves 5.08 → 5.83, shots on
+target 9.85 → 10.23, conversion 53.6% → 49.1%, throw-ins 22.75 → 20.57
+(worse), aerial duels 8.22 → 8.10. T10 is a real state correction, not the
+cause of the five out-of-band rows; no parameter was fitted to them
+(A5-bis). The measurement is in `L0-CALIBRATION.md` §223.
+
 ## 222 — a remembered offside line keeps the pass (opencode RUN 82, DD?-88)
 
 On the local Wyscout dump 1,620 offside events give 4.263 ± 2.397 a match,

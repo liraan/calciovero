@@ -1014,6 +1014,9 @@ impl MatchState {
         }
         self.spatial.advance_ball();
         let curr_ball = self.spatial.ball_3d();
+        // T10: the keeper is read where he is in this tick, not where he
+        // stood before this tick's movement.
+        self.move_bodies(ctx, tick);
         self.check_shot_crossing(ctx, tick, prev_ball, curr_ball);
         // A ball the keeper has just met on that line (held, parried,
         // tipped, or off the woodwork) is no longer where its flight took
@@ -1024,7 +1027,6 @@ impl MatchState {
             self.check_goal_line(ctx, tick, prev_ball, curr_ball);
         }
         self.restart_if_out(ctx, tick);
-        self.move_bodies(ctx, tick);
         self.carry_the_ball(ctx, tick);
         self.tire_players(ctx);
         self.meet_ball_in_air(ctx, tick);

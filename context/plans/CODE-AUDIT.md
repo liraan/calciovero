@@ -164,7 +164,7 @@ Stessi 8 analisti in sola lettura, a HEAD `5eafc14` (SIM 202), con la tabella de
 - T7. ✅ (SIM 203) `play_clearance` (spazzata di prima) non registra chi calcia: ultimo tocco stantio per fondo, laterale, gol/autogol (motore; sessione interrotta).
 - T8. ✅ (SIM 203) "Tiro in porta" giudicato sul punto mirato e senza il raggio della palla (`resolve_shot` `on_target`, `header_at_goal`); `in_the_goal_mouth` non è l'unico giudice come il 202 dichiara (tutti).
 - T9. Il primo tocco "nella corsa" può portare la palla verso la propria porta e lui non decide finché non la raggiunge (spazio).
-- T10. Nel tick porta e linee sono giudicate prima dei contatti: nell'ultimo tratto nessun salvataggio sulla linea (confini). Tocca l'ordine delle fasi (B9): con un ADR.
+- T10. ✅ (SIM 223, ADR-115) Nel tick porta e linee sono giudicate prima dei contatti: nell'ultimo tratto nessun salvataggio sulla linea (confini). Tocca l'ordine delle fasi (B9): con un ADR.
 
 **Blocco 2 — la misura (ds-reference)**
 - T11. ✅ (RUN 36) La banda era gonfiata: 1017 tentativi Wyscout 9 con tag 101 su 380 partite (2.676/m = i gol); esclusi, saves 6.695 ± 2.823 e il motore 5.27 è in banda (strumenti).
