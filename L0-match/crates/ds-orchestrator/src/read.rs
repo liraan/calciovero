@@ -2959,6 +2959,47 @@ mod shot_perception_tests {
             assert!(free > pressed, "{free} vs {pressed}");
         }
 
+        /// Twin (DD-91(d)): the same carrier, mate and opponent; only the
+        /// room in front changes. With room he carries; with a man two metres
+        /// ahead he circulates. Both remain options in both scenes: the read
+        /// grades them, it does not take them away (LUNA).
+        #[test]
+        fn when_space_ahead_closes_the_carrier_circulates() {
+            let b = ds_calculator::shot_choice::ShotChoiceBalance::load();
+            let context = |ahead| {
+                let s = scene((6200, 3400), Some(ahead));
+                build_choice(&s, Side::Right, 0.5, 0.04, &b).0
+            };
+            let chosen = |ahead| {
+                let mut g = crate::GroundTruth::new(42, ds_core::ids::MatchId::new(1, 0));
+                let ctx = context(ahead);
+                g.resolve_choice(&ctx).chosen
+            };
+            let open = chosen((9500, 5000));
+            let closed = chosen((5200, 3400));
+            assert!(
+                matches!(open, ChoiceKind::Advance | ChoiceKind::Carry { .. }),
+                "with room he carries: {open:?}"
+            );
+            assert!(matches!(closed, ChoiceKind::Pass(_)), "closed: {closed:?}");
+            for ahead in [(9500, 5000), (5200, 3400)] {
+                let ctx = context(ahead);
+                assert!(
+                    ctx.candidates
+                        .iter()
+                        .any(|c| matches!(c.kind, ChoiceKind::Pass(_)) && c.geometric > 0.0),
+                    "the circulation stays an option at {ahead:?}"
+                );
+                assert!(
+                    ctx.candidates.iter().any(|c| matches!(
+                        c.kind,
+                        ChoiceKind::Advance | ChoiceKind::Carry { .. }
+                    ) && c.geometric > 0.0),
+                    "the carry stays an option at {ahead:?}"
+                );
+            }
+        }
+
         /// ADR-050: the shot does not vanish at 25 m.
         #[test]
         fn a_shot_from_thirty_metres_is_still_an_option() {

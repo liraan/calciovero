@@ -289,6 +289,8 @@ marcatore a 50 cm e a 25 m: l'opzione c'è in entrambi i casi e vale di meno
 nel primo. Nessun numero nuovo: la misura dello spazio è già `freedom_share`
 (ADR-040).
 
+**Voce 11, letta con LUNA e partita vera (DD-91(d), 27 novembre 2026).** Se davanti non c'è spazio, lo stesso portatore alza la testa e gira palla; se neanche il giro è pulito, consolida cercando spazio avanti o indietro. Il *dito* è lo spazio occupato, l'evento `Pass` e la carica; la *luna* è l'uomo che rilegge la scena e sceglie il come: la catena è una tendenza di lettura, non un ordine di gesti, e nessuna opzione va tolta (preferences-010). Gemello `when_space_ahead_closes_the_carrier_circulates` (`read.rs`): con spazio sceglie la carica, con un uomo a 2 m davanti sceglie il passaggio, e passaggio e carica restano candidati in entrambe le scene. Il grezzo Wyscout non ha posizioni dei difensori, quindi non prova la causalità; non spiega il volume dei passaggi (RUN 89).
+
 ### 1.1 Sempre
 
 1. **Sapere dove si è.** Ogni calciatore sa sempre dov'è la palla, dove sono le due porte, dove sono i compagni e gli avversari vicini che ha guardato. Si guarda intorno prima di ricevere (lo sguardo, già in L0). *Dipende da:* visione, concentrazione. *Test:* un giocatore che riceve dopo essersi guardato intorno sceglie meglio di uno uguale che non l'ha fatto.
