@@ -31,4 +31,18 @@ Ligue 1 (`events_England.json`, ...), the 2018 World Cup and Euro 2016.
 Every metric is per match, both teams together. The definitions on the
 two sides are in `src/wyscout.rs` and `src/engine.rs`; where they do not
 count the same thing, the metric says so (`Metric::note`) and the report
-marks it *not comparable*.
+marks it *not comparable*. A reference file may carry its own `note` and
+`comparable` per metric; `compare` reads them and falls back to the enum, so
+older files keep working.
+
+## Bundle
+
+    cargo run --release -p ds-reference -- bundle \
+        --manifest L0-match/reference/bundle.json --out bundle-generated.json
+
+The manifest names, for each metric, the real-match source that supplies it
+(ADR-116). Adding a source is data, not a new provider in this crate. The
+builder refuses a source that is not from real matches, has no licence, or
+is a team aggregate: an aggregate is a cross-check, not a player's choice.
+A new format needs only a `measure()` module beside `wyscout.rs` and a CLI
+branch; the engine is untouched.
