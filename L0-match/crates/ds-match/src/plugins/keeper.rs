@@ -185,11 +185,79 @@ impl MatchState {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::context::MatchConfig;
     use ds_match_api::MatchPlugin;
+    use ds_orchestrator::GroundTruth;
+    use ds_stats::EventChain;
 
     #[test]
     fn the_plugin_has_its_card() {
         assert!(super::Keeper.card().is_valid());
         assert_eq!(super::Keeper.card().name, "keeper");
+    }
+
+    /// DD?-92(A): one shot, one keeper; only where he stands across the goal
+    /// changes. The sweep is a diagnostic grid (A5-bis: no threshold is
+    /// chosen from it). It must cross one geometric boundary: closer never
+    /// turns a save into a goal, and farther never turns a goal into a save.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[test]
+    fn moving_only_the_keeper_across_gives_one_save_boundary() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let centre = i32::from(m.pitch.width_m) * 100 / 2;
+        let plane_x = i32::from(m.pitch.length_m) * 100;
+        let half = crate::balance::LawsBalance::load().law1.goal_half_width_cm;
+        let fraction = ds_orchestrator::ShotChoiceBalance::load().aim_edge_fraction;
+        let edge = (f64::from(half) * fraction).round() as i32;
+        let crossing_y = centre + edge;
+        let z = ds_calculator::save::SaveBalance::load().body_centre_cm as i32;
+        assert!(edge + (ds_orchestrator::read::BALL_RADIUS_CM as i32) < half);
+
+        let saved_at = |keeper_y: i32| {
+            let mut state = MatchState::new(&m);
+            let gk = m.away.players[0].id;
+            state.spatial.set_carrier(None);
+            state.spatial.set_position(gk, (plane_x, keeper_y));
+            state
+                .spatial
+                .set_ball_in_flight((plane_x - 100, crossing_y, z), (250, 0, 0));
+            let mut hidden = GroundTruth::new(42, m.id);
+            let mut chain = EventChain::new();
+            let mut ctx = MatchContext {
+                match_: &m,
+                hidden: &mut hidden,
+                chain: &mut chain,
+                config: MatchConfig::default(),
+            };
+            state.keeper_meets_the_shot(
+                &mut ctx,
+                6,
+                gk,
+                ((plane_x - 1500, centre, 0), 0),
+                (plane_x, crossing_y, z),
+                centre,
+            )
+        };
+
+        let mut previous = None;
+        let mut changes = Vec::new();
+        for offset in -half..=half {
+            let saved = saved_at(centre + offset);
+            if previous.is_some_and(|p| p != saved) {
+                changes.push(offset);
+            }
+            previous = Some(saved);
+        }
+        assert_eq!(changes.len(), 1, "one lateral boundary: {changes:?}");
+
+        let boundary = centre + changes[0];
+        let nearer = f64::from((crossing_y - boundary).abs());
+        let farther = f64::from((crossing_y - (boundary - 1)).abs());
+        assert!(
+            (farther - nearer - 1.0).abs() < 1e-9,
+            "one centimetre of keeper movement changed the offset by {:.3} cm",
+            farther - nearer
+        );
     }
 }
