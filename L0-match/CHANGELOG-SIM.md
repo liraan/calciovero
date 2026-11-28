@@ -9,6 +9,27 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 229 — the back pass in the hands is punished (DD-102, ADR-122)
+
+T22 of the audit, the remainder shared with T17: a ball deliberately kicked
+to his own keeper and taken with his hands was logged as an ordinary `Save`
+with `claim: true`, with no whistle and no restart. Law 12 makes it an
+indirect free kick for the other side, from where the keeper handled it (from
+the goal-area line if that was inside his own goal area). With LUNA the dito
+is the pass still in flight, the hands and the point of contact; the luna is
+the same keeper who read his team-mate's pass and chose how to play it — the
+Law does not choose his foot for him, it only says what follows from handling.
+`Keeper::is_back_pass_to` reads the fact from the pending pass; the offence is
+called both on the ground and on the aerial claim. The indirect restart adds
+one variant to the existing `restart_pass` channel, so the taker's first kick
+carries the fact without a second parallel state: he may still shoot, but no
+goal stands until another player touches the ball (Law 10). No number,
+threshold, card, option or event type added, nothing fitted to a band
+(A5-bis). Twins: `handling_a_back_pass_is_punished_but_the_same_claim_from_a_teammate_is_not`
+and `a_direct_shot_from_an_indirect_free_kick_is_not_a_goal`. Golden L0
+base/instructed/cup, the cup seed (58 → 131), the fixture seeds and the L1
+golden are regenerated. The measurement is in `L0-CALIBRATION.md` §229.
+
 ## 228 — the gloves pass at the send-off (DD-101, ADR-121)
 
 T22 of the audit, the S8 remainder: when a goalkeeper was sent off (or carried

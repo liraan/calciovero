@@ -185,6 +185,9 @@ pub(crate) struct Pending {
     /// Law 15: no goal directly from a throw-in. The ball is out of play
     /// until another player touches this throw.
     pub throw_in: bool,
+    /// Law 12: no goal directly from an indirect free kick until another
+    /// player touches the ball.
+    pub indirect: bool,
 }
 /// A substitution ordered during the match: off, on (decision T).
 pub(crate) type Ordered = (PlayerId, PlayerId);
@@ -2205,6 +2208,7 @@ mod reaction_tests {
                 foot: None,
                 restart: false,
                 throw_in: false,
+                indirect: false,
             });
             s.spatial.set_ball_in_flight((at.0, at.1, 0), (20, 0, 0));
             s.ball_from = s.spatial.ball_3d();
@@ -2261,6 +2265,7 @@ mod body_block_tests {
                 foot: None,
                 restart: false,
                 throw_in: false,
+                indirect: false,
             });
             s.spatial
                 .set_ball_in_flight((at.0 - 60, at.1, 0), (120, 0, 0));

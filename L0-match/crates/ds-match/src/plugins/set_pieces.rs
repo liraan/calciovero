@@ -282,7 +282,10 @@ impl MatchState {
                     .min_by_key(|(id, at)| (distance_squared(*at, restart.spot), id.slot()));
                 wide_on_side.map_or(nearest, |(id, _)| Some(id))
             }
-            RestartKind::Corner | RestartKind::FreeKick | RestartKind::Penalty => {
+            RestartKind::Corner
+            | RestartKind::FreeKick
+            | RestartKind::IndirectFreeKick
+            | RestartKind::Penalty => {
                 let mut near: Vec<(i64, PlayerId)> = squad
                     .players
                     .iter()
@@ -329,7 +332,7 @@ impl MatchState {
             .chain(ctx.match_.away.players.iter().map(|p| (p.id, false)))
             .collect();
         match restart.kind {
-            RestartKind::FreeKick | RestartKind::Corner => {
+            RestartKind::FreeKick | RestartKind::IndirectFreeKick | RestartKind::Corner => {
                 for (id, home) in ids {
                     if home == restarting_home {
                         continue;
@@ -364,7 +367,10 @@ impl MatchState {
                     );
                     self.place_for_restart(id, to, walk);
                 }
-                if restart.kind == RestartKind::FreeKick {
+                if matches!(
+                    restart.kind,
+                    RestartKind::FreeKick | RestartKind::IndirectFreeKick
+                ) {
                     self.form_wall(ctx, restart, (restarting_home, walk));
                 }
             }

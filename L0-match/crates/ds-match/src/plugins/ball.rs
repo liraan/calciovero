@@ -127,9 +127,12 @@ impl MatchState {
         if self.waiting.is_some() {
             return;
         }
-        let (attacker, struck, from) = match self.pending.as_ref().and_then(|p| p.shot.as_ref()) {
-            Some(s) => (s.attacker, s.struck, s.from),
-            None => return,
+        let Some((attacker, struck, from, indirect)) = self.pending.as_ref().and_then(|p| {
+            p.shot
+                .as_ref()
+                .map(|s| (s.attacker, s.struck, s.from, p.indirect))
+        }) else {
+            return;
         };
         let pitch_length = i32::from(ctx.match_.pitch.length_m) * 100;
         let width = i32::from(ctx.match_.pitch.width_m) * 100;
@@ -207,6 +210,26 @@ impl MatchState {
             (plane_x, y_at, z_at),
             goal_center_y,
         ) {
+            self.possession = defending;
+            return;
+        }
+
+        // Law 12: the first kick of an indirect free kick scores no goal
+        // until another player touches it (DD-102). The taker may still
+        // strike it at goal; what the rule refuses is the goal, not his
+        // choice nor the keeper's save. A defender's touch ends the
+        // indirect and creates another pending, so it never reaches here.
+        if indirect && self.spatial.touches().deflected.is_none() {
+            let attacking = if defending == Possession::Home {
+                Possession::Away
+            } else {
+                Possession::Home
+            };
+            if let Some(restart) =
+                crate::rules::out_of_play((curr.0, y_at), side_of(attacking), (pitch_length, width))
+            {
+                let _ = self.call_restart(ctx, tick, restart, None);
+            }
             self.possession = defending;
             return;
         }
@@ -312,7 +335,10 @@ impl MatchState {
         // Law 15: a throw-in scores no goal until another player touches
         // it. The throw that goes straight in is out of play, and the last
         // touch (the thrower's) says whether it is a goal kick or a corner.
-        if self.pending.as_ref().is_some_and(|p| p.throw_in)
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|p| p.throw_in || p.indirect)
             && self.spatial.touches().deflected.is_none()
         {
             if let Some(restart) =
@@ -390,7 +416,7 @@ mod tests {
     #[test]
     fn a_direct_throw_into_the_goal_is_not_a_goal() {
         let m = ds_fixtures::match_fixture(42).expect("fixture");
-        let run = |throw_in: bool| {
+        let run = |throw_in: bool, indirect: bool| {
             let mut hidden = GroundTruth::new(42, m.id);
             let mut chain = EventChain::new();
             let mut ctx = MatchContext {
@@ -426,13 +452,14 @@ mod tests {
                 foot: None,
                 restart: true,
                 throw_in,
+                indirect,
             });
             s.check_goal_line(&mut ctx, 100, (10400, 3400, 0), (10600, 3400, 0));
             (s.score, s.restart_pass)
         };
-        let (scored, after_pass) = run(false);
+        let (scored, after_pass) = run(false, false);
         assert_eq!(scored.home, 1, "a pass into the goal scores");
-        let (not_scored, after_throw) = run(true);
+        let (not_scored, after_throw) = run(true, false);
         assert_eq!(not_scored.home, 0, "a throw cannot score directly");
         assert_eq!(not_scored.away, 0, "no own goal either");
         assert_eq!(
@@ -440,10 +467,79 @@ mod tests {
             Some(crate::rules::RestartKind::GoalKick),
             "the throw goes out for a goal kick, not {after_throw:?}"
         );
+        let (not_scored, after_indirect) = run(false, true);
+        assert_eq!(
+            not_scored.home, 0,
+            "an indirect free kick cannot score directly"
+        );
+        assert_eq!(
+            after_indirect,
+            Some(crate::rules::RestartKind::GoalKick),
+            "the indirect kick goes out for a goal kick, not {after_indirect:?}"
+        );
         assert_eq!(
             after_pass,
             Some(crate::rules::RestartKind::KickOff),
             "the goal restarts with a kick-off, not {after_pass:?}"
+        );
+    }
+
+    /// Law 12 twin: the same shot crosses the same goal line with the keeper
+    /// out of the way; only the fact that the kick was indirect changes. The
+    /// taker may aim at goal, but the goal does not stand until someone else
+    /// has touched the ball (DD-102).
+    #[test]
+    fn a_direct_shot_from_an_indirect_free_kick_is_not_a_goal() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let run = |indirect: bool| {
+            let mut hidden = GroundTruth::new(42, m.id);
+            let mut chain = EventChain::new();
+            let mut ctx = MatchContext {
+                match_: &m,
+                hidden: &mut hidden,
+                chain: &mut chain,
+                config: crate::context::MatchConfig::default(),
+            };
+            let mut s = MatchState::new(&m);
+            let taker = m.home.players[3].id;
+            let keeper = m.away.players[0].id;
+            s.spatial.set_position(taker, (10000, 3400));
+            s.spatial.set_position(keeper, (10450, 100));
+            s.spatial.played_by(taker);
+            s.spatial.set_ball_in_flight((10400, 3400, 0), (200, 0, 0));
+            s.possession = Possession::Home;
+            s.pending = Some(Pending {
+                launched: 100,
+                shot: Some(crate::state::ShotPending {
+                    attacker: taker,
+                    struck: 100,
+                    from: (10400, 3400, 0),
+                }),
+                interceptor: None,
+                passer: None,
+                receiver: None,
+                closest_cm: None,
+                through: false,
+                cross: false,
+                foot: None,
+                restart: true,
+                throw_in: false,
+                indirect,
+            });
+            s.check_shot_crossing(&mut ctx, 100, (10400, 3400, 0), (10600, 3400, 0));
+            (s.score, s.restart_pass)
+        };
+        let (scored, _) = run(false);
+        assert_eq!(scored.home, 1, "a shot into the goal scores");
+        let (not_scored, after_indirect) = run(true);
+        assert_eq!(
+            not_scored.home, 0,
+            "a shot from an indirect kick cannot score directly"
+        );
+        assert_eq!(
+            after_indirect,
+            Some(crate::rules::RestartKind::GoalKick),
+            "the indirect shot goes out for a goal kick, not {after_indirect:?}"
         );
     }
 

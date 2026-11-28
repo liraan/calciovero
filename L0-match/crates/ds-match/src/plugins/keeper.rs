@@ -41,13 +41,78 @@ impl MatchState {
         )
     }
 
+    /// Law 12: a ball deliberately kicked to the keeper by a team-mate is
+    /// not his to take with his hands. The fact is read from the pass that
+    /// is still pending; the keeper still chooses whether to use them.
+    pub(crate) fn is_back_pass_to(&self, gk: PlayerId) -> bool {
+        self.pending.as_ref().is_some_and(|p| {
+            p.shot.is_none()
+                && !p.restart
+                && !p.throw_in
+                && p.receiver == Some(gk)
+                && p.passer.is_some_and(|by| {
+                    crate::perception::team_of(by) == crate::perception::team_of(gk)
+                })
+        })
+    }
+
+    /// Law 12: the offence is where the keeper handled it; inside his own
+    /// goal area the indirect free kick is taken from the goal area line at
+    /// the nearest point. The side that did not handle it restarts, and the
+    /// restart is indirect until another player touches the ball (DD-102).
+    pub(crate) fn call_back_pass_offence(
+        &mut self,
+        ctx: &mut MatchContext<'_>,
+        tick: u64,
+        gk: PlayerId,
+        at: (i32, i32),
+    ) -> bool {
+        let (length, width) = crate::state::pitch_cm(ctx);
+        let law1 = ds_calculator::laws::law1();
+        let home = crate::perception::team_of(gk) == 0;
+        let own_line = if home { 0 } else { length };
+        let out = if home {
+            law1.goal_area_depth_cm
+        } else {
+            -law1.goal_area_depth_cm
+        };
+        let spot = if (at.0 - own_line).abs() <= law1.goal_area_depth_cm
+            && (at.1 - width / 2).abs() <= law1.goal_area_half_width_cm
+        {
+            (own_line + out, at.1)
+        } else {
+            at
+        };
+        let side = if home {
+            crate::rules::Side::Away
+        } else {
+            crate::rules::Side::Home
+        };
+        let _ = self.call_restart(
+            ctx,
+            tick,
+            crate::rules::indirect_free_kick(side, spot),
+            None,
+        );
+        self.emit_event(
+            ctx,
+            tick,
+            Some(ActorId::Player(gk)),
+            EventType::FreeKick,
+            serde_json::json!({
+                "reason": "back_pass_handled", "indirect": true, "x": spot.0, "y": spot.1
+            }),
+        );
+        true
+    }
+
     /// The keeper meets any ball going into his goal (SIM 203, T3; Law 12:
     /// in his area he may use his hands on any ball): a shot, or a back
     /// pass, a deflection, a clearance gone wrong, with the time it has been
     /// on its way from `from` at `struck`. Before, only a shot met him:
     /// every other ball rolled past him into the net. A ball that was not a
     /// shot is told as taken (`claim`), not as a save of a shot.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
     pub(crate) fn keeper_meets_the_ball(
         &mut self,
         ctx: &mut MatchContext<'_>,
@@ -91,6 +156,15 @@ impl MatchState {
         let Some(o) = outcome.filter(|o| o.saved) else {
             return false;
         };
+        let at = self
+            .spatial
+            .agent(gk)
+            .map_or((plane_x, y_at), |a| a.position);
+        // Law 12: handling a deliberate back-pass is an offence, not a save
+        // (DD-102). Called before the save event so the record tells one act.
+        if self.is_back_pass_to(gk) && self.call_back_pass_offence(ctx, tick, gk, at) {
+            return true;
+        }
         {
             self.emit_event(
                 ctx,
@@ -110,9 +184,7 @@ impl MatchState {
                 // of his line (SIM 203, T5: before, the ball stayed where the
                 // tick had carried it, past the line, and in the same tick the
                 // referee gave a corner for every shot he held).
-                if let Some(at) = self.spatial.agent(gk).map(|a| a.position) {
-                    self.spatial.deflect_ball((at.0, at.1, 0), (0, 0, 0));
-                }
+                self.spatial.deflect_ball((at.0, at.1, 0), (0, 0, 0));
                 self.spatial.set_carrier(Some(gk));
                 self.in_hands = Some(gk);
             } else {
@@ -258,6 +330,101 @@ mod tests {
             (farther - nearer - 1.0).abs() < 1e-9,
             "one centimetre of keeper movement changed the offset by {:.3} cm",
             farther - nearer
+        );
+    }
+
+    /// Law 12 twin (DD-102): the same ball, the same keeper, the same touch.
+    /// Only the intended receiver changes — his own keeper, or a teammate
+    /// standing on the same spot. Handling a deliberate back pass gives an
+    /// indirect free kick; the identical claim of a teammate's pass does not.
+    #[allow(clippy::cast_possible_truncation)]
+    #[test]
+    fn handling_a_back_pass_is_punished_but_the_same_claim_from_a_teammate_is_not() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let length = i32::from(m.pitch.length_m) * 100;
+        let centre = i32::from(m.pitch.width_m) * 100 / 2;
+        let gk = m.away.players[0].id;
+        let passer = m.away.players[3].id;
+        let mate = m.away.players[6].id;
+        let z = ds_calculator::save::SaveBalance::load().body_centre_cm as i32;
+        let run = |to_keeper: bool| {
+            let mut hidden = GroundTruth::new(42, m.id);
+            let mut chain = EventChain::new();
+            let mut ctx = MatchContext {
+                match_: &m,
+                hidden: &mut hidden,
+                chain: &mut chain,
+                config: MatchConfig::default(),
+            };
+            let mut s = MatchState::new(&m);
+            s.spatial.set_position(gk, (length, centre));
+            s.spatial.set_position(mate, (length, centre));
+            s.spatial.set_position(passer, (length - 800, centre));
+            s.spatial
+                .set_ball_in_flight((length - 100, centre, z), (20, 0, 0));
+            s.pending = Some(Pending {
+                launched: 0,
+                shot: None,
+                interceptor: None,
+                passer: Some(passer),
+                receiver: Some(if to_keeper { gk } else { mate }),
+                closest_cm: None,
+                through: false,
+                cross: false,
+                foot: None,
+                restart: false,
+                throw_in: false,
+                indirect: false,
+            });
+            let saved = s.keeper_meets_the_ball(
+                &mut ctx,
+                1,
+                gk,
+                ((length - 100, centre, z), 0),
+                (length, centre, z),
+                centre,
+                false,
+            );
+            (saved, s.restart_pass, s.in_hands)
+        };
+        let (saved, restart, hands) = run(true);
+        assert!(saved, "the keeper reaches the ball either way");
+        assert_eq!(
+            restart,
+            Some(crate::rules::RestartKind::IndirectFreeKick),
+            "the back pass restarts indirect, not {restart:?}"
+        );
+        assert!(hands.is_none(), "the ball is not his after the offence");
+        let (saved, restart, hands) = run(false);
+        assert!(saved, "the keeper reaches the ball either way");
+        assert_eq!(restart, None, "a teammate's pass is not an offence");
+        assert_eq!(hands, Some(gk), "the keeper keeps the identical claim");
+    }
+
+    /// Law 12: an indirect free kick for a handling inside the offender's
+    /// own goal area is taken from its line, at the nearest point. Without
+    /// this the restart would be placed inside the six-yard box.
+    #[test]
+    fn a_back_pass_handled_in_the_goal_area_is_brought_to_its_line() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let length = i32::from(m.pitch.length_m) * 100;
+        let centre = i32::from(m.pitch.width_m) * 100 / 2;
+        let law1 = ds_calculator::laws::law1();
+        let handled = (length - law1.goal_area_depth_cm / 2, centre + 100);
+        let mut hidden = GroundTruth::new(42, m.id);
+        let mut chain = EventChain::new();
+        let mut ctx = MatchContext {
+            match_: &m,
+            hidden: &mut hidden,
+            chain: &mut chain,
+            config: MatchConfig::default(),
+        };
+        let mut s = MatchState::new(&m);
+        s.call_back_pass_offence(&mut ctx, 1, m.away.players[0].id, handled);
+        assert_eq!(
+            s.waiting.as_ref().map(|w| w.spot),
+            Some((length - law1.goal_area_depth_cm, handled.1)),
+            "the spot is on the goal area line, not {handled:?}"
         );
     }
 }

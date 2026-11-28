@@ -62,6 +62,9 @@ pub enum RestartKind {
     Corner,
     /// A free kick, after an offence (Laws 11-13).
     FreeKick,
+    /// An indirect free kick (Law 12): another player must touch the ball
+    /// before it can enter the goal.
+    IndirectFreeKick,
     /// A penalty kick (Law 14), after a foul in the penalty area.
     Penalty,
 }
@@ -209,6 +212,17 @@ pub const fn free_kick(side: Side, spot: (i32, i32)) -> Restart {
         side,
         spot,
         kind: RestartKind::FreeKick,
+    }
+}
+
+/// Law 12: an indirect free kick for the side that did not commit the
+/// offence, from where it happened (in the goal area, from its line).
+#[must_use]
+pub const fn indirect_free_kick(side: Side, spot: (i32, i32)) -> Restart {
+    Restart {
+        side,
+        spot,
+        kind: RestartKind::IndirectFreeKick,
     }
 }
 

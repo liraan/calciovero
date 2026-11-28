@@ -347,6 +347,10 @@ impl MatchState {
         };
         // The ball leaves the keeper's hands as he plays it.
         let from_hands = self.in_hands.take() == Some(attacker);
+        // Law 12: a goal from the first kick of an indirect free kick does
+        // not count, however the taker chooses to strike it (SIM 229).
+        let indirect_free_kick =
+            self.restart_pass == Some(crate::rules::RestartKind::IndirectFreeKick);
         // A penalty is a kick at the goal and nothing else (Law 14): a taker
         // who weighed anything else strikes it hard at the middle.
         let chosen = if self.restart_pass == Some(crate::rules::RestartKind::Penalty)
@@ -537,6 +541,7 @@ impl MatchState {
                 foot: ctx_pass.foot,
                 restart,
                 throw_in: scene.throw_in,
+                indirect: indirect_free_kick,
             });
             // REC: the Pass event is emitted at landing, in `tick`
             // (resolve_reception), not at launch: `complete` is the
@@ -555,6 +560,11 @@ impl MatchState {
                 (aim_y, power, contact_height),
                 None,
             );
+            if indirect_free_kick {
+                if let Some(p) = self.pending.as_mut() {
+                    p.indirect = true;
+                }
+            }
         // Reachable from the carrier's scene only when `ChoiceKind::Duel`
         // is emitted; `build_choice` no longer emits it (a carrier has
         // the ball, the opponent does not; `ball_contested` is false by
@@ -1290,6 +1300,7 @@ impl MatchState {
             foot: None,
             restart: false,
             throw_in: false,
+            indirect: false,
             shot: Some(ShotPending {
                 attacker,
                 struck: tick,

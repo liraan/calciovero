@@ -214,6 +214,7 @@ impl MatchState {
             foot: None,
             restart: false,
             throw_in: false,
+            indirect: false,
             shot: Some(ShotPending {
                 attacker: winner,
                 struck: tick,
@@ -324,6 +325,9 @@ impl MatchState {
             self.call_offside(ctx, tick, winner, home, ((bx, by), played));
             return;
         }
+        // Law 12: read the deliberate back-pass before the flight is over;
+        // the air does not make handling a teammate's kick lawful (DD-102).
+        let back_pass = self.is_back_pass_to(winner);
         self.tell_pass_met_in_air(ctx, tick, home);
         self.pending = None;
         self.offside_at_pass.clear();
@@ -341,6 +345,9 @@ impl MatchState {
         let in_their_area = depth(goal) <= laws.law1.penalty_area_depth_cm
             && (by - goal.1).abs() <= laws.law1.penalty_area_half_width_cm;
         if hands {
+            if back_pass && self.call_back_pass_offence(ctx, tick, winner, (bx, by)) {
+                return;
+            }
             // The keeper claims it.
             self.spatial.set_carrier(Some(winner));
             self.in_hands = Some(winner);
@@ -1284,6 +1291,7 @@ mod tests {
                 foot: None,
                 restart,
                 throw_in: false,
+                indirect: false,
             });
             s.spatial.set_ball_in_flight((at.0, at.1, 0), (20, 0, 0));
             s.ball_from = s.spatial.ball_3d();
