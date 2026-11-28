@@ -403,10 +403,9 @@ contro 2,68 ± 1,65, `shots` 30,70 contro 24,60 ± 5,46, `passes` 1188,43 contro
 e `offsides` 6,73 contro 4,26 ± 2,40 (6,95 nel 225: esce di 0,07 dal limite
 alto). Le sei righe vecchie restano con le cause archiviate: volume dei
 passaggi (DD-82), uscita laterale non attribuita dalla fonte (DD-94), duello
-aereo (OI-100), tiro in porta (RUN 98). La settima resta un possibile bug da
-indagare: il posto della punta legge `second_last` da posizioni vere, il
-fischio legge `offside_to` da posizioni percepite con la soglia dell'occhio
-(ADR-062 (b)); i 50 cm di margine non vanno cambiati guardando il conteggio.
+aereo (OI-100), tiro in porta (RUN 98). La settima è stata indagata in RUN 101:
+il fischio non ha bug geometrico e il 73% dei casi nasce dalla linea difensiva
+che arretra dopo l'ultima decisione dell'attaccante; i 50 cm restano invariati.
 `ground_duels` 155,77 è appena dentro il limite basso (155,09): si tiene
 d'occhio, non si tarà. Nessun numero è stato adattato per rientrare in banda.
 
@@ -430,7 +429,7 @@ d'occhio, non si tarà. Nessun numero è stato adattato per rientrare in banda.
 | throw_ins | 20.53 | 21.05 | 42.72 ± 8.92 | fuori, DD-94 |
 | goal_kicks | 17.62 | 18.05 | 17.15 ± 4.20 | in banda |
 | free_kicks | 27.30 | 27.37 | 29.45 ± 6.81 | in banda |
-| offsides | 6.73 | 6.95 | 4.26 ± 2.40 | fuori di 0,07, da indagare |
+| offsides | 6.73 | 6.95 | 4.26 ± 2.40 | fuori di 0,07, indagata RUN 101: non bug |
 | clearances | 26.02 | 25.42 | 29.53 ± 8.65 | in banda |
 | interceptions | 72.90 | 72.37 | 89.86 ± 13.97 | non confrontabile |
 | saves | 6.53 | 6.15 | 6.70 ± 2.82 | in banda |
@@ -443,6 +442,40 @@ livello al 90' 55 → 45, header in fuorigioco 42 invariato. Il golden coppa è
 Gol, tiri e fuorigioco si muovono un po' verso la banda senza tarature: restano
 indizi, non numeri da ricalibrare. La parte restante di T17 (primo atto delle
 altre riprese, punizione indiretta) non è stata toccata.
+
+## RUN 101 — il fischio di fuorigioco letto sul passaggio (2026-11-28, sola lettura)
+
+Domanda aperta dal 225: `offsides` 6,73 contro 4,26 ± 2,40 — bug del fischio o
+differenza dichiarata? Sonda temporanea su `tools/ds-reference/examples/` (poi
+rimossa): per ogni `FreeKick` con `reason: offside` dei semi 42..101, ricostruisce
+dal tick record la linea del secondo avversario **vera** al `played_tick`, il
+posto dell'autore e la stessa linea tre secondi prima. Nessun numero, soglia o
+gesto del modello è stato toccato (A5-bis).
+
+**Il fischio non ha bug geometrico: 404 su 404** (6,73 ± 2,36 a partita) hanno
+l'autore oltre la linea del secondo avversario quando il pallone è stato
+giocato; nessuno è stato flagrato in posizione regolare. La deviazione del
+motore, 2,36, è quasi la stessa del referto, 2,40: la media è 1,03 DS sopra
+quella reale, appena fuori banda.
+
+La premessa scritta nel 226 era sbagliata e qui si corregge: il fischio **non**
+legge posizioni percepite. `mark_offside_at_pass` (`referee.rs:499-505`) usa
+`self.spatial.agent`, cioè i corpi veri; `offside_to` (`read.rs:182`) serve solo
+alla lettura del passatore, che può credere onside un compagno che l'arbitro
+vede oltre la linea (ADR-062 (b)). Le due letture non sono lo stesso atto.
+
+**Causa dei flag:** 361 su 404 hanno visto la linea arretrare verso la propria
+porta nei tre secondi precedenti; in 295 (73% del totale) l'autore era ancora
+regolare tre secondi prima ed è la linea ad averlo superato, mentre in 109 era
+già oltre. Distanza oltre la linea al passaggio: 130 entro 50 cm, 105 tra 51 e
+150, 100 tra 151 e 400, 69 oltre 400. Il margine di 50 cm usato per il posto
+delle punte (ADR-118) non c'entra con il fischio e non va cambiato guardando il
+conteggio.
+
+**Conclusione:** non è un bug da correggere né una taratura da fare. La riga
+resta fuori di 0,07 con la causa dichiarata: la linea difensiva si arretra
+nell'intervallo tra due decisioni dell'attaccante, in un motore che gioca più
+passaggi del referto (DD-82). Nessun cambio di motore, nessun `SIM_VERSION` nuovo.
 
 ## La misura del 225 (2026-11-27, opencode, DD-98/ADR-118)
 
