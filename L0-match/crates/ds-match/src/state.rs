@@ -409,6 +409,7 @@ pub(crate) fn scene_from(
         can_carry,
         penalty_kick: false,
         throw_in: false,
+        dead_ball: false,
         runs: std::collections::BTreeMap::new(),
         run_pace: std::collections::BTreeMap::new(),
         horizon_cm: f64::MAX,

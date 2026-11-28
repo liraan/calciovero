@@ -26,6 +26,8 @@ use crate::{ChoiceCandidate, ChoiceContext, ChoiceKind, Side};
 /// Positions are in cm, the pitch's unit. `BTreeMap`: deterministic
 /// iteration (D2). The teams are facts of the match, not latents.
 #[derive(Debug, Clone)]
+// The dead-ball facts (Laws 8, 13-17) are perceived facts, not configuration.
+#[allow(clippy::struct_excessive_bools)]
 pub struct PerceivedScene {
     /// The actor who reads the scene.
     pub actor: PlayerId,
@@ -63,6 +65,10 @@ pub struct PerceivedScene {
     /// He is taking a throw-in: the Laws (Law 15) let him only throw the
     /// ball to a teammate, not kick it or run with it.
     pub throw_in: bool,
+    /// The ball is dead for a kick (Laws 8, 13-17): he must play it with his
+    /// foot or throw it. He still chooses whom and how; he cannot run with
+    /// it, shield it or stop it (DD-104).
+    pub dead_ball: bool,
     /// The teammates he sees attacking the depth, and where each is
     /// running to (the movement, Plane B): the through ball's runners.
     pub runs: BTreeMap<PlayerId, (i32, i32)>,
@@ -1876,12 +1882,14 @@ pub fn build_choice(
         (risk_appetite, 0),
         balance,
     ));
-    candidates.extend(shift_candidate(
-        scene,
-        pos,
-        (preferred_foot, risk_appetite),
-        balance,
-    ));
+    if !scene.dead_ball {
+        candidates.extend(shift_candidate(
+            scene,
+            pos,
+            (preferred_foot, risk_appetite),
+            balance,
+        ));
+    }
     if scene.penalty_kick && !candidates.is_empty() {
         // A penalty is a shot (Law 14): nobody is ahead of the ball.
         return (
@@ -1925,19 +1933,21 @@ pub fn build_choice(
     // an option like the others (before `SIM_VERSION` 54 only the
     // fallback when nothing was clear, and the carrier passed as soon as
     // he received).
-    candidates.extend(carry_candidates(
-        scene,
-        pos,
-        &opponent_positions,
-        (risk_appetite, pressure),
-        balance,
-    ));
-    candidates.extend(hold_candidate(
-        scene,
-        (preferred_foot, own_error),
-        (risk_appetite, pressure),
-        balance,
-    ));
+    if !scene.dead_ball {
+        candidates.extend(carry_candidates(
+            scene,
+            pos,
+            &opponent_positions,
+            (risk_appetite, pressure),
+            balance,
+        ));
+        candidates.extend(hold_candidate(
+            scene,
+            (preferred_foot, own_error),
+            (risk_appetite, pressure),
+            balance,
+        ));
+    }
     candidates.extend(clear_candidate(
         scene,
         pos,
@@ -1946,10 +1956,20 @@ pub fn build_choice(
     ));
     // Fallback: no candidate (no teammate with enough freedom, no shot in
     // range, no room): the clarity threshold in `resolve_choice` turns
-    // this into `ChoiceKind::Advance` (ADR-040 note 2026-11-09).
+    // this into `ChoiceKind::Advance` (ADR-040 note 2026-11-09). On a dead
+    // ball that would be running with it, so he kicks it up the pitch with
+    // the clearance distance already declared in `kick.json` (DD-104).
     if candidates.is_empty() {
+        let kind = if scene.dead_ball {
+            let forward = if scene.own_goal.0 == 0 { 1 } else { -1 };
+            ChoiceKind::Clear {
+                to: (pos.0 + forward * mind().kick.clear_length_cm, pos.1),
+            }
+        } else {
+            ChoiceKind::Advance
+        };
         candidates.push(ChoiceCandidate {
-            kind: ChoiceKind::Advance,
+            kind,
             geometric: 0.0,
             visibility: 1.0,
         });
@@ -2104,6 +2124,7 @@ mod shot_perception_tests {
             can_carry: true,
             penalty_kick: false,
             throw_in: false,
+            dead_ball: false,
             runs: BTreeMap::new(),
             run_pace: BTreeMap::new(),
             horizon_cm: f64::MAX,
@@ -2514,6 +2535,57 @@ mod shot_perception_tests {
         );
     }
 
+    /// A dead ball is played with the foot or thrown (Laws 8, 13-17): the
+    /// taker still reads whom to pass to, but he cannot run with it, shield
+    /// it or stop it. Same man, same scene, only the ball is dead.
+    #[test]
+    fn a_restart_taker_does_not_run_with_the_ball() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let mut s = scene_with(None);
+        let mate = PlayerId::new(2, 0);
+        s.teammates.push(mate);
+        s.positions.insert(mate, (8500, 3000));
+        s.soon.insert(mate, (8400, 3000));
+        s.shift = Some((0.0, 30));
+        let kinds = |scene: &PerceivedScene| {
+            build_choice(scene, Side::Right, 0.5, 0.04, &balance)
+                .0
+                .candidates
+                .into_iter()
+                .map(|c| c.kind)
+                .collect::<Vec<_>>()
+        };
+        let running = |kinds: &[ChoiceKind]| {
+            kinds.iter().any(|k| {
+                matches!(
+                    k,
+                    ChoiceKind::Advance
+                        | ChoiceKind::Carry { .. }
+                        | ChoiceKind::Hold
+                        | ChoiceKind::Shift
+                )
+            })
+        };
+        let live = kinds(&s);
+        assert!(
+            running(&live),
+            "with a live ball he may run with it: {live:?}"
+        );
+        s.dead_ball = true;
+        let restart = kinds(&s);
+        assert!(
+            !running(&restart),
+            "a dead ball is kicked, not carried: {restart:?}"
+        );
+        assert!(
+            restart.iter().any(|k| matches!(
+                k,
+                ChoiceKind::Pass(_) | ChoiceKind::Loft(_) | ChoiceKind::Through { .. }
+            )),
+            "he still chooses whom to play it to: {restart:?}"
+        );
+    }
+
     /// A penalty is a shot (Law 14): nobody is ahead of the ball, so the
     /// taker has no pass and no carry.
     #[test]
@@ -2842,6 +2914,7 @@ mod shot_perception_tests {
                 can_carry: true,
                 penalty_kick: false,
                 throw_in: false,
+                dead_ball: false,
                 runs: BTreeMap::new(),
                 run_pace: BTreeMap::new(),
                 horizon_cm: f64::MAX,

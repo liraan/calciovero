@@ -193,6 +193,7 @@ impl MatchState {
             .collect();
         scene.penalty_kick = self.restart_pass == Some(crate::rules::RestartKind::Penalty);
         scene.throw_in = self.restart_pass == Some(crate::rules::RestartKind::ThrowIn);
+        scene.dead_ball = self.restart_pass.is_some();
         scene.strike_error_rad = ctx.hidden.strike_error_he_expects(
             attacker,
             self.spatial.agent(attacker).map_or(0.0, |a| {

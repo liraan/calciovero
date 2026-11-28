@@ -523,8 +523,13 @@ mod tests {
     fn commentary_comes_from_the_ticks() {
         let mut v = view();
         let kick_off = v.commentary(3);
-        assert_eq!(kick_off.len(), 1, "the kick-off is already a fact");
+        assert_eq!(
+            kick_off.len(),
+            2,
+            "the kick-off and its first kick are facts"
+        );
         assert!(kick_off[0].contains("Kick-off"));
+        assert!(kick_off[1].contains("clears"), "the kick is narrated");
         v.tick = (v.len() - 1) as f64;
         let late = v.commentary(3);
         assert_eq!(late.len(), 3);

@@ -9,6 +9,24 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 231 — a dead ball is kicked, not carried (DD-104, ADR-124)
+
+T17 of the audit: `PerceivedScene` knew only `penalty_kick` and `throw_in`, so
+the taker of a goal kick, corner, direct free kick or kick-off could choose
+`Advance`, `Carry`, `Hold` or `Shift` on a dead ball and `follow_carrier` made
+the ball follow his body. A read-only probe on seeds 42..101 found 1291 such
+first acts (21.5 per match), the kick-off carried in 60 matches out of 60.
+With LUNA the dito is the ball held for the kick and the mate the taker sees;
+the luna is the same taker who, with his reading and his foot, chooses HOW to
+kick — passes, shots and clearances stay, running with a dead ball does not.
+Laws 8 and 13-17 are rules of the game, not a clamp on a cognitive choice.
+`scene.dead_ball` removes those four options; with none left he kicks long
+with the `clear_length_cm` already in `kick.json` (no new number, A5-bis).
+Twin: `a_restart_taker_does_not_run_with_the_ball`, same man, same mates and
+same scene, only the ball goes from live to dead. Golden L0/L1 and the cup,
+level and shoot-out seeds regenerated. The measurement is in
+`L0-CALIBRATION.md` §231.
+
 ## 230 — the clearance reads the gloves, not the slot (DD-103, ADR-123)
 
 T22 of the audit, the last piece of the keeper read by slot: `play_clearance`
