@@ -112,10 +112,11 @@ impl MatchState {
             let restarting_home = restart.side == crate::rules::Side::Home;
             let scoring_home = !restarting_home;
             let celebration = goal_party.filter(|p| p.side_home == scoring_home);
-            let keeper = |id: PlayerId| {
-                ctx.match_.home.players.first().is_some_and(|p| p.id == id)
-                    || ctx.match_.away.players.first().is_some_and(|p| p.id == id)
-            };
+            let (home_gk, away_gk) = (
+                self.spatial.goalkeeper(true),
+                self.spatial.goalkeeper(false),
+            );
+            let keeper = |id: PlayerId| id == home_gk || id == away_gk;
             for (id, home) in ids {
                 // The keepers stay at their goals: one running to the
                 // other goal would have to come back before the kick-off.
@@ -378,11 +379,7 @@ impl MatchState {
                     .max(self.laws.penalty_spot_cm + self.laws.law1.centre_circle_radius_cm)
                     + 100;
                 let edge = if restarting_home { length - back } else { back };
-                let defending_keeper = if restarting_home {
-                    ctx.match_.away.players.first().map(|p| p.id)
-                } else {
-                    ctx.match_.home.players.first().map(|p| p.id)
-                };
+                let defending_keeper = Some(self.spatial.goalkeeper(!restarting_home));
                 for (id, _) in ids {
                     if id == taker {
                         continue;
@@ -542,7 +539,7 @@ impl MatchState {
         } else {
             &ctx.match_.home
         };
-        let keeper = defenders.players.first().map(|p| p.id);
+        let keeper = Some(self.spatial.goalkeeper(!restarting_home));
         let cover = keeper.map_or(0.0, |k| {
             let height = self.bodies.get(&k).map_or(0.0, |b| b.height_cm);
             // The keeper's own reach and dive, read by the actor (ADR-112).

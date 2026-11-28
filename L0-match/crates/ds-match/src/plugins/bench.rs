@@ -569,8 +569,8 @@ mod tests {
 
     #[test]
     fn a_side_whose_keeper_is_sent_off_puts_a_man_in_goal() {
-        // Law 3, code audit S8 (SIM 201): the keeper off, the teammate
-        // nearest his goal takes the gloves at the stoppage.
+        // Law 3, code audit S8: the gloves pass at the send-off (SIM 228),
+        // and the live squad's number one is updated at the stoppage.
         let mut live = ds_fixtures::match_fixture(42).expect("fixture");
         let mut s = crate::state::MatchState::new(&live);
         let keeper = live.home.players[0].id;

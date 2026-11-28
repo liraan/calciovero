@@ -9,6 +9,25 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 228 — the gloves pass at the send-off (DD-101, ADR-121)
+
+T22 of the audit, the S8 remainder: when a goalkeeper was sent off (or carried
+off) during play, the gloves stayed with the old number until the next
+stoppage, because `bench.rs::keep_a_keeper` only runs inside `substitute_due`.
+Readers in play still looked for the keeper in the live squad: every shot on
+target was a goal until the whistle, even with a mate standing on his line.
+With LUNA the dito is the red card and the man leaving; the luna is the side
+that, by Law 3, always has a keeper — the interval is play, not a break.
+`SpatialState::send_off` now hands the gloves at once to the on-pitch mate
+nearest his own goal, with the same criterion and tie-break already used at a
+stoppage; the man keeps his identity and his choices, only his defensive task
+changes. In-play readers take the keeper from `spatial.goalkeeper(home)`;
+the live squad still records the formation until the stoppage. No number,
+parameter, option or event added, nothing fitted to a band (A5-bis). The twin
+`the_gloves_pass_at_the_send_off_not_at_the_stoppage` changes only which man
+leaves. No golden seed has a keeper sent off: hashes and seeds are unchanged,
+only the version comments move. The measurement is in `L0-CALIBRATION.md` §228.
+
 ## 227 — the card says why it is red (DD-100, ADR-120)
 
 T22 of the audit: the engine wrote only `{"color": "red"}`, so a reader had to

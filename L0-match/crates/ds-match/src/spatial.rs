@@ -781,8 +781,8 @@ impl SpatialState {
     }
 
     /// A teammate takes the gloves (Law 3: any player may change places
-    /// with the goalkeeper at a stoppage): he becomes his side's keeper, with
-    /// no place in the block (code audit S8).
+    /// with the goalkeeper, at the send-off or at a stoppage): he becomes
+    /// his side's keeper, with no place in the block (code audit S8, T22).
     pub fn give_gloves(&mut self, home: bool, to: PlayerId) {
         if home {
             self.goalkeepers.0 = to;
@@ -2429,6 +2429,40 @@ impl SpatialState {
         if self.carrier == Some(id) {
             self.set_carrier(None);
         }
+        // Law 3: a side always has a keeper. If the man leaving is his
+        // side's keeper, the teammate nearest his own goal takes the gloves
+        // at once, not at the next stoppage (T22). He is already on the
+        // pitch: no substitution, no new order, only the role changes.
+        let home = if id == self.goalkeepers.0 {
+            true
+        } else if id == self.goalkeepers.1 {
+            false
+        } else {
+            return;
+        };
+        let goal_x = if home { 0 } else { self.pitch_cm.0 };
+        let my_team = crate::perception::team_of(id);
+        let next = self
+            .agents
+            .iter()
+            .filter(|(other, _)| crate::perception::team_of(**other) == my_team)
+            .min_by_key(|(other, a)| ((a.position.0 - goal_x).abs(), other.slot()))
+            .map(|(other, _)| *other);
+        if let Some(next) = next {
+            self.give_gloves(home, next);
+        }
+    }
+
+    /// The man in goal for a side now (Law 3): the one from the formation,
+    /// or the teammate who took the gloves when he left. The live squad
+    /// still lists the formation's man until the next stoppage.
+    #[must_use]
+    pub const fn goalkeeper(&self, home: bool) -> PlayerId {
+        if home {
+            self.goalkeepers.0
+        } else {
+            self.goalkeepers.1
+        }
     }
 }
 
@@ -2728,6 +2762,28 @@ mod tests {
         let away_gk = s.agent(PlayerId::new(100, 0)).unwrap();
         assert_eq!(home_gk.position.0, gk_line_offset_cm());
         assert_eq!(away_gk.position.0, 10500 - gk_line_offset_cm());
+    }
+
+    /// T22: the same eleven, only the man leaving changes. A keeper's
+    /// gloves go to the mate nearest his goal before any stoppage; an
+    /// outfield player's exit leaves them where they were.
+    #[test]
+    fn the_gloves_pass_at_the_send_off_not_at_the_stoppage() {
+        let mut keeper_off = make_state();
+        let mut mate_off = make_state();
+        let keeper = PlayerId::new(0, 0);
+        let mate = PlayerId::new(1, 0);
+        for s in [&mut keeper_off, &mut mate_off] {
+            s.set_position(mate, (100, 3_400));
+            for slot in 2..11 {
+                s.set_position(PlayerId::new(slot, 0), (5_000, 3_400));
+            }
+        }
+        keeper_off.send_off(keeper, (5_250, -300));
+        mate_off.send_off(mate, (5_250, -300));
+        assert_eq!(keeper_off.goalkeeper(true), mate);
+        assert_eq!(mate_off.goalkeeper(true), keeper);
+        assert!(keeper_off.agent(mate).is_some());
     }
 
     #[test]

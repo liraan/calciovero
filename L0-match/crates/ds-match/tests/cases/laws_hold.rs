@@ -175,7 +175,18 @@ fn breaches(m: &Match, result: &MatchResult, records: &[TickRecord]) -> Vec<Stri
                         on_pitch.remove(&p);
                         if let Some(s) = side_of(p) {
                             if keeper[s.index()] == Some(p) {
-                                keeper[s.index()] = None;
+                                // Law 3: the gloves pass at the send-off,
+                                // not at the next stoppage (SIM 228). The
+                                // receiver is the mate nearest his goal in
+                                // the record of this very tick; a man on
+                                // the bench has y < 0.
+                                let goal_x = if s == Side::Home { 0 } else { length };
+                                keeper[s.index()] = records[k]
+                                    .agents
+                                    .iter()
+                                    .filter(|a| a.position.1 >= 0 && side_of(a.id) == Some(s))
+                                    .min_by_key(|a| ((a.position.0 - goal_x).abs(), a.id.slot()))
+                                    .map(|a| a.id);
                             }
                         }
                     }

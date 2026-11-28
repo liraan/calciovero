@@ -481,7 +481,7 @@ impl TeamView {
         ahead_ticks: i32,
     ) -> Self {
         let forward = if home { 1 } else { -1 };
-        let their_keeper = other.players.first().map(|p| p.id);
+        let their_keeper = Some(spatial.goalkeeper(!home));
         let outfield: Vec<(i32, i32)> = other
             .players
             .iter()

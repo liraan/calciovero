@@ -18,7 +18,7 @@ const N: u64 = 10;
 /// First seed of the range.
 const SEED_START: u64 = 42;
 
-/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 227.
+/// The expected hash of the concatenated state hashes, at `SIM_VERSION` 228.
 /// Regenerate when `SIM_VERSION` changes.
 const EXPECTED: &str = "b1b96b1cb50194f637577ad67e9d783d04de6f17a72748acaa11988b56f92b87639b33c43d69018231fe18b0fe373ee572a3d204b46f95338c29909e5a8e95065e179169f18076a160208bfd7a6c7172ba5752b7ee0efa83535112c18231f966e9729972dfdef83280acec22e77de970d710871077a16c9e236b58acf9b171ed4cd5b30091292604ad8e352aeaf3c84158e0dcc433c7c1db389c02134b66e3c24b4a810c50cd56e3e5ad43c9d2280c05eb347923b5d86a3f4183e6e2a8a7f17e96ed7599f54c44721aa041d19c2e16fc1cb77ba5f3ceab8bfae9fa05c71cc701d30a311d494ce5704d323f4374fed4814608d2dd8fe97502fecd5b450764e11fd01ebff8a02f7f3d35f8d3a00cb4af842056cf26b6163c4b61e96f697a0efb3d39509d79aac3979c803f6e7d15d344084082ab6c5f0556d45882786913236381";
 
@@ -83,7 +83,7 @@ fn golden_l0_with_instructions_is_deterministic() {
 /// The expected hash of a cup match that goes to extra time and to
 /// penalties (Laws 7 and 10, plan L0-CLOSE 10h): the first seed from 42
 /// whose cup match is level after 120 minutes, decided by the shoot-out;
-/// the seed is part of what is hashed. SIM 227.
+/// the seed is part of what is hashed. SIM 228.
 const EXPECTED_CUP: &str = "58:2e8d8dd470fe1cac8b4563f1f525bfbc94f0885bb928c052bb5fb916fd71d36b";
 
 fn play_cup(seed: u64) -> ds_match::MatchResult {

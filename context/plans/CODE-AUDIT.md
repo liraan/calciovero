@@ -114,7 +114,7 @@ Rilanciata l'analisi con gli stessi 8 analisti, a partire da questo file. Nuovi 
 - S7. ✅ (SIM 201) Il motore mette ancora nella scena letture dell'attore (`horizon_cm`, `kicker_nerves`).
 
 **Media**
-- S8. ✅ (SIM 201) Portiere espulso o portato fuori: nessuno prende i guanti (Legge 3), ogni tiro nello specchio è gol.
+- S8. ✅ (SIM 228) Portiere espulso o portato fuori: i guanti passano subito al compagno in campo più vicino alla sua porta (Legge 3, DD-101/ADR-121); prima nessuno prendeva i guanti fino alla sosta e ogni tiro nello specchio era gol.
 - S9. ✅ (SIM 201) `deflect_ball` non respinge una palla Loose o portata sul palo.
 - S10. ✅ (SIM 200) `visible_to`/`nearest_to_point` vedono gli espulsi; il record li elenca tra i ventidue e gli strumenti li contano.
 - S11. ✅ (SIM 200) Pressure nomina il compagno più vicino, non il portatore.
@@ -181,7 +181,7 @@ Stessi 8 analisti in sola lettura, a HEAD `5eafc14` (SIM 202), con la tabella de
 - T19. ✅ (SIM 203) Legge 8: il calcio d'inizio del secondo tempo e dei supplementari con i giocatori dove sono; non si cambia campo (regole, motore, strumenti, test).
 - T20. ✅ (SIM 203) L'intercetto "a orologio" (`FLIGHT_TICKS`): `Interception` senza tocco, possesso girato, segni del fuorigioco che restano (regole, motore).
 - T21. ✅ (SIM 203) Legge 11: al tiro non si marca il fuorigioco (la ribattuta di chi era oltre non è punita) (test).
-- T22. Minori: lato della ripresa vicino alla bandierina (y prima di x); retropassaggio preso con le mani; portiere espulso fino alla sosta (S8 a metà); `denial` e muro e spazzata col portiere per slot. ✅ Il cartellino dice se il rosso è un secondo giallo (SIM 227, DD-100/ADR-120): `second_yellow` è scritto all'atto del cartellino; la disciplina di stagione continua a dedurlo.
+- T22. Minori: lato della ripresa vicino alla bandierina (y prima di x); retropassaggio preso con le mani; `denial` e muro e spazzata col portiere per slot. ✅ Il cartellino dice se il rosso è un secondo giallo (SIM 227, DD-100/ADR-120): `second_yellow` è scritto all'atto del cartellino; la disciplina di stagione continua a dedurlo. ✅ Il portiere espulso in gioco passa subito i guanti al compagno più vicino alla propria porta, letto da `spatial.goalkeeper` in gioco (SIM 228, DD-101/ADR-121; gemello `the_gloves_pass_at_the_send_off_not_at_the_stoppage`).
 
 **Blocco 4 — il fuorigioco nelle posizioni**
 - T23. ✅ (SIM 225, DD-98/ADR-118) le punte del blocco non sono più oltre la linea: con la palla aspettano sulla linea del penultimo avversario, corte dello stesso margine della corsa, anche senza compito. Il ritorno al blocco dopo il cambio di possesso resta la regola di spazio com'era.

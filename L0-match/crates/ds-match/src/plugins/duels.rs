@@ -44,7 +44,7 @@ impl MatchState {
         let reach = i64::from(duel.reach_cm);
         let slide_reach = duel.slide_reach_cm();
         let (_, opponents) = self.squads(ctx);
-        let keeper = opponents.players.first().map(|p| p.id);
+        let keeper = Some(self.spatial.goalkeeper(self.possession == Possession::Away));
         let Some(challenger) = opponents.players.iter().map(|p| p.id).find(|id| {
             self.spatial.act(*id) == Some(ds_orchestrator::OffBallAct::Challenge)
                 && self.challenges.get(id).is_none_or(|t| tick >= *t)

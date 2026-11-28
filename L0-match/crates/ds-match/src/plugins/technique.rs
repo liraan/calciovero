@@ -72,7 +72,7 @@ impl MatchState {
         // can only contest it against them, shoulder to shoulder.
         let mut shoulder: Vec<AerialContender> = Vec::new();
         for (squad, home) in [(&m.home, true), (&m.away, false)] {
-            let keeper = squad.players.first().map(|p| p.id);
+            let keeper = Some(self.spatial.goalkeeper(home));
             for p in &squad.players {
                 if Some(p.id) == passer
                     || Some(p.id) == own
@@ -133,7 +133,7 @@ impl MatchState {
             (&ctx.match_.away, &ctx.match_.home)
         };
         let own_goal = (length - goal.0, goal.1);
-        let gk = their.players.first().map(|p| p.id);
+        let gk = Some(self.spatial.goalkeeper(!home));
         let keeper_reach_cm = gk.and_then(|g| self.bodies.get(&g)).map_or(0.0, |b| {
             ctx.hidden.save_balance().standing_reach_cm(b.height_cm)
         });
@@ -510,7 +510,7 @@ impl MatchState {
         let m = ctx.match_;
         let shooter_home = m.home.players.iter().any(|p| p.id == shooter);
         let defenders = if shooter_home { &m.away } else { &m.home };
-        let keeper = defenders.players.first().map(|p| p.id);
+        let keeper = Some(self.spatial.goalkeeper(!shooter_home));
         let radius = self.reception_balance.loose_control_radius_cm;
         // Along the ball's way this tick, in the small steps it moved in
         // (ADR-069), as a high ball is met (SIM 148): the first point below

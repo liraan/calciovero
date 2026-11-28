@@ -146,11 +146,11 @@ impl MatchState {
                 am.heading = h;
             }
         }
-        // Their keeper is the first of their squad (the formation's fact,
-        // as in `SpatialState::goalkeepers`). Before `SIM_VERSION` 74 this
-        // was `slot() == 0`, true only of the home keeper: a home shooter
-        // never saw the away keeper as a keeper.
-        let gk = opponents.first().copied();
+        // Their keeper is the man in goal now (SIM 196, T22): the one who
+        // took the gloves after a substitution or a send-off. Before
+        // `SIM_VERSION` 74 this was `slot() == 0`, true only of the home
+        // keeper: a home shooter never saw the away keeper as a keeper.
+        let gk = Some(self.spatial.goalkeeper(self.possession == Possession::Away));
         // Room to carry: farther from the goal than the edge of the box,
         // and not blocked. A carrier who has not got anywhere since his last
         // decision is blocked (an opponent in his way) and plays the ball
@@ -754,7 +754,7 @@ impl MatchState {
             let carrier_pos = carrier_opponent
                 .and_then(|c| self.spatial.agent(c))
                 .map(|a| a.position);
-            let keeper_id = squad.players.first().map(|p| p.id);
+            let keeper_id = Some(self.spatial.goalkeeper(home));
             for p in &squad.players {
                 let id = p.id;
                 let Some(me) = self.spatial.agent(id).map(|a| a.position) else {

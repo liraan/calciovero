@@ -194,17 +194,11 @@ impl MatchState {
             return;
         }
 
-        // The keeper on the pitch now (SIM 196): the first of the live
-        // squad, the man who came on for him after a substitution. Before,
-        // the ids of the starting keepers: after a change of keeper nobody
-        // met a shot and every one on target was a goal.
-        let keeper_of = match defending {
-            Possession::Home => &ctx.match_.home,
-            Possession::Away => &ctx.match_.away,
-        };
-        let Some(gk) = keeper_of.players.first().map(|p| p.id) else {
-            return;
-        };
+        // The keeper on the pitch now (SIM 196, T22): the man in goal in
+        // the spatial state, who took the gloves at a substitution or at a
+        // send-off. Before, the first of the live squad: after a keeper was
+        // sent off mid-play nobody met a shot and every one was a goal.
+        let gk = self.spatial.goalkeeper(defending == Possession::Home);
         if self.keeper_meets_the_shot(
             ctx,
             tick,
@@ -331,29 +325,24 @@ impl MatchState {
             return;
         }
         // His keeper meets it first, as he meets a shot, unless he is the
-        // man on it (SIM 203, T3).
-        let keeper_of = match defending {
-            Possession::Home => &ctx.match_.home,
-            Possession::Away => &ctx.match_.away,
-        };
-        if let Some(gk) = keeper_of.players.first().map(|p| p.id) {
-            let course = self.ball_course;
-            if self.spatial.carrier() != Some(gk)
-                && self.spatial.agent(gk).is_some()
-                && self.keeper_meets_the_ball(
-                    ctx,
-                    tick,
-                    gk,
-                    (course.from, course.since),
-                    impact,
-                    width / 2,
-                    false,
-                )
-            {
-                self.pending = None;
-                self.possession = defending;
-                return;
-            }
+        // man on it (SIM 203, T3; T22: the man in goal now).
+        let gk = self.spatial.goalkeeper(defending == Possession::Home);
+        let course = self.ball_course;
+        if self.spatial.carrier() != Some(gk)
+            && self.spatial.agent(gk).is_some()
+            && self.keeper_meets_the_ball(
+                ctx,
+                tick,
+                gk,
+                (course.from, course.since),
+                impact,
+                width / 2,
+                false,
+            )
+        {
+            self.pending = None;
+            self.possession = defending;
+            return;
         }
         let home = |p: PlayerId| ctx.match_.home.players.iter().any(|q| q.id == p);
         let own_goal = crate::rules::own_goal(last.map(&home), defending == Possession::Home);

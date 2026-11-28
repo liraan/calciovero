@@ -545,7 +545,7 @@ impl MatchState {
         } else {
             &ctx.match_.home
         };
-        let their_keeper = defenders.players.first().map(|p| p.id);
+        let their_keeper = Some(self.spatial.goalkeeper(!fouled_home));
         let cover: Vec<i32> = defenders
             .players
             .iter()
