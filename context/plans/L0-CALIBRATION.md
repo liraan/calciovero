@@ -492,7 +492,8 @@ chiusi dall'ADR-121. Nessun numero, raggio, soglia, opzione o evento nuovo
 **13 su 20 confrontabili in banda**, identica al 229 riga per riga: gol 5,07,
 tiri 33,95, `shots_on_target` 13,40, passaggi 1184,18, fuorigioco 6,65. Le
 sette righe fuori banda conservano la causa già archiviata; `shots_on_target`
-resta indagata come possibile bug, non tarata. Nessun seme dei golden e della
+è indagata in RUN 103: conteggio esatto, l'extra nasce dai calci indiretti del
+229, non tarata. Nessun seme dei golden e della
 coppa cambia portiere in gioco: hash e semi invariati, aggiornati solo i
 commenti di versione. Con questo T22 è chiuso.
 
@@ -511,8 +512,8 @@ tocca il pallone. Nessun numero, soglia, opzione, cartellino o evento nuovo
 `shots` 33,95, `passes` 1184,18, `passes_accurate` 1075,05, `aerial_duels`
 8,55 e `throw_ins` 20,73. Le ultime sei conservano la causa già archiviata
 (DD-82/91, DD-92, OI-100/DD-93, DD-94); `shots_on_target` segue il volume dei
-tiri ed è indagata come possibile bug, non tarata. Nessun valore è stato
-scelto guardando la banda.
+tiri ed è indagata in RUN 103: conteggio esatto, causa nei nuovi calci
+indiretti, non tarata. Nessun valore è stato scelto guardando la banda.
 
 Cambia il comportamento, quindi tutti gli hash sono stati rigenerati: golden
 L0 base e istruito, golden L0 coppa con seed 58 → 131, semi dei test (header
@@ -570,6 +571,35 @@ A5-bis vieta di usare la banda dei gialli per sceglierlo, e le righe `fouls`,
 `yellow_cards` e `red_cards` sono già in banda. T16 resta aperto in attesa di una
 definizione sorgibile di «azione promettente» (fonti: Law 12 e il grezzo Wyscout
 dei cartellini), non di una soglia. Sonda rimossa, nessun `SIM_VERSION` nuovo.
+
+## RUN 103 — `shots_on_target`: conteggio esatto, causa nel retropassaggio (2026-11-28, sola lettura)
+
+Domanda aperta dal 229: `shots_on_target` 13,40 contro 8,69 ± 3,22 — bug di
+conteggio o volume di tiri? Sonda temporanea su `tools/ds-reference/examples/`
+(poi rimossa), semi 42..101, nessun file del motore toccato.
+
+**Il conteggio non è in difetto.** La catena di `engine.rs::count` si chiude
+esattamente: 2.037 tiri (33,95/m), 1.147 con `on_target` vero (19,12/m, 56,3%
+— geometria dello specchio, SIM 203, RUN 98), 343 blocchi di tiri in porta
+(5,72/m) sottratti come Wyscout e StatsBomb, 1.147 − 343 = 804 = **13,40/m**,
+la metrica. Nessun doppio conteggio e nessun evento cambiato: il flag resta
+geometrico e legge il punto di arrivo del calcio, non l'esito.
+
+**Il salto nasce dalla Law 12 del 229.** 230 calci liberi indiretti per
+retropassaggio preso con le mani, 3,83/m; 211 tiri (3,52/m) entro 12 eventi dal
+fischio, 196 dei quali sono il primo calcio dell'avversario, 181 dei 211 in
+porta (3,02/m). Prima del 229 la stessa scena era una `Save` con `claim: true`
+senza fischio e senza ripartenza: quei tiri non esistevano. Il 228 era 10,33 in
+banda; il 229 li aggiunge e la riga esce.
+
+**Indizio aperto, non taratura:** 3,83 retropassaggi presi con le mani a partita
+è un numero alto per il calcio vero, dove il passaggio deliberato al portiere è
+raro; il grezzo Wyscout non ha un tag per l'infrazione e non dà una banda. Con
+LUNA il dito è il passaggio dei compagni e le mani del portiere, la luna è lo
+stesso portiere che sceglie di prenderlo: la regola non gli impone il piede
+(ADR-122), ma serve una fonte propria per dire quanto spesso lo sceglie. A5-bis
+vieta di aggiustare la scelta guardando la banda; la riga resta fuori con la
+causa dichiarata, nessun `SIM_VERSION` nuovo.
 
 ## La misura del 225 (2026-11-27, opencode, DD-98/ADR-118)
 
