@@ -477,6 +477,25 @@ resta fuori di 0,07 con la causa dichiarata: la linea difensiva si arretra
 nell'intervallo tra due decisioni dell'attaccante, in un motore che gioca più
 passaggi del referto (DD-82). Nessun cambio di motore, nessun `SIM_VERSION` nuovo.
 
+## RUN 102 — il giallo per «azione promettente» non ha una definizione (2026-11-28, sola lettura)
+
+T16 chiede il giallo che manca; la lettura ingenua (ogni fallo senza vantaggio
+nell'altra metà, a uomo non già ammonito) è stata provata su una sonda temporanea
+nei semi 42..101, senza toccare il motore. Risultato: 21,77 falli, 1,03 con
+vantaggio, 10,32 nell'altra metà — e **8,08 ammonizioni nuove a partita** contro
+le 2,83 già emesse e le 3,97 ± 1,96 reali. Fra i candidati, 7,62 sono scivolate
+da dietro e 7,82 scivolate: il motore le lascia senza cartellino solo perché
+l'avvicinamento è sotto la soglia di `reckless` di `laws.json`, non perché manchi
+una scelta del giocatore.
+
+Con LUNA il dito è il fallo e l'azione che interrompe; la luna è il difensore
+che ha scelto come entrare e l'arbitro che legge l'opportunità. Cardare l'area
+dell'altra metà introdurrebbe un numero preso dalla geometria, non una regola:
+A5-bis vieta di usare la banda dei gialli per sceglierlo, e le righe `fouls`,
+`yellow_cards` e `red_cards` sono già in banda. T16 resta aperto in attesa di una
+definizione sorgibile di «azione promettente» (fonti: Law 12 e il grezzo Wyscout
+dei cartellini), non di una soglia. Sonda rimossa, nessun `SIM_VERSION` nuovo.
+
 ## La misura del 225 (2026-11-27, opencode, DD-98/ADR-118)
 
 Stesso comando e bande del 224. T23: con la palla le punte aspettano sulla
