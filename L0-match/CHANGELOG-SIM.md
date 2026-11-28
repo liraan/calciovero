@@ -9,6 +9,23 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 230 — the clearance reads the gloves, not the slot (DD-103, ADR-123)
+
+T22 of the audit, the last piece of the keeper read by slot: `play_clearance`
+left out `players.iter().skip(1)` as the keeper, who on his line does not
+press the kicker. Since SIM 228 the gloves pass at a send-off in play while
+the squad keeps its old order until the stoppage, so that skip left out a
+moving defender and counted the man now in goal. With LUNA the dito is the
+man with the gloves near the kicker; the luna is the same kicker who, with
+the same technique, feels whoever is on him and chooses how to clear. The
+pressure now leaves out `spatial.goalkeeper(...)`, the man in goal now: no
+number, radius, option or event added, nothing fitted to a band (A5-bis).
+Twin: `the_clearance_pressure_follows_the_gloves_not_the_slot`, same kicker
+and opponents in the same places, only the gloves change; with the old skip
+the two kicks are identical. `denial` and the wall were already covered by
+ADR-121. No golden seed changes keeper in play: hashes and seeds unchanged,
+only the version comments move. The measurement is in `L0-CALIBRATION.md` §230.
+
 ## 229 — the back pass in the hands is punished (DD-102, ADR-122)
 
 T22 of the audit, the remainder shared with T17: a ball deliberately kicked

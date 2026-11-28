@@ -456,10 +456,15 @@ impl MatchState {
                 .shot_choice_balance()
                 .kick_pressure_radius_cm
                 .max(1);
+            // Law 3 (SIM 230, DD-103): the man on his line does not press
+            // the kicker. Read who holds the gloves now, not the first
+            // entry of the squad: after a send-off in play that entry is
+            // an outfield player who does press.
+            let keeper = self.spatial.goalkeeper(self.possession == Possession::Away);
             opponents
                 .players
                 .iter()
-                .skip(1)
+                .filter(|o| o.id != keeper)
                 .filter_map(|o| self.spatial.agent(o.id))
                 .map(|a| distance_squared(a.position, from).isqrt())
                 .min()
@@ -1305,5 +1310,50 @@ mod tests {
         };
         assert_eq!(told(false), 1, "a normal pass is told once");
         assert_eq!(told(true), 0, "the restart is not told again as a Pass");
+    }
+
+    /// Law 3 twin (DD-103/SIM 230): the kicker and both opponents stand in
+    /// the same places; only the man holding the gloves changes. Pressure
+    /// follows the gloves, not the first entry of the squad.
+    #[test]
+    fn the_clearance_pressure_follows_the_gloves_not_the_slot() {
+        use crate::context::{MatchConfig, MatchContext};
+        use crate::state::{MatchState, Possession};
+        use ds_stats::EventChain;
+
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let kicker = m.home.players[6].id;
+        let far = m.away.players[0].id;
+        let near = m.away.players[1].id;
+        let length = i32::from(m.pitch.length_m) * 100;
+        let centre = i32::from(m.pitch.width_m) * 100 / 2;
+        let at = (length / 2, centre);
+        let kick = |gloves_to_near: bool| {
+            let mut hidden = ds_orchestrator::GroundTruth::for_match(42, &m);
+            let mut chain = EventChain::new();
+            let mut ctx = MatchContext {
+                match_: &m,
+                hidden: &mut hidden,
+                chain: &mut chain,
+                config: MatchConfig::default(),
+            };
+            let mut s = MatchState::new(&m);
+            s.possession = Possession::Home;
+            s.spatial.set_position(kicker, at);
+            s.spatial.set_position(far, (length, centre));
+            s.spatial.set_position(near, (at.0 - 120, at.1));
+            if gloves_to_near {
+                s.spatial.give_gloves(false, near);
+            }
+            s.spatial.set_ball_in_flight((at.0, at.1, 0), (0, 0, 0));
+            s.play_clearance(&mut ctx, 1, kicker, (at.0 + 3000, at.1));
+            s.spatial.ball_velocity()
+        };
+        let slot_keeper = kick(false);
+        let near_keeper = kick(true);
+        assert_ne!(
+            slot_keeper, near_keeper,
+            "the same clearance met different pressure only because the gloves moved"
+        );
     }
 }
