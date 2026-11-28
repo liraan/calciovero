@@ -181,7 +181,7 @@ Stessi 8 analisti in sola lettura, a HEAD `5eafc14` (SIM 202), con la tabella de
 - T19. ✅ (SIM 203) Legge 8: il calcio d'inizio del secondo tempo e dei supplementari con i giocatori dove sono; non si cambia campo (regole, motore, strumenti, test).
 - T20. ✅ (SIM 203) L'intercetto "a orologio" (`FLIGHT_TICKS`): `Interception` senza tocco, possesso girato, segni del fuorigioco che restano (regole, motore).
 - T21. ✅ (SIM 203) Legge 11: al tiro non si marca il fuorigioco (la ribattuta di chi era oltre non è punita) (test).
-- T22. Minori: lato della ripresa vicino alla bandierina (y prima di x); retropassaggio preso con le mani; portiere espulso fino alla sosta (S8 a metà); `denial` e muro e spazzata col portiere per slot; il secondo giallo non contato fra i gialli.
+- T22. Minori: lato della ripresa vicino alla bandierina (y prima di x); retropassaggio preso con le mani; portiere espulso fino alla sosta (S8 a metà); `denial` e muro e spazzata col portiere per slot. ✅ Il cartellino dice se il rosso è un secondo giallo (SIM 227, DD-100/ADR-120): `second_yellow` è scritto all'atto del cartellino; la disciplina di stagione continua a dedurlo.
 
 **Blocco 4 — il fuorigioco nelle posizioni**
 - T23. ✅ (SIM 225, DD-98/ADR-118) le punte del blocco non sono più oltre la linea: con la palla aspettano sulla linea del penultimo avversario, corte dello stesso margine della corsa, anche senza compito. Il ritorno al blocco dopo il cambio di possesso resta la regola di spazio com'era.

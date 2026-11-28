@@ -443,6 +443,23 @@ Gol, tiri e fuorigioco si muovono un po' verso la banda senza tarature: restano
 indizi, non numeri da ricalibrare. La parte restante di T17 (primo atto delle
 altre riprese, punizione indiretta) non è stata toccata.
 
+## La misura del 227 (2026-11-28, opencode, DD-100/ADR-120)
+
+Stesso comando e bande del 226. T22: il cartellino rosso dice
+`second_yellow`, vero solo se la Legge 12 ha trasformato una seconda
+ammonizione; il giallo resta come prima e la disciplina di stagione continua
+a dedurre. Nessun numero, soglia, opzione o evento nuovo (A5-bis).
+
+**13 su 20 confrontabili in banda**, le stesse del 226: fuori restano `goals`
+4,97, `shots` 30,70, `passes` 1188,43, `passes_accurate` 1077,40,
+`aerial_duels` 8,87, `throw_ins` 20,53 e `offsides` 6,73, tutte con la causa
+già archiviata (DD-82/91, DD-92, OI-100/DD-93, DD-94 e RUN 101). Nessuna
+riga è stata avvicinata alla banda cambiando un valore.
+
+L'hash di stato include gli eventi: il campo nuovo cambia i golden L0 base e
+istruito, che sono stati rigenerati. La coppa non ha rossi e resta identica;
+identici restano anche il golden L1, i semi e il seed della coppa (58).
+
 ## RUN 101 — il fischio di fuorigioco letto sul passaggio (2026-11-28, sola lettura)
 
 Domanda aperta dal 225: `offsides` 6,73 contro 4,26 ± 2,40 — bug del fischio o

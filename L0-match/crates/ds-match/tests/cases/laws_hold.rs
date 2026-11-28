@@ -159,6 +159,18 @@ fn breaches(m: &Match, result: &MatchResult, records: &[TickRecord]) -> Vec<Stri
                 }
                 match e.fields.get("color").and_then(serde_json::Value::as_str) {
                     Some("red") => {
+                        // The card itself says whether it is a second
+                        // caution (T22); it must agree with the bookings.
+                        let second = e
+                            .fields
+                            .get("second_yellow")
+                            .and_then(serde_json::Value::as_bool);
+                        if second != Some(cautioned.contains(&p)) {
+                            out.push(format!(
+                                "{at}: {p:?} red says second_yellow {second:?}, bookings say {}",
+                                cautioned.contains(&p)
+                            ));
+                        }
                         sent_off.insert(p, k);
                         on_pitch.remove(&p);
                         if let Some(s) = side_of(p) {

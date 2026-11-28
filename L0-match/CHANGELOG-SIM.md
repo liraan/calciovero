@@ -9,6 +9,18 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 227 — the card says why it is red (DD-100, ADR-120)
+
+T22 of the audit: the engine wrote only `{"color": "red"}`, so a reader had to
+deduce a second caution from a yellow and a red in the same match (the season
+still does). A red now carries `second_yellow: bool`: true when Law 12 turned
+a second caution into the sending-off, false for a direct red. The decision
+is taken where the card is given, at the same moment the referee shows it;
+no choice, threshold or event type changes, and the yellow card's record is
+untouched. Twin in `laws_hold.rs`: every red must agree with the bookings in
+the record. The state hash does not move, so the golden hashes and the
+fixtures stay the same; the measurement is in `L0-CALIBRATION.md` §227.
+
 ## 226 — the throw-in is thrown (DD-99, ADR-119)
 
 T17 of the audit: a throw-in was kicked like any other restart and could go

@@ -357,6 +357,15 @@ pub const fn card_after(already_cautioned: bool, card: Option<Card>) -> Option<C
     }
 }
 
+/// The card as the record tells it: a red says whether it came from a second
+/// caution, so a reader need not deduce it from two events (T22).
+fn card_fields(card: Card, second_yellow: bool) -> serde_json::Value {
+    match card {
+        Card::Yellow => serde_json::json!({ "color": "yellow" }),
+        Card::Red => serde_json::json!({ "color": "red", "second_yellow": second_yellow }),
+    }
+}
+
 /// Law 12: advantage when the fouled side keeps the ball in the
 /// opponents' half, outside the penalty area. `depth` is from the goal
 /// they attack, `length` the pitch's.
@@ -626,12 +635,9 @@ impl MatchState {
         } else {
             card
         };
-        let card = match card {
-            Some(crate::rules::Card::Yellow) => {
-                crate::rules::card_after(!self.cautioned.insert(offender), card)
-            }
-            c => c,
-        };
+        let second_yellow =
+            matches!(card, Some(crate::rules::Card::Yellow)) && !self.cautioned.insert(offender);
+        let card = crate::rules::card_after(second_yellow, card);
         if let Some(c) = card {
             let red = c == crate::rules::Card::Red;
             self.emit_event(
@@ -639,7 +645,7 @@ impl MatchState {
                 tick,
                 Some(ActorId::Player(offender)),
                 EventType::Card,
-                serde_json::json!({ "color": if red { "red" } else { "yellow" } }),
+                crate::rules::card_fields(c, second_yellow && red),
             );
             if red {
                 // Off the pitch: to the bench, by the halfway line.
@@ -764,6 +770,18 @@ mod tests {
         assert_eq!(card_after(true, Some(Card::Yellow)), Some(Card::Red));
         assert_eq!(card_after(false, Some(Card::Yellow)), Some(Card::Yellow));
         assert_eq!(card_after(false, Some(Card::Red)), Some(Card::Red));
+        assert_eq!(
+            card_fields(Card::Yellow, false),
+            serde_json::json!({ "color": "yellow" })
+        );
+        assert_eq!(
+            card_fields(Card::Red, true),
+            serde_json::json!({ "color": "red", "second_yellow": true })
+        );
+        assert_eq!(
+            card_fields(Card::Red, false),
+            serde_json::json!({ "color": "red", "second_yellow": false })
+        );
         // The length of the pitch, as the engine passes it: the advantage
         // is in the opponents' half (before, the test passed half of it and
         // guarded a quarter).
