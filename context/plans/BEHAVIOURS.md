@@ -277,6 +277,7 @@ Verificata riga per riga contro il codice il 2026-11-20: ogni voce ha ora un rif
 | 25 | Si va al pallone | percepisce palla ferma e chi batte → legge che la ripresa aspetta → ci va | `no_restart_stops_the_match` (`golden_scenes.rs:241`) | attuato: `call_restart`/`send` (`set_pieces.rs:77,97`), ADR-080 SIM 163 |
 | 26 | Ci si piazza | percepisce palla ferma e ruolo → legge marcature e movimenti → prende posto | `nobody_moves_faster_than_his_legs` (`golden_scenes.rs:68`) | attuato: `place_for_restart`, `clear_the_spot`, `form_wall` (`set_pieces.rs:62,270,451`); nessun test dedicato ai movimenti d'attacco dalla lavagna |
 | 27 | Dopo il gol | percepisce il gol → legge il tempo per tornare → esulta e rientra | `after_a_goal_the_kick_off_waits_and_the_sides_are_in_their_halves` (`golden_scenes.rs:122`) | parziale: rientro + attesa (`set_pieces.rs:74-130`), narrazione (`ds-narrative:287-297`); nessun atto di esultanza |
+| 28 | La rimessa si lancia | percepisce i compagni sulla fascia → legge chi è ricevibile → lancia con le mani, non calcia e non tira in porta | `a_throw_in_is_only_a_throw_to_a_mate` (`read.rs`), `a_direct_throw_into_the_goal_is_not_a_goal` (`ball.rs`) | attuato dal SIM 226 (ADR-119): la regola fissa il gesto, la scelta del ricevitore resta del battitore; nessun gol diretto |
 
 **Voce 9, letta con LUNA e partita vera (DD-81, 26 novembre 2026).** Il
 portatore vede il compagno marcato: è lui che sceglie COME eseguire — il
@@ -344,6 +345,7 @@ nel primo. Nessun numero nuovo: la misura dello spazio è già `freedom_share`
 25. **Si va al pallone.** Chi batte una rimessa, un angolo o una punizione ci va correndo o camminando, e la ripresa aspetta che arrivi; nessuno appare sul pallone.
 26. **Ci si piazza.** Gli altri prendono posto per la ripresa: le marcature in difesa, i movimenti in attacco (dalla tattica).
 27. **Dopo il gol.** Chi segna esulta, poi tutti tornano a centrocampo con calma; il tempo passa.
+28. **La rimessa si lancia.** Chi batte la rimessa legge i compagni e sceglie a chi lanciare con le mani; non la calcia e non può segnare direttamente (ADR-119, SIM 226).
 
 ## Parte 2 · Le tendenze tattiche (dalla lavagna)
 

@@ -10,7 +10,7 @@
   ```
   Finestra di taratura 42..101 (60 partite), squadre di prova, blocco medio e ampiezza normale. Non è un numero statistico: la banda è già la dispersione della partita vera (decisione Y), la finestra serve solo a rileggere la stessa partita più volte e a confrontare misure diverse. **Non fa parte dei controlli di chiusura** (RULES C2, 2026-11-20): si esegue quando serve una decisione sulle metriche, non a ogni intervento.
 - **Riferimento:** Serie A 2017-18, 380 partite, Wyscout (Pappalardo et al. 2019, *Scientific Data* 6, 236; CC BY 4.0), per partita ed entrambe le squadre.
-- **Motore:** `SIM_VERSION` 224 (in codice, DD-97); ultima misura: **14 su 20 confrontabili in banda** (sezione "La misura del 224"). Prima: `SIM_VERSION` 223 (DD-95), 15 su 20 (sezione "La misura del 223"). Storia: il 195 era 4 su 22, il 192 (DD-52/ADR-110) 6 su 22. Il conteggio "10 su 22" / "9 su 22" scritto prima per il 188 era sbagliato (tre righe segnate in banda fuori banda). Il SIM 189 (DD-49) è accantonato sul branch `sim-189-first-time`. Il 187 (DD-47) era 6/22 con parate 14.65. Il 185 ha spostato i `Threats` da `ds-match` all'orchestratore con aritmetica identica e nessuna misura nuova. La tabella storica sotto è l'ultima misura riga per riga del **171** (6 su 22), lasciata come confronto: le sue cause e i suoi OI valgono ancora dove non sono stati chiusi. SIM 167 (il possesso è il movimento) e SIM 168 (solo osservatori, golden identico) non cambiano il conteggio. Storia delle misure: al 168, dopo ADR-084 e ADR-085 (gol 4.80, passaggi 1237, duelli aerei 10.82, rimesse 17.87, 6 su 22); al 166, la palla libera conserva la velocità e continua a rotolare (gol 5.22, passaggi 1254, duelli aerei 10.62, rimesse 18.08, 6 su 22); al 165, l'emendamento ADR-071 sul posto senza palla letto dal giocatore (gol 5.22, duelli aerei 10.85, rimesse 18.27, 6 su 22); al 164, la scelta C di OI-102 (ADR-081): gol 5.25, duelli aerei 11.02, 6 su 22; al 163, i calci morti e il battitore scelto per ruolo (DD-21, ADR-080): gol 5.20, duelli aerei 10.82, 6 su 22; al 154, la posizione senza palla (ADR-071): 9 su 22; al 151, 11 su 22; al 147, i passi piccoli (ADR-069): gol 2.95, rimesse 25.9, 11 su 22; al 141, il colpo che costringe al cambio (ADR-066): 12 su 22. La taratura è ferma finché i comportamenti non sono giusti (decisione BK). La misura del 116, del 117 e del 118 è identica riga per riga: il 117 e il 118 cambiano solo le partite di coppa e le squadre con l'allenatore che reagisce. **SIM 170** (la pressione rimette alla prova il controllo del portatore, ADR-086) non è stato misurato separatamente: la misura 42..101 è stata fatta al 171, quando il difetto angolare di OI-100 chiedeva una decisione sulle metriche, non un rito di chiusura (RULES C2).
+- **Motore:** `SIM_VERSION` 226 (in codice, DD-99); ultima misura: **13 su 20 confrontabili in banda** (sezione "La misura del 226"). Prima: `SIM_VERSION` 225 (DD-98), 13 su 20 (sezione "La misura del 225"); 224 (DD-97), 14 su 20 (sezione "La misura del 224"); 223 (DD-95), 15 su 20 (sezione "La misura del 223"). Storia: il 195 era 4 su 22, il 192 (DD-52/ADR-110) 6 su 22. Il conteggio "10 su 22" / "9 su 22" scritto prima per il 188 era sbagliato (tre righe segnate in banda fuori banda). Il SIM 189 (DD-49) è accantonato sul branch `sim-189-first-time`. Il 187 (DD-47) era 6/22 con parate 14.65. Il 185 ha spostato i `Threats` da `ds-match` all'orchestratore con aritmetica identica e nessuna misura nuova. La tabella storica sotto è l'ultima misura riga per riga del **171** (6 su 22), lasciata come confronto: le sue cause e i suoi OI valgono ancora dove non sono stati chiusi. SIM 167 (il possesso è il movimento) e SIM 168 (solo osservatori, golden identico) non cambiano il conteggio. Storia delle misure: al 168, dopo ADR-084 e ADR-085 (gol 4.80, passaggi 1237, duelli aerei 10.82, rimesse 17.87, 6 su 22); al 166, la palla libera conserva la velocità e continua a rotolare (gol 5.22, passaggi 1254, duelli aerei 10.62, rimesse 18.08, 6 su 22); al 165, l'emendamento ADR-071 sul posto senza palla letto dal giocatore (gol 5.22, duelli aerei 10.85, rimesse 18.27, 6 su 22); al 164, la scelta C di OI-102 (ADR-081): gol 5.25, duelli aerei 11.02, 6 su 22; al 163, i calci morti e il battitore scelto per ruolo (DD-21, ADR-080): gol 5.20, duelli aerei 10.82, 6 su 22; al 154, la posizione senza palla (ADR-071): 9 su 22; al 151, 11 su 22; al 147, i passi piccoli (ADR-069): gol 2.95, rimesse 25.9, 11 su 22; al 141, il colpo che costringe al cambio (ADR-066): 12 su 22. La taratura è ferma finché i comportamenti non sono giusti (decisione BK). La misura del 116, del 117 e del 118 è identica riga per riga: il 117 e il 118 cambiano solo le partite di coppa e le squadre con l'allenatore che reagisce. **SIM 170** (la pressione rimette alla prova il controllo del portatore, ADR-086) non è stato misurato separatamente: la misura 42..101 è stata fatta al 171, quando il difetto angolare di OI-100 chiedeva una decisione sulle metriche, non un rito di chiusura (RULES C2).
 - **La banda:** media reale ± una deviazione standard delle 380 partite reali. **Il suo significato (decisione Y, maintainer, 2026-11-16):** L0 si chiude sulla credibilità della singola partita: una partita vera può finire 0-0 o 4-3, e la dispersione delle partite vere dice cosa è credibile. L1 si chiuderà sulle medie del campionato, con la banda sull'errore della media su una stagione intera, perché i totali di stagione (gol, capocannoniere) mostrano ogni scarto nelle medie. La fonte è lo stesso riferimento. È una regola sola per tutte le metriche, presa dalla dispersione del calcio vero e non dai valori del motore. Il caos del motore (circa 1.5 gol fra due esecuzioni che differiscono di un bit, SIM 101) sta dentro questa larghezza.
 - **Non confrontabili:** cross, intercetti e i due recuperi (T14-bis). Le definizioni Wyscout e del motore differiscono (`ds-reference`, nota della tabella).
 
@@ -386,6 +386,63 @@ header in fuorigioco 52 → 45, livello al 90' 47 → 44). Il gemello
 solo arrivo e portata. La riga `shots` è uscita di banda per effetto della
 nuova risoluzione dei duelli aerei, non per una taratura: va indagata come
 possibile bug prima di qualunque aggiustamento (A5-bis).
+
+## La misura del 226 (2026-11-28, opencode, DD-99/ADR-119)
+
+Stesso comando e bande del 225. Prima parte di T17: la rimessa è un lancio con
+le mani a un compagno scelto dal battitore, non un calcio, e non segna
+direttamente (Leggi 15 e 10). Il fatto vive nella scena del lanciatore e nel
+`Pending` del suo passaggio; non c'è numero, soglia o gesto nuovo, e niente è
+stato scelto guardando la banda (A5-bis). I due gemelli cambiano un solo fatto
+a scena identica.
+
+**13 su 20 confrontabili in banda** (13 nel 225). Fuori banda: `goals` 4,97
+contro 2,68 ± 1,65, `shots` 30,70 contro 24,60 ± 5,46, `passes` 1188,43 contro
+887,68 ± 122,81, `passes_accurate` 1077,40 contro 739,17 ± 124,79,
+`aerial_duels` 8,87 contro 38,14 ± 12,98, `throw_ins` 20,53 contro 42,72 ± 8,92
+e `offsides` 6,73 contro 4,26 ± 2,40 (6,95 nel 225: esce di 0,07 dal limite
+alto). Le sei righe vecchie restano con le cause archiviate: volume dei
+passaggi (DD-82), uscita laterale non attribuita dalla fonte (DD-94), duello
+aereo (OI-100), tiro in porta (RUN 98). La settima resta un possibile bug da
+indagare: il posto della punta legge `second_last` da posizioni vere, il
+fischio legge `offside_to` da posizioni percepite con la soglia dell'occhio
+(ADR-062 (b)); i 50 cm di margine non vanno cambiati guardando il conteggio.
+`ground_duels` 155,77 è appena dentro il limite basso (155,09): si tiene
+d'occhio, non si tarà. Nessun numero è stato adattato per rientrare in banda.
+
+| metrica | 226 | 225 | reale | nota |
+|---|---|---|---|---|
+| goals | 4.97 | 5.47 | 2.68 ± 1.65 | fuori, RUN 98 |
+| own_goals | 0.33 | 0.23 | 0.10 ± 0.31 | in banda |
+| shots | 30.70 | 31.90 | 24.60 ± 5.46 | fuori di 0,64, non tarato |
+| shots_on_target | 10.87 | 10.90 | 8.69 ± 3.22 | in banda |
+| penalties | 0.17 | 0.18 | 0.33 ± 0.56 | in banda |
+| passes | 1188.43 | 1182.80 | 887.68 ± 122.81 | fuori, volume aperto (DD-82) |
+| passes_accurate | 1077.40 | 1067.63 | 739.17 ± 124.79 | fuori, volume aperto (DD-82) |
+| crosses | 7.97 | 9.55 | 33.83 ± 8.78 | non confrontabile |
+| aerial_duels | 8.87 | 8.40 | 38.14 ± 12.98 | fuori, OI-100 |
+| ground_duels | 155.77 | 160.78 | 182.63 ± 27.54 | in banda, 0,68 dal limite basso |
+| take_ons_won | 18.25 | 19.52 | 16.03 ± 5.67 | in banda |
+| fouls | 21.77 | 21.70 | 26.00 ± 6.69 | in banda |
+| yellow_cards | 2.83 | 2.52 | 3.97 ± 1.96 | in banda |
+| red_cards | 0.17 | 0.33 | 0.24 ± 0.49 | in banda |
+| corners | 8.60 | 8.52 | 10.30 ± 3.58 | in banda |
+| throw_ins | 20.53 | 21.05 | 42.72 ± 8.92 | fuori, DD-94 |
+| goal_kicks | 17.62 | 18.05 | 17.15 ± 4.20 | in banda |
+| free_kicks | 27.30 | 27.37 | 29.45 ± 6.81 | in banda |
+| offsides | 6.73 | 6.95 | 4.26 ± 2.40 | fuori di 0,07, da indagare |
+| clearances | 26.02 | 25.42 | 29.53 ± 8.65 | in banda |
+| interceptions | 72.90 | 72.37 | 89.86 ± 13.97 | non confrontabile |
+| saves | 6.53 | 6.15 | 6.70 ± 2.82 | in banda |
+| stoppage_first_half_min | 2.95 | 3.45 | ≥1.49 ± 1.35 | non confrontabile (T14-bis) |
+| stoppage_second_half_min | 5.55 | 5.64 | ≥4.08 ± 1.61 | non confrontabile (T14-bis) |
+
+Golden L0 e L1 rigenerati, semi spostati: coppa e rigori solo-tiri 55 → 58,
+livello al 90' 55 → 45, header in fuorigioco 42 invariato. Il golden coppa è
+`58:2e8d8dd470fe1cac8b4563f1f525bfbc94f0885bb928c052bb5fb916fd71d36b`.
+Gol, tiri e fuorigioco si muovono un po' verso la banda senza tarature: restano
+indizi, non numeri da ricalibrare. La parte restante di T17 (primo atto delle
+altre riprese, punizione indiretta) non è stata toccata.
 
 ## La misura del 225 (2026-11-27, opencode, DD-98/ADR-118)
 

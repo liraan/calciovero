@@ -151,6 +151,10 @@ pub(crate) struct ShotPending {
 /// A pending fact the engine must resolve at a declared tick (MD-37).
 /// The possession is applied only at resolution: the ball in flight
 /// belongs to nobody (MD-25).
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the independent facts of one flight: through, cross, restart, throw"
+)]
 pub(crate) struct Pending {
     /// F.3-b3: if this pending is a shot, the info needed to detect
     /// a goal-line crossing during the flight.
@@ -178,6 +182,9 @@ pub(crate) struct Pending {
     /// Whether this pass is the restart kick itself: the report tells that
     /// kick once, with the restart event, not again as a `Pass` at landing.
     pub restart: bool,
+    /// Law 15: no goal directly from a throw-in. The ball is out of play
+    /// until another player touches this throw.
+    pub throw_in: bool,
 }
 /// A substitution ordered during the match: off, on (decision T).
 pub(crate) type Ordered = (PlayerId, PlayerId);
@@ -398,6 +405,7 @@ pub(crate) fn scene_from(
         keeper_reach_cm,
         can_carry,
         penalty_kick: false,
+        throw_in: false,
         runs: std::collections::BTreeMap::new(),
         run_pace: std::collections::BTreeMap::new(),
         horizon_cm: f64::MAX,
@@ -2196,6 +2204,7 @@ mod reaction_tests {
                 cross: false,
                 foot: None,
                 restart: false,
+                throw_in: false,
             });
             s.spatial.set_ball_in_flight((at.0, at.1, 0), (20, 0, 0));
             s.ball_from = s.spatial.ball_3d();
@@ -2251,6 +2260,7 @@ mod body_block_tests {
                 cross: false,
                 foot: None,
                 restart: false,
+                throw_in: false,
             });
             s.spatial
                 .set_ball_in_flight((at.0 - 60, at.1, 0), (120, 0, 0));

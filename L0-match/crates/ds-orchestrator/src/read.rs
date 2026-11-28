@@ -60,6 +60,9 @@ pub struct PerceivedScene {
     /// He is taking a penalty: the Laws (Law 14) let him only kick the
     /// ball forward at the goal, every other player behind the mark.
     pub penalty_kick: bool,
+    /// He is taking a throw-in: the Laws (Law 15) let him only throw the
+    /// ball to a teammate, not kick it or run with it.
+    pub throw_in: bool,
     /// The teammates he sees attacking the depth, and where each is
     /// running to (the movement, Plane B): the through ball's runners.
     pub runs: BTreeMap<PlayerId, (i32, i32)>,
@@ -1836,6 +1839,7 @@ fn through_candidates(
 /// caller can pass it to `resolve_pass` after the choice.
 #[must_use]
 #[allow(clippy::cast_precision_loss)] // distances in cm: well inside f64's exact range (2^52)
+#[allow(clippy::too_many_lines)] // one early return for each dead-ball Law (14, 15)
 pub fn build_choice(
     scene: &PerceivedScene,
     preferred_foot: Side,
@@ -1903,6 +1907,17 @@ pub fn build_choice(
         balance,
         true,
     );
+    if scene.throw_in && !passes.is_empty() {
+        // Law 15: a throw to a mate; he still reads whom, but cannot shoot.
+        return (
+            ChoiceContext {
+                actor: attacker,
+                can_carry: false,
+                candidates: passes,
+            },
+            pass_freedoms,
+        );
+    }
     candidates.extend(passes);
     freedoms.extend(pass_freedoms);
 
@@ -2088,6 +2103,7 @@ mod shot_perception_tests {
             keeper_reach_cm: 90.0,
             can_carry: true,
             penalty_kick: false,
+            throw_in: false,
             runs: BTreeMap::new(),
             run_pace: BTreeMap::new(),
             horizon_cm: f64::MAX,
@@ -2458,6 +2474,46 @@ mod shot_perception_tests {
         assert!(aside > straight, "aside {aside} straight {straight}");
     }
 
+    /// Law 15: a throw-in is thrown to a mate, not kicked or carried. The
+    /// same actor in the same scene still reads whom to throw to.
+    #[test]
+    fn a_throw_in_is_only_a_throw_to_a_mate() {
+        let balance = ds_calculator::shot_choice::ShotChoiceBalance::load();
+        let mut s = scene_with(None);
+        let mate = PlayerId::new(2, 0);
+        s.teammates.push(mate);
+        s.positions.insert(mate, (8000, 3000));
+        let kinds = |scene: &PerceivedScene| {
+            build_choice(scene, Side::Right, 0.5, 0.04, &balance)
+                .0
+                .candidates
+                .into_iter()
+                .map(|c| c.kind)
+                .collect::<Vec<_>>()
+        };
+        let live = kinds(&s);
+        assert!(
+            live.iter().any(|k| matches!(k, ChoiceKind::Shoot { .. })),
+            "with live ball he may shoot: {live:?}"
+        );
+        s.throw_in = true;
+        let thrown = kinds(&s);
+        assert!(
+            thrown.iter().any(|k| matches!(
+                k,
+                ChoiceKind::Pass(_) | ChoiceKind::Loft(_) | ChoiceKind::Through { .. }
+            )),
+            "the taker still has a mate to throw to: {thrown:?}"
+        );
+        assert!(
+            thrown.iter().all(|k| matches!(
+                k,
+                ChoiceKind::Pass(_) | ChoiceKind::Loft(_) | ChoiceKind::Through { .. }
+            )),
+            "a throw-in is only a throw to a mate: {thrown:?}"
+        );
+    }
+
     /// A penalty is a shot (Law 14): nobody is ahead of the ball, so the
     /// taker has no pass and no carry.
     #[test]
@@ -2785,6 +2841,7 @@ mod shot_perception_tests {
                 keeper_reach_cm: 0.0,
                 can_carry: true,
                 penalty_kick: false,
+                throw_in: false,
                 runs: BTreeMap::new(),
                 run_pace: BTreeMap::new(),
                 horizon_cm: f64::MAX,

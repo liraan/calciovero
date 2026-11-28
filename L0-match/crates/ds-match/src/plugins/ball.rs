@@ -315,6 +315,21 @@ impl MatchState {
         if !inside {
             return;
         }
+        // Law 15: a throw-in scores no goal until another player touches
+        // it. The throw that goes straight in is out of play, and the last
+        // touch (the thrower's) says whether it is a goal kick or a corner.
+        if self.pending.as_ref().is_some_and(|p| p.throw_in)
+            && self.spatial.touches().deflected.is_none()
+        {
+            if let Some(restart) =
+                crate::rules::out_of_play((curr.0, y_at), side_of(self.possession), (length, width))
+            {
+                self.pending = None;
+                self.spatial.set_carrier(None);
+                let _ = self.call_restart(ctx, tick, restart, None);
+            }
+            return;
+        }
         // His keeper meets it first, as he meets a shot, unless he is the
         // man on it (SIM 203, T3).
         let keeper_of = match defending {
@@ -375,7 +390,73 @@ impl MatchState {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use ds_match_api::MatchPlugin;
+    use ds_orchestrator::GroundTruth;
+    use ds_stats::EventChain;
+
+    /// Law 15 twin: the same throw crosses the same goal line; only the
+    /// fact that it was thrown in changes. A pass would score, a throw
+    /// goes out for a goal kick.
+    #[test]
+    fn a_direct_throw_into_the_goal_is_not_a_goal() {
+        let m = ds_fixtures::match_fixture(42).expect("fixture");
+        let run = |throw_in: bool| {
+            let mut hidden = GroundTruth::new(42, m.id);
+            let mut chain = EventChain::new();
+            let mut ctx = MatchContext {
+                match_: &m,
+                hidden: &mut hidden,
+                chain: &mut chain,
+                config: crate::context::MatchConfig::default(),
+            };
+            let mut s = MatchState::new(&m);
+            let taker = m.home.players[3].id;
+            let mate = m.home.players[6].id;
+            let keeper = m.away.players[0].id;
+            s.spatial.set_position(taker, (10000, 3400));
+            s.spatial.set_position(mate, (10200, 3400));
+            s.spatial.set_position(keeper, (10450, 100));
+            s.spatial.played_by(taker);
+            s.spatial.set_ball_in_flight((10400, 3400, 0), (200, 0, 0));
+            s.ball_course = BallCourse {
+                from: (10400, 3400, 0),
+                since: 100,
+                touches: (None, None, None),
+            };
+            s.possession = Possession::Home;
+            s.pending = Some(Pending {
+                launched: 100,
+                shot: None,
+                interceptor: None,
+                passer: Some(taker),
+                receiver: Some(mate),
+                closest_cm: None,
+                through: false,
+                cross: false,
+                foot: None,
+                restart: true,
+                throw_in,
+            });
+            s.check_goal_line(&mut ctx, 100, (10400, 3400, 0), (10600, 3400, 0));
+            (s.score, s.restart_pass)
+        };
+        let (scored, after_pass) = run(false);
+        assert_eq!(scored.home, 1, "a pass into the goal scores");
+        let (not_scored, after_throw) = run(true);
+        assert_eq!(not_scored.home, 0, "a throw cannot score directly");
+        assert_eq!(not_scored.away, 0, "no own goal either");
+        assert_eq!(
+            after_throw,
+            Some(crate::rules::RestartKind::GoalKick),
+            "the throw goes out for a goal kick, not {after_throw:?}"
+        );
+        assert_eq!(
+            after_pass,
+            Some(crate::rules::RestartKind::KickOff),
+            "the goal restarts with a kick-off, not {after_pass:?}"
+        );
+    }
 
     #[test]
     fn the_plugin_has_its_card() {

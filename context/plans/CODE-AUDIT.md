@@ -176,7 +176,7 @@ Stessi 8 analisti in sola lettura, a HEAD `5eafc14` (SIM 202), con la tabella de
 **Blocco 3 — le Leggi**
 - T15. ✅ (SIM 203) Legge 7: il fallo con il vantaggio aggiunge 20 s; cambi e infortuni 0 (tutti).
 - T16. Legge 12: giallo solo per la scivolata da dietro e la chiara occasione; mancano l'azione promettente interrotta, l'imprudenza in piedi, la reiterazione (tutti). Il rosso per vigoria non può scattare (soglia 103.5 cm/tick contro una corsa massima di circa 83 in contesa) (dati).
-- T17. Leggi 13, 15-17: le riprese si giocano come palla in movimento (il battitore conduce, spazza, tira; la rimessa è calciata; gol diretto da rimessa); nessuna punizione indiretta (regole, motore).
+- T17. Parzialmente chiuso (SIM 226, DD-99/ADR-119): Law 15, la rimessa è un lancio con le mani a un compagno scelto dal battitore e non fa gol diretto (Law 10: uscita di fondo); i due gemelli sono in `read.rs` e `ball.rs`. Restano aperti: il primo atto delle altre riprese e la punizione indiretta (serve una DD con la sua fonte, non un effetto collaterale).
 - T18. ✅ (SIM 203) Legge 16: al rinvio gli avversari restano in area; Legge 15: niente 2 m alla rimessa (regole, motore).
 - T19. ✅ (SIM 203) Legge 8: il calcio d'inizio del secondo tempo e dei supplementari con i giocatori dove sono; non si cambia campo (regole, motore, strumenti, test).
 - T20. ✅ (SIM 203) L'intercetto "a orologio" (`FLIGHT_TICKS`): `Interception` senza tocco, possesso girato, segni del fuorigioco che restano (regole, motore).

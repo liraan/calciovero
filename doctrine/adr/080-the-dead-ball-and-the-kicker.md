@@ -57,3 +57,9 @@ un fatto nella percezione del singolo e una scelta sua.
 - Il giocatore non diventa un esecutore di copioni: anche la scelta del
   battitore nasce dalle sue qualità e dal suo piede, e il resto della squadra
   continua a decidere con le proprie salienze cognitive.
+- **2026-11-27 — SIM 226 (ADR-119):** T17 emenda la prima azione del solo
+  battitore di rimessa: è un lancio con le mani a un compagno (Law 15), non un
+  calcio e non un tiro in porta. La lettura del ricevitore e la scelta del
+  battitore restano quelle qui sopra; il gol diretto da lancio diventa uscita
+  di fondo per `out_of_play`. Le altre riprese e la punizione indiretta non
+  cambiano.

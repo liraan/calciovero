@@ -192,6 +192,7 @@ impl MatchState {
             .filter_map(|id| self.bodies.get(id).map(|b| (*id, b.height_cm)))
             .collect();
         scene.penalty_kick = self.restart_pass == Some(crate::rules::RestartKind::Penalty);
+        scene.throw_in = self.restart_pass == Some(crate::rules::RestartKind::ThrowIn);
         scene.strike_error_rad = ctx.hidden.strike_error_he_expects(
             attacker,
             self.spatial.agent(attacker).map_or(0.0, |a| {
@@ -470,11 +471,13 @@ impl MatchState {
             );
             let params = self.reception_params(ctx);
             // From his hands the keeper throws it, if it is within his arm
-            // (plan L0-CLOSE 10d); farther he kicks it.
-            let throw = from_hands
-                && !lofted
-                && distance_squared((from.0, from.1), (to.0, to.1))
-                    <= i64::from(ctx.hidden.kick_balance().throw_max_cm).pow(2);
+            // (plan L0-CLOSE 10d); farther he kicks it. A throw-in is always
+            // with the hands (Law 15), however far he throws it.
+            let throw = scene.throw_in
+                || (from_hands
+                    && !lofted
+                    && distance_squared((from.0, from.1), (to.0, to.1))
+                        <= i64::from(ctx.hidden.kick_balance().throw_max_cm).pow(2));
             let ctx_pass = ds_orchestrator::PassContext {
                 passer: attacker,
                 foot: self.spatial.ball_foot(),
@@ -533,6 +536,7 @@ impl MatchState {
                 cross,
                 foot: ctx_pass.foot,
                 restart,
+                throw_in: scene.throw_in,
             });
             // REC: the Pass event is emitted at landing, in `tick`
             // (resolve_reception), not at launch: `complete` is the
@@ -1285,6 +1289,7 @@ impl MatchState {
             cross: false,
             foot: None,
             restart: false,
+            throw_in: false,
             shot: Some(ShotPending {
                 attacker,
                 struck: tick,

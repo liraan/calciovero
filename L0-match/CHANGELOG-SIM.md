@@ -9,6 +9,22 @@ It is separate from [`CHANGELOG.md`](../CHANGELOG.md) (which tracks documentatio
 ---
 
 
+## 226 — the throw-in is thrown (DD-99, ADR-119)
+
+T17 of the audit: a throw-in was kicked like any other restart and could go
+straight into the goal. `PerceivedScene` now carries `throw_in`, read from the
+restart as `penalty_kick` already is; with it the taker sees only the passing
+options — he still reads **whom** to throw to, but he cannot shoot, clear,
+carry or hold (Law 15, not a clamp on how he plays). The pass is thrown with
+the hands already declared in `kick.json`, without a new speed or distance;
+`Pending` carries `throw_in` so a throw that crosses the goal line untouched
+is out of play for a goal kick or corner by the existing `out_of_play`, not a
+goal (Law 15, Law 10). No indirect free kick or new event type: that part of
+T17 stays open and needs its own decision. Twins change one fact in the same
+scene: `a_throw_in_is_only_a_throw_to_a_mate` and
+`a_direct_throw_into_the_goal_is_not_a_goal`. Golden L0/L1 and the fixtures are
+regenerated; the measurement is in `L0-CALIBRATION.md` §226.
+
 ## 225 — the forwards hold the line (DD-98, ADR-118)
 
 T23 of the audit: with the ball, `shape.rs::place` drew the forwards at

@@ -381,6 +381,7 @@ mod tests {
             keeper_reach_cm: 0.0,
             can_carry: false,
             penalty_kick: false,
+            throw_in: false,
             runs: BTreeMap::new(),
             run_pace: BTreeMap::new(),
             horizon_cm: f64::MAX,

@@ -213,6 +213,7 @@ impl MatchState {
             cross: false,
             foot: None,
             restart: false,
+            throw_in: false,
             shot: Some(ShotPending {
                 attacker: winner,
                 struck: tick,
@@ -1282,6 +1283,7 @@ mod tests {
                 cross: false,
                 foot: None,
                 restart,
+                throw_in: false,
             });
             s.spatial.set_ball_in_flight((at.0, at.1, 0), (20, 0, 0));
             s.ball_from = s.spatial.ball_3d();
